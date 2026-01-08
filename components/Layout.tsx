@@ -175,15 +175,14 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage, onNavigate }) =>
             <div>
                 <h4 className="font-bold uppercase tracking-math-wide mb-8 text-xs text-sb-beige border-b border-sb-beige/20 pb-2 inline-block">Contact</h4>
                 <ul className="space-y-4 text-white/80 font-light text-sm tracking-wide">
-                <li>15 Avenue des Champs-Élysées<br/>75008 Paris, France</li>
-                <li><a href="mailto:contact@cabinet-delacour.fr" className="hover:text-sb-beige transition-colors">contact@cabinet-delacour.fr</a></li>
-                <li>+33 1 23 45 67 89</li>
+                <li>13100 Aix En Provence, France</li>
+                <li><a href="mailto:delacour.melchior@cabinetdelacour.com" className="hover:text-sb-beige transition-colors">contact@cabinet-delacour.fr</a></li>
                 </ul>
             </div>
             </div>
             
             <div className="pt-8 flex flex-col md:flex-row justify-between items-center text-meta text-white/40 font-light uppercase tracking-wider">
-                <p>© 2024 Cabinet Delacour. Tous droits réservés.</p>
+                <p>© 2026 Cabinet Delacour. Tous droits réservés.</p>
                 <div className="mt-4 md:mt-0">
                     <button 
                         onClick={() => onNavigate(Page.LEGAL)} 

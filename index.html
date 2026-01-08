@@ -6,68 +6,38 @@
     <title>Cabinet Delacour | Stratégie & Performance QHSE</title>
     <meta name="description" content="Consultant expert en management de la qualité et audits ISO 9001. Stratégie et Performance QHSE." />
     
-    <!-- Google Fonts: Playfair Display (Serif) & Montserrat (Geometric Sans) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
 
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
         theme: {
           extend: {
             colors: {
-              'sb-green-dark': '#152822', // Oxford Green - Deep, authoritative
-              'sb-green-light': '#4A6C5C', // Muted professional green
-              'sb-beige': '#F0EAD6', // Parchment - Cold elegant beige
-              'sb-cream': '#F9F9F7', // Cold white/greyish cream
-              'sb-black': '#0A1210', // Almost black green
+              'sb-green-dark': '#152822',
+              'sb-green-light': '#4A6C5C',
+              'sb-beige': '#F0EAD6',
+              'sb-cream': '#F9F9F7',
+              'sb-black': '#0A1210',
               'sb-accent': '#E2DCCC'
             },
             fontFamily: {
-              sans: ['Montserrat', 'sans-serif'], // Geometric Sans for Authority
+              sans: ['Montserrat', 'sans-serif'],
               serif: ['Playfair Display', 'serif'],
             },
             fontSize: {
-              'meta': '14px',       // ACCESSIBILITY: Up from 13px
-              'xs': '14px',         // ACCESSIBILITY: Min readable size (was 12px)
-              'sm': '16px',         // ACCESSIBILITY: Up from 14px
-              'base': '18px',       // ACCESSIBILITY: Standard body
-              'body': '21px',       // Fibonacci - Main Text
-              'h3-card': '24px',    // ACCESSIBILITY: Card titles
-              'subtitle': '34px',   // Fibonacci - Subtitles
-              'title': '55px',      // Fibonacci - Section Titles
+              'meta': '14px',
+              'xs': '14px',
+              'sm': '16px',
+              'base': '18px',
+              'body': '21px',
+              'h3-card': '24px',
+              'subtitle': '34px',
+              'title': '55px',
               'hero-mobile': '55px',
-              'hero': '89px',       // Fibonacci - H1
-            },
-            lineHeight: {
-              'phi': '1.618',       // The Golden Ratio breath
-              'loose': '1.75',      // ACCESSIBILITY: More breathing room
-              'tight-math': '1.1',
-            },
-            letterSpacing: {
-              'math-tight': '-0.02em', // For Serif Headers (Authority)
-              'math-wide': '0.2em',    // For Caps/Buttons (Structure/4)
-            },
-            spacing: {
-              'fib-89': '89px',     // Sacred Geometry Space
-              'fib-144': '144px',   // 12x12 Fullness
-            },
-            maxWidth: {
-              'reading': '800px',   // Optimal reading width
-            },
-            backgroundImage: {
-              'texture-paper': "url('https://www.transparenttextures.com/patterns/cream-paper.png')",
-            },
-            borderRadius: {
-                'sm': '2px', // Sharp definition
-                'md': '4px',
-                'lg': '0px', // Force square on large
-                'xl': '0px',
-                '2xl': '0px',
-                '3xl': '0px',
-                'full': '2px', // Overriding full to be slightly rounded square for buttons
+              'hero': '89px',
             }
           }
         }
@@ -78,7 +48,7 @@
         background-color: #F9F9F7;
         color: #152822;
         font-family: 'Montserrat', sans-serif;
-        line-height: 1.618; /* Default Phi Line Height */
+        line-height: 1.618;
       }
       h1, h2, h3, h4, h5, h6 {
         font-family: 'Playfair Display', serif;
@@ -87,24 +57,16 @@
       .smooth-scroll {
         scroll-behavior: smooth;
       }
-      /* Force sharp buttons */
       button {
           border-radius: 2px !important;
-          letter-spacing: 0.2em; /* Default button spacing */
+          letter-spacing: 0.2em;
       }
     </style>
-  <script type="importmap">
-{
-  "imports": {
-    "react": "https://aistudiocdn.com/react@^19.2.0",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
-    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0"
-  }
-}
-</script>
-</head>
+  </head>
   <body>
     <div id="root"></div>
+    
+    <script type="module" src="/index.tsx"></script>
+    
   </body>
 </html>

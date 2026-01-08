@@ -3,142 +3,391 @@ import React from 'react';
 import Section from '../components/Section';
 import { VALUES, SERVICES } from '../constants';
 import { Page } from '../types';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Handshake, Settings, Compass, Calendar, AlertTriangle, Zap, Target, FileText, CheckCircle2, ChevronRight, Check } from 'lucide-react';
 
 interface HomeProps {
   onNavigate: (page: Page) => void;
 }
 
 const Home: React.FC<HomeProps> = ({ onNavigate }) => {
-  // Take only the first 3 services for the home page preview
-  const previewServices = SERVICES.slice(0, 3);
+  // Geometric shapes for the pillars section
+  const getShape = (index: number) => {
+      if (index === 0) { // Target (Identification)
+          return (
+             <svg width="40" height="40" viewBox="0 0 40 40" fill="none" className="text-sb-beige mb-6">
+                <circle cx="20" cy="20" r="18" stroke="currentColor" strokeWidth="2"/>
+                <circle cx="20" cy="20" r="12" stroke="currentColor" strokeWidth="1.5" opacity="0.6"/>
+                <circle cx="20" cy="20" r="3" fill="currentColor"/>
+             </svg>
+          );
+      } else if (index === 1) { // Hexagon (Structure) - Kept
+          return (
+             <svg width="40" height="40" viewBox="0 0 40 40" fill="none" className="text-sb-beige mb-6">
+                <path d="M20 2L35.5885 11V29L20 38L4.41154 29V11L20 2Z" stroke="currentColor" strokeWidth="2"/>
+             </svg>
+          );
+      } else { // Bar Chart (Pilotage)
+          return (
+             <svg width="40" height="40" viewBox="0 0 40 40" fill="none" className="text-sb-beige mb-6">
+                <line x1="2" y1="38" x2="38" y2="38" stroke="currentColor" strokeWidth="2" strokeLinecap="square" />
+                <rect x="7" y="24" width="6" height="10" stroke="currentColor" strokeWidth="2" />
+                <rect x="17" y="16" width="6" height="18" stroke="currentColor" strokeWidth="2" />
+                <rect x="27" y="6" width="6" height="28" stroke="currentColor" strokeWidth="2" />
+             </svg>
+          );
+      }
+  };
+
+  // Helper to parse text with bold markers (**text**)
+  const parseBoldText = (text: string) => {
+    const parts = text.split('**');
+    return parts.map((part, index) => 
+      index % 2 === 1 ? <span key={index} className="font-bold text-white not-italic">{part}</span> : part
+    );
+  };
 
   return (
     <>
-      {/* Hero Section */}
-      <section className="relative min-h-[90vh] flex items-center bg-sb-green-dark overflow-hidden">
+      {/* Hero Section - Luxe, Calme & Volupté */}
+      <section className="relative min-h-screen flex items-center justify-center bg-sb-green-dark overflow-hidden">
+        {/* Background - Dark & Cinematic */}
         <div className="absolute inset-0 z-0">
           <img 
-            src="https://picsum.photos/id/6/1920/1080" 
-            alt="Bureau de travail organisé" 
-            className="w-full h-full object-cover opacity-20"
+            src="https://image.pollinations.ai/prompt/luxury%20executive%20office%20desk%20dark%20green%20aesthetic%20cinematic%20lighting%20golden%20ratio%20symmetry%20intricate%20details%20photorealistic%208k%20oxford%20green%20wall?nologo=true" 
+            alt="Bureau de direction" 
+            className="w-full h-full object-cover opacity-30"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-sb-green-dark/90"></div>
+          <div className="absolute inset-0 bg-sb-green-dark/80 mix-blend-multiply"></div>
+          {/* Subtle gradient from bottom to seamless transition */}
+          <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-sb-green-dark to-transparent"></div>
         </div>
-        <div className="container mx-auto px-6 relative z-10 grid md:grid-cols-2 gap-12 items-center pt-20">
-          <div className="space-y-10">
-            <div className="inline-block border-b border-sb-beige/30 pb-2">
-               <h2 className="text-sb-beige font-serif italic tracking-wider">Maison Delacour</h2>
-            </div>
-            <h1 className="font-serif text-5xl md:text-7xl text-sb-cream leading-tight drop-shadow-lg">
-              Votre performance commence par une <span className="italic text-sb-beige">qualité</span> maîtrisée.
+        
+        {/* Content - Perfectly Centered Pyramidal Layout */}
+        <div className="container mx-auto px-6 relative z-10 flex flex-col items-center justify-center text-center pt-48 md:pt-64 pb-20">
+            
+            {/* Title - L'Axiome */}
+            <h1 className="font-serif text-5xl md:text-hero text-white leading-[1.1] tracking-math-tight mb-12 drop-shadow-2xl uppercase font-normal">
+              L'ORDRE PRÉCÈDE<br/>
+              <span className="text-white">LA CROISSANCE.</span>
             </h1>
-            <p className="text-xl text-sb-green-light leading-relaxed max-w-lg font-light drop-shadow-md">
-              Conseil et excellence en management de la qualité. Audits ciblés et accompagnement ISO 9001 pour transformer votre organisation.
+            
+            {/* Subtitle - La Promesse - Fibonacci Body Size */}
+            <p className="text-body text-white/90 leading-loose max-w-2xl font-medium mb-0 tracking-wide font-sans">
+              Faites de la rigueur votre premier avantage concurrentiel.<br/>
+              <span className="block mt-4 opacity-90 text-xl font-normal">Audit, Structuration & Performance. Nous convertissons vos contraintes opérationnelles en leviers de rentabilité, avec ou sans certification.</span>
             </p>
-            <button 
-              onClick={() => onNavigate(Page.CONTACT)}
-              className="inline-flex items-center px-10 py-5 bg-sb-beige text-sb-green-dark font-bold uppercase tracking-widest hover:bg-white transition-all duration-300 rounded-full shadow-xl hover:shadow-2xl hover:-translate-y-1"
-            >
-              Planifier un diagnostic
-            </button>
-          </div>
+            
+            {/* The Silence (Gap) & Call to Action */}
+            <div className="mt-24 w-full flex justify-center">
+                <button 
+                onClick={() => onNavigate(Page.CONTACT)}
+                className="group relative inline-flex items-center justify-center px-14 py-6 bg-sb-beige text-sb-green-dark font-bold uppercase tracking-math-wide text-sm overflow-hidden transition-all duration-300 hover:bg-white hover:shadow-[0_0_30px_rgba(240,234,214,0.3)] rounded-[2px]"
+                >
+                    <span className="relative z-10">PARLER DE VOS ENJEUX</span>
+                </button>
+            </div>
+
         </div>
       </section>
 
-      {/* Storytelling Intro */}
-      <Section bg="cream" className="text-center max-w-4xl mx-auto">
-        <h2 className="font-serif text-3xl md:text-5xl mb-8 text-sb-green-dark leading-tight">
-          Un engagement profond pour <br/>le détail et l'exigence.
-        </h2>
-        <p className="text-lg md:text-xl text-gray-600 leading-relaxed font-light">
-          La Maison Delacour analyse chaque processus de votre entreprise pour en révéler le potentiel. 
-          La qualité n'est pas une option, c'est la fondation de votre pérennité et de votre excellence opérationnelle.
-        </p>
-      </Section>
+      {/* DIAGNOSTIC / IDENTIFICATION - Le Mur de la Complexité */}
+      <section className="bg-[#F8F9FA] py-fib-144 text-center border-b border-sb-green-dark/5">
+        <div className="container mx-auto px-6">
+            {/* Title */}
+            <h2 className="font-serif text-[45px] text-sb-green-dark uppercase leading-tight tracking-math-tight mb-8">
+                LE MUR DE LA COMPLEXITÉ.
+            </h2>
 
-      {/* Values - Soft cards instead of bordered boxes */}
-      <Section bg="green">
-        <div className="grid md:grid-cols-3 gap-8 md:gap-12 text-center md:text-left">
-          {VALUES.map((value, index) => (
-            <div key={index} className="space-y-6 p-8 bg-white/5 rounded-3xl hover:bg-white/10 transition-colors duration-300 backdrop-blur-sm shadow-xl shadow-black/20">
-              <div className="w-14 h-14 bg-sb-beige/10 rounded-2xl flex items-center justify-center mx-auto md:mx-0 text-sb-beige shadow-inner">
-                 <value.icon className="w-7 h-7" />
+            {/* Separator - Gold Line */}
+            <div className="w-20 h-px bg-sb-green-dark/20 mx-auto mb-10"></div>
+
+            {/* Introduction Text */}
+            <p className="text-body text-sb-green-dark font-normal leading-loose max-w-[800px] mx-auto font-sans mb-16">
+                Vous êtes à un point de bascule. Soit votre croissance crée du chaos, soit vos donneurs d'ordres exigent des garanties de structuration pour continuer à vous suivre. Vos méthodes 'artisanales', qui ont fait votre succès, deviennent aujourd'hui votre principal risque.
+            </p>
+
+            {/* 3 Columns Grid */}
+            <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto mb-16">
+                
+                {/* Column 1: Commercial Risk */}
+                <div className="bg-white p-10 border border-sb-green-dark/5 rounded-[2px] shadow-sm hover:shadow-lg transition-all duration-300 group">
+                    {/* Outline Icon - No Background */}
+                    <div className="mb-8 flex justify-center">
+                        <Handshake size={48} strokeWidth={1} className="text-sb-green-dark group-hover:text-[#C5A065] transition-colors duration-300" />
+                    </div>
+                    
+                    <h3 className="font-serif font-bold uppercase tracking-wide text-lg mb-6 text-sb-green-dark">
+                        VOS CLIENTS DOUTENT-ILS ?
+                    </h3>
+                    <p className="text-sb-green-dark/80 leading-loose font-medium font-sans text-left md:text-center text-sm md:text-base">
+                        Sentez-vous une résistance lors des négociations ? Vos donneurs d'ordres exigent-ils désormais des preuves de structuration (ISO, Audit) pour continuer à vous suivre ?
+                    </p>
+                </div>
+
+                {/* Column 2: Operational Risk */}
+                <div className="bg-white p-10 border border-sb-green-dark/5 rounded-[2px] shadow-sm hover:shadow-lg transition-all duration-300 group">
+                    {/* Outline Icon - No Background */}
+                    <div className="mb-8 flex justify-center">
+                        <Settings size={48} strokeWidth={1} className="text-sb-green-dark group-hover:text-[#C5A065] transition-colors duration-300" />
+                    </div>
+
+                    <h3 className="font-serif font-bold uppercase tracking-wide text-lg mb-6 text-sb-green-dark">
+                        ET SI LA CHARGE DOUBLE ?
+                    </h3>
+                    <p className="text-sb-green-dark/80 leading-loose font-medium font-sans text-left md:text-center text-sm md:text-base">
+                        Si demain la demande explose, votre organisation tient-elle le choc ou explose-t-elle ? Votre croissance actuelle génère-t-elle de la rentabilité ou juste de la désorganisation ?
+                    </p>
+                </div>
+
+                {/* Column 3: Decision Risk */}
+                <div className="bg-white p-10 border border-sb-green-dark/5 rounded-[2px] shadow-sm hover:shadow-lg transition-all duration-300 group">
+                    {/* Outline Icon - No Background */}
+                    <div className="mb-8 flex justify-center">
+                        <Compass size={48} strokeWidth={1} className="text-sb-green-dark group-hover:text-[#C5A065] transition-colors duration-300" />
+                    </div>
+
+                    <h3 className="font-serif font-bold uppercase tracking-wide text-lg mb-6 text-sb-green-dark">
+                        PILOTEZ-VOUS À L'AVEUGLE ?
+                    </h3>
+                    <p className="text-sb-green-dark/80 leading-loose font-medium font-sans text-left md:text-center text-sm md:text-base">
+                        Savez-vous précisément quels dossiers financent les autres ? Ou prenez-vous vos décisions stratégiques au 'feeling' par manque de données fiables ?
+                    </p>
+                </div>
+            </div>
+
+            {/* CTA Transition - UPDATED */}
+            <div className="max-w-4xl mx-auto border-t border-sb-green-dark/10 pt-16">
+                <p className="font-serif text-3xl md:text-4xl text-sb-green-dark leading-tight mb-12">
+                    Si vous répondez <span className="font-bold text-[#8A1C1C]">OUI</span> à l'une de ces questions, votre 'Plafond de Verre' est atteint.<br/>
+                    Voyons comment le briser ensemble.
+                </p>
+                <button 
+                    onClick={() => onNavigate(Page.CONTACT)}
+                    className="group relative inline-flex items-center justify-center px-10 py-5 bg-[#C5A065] text-[#0A1F1C] font-bold uppercase tracking-math-wide text-sm transition-all duration-300 hover:bg-white hover:text-[#C5A065] shadow-lg hover:shadow-xl rounded-[2px] border border-transparent hover:border-[#C5A065]"
+                >
+                    BRISER CE PLAFOND DE VERRE <ArrowRight size={20} className="ml-2 group-hover:translate-x-1 transition-transform" />
+                </button>
+            </div>
+        </div>
+      </section>
+
+      {/* METHODOLOGY - LES 3 PILIERS DE LA PERFORMANCE */}
+      <Section bg="green" className="py-fib-144">
+        
+        {/* Section Header */}
+        <div className="text-center mb-24 max-w-4xl mx-auto">
+            <h2 className="font-serif text-subtitle md:text-[45px] text-white uppercase tracking-math-tight mb-6">
+                LES 3 PILIERS DE VOTRE PERFORMANCE
+            </h2>
+            <div className="w-16 h-px bg-sb-beige mx-auto mb-8"></div>
+            <p className="text-body text-white/90 font-medium leading-loose font-sans">
+                La performance n'est pas un hasard, c'est une architecture. Négliger un seul de ces piliers fragilise l'ensemble de l'édifice.
+            </p>
+        </div>
+
+        {/* The 3 Cards - Pillars */}
+        <div className="grid md:grid-cols-3 gap-8">
+          {VALUES.map((value: any, index) => (
+            <div key={index} className="group relative bg-[#1C2B29] border-t border-sb-beige p-10 h-full hover:bg-[#233533] transition-colors duration-500 rounded-[2px] flex flex-col">
+              
+              {/* Content */}
+              <div className="relative z-10 text-left flex-grow">
+                  {/* Geometric Icon */}
+                  <div className="transform transition-transform duration-500 group-hover:-translate-y-1">
+                      {getShape(index)}
+                  </div>
+
+                  <h3 className="font-serif text-h3-card text-white tracking-widest uppercase mb-6 font-bold">
+                    {value.title}
+                  </h3>
+                  
+                  {/* Discrete Description - Font Weight Regular for Readability */}
+                  <p className="font-sans text-base text-white/70 leading-relaxed font-normal mb-12 italic">
+                    {parseBoldText(value.text)}
+                  </p>
               </div>
-              <h3 className="font-serif text-2xl text-sb-cream">{value.title}</h3>
-              <p className="text-sb-green-light leading-relaxed font-light opacity-90">
-                {value.text}
-              </p>
+
+              {/* Financial Verdict - Visually Dominant */}
+              <div className="mt-auto pt-8 border-t border-white/10 relative z-10">
+                  <p className={`font-serif text-4xl md:text-5xl font-bold tracking-tight uppercase mb-2 leading-none ${value.color || 'text-[#C5A065]'}`}>
+                    {value.verdictTitle}
+                  </p>
+                  {value.verdictSubtitle && (
+                    <p className="font-serif text-sm italic text-white/50 mb-8 font-light">
+                        {value.verdictSubtitle}
+                    </p>
+                  )}
+                  
+                  {/* Detail Button - Uniform & Strict - GOLD COLOR */}
+                  <button 
+                    onClick={() => onNavigate(value.link)}
+                    className="w-full text-center py-4 border border-[#C5A065] text-[#C5A065] font-bold uppercase tracking-math-wide text-xs transition-all duration-300 rounded-[2px] hover:bg-[#C5A065] hover:text-sb-green-dark"
+                  >
+                      {value.buttonText}
+                  </button>
+              </div>
             </div>
           ))}
         </div>
       </Section>
 
-      {/* Visual Break - Rounded container */}
-      <section className="py-16 bg-sb-cream">
-        <div className="container mx-auto px-6">
-            <div className="relative h-[60vh] rounded-3xl overflow-hidden shadow-2xl">
-                <img 
-                src="https://picsum.photos/id/3/1600/900" 
-                alt="Travail d'équipe" 
-                className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-black/20 flex items-center justify-center p-6">
-                <div className="bg-sb-cream/95 backdrop-blur-md p-10 md:p-16 max-w-2xl text-center shadow-2xl shadow-black/20 rounded-3xl transform transition-transform hover:scale-105 duration-500 border border-white/50">
-                    <h3 className="font-serif text-3xl md:text-4xl text-sb-green-dark mb-6">Une démarche qui vous valorise</h3>
-                    <p className="mb-8 text-gray-600 text-lg">
-                    La certification n'est pas qu'un papier. C'est la preuve de votre engagement envers vos clients.
-                    </p>
-                    <button 
-                    onClick={() => onNavigate(Page.SERVICES)}
-                    className="border-2 border-sb-green-dark text-sb-green-dark px-8 py-3 font-bold uppercase tracking-widest text-xs hover:bg-sb-green-dark hover:text-white transition-colors rounded-full shadow-lg hover:shadow-xl"
-                    >
-                    Découvrir nos offres
-                    </button>
-                </div>
-                </div>
-            </div>
-        </div>
-      </section>
-
-      {/* Services Preview - Rounded cards */}
-      <Section bg="beige">
-        <div className="flex flex-col md:flex-row justify-between items-end mb-12">
+      {/* Services Preview - NEW DESIGN: LIGHT & HIGH CONTRAST */}
+      <Section bg="cream" className="pb-fib-144 border-t border-sb-green-dark/10">
+        
+        <div className="flex flex-col md:flex-row justify-between items-end mb-20">
              <div>
-                <h2 className="font-serif text-4xl text-sb-green-dark mb-2">Nos Offres Phares</h2>
-                <p className="text-gray-600 font-light">Un aperçu de notre catalogue de prestations</p>
+                <h2 className="font-serif text-subtitle md:text-title text-sb-green-dark mb-4 tracking-math-tight">NOS PRESTATIONS</h2>
+                <p className="text-sb-green-dark font-bold uppercase tracking-math-wide text-sm">Catalogue d'Interventions</p>
              </div>
-             <button onClick={() => onNavigate(Page.SERVICES)} className="hidden md:flex items-center text-sb-green-dark font-bold uppercase tracking-widest text-xs hover:text-sb-green-light transition-colors mt-4 md:mt-0">
-                Voir toutes les prestations <ArrowRight size={14} className="ml-2" />
+             <button onClick={() => onNavigate(Page.SERVICES)} className="hidden md:flex items-center text-sb-green-dark font-bold uppercase tracking-math-wide text-xs hover:text-sb-green-light transition-colors mt-4 md:mt-0 pb-2 border-b border-transparent hover:border-sb-green-dark">
+                Voir le catalogue complet <ArrowRight size={16} className="ml-2" />
              </button>
         </div>
        
-        <div className="grid md:grid-cols-3 gap-8">
-          {previewServices.map((service) => (
-            <div key={service.id} className="bg-sb-cream p-2 rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-300 group transform hover:-translate-y-2">
-              <div className="h-56 mb-6 overflow-hidden rounded-2xl shadow-inner">
-                 <img src={service.image} alt={service.title} className="w-full h-full object-cover transform scale-125 group-hover:scale-110 transition-transform duration-700" />
-              </div>
-              <div className="px-6 pb-8">
-                <div className="flex justify-between items-center mb-3">
-                    <span className="text-xs font-bold uppercase tracking-widest text-sb-green-light">{service.subtitle}</span>
+        {/* LIGHT THEME CARDS - 2 COLUMN LAYOUT */}
+        <div className="grid grid-cols-1 gap-12">
+          {SERVICES.map((service, index) => (
+            <div key={service.id} className="bg-white border border-sb-green-dark/10 rounded-[2px] overflow-hidden group hover:border-sb-green-dark/30 hover:shadow-lg transition-all duration-300">
+                <div className="grid md:grid-cols-12 gap-0">
+                    
+                    {/* Header Side (Title & Quote) - LIGHTER BEIGE BG */}
+                    <div className="md:col-span-4 p-10 bg-[#F7F7F4] flex flex-col justify-between border-b md:border-b-0 md:border-r border-sb-green-dark/5">
+                        <div>
+                             <span className="inline-block text-[10px] font-bold uppercase tracking-math-wide text-sb-green-dark border border-sb-green-dark/20 px-3 py-1 rounded-[2px] mb-6">
+                                {service.subtitle}
+                             </span>
+                             <h4 className="font-serif text-3xl font-bold text-sb-green-dark mb-6 leading-tight tracking-tight whitespace-pre-line">
+                                {service.title}
+                             </h4>
+                             <p className="font-serif text-lg text-sb-green-dark/80 italic leading-relaxed">
+                                "{service.description}"
+                             </p>
+                        </div>
+                        <div className="mt-8">
+                             <button 
+                                onClick={() => service.link && onNavigate(service.link)}
+                                className="w-full bg-sb-green-dark text-sb-beige font-bold uppercase tracking-math-wide text-xs px-6 py-4 rounded-[2px] hover:bg-black transition-colors flex items-center justify-center group-hover:shadow-md"
+                            >
+                                EXPLORER CE MODULE <ArrowRight size={16} className="ml-2" />
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Content Side (Benefits & Deliverables) - WHITE BG */}
+                    <div className="md:col-span-8 p-10 bg-white">
+                        <div className="grid md:grid-cols-2 gap-12">
+                            
+                            {/* Benefits Column */}
+                            <div>
+                                <h5 className="flex items-center gap-2 text-sb-green-dark font-bold uppercase tracking-math-wide text-xs mb-6 pb-2 border-b border-sb-green-dark/10">
+                                    <Target size={16} /> BÉNÉFICES FINANCIERS
+                                </h5>
+                                <ul className="space-y-4">
+                                    {service.benefits.map((item, i) => (
+                                        <li key={i} className="flex items-start gap-3 text-sm text-sb-green-dark/80 font-medium leading-relaxed">
+                                            <div className="mt-1 min-w-[16px]">
+                                                 <Check size={16} className="text-sb-green-dark" />
+                                            </div>
+                                            <span>{item}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+
+                            {/* Deliverables Column */}
+                            <div>
+                                <h5 className="flex items-center gap-2 text-sb-green-dark font-bold uppercase tracking-math-wide text-xs mb-6 pb-2 border-b border-sb-green-dark/10">
+                                    <FileText size={16} /> LIVRABLES CONCRETS
+                                </h5>
+                                <ul className="space-y-4">
+                                    {service.deliverables.map((item, i) => (
+                                        <li key={i} className="flex items-start gap-3 text-sm text-sb-green-dark/80 font-medium leading-relaxed">
+                                            <div className="mt-1 min-w-[16px]">
+                                                 <CheckCircle2 size={16} className="text-[#C5A065]" />
+                                            </div>
+                                            <span>{item}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+
+                        </div>
+                    </div>
+
                 </div>
-                <h4 className="font-serif text-2xl font-bold text-sb-green-dark mb-3 leading-tight">{service.title}</h4>
-                <p className="text-gray-600 mb-8 line-clamp-3 font-light leading-relaxed">{service.description}</p>
-                <button 
-                    onClick={() => onNavigate(Page.SERVICES)}
-                    className="text-sb-green-dark font-bold uppercase tracking-wider text-xs flex items-center group-hover:text-sb-green-light transition-colors"
-                >
-                    En savoir plus <ArrowRight size={14} className="ml-2" />
-                </button>
-              </div>
             </div>
           ))}
         </div>
-        <div className="mt-10 text-center md:hidden">
-            <button onClick={() => onNavigate(Page.SERVICES)} className="inline-flex items-center text-sb-green-dark font-bold uppercase tracking-widest text-xs hover:text-sb-green-light transition-colors">
-                Voir toutes les prestations <ArrowRight size={14} className="ml-2" />
+
+        <div className="mt-12 text-center md:hidden">
+            <button onClick={() => onNavigate(Page.SERVICES)} className="inline-flex items-center text-sb-green-dark font-bold uppercase tracking-math-wide text-xs hover:text-black transition-colors border-b border-sb-green-dark pb-1">
+                Voir le catalogue complet <ArrowRight size={16} className="ml-2" />
              </button>
+        </div>
+      </Section>
+
+      {/* FINAL CTA - SCENARIO SELECTION - REFINED TIMELINE DESIGN */}
+      <Section bg="green" className="py-24 border-t border-sb-beige/10">
+        <div className="container mx-auto px-6 text-center">
+            <h2 className="font-serif text-subtitle md:text-[40px] text-white uppercase tracking-math-tight mb-8">
+                QUAND ALLEZ-VOUS SÉCURISER VOTRE AVENIR ?
+            </h2>
+            <div className="w-24 h-px bg-sb-beige mx-auto mb-20"></div>
+
+            <div className="grid md:grid-cols-3 gap-8 md:gap-0 max-w-6xl mx-auto mb-20 items-stretch">
+                
+                {/* OPTION A : REGRET */}
+                <div className="flex flex-col items-center justify-start p-8 border-r-0 md:border-r border-white/10 last:border-0">
+                    <div className="mb-8 text-[#C5A065]">
+                        <Calendar size={40} strokeWidth={1.5} />
+                    </div>
+                    <h3 className="font-serif text-2xl text-white mb-6 uppercase tracking-wide">
+                        Dans 6 mois...
+                    </h3>
+                    <p className="text-white font-sans text-lg font-light leading-relaxed max-w-xs mx-auto">
+                        Vous constaterez au bilan que le chiffre d'affaires a monté, mais pas la marge. Vous aurez travaillé deux fois plus pour le même résultat net.
+                    </p>
+                </div>
+
+                {/* OPTION B : RISQUE */}
+                <div className="flex flex-col items-center justify-start p-8 border-r-0 md:border-r border-white/10 last:border-0">
+                    <div className="mb-8 text-[#C5A065]">
+                        <AlertTriangle size={40} strokeWidth={1.5} />
+                    </div>
+                    <h3 className="font-serif text-2xl text-white mb-6 uppercase tracking-wide">
+                        La semaine prochaine...
+                    </h3>
+                    <p className="text-white font-sans text-lg font-light leading-relaxed max-w-xs mx-auto">
+                        Un incident qualité critique ou un retard de livraison majeur mettra en péril votre plus gros compte client. Vous serez en mode 'Pompier' au lieu de diriger.
+                    </p>
+                </div>
+
+                {/* OPTION C : ACTION (PREMIUM) */}
+                <div className="flex flex-col items-center justify-center p-10 bg-[#0A1F1C] border border-[#C5A065] rounded-[2px] relative z-10 shadow-[0_0_30px_rgba(197,160,101,0.15)] md:-my-6 md:scale-105 transform transition-transform">
+                    <div className="mb-8 text-[#C5A065]">
+                        <Zap size={48} fill="currentColor" strokeWidth={0} />
+                    </div>
+                    <h3 className="font-sans font-bold uppercase tracking-widest text-xl text-[#C5A065] mb-6">
+                        DÈS MAINTENANT
+                    </h3>
+                    <p className="text-white font-sans text-lg font-medium leading-relaxed max-w-xs mx-auto">
+                        Vous reprenez le contrôle. Nous lançons le diagnostic, identifions les fuites et structurons votre croissance. Vous dormez enfin l'esprit tranquille.
+                    </p>
+                </div>
+
+            </div>
+
+            <div className="flex flex-col items-center justify-center mt-20">
+                 <button 
+                    onClick={() => onNavigate(Page.CONTACT)}
+                    className="group relative inline-flex items-center justify-center px-10 py-5 bg-[#C5A065] text-sb-green-dark font-bold uppercase tracking-math-wide text-sm overflow-hidden transition-all duration-300 hover:bg-white hover:shadow-[0_0_30px_rgba(197,160,101,0.4)] rounded-[2px]"
+                >
+                    DÉMARRER LA TRANSFORMATION <ArrowRight size={20} className="ml-2 group-hover:translate-x-1 transition-transform" />
+                </button>
+                <p className="mt-4 font-sans text-white/80 text-sm font-light uppercase tracking-wide">
+                    Entretien de qualification (30 min) offert.
+                </p>
+            </div>
         </div>
       </Section>
     </>

@@ -12,111 +12,79 @@ export const NAV_ITEMS = [
 export const SERVICES: Service[] = [
   {
     id: 'audit-essentiel',
-    title: 'Audit Qualité Essentiel',
-    subtitle: 'Diagnostic & Impact',
-    duration: '1 journée',
-    description: 'Un audit ciblé et optimisé, concentré sur les points stratégiques de votre système qualité pour maximiser l’impact en une seule journée.',
+    title: 'AUDIT DE ROBUSTESSE',
+    subtitle: 'DIAGNOSTIC FLASH',
+    duration: '48 heures',
+    description: "L'intervention chirurgicale pour stopper vos pertes invisibles.",
     benefits: [
-      'Vision claire et immédiate de l’essentiel',
-      'Action efficace sur ce qui compte vraiment',
-      'Gain de temps opérationnel'
+      "Détection des pertes d'argent invisibles",
+      "Vision claire de vos zones de fragilité",
+      "Tri immédiat entre l'urgent et l'accessoire"
     ],
     deliverables: [
-      'Analyse des leviers de performance prioritaires',
-      'Synthèse claire et hiérarchisée',
-      'Plan d’actions opérationnel rapide à déployer'
+      "La liste des \"Points Rouges\" (Risques majeurs)",
+      "Repérage des freins qui ralentissent vos équipes",
+      "Plan de bataille : Quoi faire, Quand et le Budget"
     ],
-    image: 'https://picsum.photos/id/445/800/600'
-  },
-  {
-    id: 'atelier-sensibilisation',
-    title: 'Atelier de Sensibilisation',
-    subtitle: 'Culture & Engagement',
-    duration: '1/2 journée',
-    description: 'Un atelier court, dynamique et engageant pour ancrer la culture qualité et impliquer vos équipes dans la démarche d’amélioration continue.',
-    benefits: [
-      'Collaborateurs mobilisés',
-      'Conscience du rôle de chacun',
-      'Acteurs de la performance collective'
-    ],
-    deliverables: [
-      'Animation interactive et pédagogique',
-      'Supports pratiques et livret de synthèse',
-      'Messages adaptés à votre contexte terrain'
-    ],
-    image: 'https://picsum.photos/id/318/800/600'
+    image: 'https://image.pollinations.ai/prompt/macro%20shot%20luxury%20wrist%20watch%20mechanism%20on%20dark%20desk%20white%20thin%20technical%20circle%20overlay%20trigonometry%20golden%20ratio%20dark%20cinematic%20lighting%20photorealistic?nologo=true',
+    link: Page.OFFER_ROBUSTESSE
   },
   {
     id: 'accompagnement-mensuel',
-    title: 'Accompagnement Mensuel',
-    subtitle: 'Pilotage & Structure',
+    title: "PROGRAMME DE\nSTRUCTURATION\n& PERFORMANCE",
+    subtitle: 'MISE EN PLACE SMQ',
     duration: 'Forfait mensuel',
-    description: 'Un accompagnement continu, combinant pilotage stratégique, soutien opérationnel et suivi d’indicateurs pour structurer et faire vivre votre SMQ.',
+    description: "Transformez votre artisanat en industrie. Structurez pour durer.",
     benefits: [
-      'Démarche maîtrisée et durable',
-      'Conformité garantie',
-      'Performance du système qualité'
+      "Fin du chaos quotidien (Fluidité)",
+      "Votre savoir-faire ne dépend plus des hommes",
+      "On arrête de réinventer la roue chaque matin"
     ],
     deliverables: [
-      'Suivi régulier des plans d’action',
-      'Accompagnement aux audits internes et externes',
-      'Analyse et ajustement des indicateurs clés'
+      "Les \"Règles du Jeu\" écrites (Processus clairs)",
+      "Boîte à outils documentaire (Zéro paperasse inutile)",
+      "Tableaux de bord pour piloter sans aveuglement"
     ],
-    image: 'https://picsum.photos/id/5/800/600'
+    image: 'https://image.pollinations.ai/prompt/antique%20nautical%20compass%20on%20dark%20table%20white%20navigation%20geometry%20lines%20overlay%20golden%20spiral%20overlay%20cinematic%20dark%20green%20mood?nologo=true',
+    link: Page.OFFER_EXECUTION
   },
   {
     id: 'iso-9001',
-    title: 'Audit Complet & Certification',
-    subtitle: 'Excellence & ISO 9001',
-    duration: 'Sur mesure',
-    description: 'Un accompagnement global, de l’audit initial à la certification, avec une approche rigoureuse et personnalisée selon votre environnement.',
+    title: 'ARCHITECTURE & CERTIFICATION',
+    subtitle: 'ISO 9001',
+    duration: '6 à 9 mois',
+    description: "Le sésame pour changer de ligue. Devenez un fournisseur de rang 1.",
     benefits: [
-      'Certification maîtrisée',
-      'Système qualité solide',
-      'Service de la performance de l’entreprise'
+      "Accès aux marchés réservés aux \"Gros\"",
+      "Garantie de résultat (100% de réussite)",
+      "Valorisation immédiate de l'entreprise (Capital)"
     ],
     deliverables: [
-      'Diagnostic complet du SMQ',
-      'Plan de mise en conformité détaillé',
-      'Suivi jusqu’à l’obtention de la certification'
+      "Système Qualité clé en main (Manuel & Procédures)",
+      "Présence \"Bouclier\" le jour de l'audit officiel",
+      "Le Certificat ISO 9001 affiché au mur"
     ],
-    image: 'https://picsum.photos/id/60/800/600'
+    image: 'https://image.pollinations.ai/prompt/wax%20seal%20stamp%20certificate%20document%20dark%20mood%20lighting%20white%20grid%20proportions%20overlay%20technical%20drawing%20style%20macro%20photography?nologo=true',
+    link: Page.OFFER_ISO
   },
   {
     id: 'suivi-amelioration',
-    title: 'Suivi & Amélioration Continue',
-    subtitle: 'Pérennité & Performance',
-    duration: 'Forfait annuel',
-    description: 'Un pilotage durable pour maintenir l’efficacité et la dynamique de votre système qualité dans le temps.',
+    title: 'AUDIT BLANC ISO 9001',
+    subtitle: 'PRÉ-VALIDATION (2-5 JOURS)',
+    duration: '2 à 5 jours',
+    description: "Ne jouez pas votre certification aux dés. Testez, corrigez, réussissez.",
     benefits: [
-      'Amélioration continue mesurable',
-      'Ancrage des bonnes pratiques',
-      'Pérennité du système'
+      "Suppression du stress (Zéro surprise)",
+      "Élimination des \"Non-Conformités Majeures\"",
+      "Vos équipes sont entraînées à répondre"
     ],
     deliverables: [
-      'Animation des revues de direction',
-      'Suivi des indicateurs et non-conformités',
-      'Accompagnement actions correctives et préventives'
+      "Simulation d'audit ISO 9001 en conditions réelles",
+      "Liste des écarts normatifs (Pièges)",
+      "Plan de bataille immédiat (Actions Correctives)"
     ],
-    image: 'https://picsum.photos/id/436/800/600'
-  },
-  {
-    id: 'sur-mesure',
-    title: 'Prestations Sur Mesure',
-    subtitle: 'Agilité & Adaptation',
-    duration: 'À définir',
-    description: 'Des interventions personnalisées selon vos besoins spécifiques, qu’il s’agisse d’audits internes, de formations ou d’ajustements documentaires.',
-    benefits: [
-      'Réponse agile',
-      'Solution sur mesure',
-      'Alignement sur priorités opérationnelles'
-    ],
-    deliverables: [
-      'Contenu et format adaptés à vos enjeux',
-      'Intervention sur site ou à distance',
-      'Livrables concrets et exploitables immédiatement'
-    ],
-    image: 'https://picsum.photos/id/180/800/600'
+    image: 'https://image.pollinations.ai/prompt/abstract%20spiral%20staircase%20architecture%20infinite%20loop%20symbol%20fibonacci%20sequence%20overlay%20dark%20moody%20photography%20high%20contrast?nologo=true',
+    link: Page.OFFER_AUDIT
   }
 ];
 
@@ -137,20 +105,39 @@ export const TESTIMONIALS: Testimonial[] = [
   }
 ];
 
+// Les 3 Piliers de la Performance (Coût de l'inaction)
 export const VALUES = [
   {
-    icon: ShieldCheck,
-    title: "Exigence",
-    text: "La qualité ne tolère pas l'à-peu-près. Nous visons l'excellence dans chaque détail."
+    id: "01",
+    title: "IDENTIFICATION DES RISQUES",
+    text: "Le risque n'est pas que technique. C'est l'accumulation du **coût du retravail** (non-qualité), du **manque à gagner commercial** par défiance, et du **temps de direction perdu**. L'audit chiffre ces 3 fuites pour les stopper.",
+    verdictTitle: "1 110 000 € / AN",
+    verdictSubtitle: "Perte estimée pour une PME de 5M€ de CA",
+    verdictText: "",
+    link: Page.IMPACT_RISQUE,
+    color: "text-[#8A1C1C]", // Red Accent
+    buttonText: "VOIR L'ANALYSE DÉTAILLÉE →"
   },
   {
-    icon: Users,
-    title: "Humain",
-    text: "Les processus sont portés par des hommes et des femmes. Nous plaçons l'équipe au cœur de la démarche."
+    id: "02",
+    title: "STRUCTURATION DES PROCESSUS",
+    text: "L'absence de règles écrites coûte cher. Additionnez la **perte de productivité** (friction), le **coût de remplacement des experts** (savoir tribal) et le **CA refusé** faute de capacité (plafond de verre).",
+    verdictTitle: "890 000 € / AN",
+    verdictSubtitle: "Manque à gagner estimé pour une PME de 5M€ de CA",
+    verdictText: "",
+    link: Page.IMPACT_SYSTEME,
+    color: "text-[#8A1C1C]", // Red Accent
+    buttonText: "VOIR L'ANALYSE DÉTAILLÉE →"
   },
   {
-    icon: TrendingUp,
-    title: "Performance",
-    text: "La conformité doit servir la rentabilité et l'efficacité opérationnelle de votre structure."
+    id: "03",
+    title: "PILOTAGE PAR LA DATA",
+    text: "Piloter au feeling est un luxe. Entre les **salaires gaspillés** en reporting inutile, les **marges négatives** sur contrats toxiques et le **coût de l'inertie** : l'aveuglement détruit votre trésorerie.",
+    verdictTitle: "190 000 € / AN",
+    verdictSubtitle: "Perte sèche estimée pour une PME de 5M€ de CA",
+    verdictText: "",
+    link: Page.IMPACT_DATA,
+    color: "text-[#8A1C1C]", // Red Accent
+    buttonText: "VOIR L'ANALYSE DÉTAILLÉE →"
   }
 ];

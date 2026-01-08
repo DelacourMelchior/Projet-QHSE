@@ -16,7 +16,7 @@ const Section: React.FC<SectionProps> = ({ children, className = '', bg = 'cream
 
   return (
     <section className={`${bgClass} ${className}`}>
-      <div className={fullWidth ? '' : 'container mx-auto px-6 py-16 md:py-24'}>
+      <div className={fullWidth ? '' : 'container mx-auto px-6 py-fib-89 md:py-fib-89'}>
         {children}
       </div>
     </section>

@@ -5,6 +5,9 @@ import react from '@vitejs/plugin-react';
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
     return {
+      // AJOUTER CETTE LIGNE : Indique à GitHub que le site est à la racine du domaine
+      base: '/', 
+      
       server: {
         port: 3000,
         host: '0.0.0.0',
@@ -16,6 +19,7 @@ export default defineConfig(({ mode }) => {
       },
       resolve: {
         alias: {
+          // Permet d'utiliser @ dans votre code pour faire référence au dossier racine
           '@': path.resolve(__dirname, '.'),
         }
       }

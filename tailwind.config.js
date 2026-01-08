@@ -18,26 +18,23 @@ export default {
         sans: ['Montserrat', 'sans-serif'],
         serif: ['Playfair Display', 'serif'],
       },
+      // LISTE COMPLÈTE DES ESPACEMENTS FIBONACCI
       spacing: {
+        'fib-8': '8px',
+        'fib-13': '13px',
+        'fib-21': '21px',
+        'fib-34': '34px',
+        'fib-55': '55px',
         'fib-89': '89px',
         'fib-144': '144px',
+        'fib-233': '233px',
       },
+      // On les ajoute aussi pour les tailles de texte au cas où
       fontSize: {
-        'meta': '14px',
-        'xs': '14px',
-        'sm': '16px',
-        'base': '18px',
-        'body': '21px',
-        'h3-card': '24px',
-        'subtitle': '34px',
-        'title': '55px',
-        'hero-mobile': '55px',
-        'hero': '89px',
-      },
-      lineHeight: {
-        'phi': '1.618',
-        'loose': '1.75',
-        'tight-math': '1.1',
+        'fib-21': '21px',
+        'fib-34': '34px',
+        'fib-55': '55px',
+        'fib-89': '89px',
       }
     },
   },

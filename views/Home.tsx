@@ -3,16 +3,15 @@ import React from 'react';
 import Section from '../components/Section';
 import { VALUES, SERVICES } from '../constants';
 import { Page } from '../types';
-import { ArrowRight, Handshake, Settings, Compass, Calendar, AlertTriangle, Zap, Target, FileText, CheckCircle2, ChevronRight, Check } from 'lucide-react';
+import { ArrowRight, Handshake, Settings, Compass, Calendar, AlertTriangle, Zap, Target, FileText, CheckCircle2, Check } from 'lucide-react';
 
 interface HomeProps {
   onNavigate: (page: Page) => void;
 }
 
 const Home: React.FC<HomeProps> = ({ onNavigate }) => {
-  // Geometric shapes for the pillars section
   const getShape = (index: number) => {
-      if (index === 0) { // Target (Identification)
+      if (index === 0) {
           return (
              <svg width="40" height="40" viewBox="0 0 40 40" fill="none" className="text-sb-beige mb-6">
                 <circle cx="20" cy="20" r="18" stroke="currentColor" strokeWidth="2"/>
@@ -20,13 +19,13 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                 <circle cx="20" cy="20" r="3" fill="currentColor"/>
              </svg>
           );
-      } else if (index === 1) { // Hexagon (Structure) - Kept
+      } else if (index === 1) {
           return (
              <svg width="40" height="40" viewBox="0 0 40 40" fill="none" className="text-sb-beige mb-6">
                 <path d="M20 2L35.5885 11V29L20 38L4.41154 29V11L20 2Z" stroke="currentColor" strokeWidth="2"/>
              </svg>
           );
-      } else { // Bar Chart (Pilotage)
+      } else {
           return (
              <svg width="40" height="40" viewBox="0 0 40 40" fill="none" className="text-sb-beige mb-6">
                 <line x1="2" y1="38" x2="38" y2="38" stroke="currentColor" strokeWidth="2" strokeLinecap="square" />
@@ -38,7 +37,6 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
       }
   };
 
-  // Helper to parse text with bold markers (**text**)
   const parseBoldText = (text: string) => {
     const parts = text.split('**');
     return parts.map((part, index) => 
@@ -48,9 +46,8 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
 
   return (
     <>
-      {/* Hero Section - Luxe, Calme & Volupté */}
+      {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center bg-sb-green-dark overflow-hidden">
-        {/* Background - Dark & Cinematic */}
         <div className="absolute inset-0 z-0">
           <img 
             src="https://image.pollinations.ai/prompt/luxury%20executive%20office%20desk%20dark%20green%20aesthetic%20cinematic%20lighting%20golden%20ratio%20symmetry%20intricate%20details%20photorealistic%208k%20oxford%20green%20wall?nologo=true" 
@@ -58,112 +55,88 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
             className="w-full h-full object-cover opacity-30"
           />
           <div className="absolute inset-0 bg-sb-green-dark/80 mix-blend-multiply"></div>
-          {/* Subtle gradient from bottom to seamless transition */}
           <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-sb-green-dark to-transparent"></div>
         </div>
         
-        {/* Content - Perfectly Centered Pyramidal Layout */}
         <div className="container mx-auto px-6 relative z-10 flex flex-col items-center justify-center text-center pt-48 md:pt-64 pb-20">
-            
-            {/* Title - L'Axiome */}
-            <h1 className="font-serif text-5xl md:text-hero text-white leading-[1.1] tracking-math-tight mb-12 drop-shadow-2xl uppercase font-normal">
+            <h1 className="font-serif text-4xl sm:text-5xl md:text-hero text-white leading-[1.1] tracking-math-tight mb-12 drop-shadow-2xl uppercase font-normal">
               L'ORDRE PRÉCÈDE<br/>
               <span className="text-white">LA CROISSANCE</span>
             </h1>
             
-            {/* Subtitle - La Promesse - Fibonacci Body Size */}
-            <p className="text-body text-white/90 leading-loose max-w-2xl font-medium mb-0 tracking-wide font-sans">
+            <p className="text-lg md:text-body text-white/90 leading-loose max-w-2xl font-medium mb-0 tracking-wide font-sans">
               Faites de la rigueur votre premier avantage concurrentiel.<br/>
-              <span className="block mt-4 opacity-90 text-xl font-normal">Audit, Structuration & Performance. Nous convertissons vos contraintes opérationnelles en leviers de rentabilité, avec ou sans certification.</span>
+              <span className="block mt-4 opacity-90 text-xl font-normal">Audit, Structuration & Performance. Nous convertissons vos contraintes opérationnelles en leviers de rentabilité.</span>
             </p>
             
-            {/* The Silence (Gap) & Call to Action */}
             <div className="mt-24 w-full flex justify-center">
                 <button 
                 onClick={() => onNavigate(Page.CONTACT)}
-                className="group relative inline-flex items-center justify-center px-14 py-6 bg-sb-beige text-sb-green-dark font-bold uppercase tracking-math-wide text-sm overflow-hidden transition-all duration-300 hover:bg-white hover:shadow-[0_0_30px_rgba(240,234,214,0.3)] rounded-[2px]"
+                className="group relative inline-flex items-center justify-center px-10 md:px-14 py-5 md:py-6 bg-sb-beige text-sb-green-dark font-bold uppercase tracking-math-wide text-xs md:text-sm overflow-hidden transition-all duration-300 hover:bg-white hover:shadow-[0_0_30px_rgba(240,234,214,0.3)] rounded-[2px]"
                 >
                     <span className="relative z-10">PARLER DE VOS ENJEUX</span>
                 </button>
             </div>
-
         </div>
       </section>
 
-      {/* DIAGNOSTIC / IDENTIFICATION - Le Mur de la Complexité */}
+      {/* DIAGNOSTIC */}
       <section className="bg-[#F8F9FA] py-fib-144 text-center border-b border-sb-green-dark/5">
         <div className="container mx-auto px-6">
-            {/* Title */}
-            <h2 className="font-serif text-[45px] text-sb-green-dark uppercase leading-tight tracking-math-tight mb-8">
+            <h2 className="font-serif text-3xl md:text-[45px] text-sb-green-dark uppercase leading-tight tracking-math-tight mb-8">
                 LE MUR DE LA COMPLEXITÉ
             </h2>
-
-            {/* Separator - Gold Line */}
             <div className="w-20 h-px bg-sb-green-dark/20 mx-auto mb-10"></div>
-
-            {/* Introduction Text */}
-            <p className="text-body text-sb-green-dark font-normal leading-loose max-w-[800px] mx-auto font-sans mb-16">
-                Vous êtes à un point de bascule. Soit votre croissance crée du chaos, soit vos donneurs d'ordres exigent des garanties de structuration pour continuer à vous suivre. Vos méthodes 'artisanales', qui ont fait votre succès, deviennent aujourd'hui votre principal risque.
+            <p className="text-lg md:text-body text-sb-green-dark font-normal leading-loose max-w-[800px] mx-auto font-sans mb-16">
+                Vous êtes à un point de bascule. Soit votre croissance crée du chaos, soit vos donneurs d'ordres exigent des garanties de structuration. Vos méthodes deviennent aujourd'hui votre principal risque.
             </p>
 
-            {/* 3 Columns Grid */}
             <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto mb-16">
-                
-                {/* Column 1: Commercial Risk */}
-                <div className="bg-white p-10 border border-sb-green-dark/5 rounded-[2px] shadow-sm hover:shadow-lg transition-all duration-300 group">
-                    {/* Outline Icon - No Background */}
+                <div className="bg-white p-8 md:p-10 border border-sb-green-dark/5 rounded-[2px] shadow-sm hover:shadow-lg transition-all duration-300 group">
                     <div className="mb-8 flex justify-center">
                         <Handshake size={48} strokeWidth={1} className="text-sb-green-dark group-hover:text-[#C5A065] transition-colors duration-300" />
                     </div>
-                    
                     <h3 className="font-serif font-bold uppercase tracking-wide text-lg mb-6 text-sb-green-dark">
                         VOS CLIENTS DOUTENT-ILS ?
                     </h3>
                     <p className="text-sb-green-dark/80 leading-loose font-medium font-sans text-left md:text-center text-sm md:text-base">
-                        Sentez-vous une résistance lors des négociations ? Vos donneurs d'ordres exigent-ils désormais des preuves de structuration (ISO, Audit) pour continuer à vous suivre ?
+                        Sentez-vous une résistance lors des négociations ? Vos donneurs d'ordres exigent-ils désormais des preuves de structuration pour continuer à vous suivre ?
                     </p>
                 </div>
 
-                {/* Column 2: Operational Risk */}
-                <div className="bg-white p-10 border border-sb-green-dark/5 rounded-[2px] shadow-sm hover:shadow-lg transition-all duration-300 group">
-                    {/* Outline Icon - No Background */}
+                <div className="bg-white p-8 md:p-10 border border-sb-green-dark/5 rounded-[2px] shadow-sm hover:shadow-lg transition-all duration-300 group">
                     <div className="mb-8 flex justify-center">
                         <Settings size={48} strokeWidth={1} className="text-sb-green-dark group-hover:text-[#C5A065] transition-colors duration-300" />
                     </div>
-
                     <h3 className="font-serif font-bold uppercase tracking-wide text-lg mb-6 text-sb-green-dark">
                         ET SI LA CHARGE DOUBLE ?
                     </h3>
                     <p className="text-sb-green-dark/80 leading-loose font-medium font-sans text-left md:text-center text-sm md:text-base">
-                        Si demain la demande explose, votre organisation tient-elle le choc ou explose-t-elle ? Votre croissance actuelle génère-t-elle de la rentabilité ou juste de la désorganisation ?
+                        Si demain la demande explose, votre organisation tient-elle le choc ? Votre croissance génère-t-elle de la rentabilité ou juste de la désorganisation ?
                     </p>
                 </div>
 
-                {/* Column 3: Decision Risk */}
-                <div className="bg-white p-10 border border-sb-green-dark/5 rounded-[2px] shadow-sm hover:shadow-lg transition-all duration-300 group">
-                    {/* Outline Icon - No Background */}
+                <div className="bg-white p-8 md:p-10 border border-sb-green-dark/5 rounded-[2px] shadow-sm hover:shadow-lg transition-all duration-300 group">
                     <div className="mb-8 flex justify-center">
                         <Compass size={48} strokeWidth={1} className="text-sb-green-dark group-hover:text-[#C5A065] transition-colors duration-300" />
                     </div>
-
                     <h3 className="font-serif font-bold uppercase tracking-wide text-lg mb-6 text-sb-green-dark">
                         PILOTEZ-VOUS À L'AVEUGLE ?
                     </h3>
                     <p className="text-sb-green-dark/80 leading-loose font-medium font-sans text-left md:text-center text-sm md:text-base">
-                        Savez-vous précisément quels dossiers financent les autres ? Ou prenez-vous vos décisions stratégiques au 'feeling' par manque de données fiables ?
+                        Savez-vous précisément quels dossiers financent les autres ? Ou prenez-vous vos décisions au 'feeling' par manque de données fiables ?
                     </p>
                 </div>
             </div>
 
-            {/* CTA Transition - UPDATED */}
             <div className="max-w-4xl mx-auto border-t border-sb-green-dark/10 pt-16">
-                <p className="font-serif text-3xl md:text-4xl text-sb-green-dark leading-tight mb-12">
-                    Si vous répondez <span className="font-bold text-[#8A1C1C]">OUI</span> à l'une de ces questions, votre 'Plafond de Verre' est atteint.<br/>
+                <p className="font-serif text-2xl md:text-4xl text-sb-green-dark leading-tight mb-12">
+                    Si vous répondez <span className="font-bold text-[#8A1C1C]">OUI</span> à l'une de ces questions, votre 'Plafond de Verre' est atteint.<br className="hidden md:block" />
                     Voyons comment le briser ensemble.
                 </p>
                 <button 
                     onClick={() => onNavigate(Page.CONTACT)}
-                    className="group relative inline-flex items-center justify-center px-10 py-5 bg-[#C5A065] text-[#0A1F1C] font-bold uppercase tracking-math-wide text-sm transition-all duration-300 hover:bg-white hover:text-[#C5A065] shadow-lg hover:shadow-xl rounded-[2px] border border-transparent hover:border-[#C5A065]"
+                    className="group relative inline-flex items-center justify-center px-8 md:px-10 py-5 bg-[#C5A065] text-[#0A1F1C] font-bold uppercase tracking-math-wide text-xs md:text-sm transition-all duration-300 hover:bg-white hover:text-[#C5A065] shadow-lg hover:shadow-xl rounded-[2px] border border-transparent hover:border-[#C5A065]"
                 >
                     BRISER CE PLAFOND DE VERRE <ArrowRight size={20} className="ml-2 group-hover:translate-x-1 transition-transform" />
                 </button>
@@ -171,57 +144,49 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
         </div>
       </section>
 
-      {/* METHODOLOGY - LES 3 PILIERS DE LA PERFORMANCE */}
+      {/* METHODOLOGY - LES 3 PILIERS */}
       <Section bg="green" className="py-fib-144">
-        
-        {/* Section Header */}
         <div className="text-center mb-24 max-w-4xl mx-auto">
-            <h2 className="font-serif text-subtitle md:text-[45px] text-white uppercase tracking-math-tight mb-6">
+            <h2 className="font-serif text-3xl md:text-[45px] text-white uppercase tracking-math-tight mb-6">
                 LES 3 PILIERS DE VOTRE PERFORMANCE
             </h2>
             <div className="w-16 h-px bg-sb-beige mx-auto mb-8"></div>
-            <p className="text-body text-white/90 font-medium leading-loose font-sans">
-                La performance n'est pas un hasard, c'est une architecture. Négliger un seul de ces piliers fragilise l'ensemble de l'édifice.
+            <p className="text-lg md:text-body text-white/90 font-medium leading-loose font-sans">
+                La performance n'est pas un hasard, c'est une architecture.
             </p>
         </div>
 
-        {/* The 3 Cards - Pillars */}
         <div className="grid md:grid-cols-3 gap-8">
           {VALUES.map((value: any, index) => (
             <div key={index} className="group relative bg-[#1C2B29] border-t border-sb-beige p-8 lg:p-10 h-full hover:bg-[#233533] transition-colors duration-500 rounded-[2px] flex flex-col">
-              
-              {/* Content */}
               <div className="relative z-10 text-left flex-grow">
-                  {/* Geometric Icon */}
                   <div className="transform transition-transform duration-500 group-hover:-translate-y-1">
                       {getShape(index)}
                   </div>
 
-                  <h3 className="font-serif text-xl lg:text-h3-card text-white tracking-normal lg:tracking-widest uppercase mb-6 font-bold leading-tight break-words">
+                  {/* TYPOGRAPHY FIX: Adjusted tracking and size for tablet screens to prevent word breaks */}
+                  <h3 className="font-serif text-lg md:text-xl xl:text-h3-card text-white tracking-normal md:tracking-normal xl:tracking-widest uppercase mb-6 font-bold leading-tight break-normal">
                     {value.title}
                   </h3>
                   
-                  {/* Discrete Description - Font Weight Regular for Readability */}
-                  <p className="font-sans text-base text-white/70 leading-relaxed font-normal mb-12 italic">
+                  <p className="font-sans text-sm md:text-base text-white/70 leading-relaxed font-normal mb-12 italic">
                     {parseBoldText(value.text)}
                   </p>
               </div>
 
-              {/* Financial Verdict - Visually Dominant */}
               <div className="mt-auto pt-8 border-t border-white/10 relative z-10">
-                  <p className={`font-serif text-4xl md:text-5xl font-bold tracking-tight uppercase mb-2 leading-none ${value.color || 'text-[#8A1C1C]'}`}>
+                  <p className={`font-serif text-3xl md:text-4xl xl:text-5xl font-bold tracking-tight uppercase mb-2 leading-none ${value.color || 'text-[#8A1C1C]'}`}>
                     {value.verdictTitle}
                   </p>
                   {value.verdictSubtitle && (
-                    <p className="font-serif text-sm italic text-white/50 mb-8 font-light">
+                    <p className="font-serif text-xs md:text-sm italic text-white/50 mb-8 font-light">
                         {value.verdictSubtitle}
                     </p>
                   )}
                   
-                  {/* Detail Button - Uniform & Strict - GOLD COLOR */}
                   <button 
                     onClick={() => onNavigate(value.link)}
-                    className="w-full text-center py-4 border border-[#C5A065] text-[#C5A065] font-bold uppercase tracking-math-wide text-xs transition-all duration-300 rounded-[2px] hover:bg-[#C5A065] hover:text-sb-green-dark"
+                    className="w-full text-center py-4 border border-[#C5A065] text-[#C5A065] font-bold uppercase tracking-math-wide text-[10px] md:text-xs transition-all duration-300 rounded-[2px] hover:bg-[#C5A065] hover:text-sb-green-dark"
                   >
                       {value.buttonText}
                   </button>
@@ -231,55 +196,48 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
         </div>
       </Section>
 
-      {/* Services Preview - NEW DESIGN: LIGHT & HIGH CONTRAST */}
+      {/* Services Preview */}
       <Section bg="cream" className="pb-fib-144 border-t border-sb-green-dark/10">
-        
         <div className="flex flex-col md:flex-row justify-between items-end mb-20">
              <div>
-                <h2 className="font-serif text-subtitle md:text-title text-sb-green-dark mb-4 tracking-math-tight">NOS PRESTATIONS</h2>
-                <p className="text-sb-green-dark font-bold uppercase tracking-math-wide text-sm">Catalogue d'Interventions</p>
+                <h2 className="font-serif text-3xl md:text-title text-sb-green-dark mb-4 tracking-math-tight">NOS PRESTATIONS</h2>
+                <p className="text-sb-green-dark font-bold uppercase tracking-math-wide text-xs md:text-sm">Catalogue d'Interventions</p>
              </div>
              <button onClick={() => onNavigate(Page.SERVICES)} className="hidden md:flex items-center text-sb-green-dark font-bold uppercase tracking-math-wide text-xs hover:text-sb-green-light transition-colors mt-4 md:mt-0 pb-2 border-b border-transparent hover:border-sb-green-dark">
                 Voir le catalogue complet <ArrowRight size={16} className="ml-2" />
              </button>
         </div>
        
-        {/* LIGHT THEME CARDS - 2 COLUMN LAYOUT */}
         <div className="grid grid-cols-1 gap-12">
           {SERVICES.map((service, index) => (
             <div key={service.id} className="bg-white border border-sb-green-dark/10 rounded-[2px] overflow-hidden group hover:border-sb-green-dark/30 hover:shadow-lg transition-all duration-300">
                 <div className="grid md:grid-cols-12 gap-0">
-                    
-                    {/* Header Side (Title & Quote) - LIGHTER BEIGE BG */}
-                    <div className="md:col-span-4 p-10 bg-[#F7F7F4] flex flex-col justify-between border-b md:border-b-0 md:border-r border-sb-green-dark/5">
+                    <div className="md:col-span-4 p-8 md:p-10 bg-[#F7F7F4] flex flex-col justify-between border-b md:border-b-0 md:border-r border-sb-green-dark/5">
                         <div>
                              <span className="inline-block text-[10px] font-bold uppercase tracking-math-wide text-sb-green-dark border border-sb-green-dark/20 px-3 py-1 rounded-[2px] mb-6">
                                 {service.subtitle}
                              </span>
-                             <h4 className="font-serif text-3xl font-bold text-sb-green-dark mb-6 leading-tight tracking-tight whitespace-pre-line">
+                             <h4 className="font-serif text-2xl md:text-3xl font-bold text-sb-green-dark mb-6 leading-tight tracking-tight whitespace-pre-line">
                                 {service.title}
                              </h4>
-                             <p className="font-serif text-lg text-sb-green-dark/80 italic leading-relaxed">
+                             <p className="font-serif text-base md:text-lg text-sb-green-dark/80 italic leading-relaxed">
                                 "{service.description}"
                              </p>
                         </div>
                         <div className="mt-8">
                              <button 
                                 onClick={() => service.link && onNavigate(service.link)}
-                                className="w-full bg-sb-green-dark text-sb-beige font-bold uppercase tracking-math-wide text-xs px-6 py-4 rounded-[2px] hover:bg-black transition-colors flex items-center justify-center group-hover:shadow-md"
+                                className="w-full bg-sb-green-dark text-sb-beige font-bold uppercase tracking-math-wide text-[10px] md:text-xs px-6 py-4 rounded-[2px] hover:bg-black transition-colors flex items-center justify-center group-hover:shadow-md"
                             >
                                 EXPLORER CE MODULE <ArrowRight size={16} className="ml-2" />
                             </button>
                         </div>
                     </div>
 
-                    {/* Content Side (Benefits & Deliverables) - WHITE BG */}
-                    <div className="md:col-span-8 p-10 bg-white">
-                        <div className="grid md:grid-cols-2 gap-12">
-                            
-                            {/* Benefits Column */}
+                    <div className="md:col-span-8 p-8 md:p-10 bg-white">
+                        <div className="grid sm:grid-cols-2 gap-12">
                             <div>
-                                <h5 className="flex items-center gap-2 text-sb-green-dark font-bold uppercase tracking-math-wide text-xs mb-6 pb-2 border-b border-sb-green-dark/10">
+                                <h5 className="flex items-center gap-2 text-sb-green-dark font-bold uppercase tracking-math-wide text-[10px] md:text-xs mb-6 pb-2 border-b border-sb-green-dark/10">
                                     <Target size={16} /> BÉNÉFICES FINANCIERS
                                 </h5>
                                 <ul className="space-y-4">
@@ -293,10 +251,8 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                                     ))}
                                 </ul>
                             </div>
-
-                            {/* Deliverables Column */}
                             <div>
-                                <h5 className="flex items-center gap-2 text-sb-green-dark font-bold uppercase tracking-math-wide text-xs mb-6 pb-2 border-b border-sb-green-dark/10">
+                                <h5 className="flex items-center gap-2 text-sb-green-dark font-bold uppercase tracking-math-wide text-[10px] md:text-xs mb-6 pb-2 border-b border-sb-green-dark/10">
                                     <FileText size={16} /> LIVRABLES CONCRETS
                                 </h5>
                                 <ul className="space-y-4">
@@ -310,33 +266,29 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                                     ))}
                                 </ul>
                             </div>
-
                         </div>
                     </div>
-
                 </div>
             </div>
           ))}
         </div>
 
         <div className="mt-12 text-center md:hidden">
-            <button onClick={() => onNavigate(Page.SERVICES)} className="inline-flex items-center text-sb-green-dark font-bold uppercase tracking-math-wide text-xs hover:text-black transition-colors border-b border-sb-green-dark pb-1">
+            <button onClick={() => onNavigate(Page.SERVICES)} className="inline-flex items-center text-sb-green-dark font-bold uppercase tracking-math-wide text-[10px] hover:text-black transition-colors border-b border-sb-green-dark pb-1">
                 Voir le catalogue complet <ArrowRight size={16} className="ml-2" />
              </button>
         </div>
       </Section>
 
-      {/* FINAL CTA - SCENARIO SELECTION - REFINED TIMELINE DESIGN */}
+      {/* FINAL CTA */}
       <Section bg="green" className="py-24 border-t border-sb-beige/10">
         <div className="container mx-auto px-6 text-center">
-            <h2 className="font-serif text-subtitle md:text-[40px] text-white uppercase tracking-math-tight mb-8">
+            <h2 className="font-serif text-3xl md:text-[40px] text-white uppercase tracking-math-tight mb-8">
                 QUAND ALLEZ-VOUS SÉCURISER VOTRE AVENIR ?
             </h2>
             <div className="w-24 h-px bg-sb-beige mx-auto mb-20"></div>
 
-            <div className="grid md:grid-cols-3 gap-8 md:gap-0 max-w-6xl mx-auto mb-20 items-stretch">
-                
-                {/* OPTION A : REGRET */}
+            <div className="grid md:grid-cols-3 gap-12 md:gap-0 max-w-6xl mx-auto mb-20 items-stretch">
                 <div className="flex flex-col items-center justify-start p-8 border-r-0 md:border-r border-white/10 last:border-0">
                     <div className="mb-8 text-[#C5A065]">
                         <Calendar size={40} strokeWidth={1.5} />
@@ -349,7 +301,6 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                     </p>
                 </div>
 
-                {/* OPTION B : RISQUE */}
                 <div className="flex flex-col items-center justify-start p-8 border-r-0 md:border-r border-white/10 last:border-0">
                     <div className="mb-8 text-[#C5A065]">
                         <AlertTriangle size={40} strokeWidth={1.5} />
@@ -358,11 +309,10 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                         La semaine prochaine...
                     </h3>
                     <p className="text-white font-sans text-lg font-light leading-relaxed max-w-xs mx-auto">
-                        Un incident qualité critique ou un retard de livraison majeur mettra en péril votre plus gros compte client. Vous serez en mode 'Pompier' au lieu de diriger.
+                        Un incident qualité critique ou un retard majeur mettra en péril votre plus gros client. Vous serez en mode 'Pompier'.
                     </p>
                 </div>
 
-                {/* OPTION C : ACTION (PREMIUM) */}
                 <div className="flex flex-col items-center justify-center p-10 bg-[#0A1F1C] border border-[#C5A065] rounded-[2px] relative z-10 shadow-[0_0_30px_rgba(197,160,101,0.15)] md:-my-6 md:scale-105 transform transition-transform">
                     <div className="mb-8 text-[#C5A065]">
                         <Zap size={48} fill="currentColor" strokeWidth={0} />
@@ -371,20 +321,19 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                         DÈS MAINTENANT
                     </h3>
                     <p className="text-white font-sans text-lg font-medium leading-relaxed max-w-xs mx-auto">
-                        Vous reprenez le contrôle. Nous lançons le diagnostic, identifions les fuites et structurons votre croissance. Vous dormez enfin l'esprit tranquille.
+                        Vous reprenez le contrôle. Nous identifions les fuites et structurons votre croissance. Vous dormez enfin l'esprit tranquille.
                     </p>
                 </div>
-
             </div>
 
             <div className="flex flex-col items-center justify-center mt-20">
                  <button 
                     onClick={() => onNavigate(Page.CONTACT)}
-                    className="group relative inline-flex items-center justify-center px-10 py-5 bg-[#C5A065] text-sb-green-dark font-bold uppercase tracking-math-wide text-sm overflow-hidden transition-all duration-300 hover:bg-white hover:shadow-[0_0_30px_rgba(197,160,101,0.4)] rounded-[2px]"
+                    className="group relative inline-flex items-center justify-center px-8 md:px-10 py-5 bg-[#C5A065] text-sb-green-dark font-bold uppercase tracking-math-wide text-xs md:text-sm overflow-hidden transition-all duration-300 hover:bg-white hover:shadow-[0_0_30px_rgba(197,160,101,0.4)] rounded-[2px]"
                 >
                     DÉMARRER LA TRANSFORMATION <ArrowRight size={20} className="ml-2 group-hover:translate-x-1 transition-transform" />
-                </button>
-                <p className="mt-4 font-sans text-white/80 text-sm font-light uppercase tracking-wide">
+                 </button>
+                <p className="mt-4 font-sans text-white/80 text-xs md:text-sm font-light uppercase tracking-wide">
                     Entretien de qualification (30 min) offert.
                 </p>
             </div>

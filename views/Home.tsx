@@ -188,7 +188,7 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
         {/* The 3 Cards - Pillars */}
         <div className="grid md:grid-cols-3 gap-8">
           {VALUES.map((value: any, index) => (
-            <div key={index} className="group relative bg-[#1C2B29] border-t border-sb-beige p-10 h-full hover:bg-[#233533] transition-colors duration-500 rounded-[2px] flex flex-col">
+            <div key={index} className="group relative bg-[#1C2B29] border-t border-sb-beige p-8 lg:p-10 h-full hover:bg-[#233533] transition-colors duration-500 rounded-[2px] flex flex-col">
               
               {/* Content */}
               <div className="relative z-10 text-left flex-grow">
@@ -197,7 +197,7 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                       {getShape(index)}
                   </div>
 
-                  <h3 className="font-serif text-h3-card text-white tracking-widest uppercase mb-6 font-bold">
+                  <h3 className="font-serif text-xl lg:text-h3-card text-white tracking-normal lg:tracking-widest uppercase mb-6 font-bold leading-tight break-words">
                     {value.title}
                   </h3>
                   

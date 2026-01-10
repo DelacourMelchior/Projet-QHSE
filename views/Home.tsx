@@ -68,7 +68,7 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
             {/* Title - L'Axiome */}
             <h1 className="font-serif text-5xl md:text-hero text-white leading-[1.1] tracking-math-tight mb-12 drop-shadow-2xl uppercase font-normal">
               L'ORDRE PRÉCÈDE<br/>
-              <span className="text-white">LA CROISSANCE.</span>
+              <span className="text-white">LA CROISSANCE</span>
             </h1>
             
             {/* Subtitle - La Promesse - Fibonacci Body Size */}
@@ -95,7 +95,7 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
         <div className="container mx-auto px-6">
             {/* Title */}
             <h2 className="font-serif text-[45px] text-sb-green-dark uppercase leading-tight tracking-math-tight mb-8">
-                LE MUR DE LA COMPLEXITÉ.
+                LE MUR DE LA COMPLEXITÉ
             </h2>
 
             {/* Separator - Gold Line */}
@@ -209,7 +209,7 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
 
               {/* Financial Verdict - Visually Dominant */}
               <div className="mt-auto pt-8 border-t border-white/10 relative z-10">
-                  <p className={`font-serif text-4xl md:text-5xl font-bold tracking-tight uppercase mb-2 leading-none ${value.color || 'text-[#C5A065]'}`}>
+                  <p className={`font-serif text-4xl md:text-5xl font-bold tracking-tight uppercase mb-2 leading-none ${value.color || 'text-[#8A1C1C]'}`}>
                     {value.verdictTitle}
                   </p>
                   {value.verdictSubtitle && (

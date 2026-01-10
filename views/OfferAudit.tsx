@@ -1,9 +1,8 @@
 
-
 import React from 'react';
 import Section from '../components/Section';
 import { Page } from '../types';
-import { AlertOctagon, Timer, Search, Siren, ClipboardCheck, FileCheck } from 'lucide-react';
+import { AlertOctagon, Timer, Search, Siren, FileCheck, ArrowRight } from 'lucide-react';
 
 interface OfferAuditProps {
   onNavigate: (page: Page) => void;
@@ -159,40 +158,17 @@ const OfferAudit: React.FC<OfferAuditProps> = ({ onNavigate }) => {
         </div>
       </Section>
 
-      {/* 4. SECTION OFFRE (LIVRABLE) */}
-      <Section bg="cream" className="pb-fib-144 pt-24">
-        <div className="max-w-4xl mx-auto">
-            <div className="bg-[#0A1210] p-12 md:p-16 border border-sb-beige/30 relative overflow-hidden rounded-[2px] text-center">
-                {/* Decorative Pattern */}
-                <div className="absolute top-0 left-0 w-24 h-24 border-t-2 border-l-2 border-sb-beige/20"></div>
-                <div className="absolute bottom-0 right-0 w-24 h-24 border-b-2 border-r-2 border-sb-beige/20"></div>
-                
-                <div className="relative z-10">
-                    <div className="inline-flex items-center justify-center w-16 h-16 bg-sb-beige rounded-full mb-8 text-sb-green-dark">
-                        <ClipboardCheck size={32} />
-                    </div>
-                    <h2 className="font-serif text-3xl md:text-4xl text-sb-beige mb-6 uppercase tracking-widest">Pack Sérénité Certification</h2>
-                    <div className="w-20 h-px bg-sb-beige/50 mx-auto mb-8"></div>
-                    <p className="text-white/90 text-body font-light leading-phi max-w-2xl mx-auto mb-8">
-                        Transformez l'incertitude en garantie de résultat.<br/>
-                        <span className="opacity-80">Inclus : Audit + Rapport + Plan d'actions.</span>
-                    </p>
-                    
-                    <div className="bg-white/5 border border-sb-beige/20 p-6 rounded-[2px] mb-10 max-w-lg mx-auto">
-                        <p className="text-sb-beige text-lg font-serif italic">
-                            Tarif Forfaitaire : 3 100 € HT
-                        </p>
-                    </div>
-                    
-                    <button 
-                        onClick={() => onNavigate(Page.CONTACT)}
-                        className="bg-sb-beige text-sb-green-dark px-10 py-4 font-bold uppercase tracking-math-wide rounded-[2px] hover:bg-white transition-all duration-300"
-                    >
-                        Réserver ma date
-                    </button>
-                </div>
-            </div>
-        </div>
+      {/* 4. FINAL CTA */}
+      <Section bg="cream" className="py-24 text-center border-t border-sb-green-dark/10">
+        <h2 className="font-serif text-3xl md:text-4xl text-sb-green-dark mb-10 uppercase tracking-tight">
+            Prêt pour votre répétition générale ?
+        </h2>
+        <button 
+            onClick={() => onNavigate(Page.CONTACT)}
+            className="group inline-flex items-center justify-center px-10 py-5 bg-[#C5A065] text-sb-green-dark font-bold uppercase tracking-math-wide text-sm rounded-[2px] hover:bg-sb-green-dark hover:text-white transition-all shadow-lg"
+        >
+            RÉSERVER MON AUDIT BLANC <ArrowRight size={18} className="ml-3 group-hover:translate-x-1 transition-transform" />
+        </button>
       </Section>
     </>
   );

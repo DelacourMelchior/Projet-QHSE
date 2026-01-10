@@ -1,147 +1,249 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import Section from '../components/Section';
-import { Calendar, Clock, ChevronDown } from 'lucide-react';
+import { Mail, Send, Clock, Phone, CheckCircle2, Loader2 } from 'lucide-react';
 
 const Contact: React.FC = () => {
+  const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    company: '',
+    function: '',
+    message: ''
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setStatus('submitting');
+
+    try {
+      // Utilisation de Formspree pour l'envoi direct par mail
+      const response = await fetch('https://formspree.io/f/delacour.melchior@cabinetdelacour.com', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          ...formData,
+          _subject: `Nouveau Diagnostic de Faisabilité - ${formData.company}`
+        })
+      });
+
+      if (response.ok) {
+        setStatus('success');
+      } else {
+        setStatus('error');
+      }
+    } catch (error) {
+      setStatus('error');
+    }
+  };
+
+  if (status === 'success') {
+    return (
+      <Section bg="cream" className="py-32 md:py-48 min-h-screen flex items-center">
+        <div className="max-w-3xl mx-auto text-center px-6 animate-in fade-in zoom-in duration-700">
+            <div className="w-20 h-20 bg-sb-green-dark text-sb-beige flex items-center justify-center rounded-full mx-auto mb-10 shadow-xl">
+                <CheckCircle2 size={40} />
+            </div>
+            <h1 className="font-serif text-4xl md:text-5xl text-sb-green-dark mb-6 uppercase tracking-tight">
+                DEMANDE BIEN REÇUE.
+            </h1>
+            <div className="w-16 h-px bg-[#C5A065] mx-auto mb-10"></div>
+            <p className="text-xl text-sb-green-dark/80 font-light leading-relaxed mb-12">
+                Merci, M. {formData.name.split(' ')[0]}. Votre demande de diagnostic de faisabilité a été transmise au cabinet. 
+                <br /><br />
+                Je reviendrai vers vous personnellement sous <span className="font-bold border-b border-[#C5A065]">24 heures</span> pour convenir de notre créneau d'échange téléphonique de 30 minutes.
+            </p>
+            <button 
+                onClick={() => window.location.reload()}
+                className="text-xs font-bold uppercase tracking-widest text-sb-green-dark/40 hover:text-sb-green-dark transition-colors"
+            >
+                Retour au formulaire
+            </button>
+        </div>
+      </Section>
+    );
+  }
+
   return (
     <>
       <Section bg="cream" className="py-32 md:py-48 min-h-screen">
         
         {/* HEADER */}
-        <div className="max-w-4xl mx-auto text-center mb-16 px-6">
-             <h1 className="font-serif text-hero-mobile md:text-hero text-sb-green-dark mb-6 tracking-math-tight">
+        <div className="max-w-4xl mx-auto text-center mb-24 px-6">
+             <h1 className="font-serif text-hero-mobile md:text-hero text-sb-green-dark mb-6 tracking-math-tight uppercase">
                 PARLONS STRATÉGIE.
              </h1>
              <div className="w-24 h-px bg-sb-green-dark mx-auto mb-8"></div>
              <p className="text-body text-sb-green-dark/80 font-light leading-relaxed max-w-2xl mx-auto">
-                Cet échange de 30 minutes est un diagnostic de faisabilité. Vérifions ensemble si votre structure est prête pour l'accélération.
+                Demandez votre diagnostic de faisabilité offert. Un échange stratégique de 30 minutes pour évaluer le potentiel de structuration de votre organisation.
              </p>
         </div>
 
-        {/* FORMULAIRE - STYLE PAPIER OFFICIEL */}
-        <div className="max-w-5xl mx-auto px-6">
-            <div className="bg-white p-8 md:p-14 shadow-[0_10px_40px_rgba(0,0,0,0.05)] border border-gray-200 rounded-[2px]">
+        <div className="max-w-6xl mx-auto px-6">
+            <div className="grid md:grid-cols-3 gap-16">
                 
-                <form className="space-y-12" onSubmit={(e) => e.preventDefault()}>
-                    
-                    {/* BLOC A : IDENTITÉ */}
-                    <div className="space-y-8">
-                        <h3 className="text-xs font-bold uppercase tracking-math-wide text-sb-green-dark border-b border-gray-100 pb-2">01. Identité</h3>
-                        <div className="grid md:grid-cols-2 gap-8">
-                            <div className="space-y-6">
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold uppercase tracking-wide text-gray-500">Prénom & Nom</label>
-                                    <input type="text" className="w-full border border-gray-300 px-4 py-3 text-sb-green-dark focus:border-sb-green-dark outline-none rounded-[2px] transition-colors" placeholder="Jean Dupont" />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold uppercase tracking-wide text-gray-500">Entreprise</label>
-                                    <input type="text" className="w-full border border-gray-300 px-4 py-3 text-sb-green-dark focus:border-sb-green-dark outline-none rounded-[2px] transition-colors" placeholder="Nom de votre société" />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold uppercase tracking-wide text-gray-500">Email Professionnel</label>
-                                    <input type="email" className="w-full border border-gray-300 px-4 py-3 text-sb-green-dark focus:border-sb-green-dark outline-none rounded-[2px] transition-colors" placeholder="jean.dupont@entreprise.com" />
-                                </div>
-                            </div>
-                            <div className="space-y-6">
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold uppercase tracking-wide text-gray-500">Fonction</label>
-                                    <input type="text" className="w-full border border-gray-300 px-4 py-3 text-sb-green-dark focus:border-sb-green-dark outline-none rounded-[2px] transition-colors" placeholder="Directeur Général, Responsable QSE..." />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold uppercase tracking-wide text-gray-500">Téléphone Direct</label>
-                                    <input type="tel" className="w-full border border-gray-300 px-4 py-3 text-sb-green-dark focus:border-sb-green-dark outline-none rounded-[2px] transition-colors" placeholder="+33 6 00 00 00 00" />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* BLOC B : QUALIFICATION */}
+                {/* COLONNE GAUCHE : INFOS DIRECTES */}
+                <div className="md:col-span-1 space-y-12">
                     <div className="space-y-6">
-                        <h3 className="text-xs font-bold uppercase tracking-math-wide text-sb-green-dark border-b border-gray-100 pb-2">02. Qualification</h3>
-                        <div className="space-y-2">
-                            <label className="text-xs font-bold uppercase tracking-wide text-gray-500">Quel est votre enjeu prioritaire ?</label>
-                            <div className="relative">
-                                <select className="w-full border border-gray-300 px-4 py-3 text-sb-green-dark focus:border-sb-green-dark outline-none rounded-[2px] appearance-none bg-white transition-colors cursor-pointer">
-                                    <option value="" disabled selected className="text-gray-400">Sélectionnez votre problématique...</option>
-                                    <option value="robustesse">Identifier mes Risques (Audit Robustesse)</option>
-                                    <option value="processus">Structurer ma Croissance (Processus)</option>
-                                    <option value="audit_iso">Valider ma Certification (Audit Blanc ISO 9001)</option>
-                                    <option value="data">Sécuriser mon Pilotage (Data & KPI)</option>
-                                    <option value="autre">Autre / Demande Globale</option>
-                                </select>
-                                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
-                            </div>
+                        <h3 className="text-xs font-bold uppercase tracking-math-wide text-sb-green-dark border-b border-sb-green-dark/20 pb-2">Contact Direct</h3>
+                        <div className="group">
+                            <p className="text-xs font-bold uppercase text-gray-400 mb-1">Disponibilité</p>
+                            <p className="text-sb-green-dark font-medium text-lg flex items-center gap-2">
+                                <Clock size={16} className="text-[#C5A065]" />
+                                Réponse sous 24h
+                            </p>
                         </div>
                     </div>
 
-                    {/* BLOC C : MODULE AGENDA */}
-                    <div className="bg-sb-cream/50 p-8 rounded-[2px] border border-gray-200/60">
-                         <div className="mb-6">
-                             <h3 className="text-sm font-bold uppercase tracking-math-wide text-sb-green-dark mb-1 flex items-center gap-2">
-                                <Calendar size={16} />
-                                Proposez 3 Créneaux (30 min au calme)
-                             </h3>
-                             <p className="text-xs text-gray-500 italic font-light ml-6">
-                                Privilégiez un moment où vous ne serez pas dérangé par l'opérationnel.
-                             </p>
-                         </div>
-                         
-                         <div className="space-y-4">
-                            {/* Option 1 */}
-                            <div className="grid grid-cols-1 md:grid-cols-7 gap-4 items-center">
-                                <span className="text-xs font-bold uppercase tracking-wide text-gray-400 md:col-span-1">Option 1</span>
-                                <div className="md:col-span-3">
-                                    <input type="date" className="w-full border border-gray-300 px-3 py-2 text-sm text-sb-green-dark focus:border-sb-green-dark outline-none rounded-[2px] bg-white" />
-                                </div>
-                                <div className="md:col-span-3 relative">
-                                    <input type="time" className="w-full border border-gray-300 px-3 py-2 text-sm text-sb-green-dark focus:border-sb-green-dark outline-none rounded-[2px] bg-white" />
-                                </div>
-                            </div>
-
-                             {/* Option 2 */}
-                             <div className="grid grid-cols-1 md:grid-cols-7 gap-4 items-center">
-                                <span className="text-xs font-bold uppercase tracking-wide text-gray-400 md:col-span-1">Option 2</span>
-                                <div className="md:col-span-3">
-                                    <input type="date" className="w-full border border-gray-300 px-3 py-2 text-sm text-sb-green-dark focus:border-sb-green-dark outline-none rounded-[2px] bg-white" />
-                                </div>
-                                <div className="md:col-span-3 relative">
-                                    <input type="time" className="w-full border border-gray-300 px-3 py-2 text-sm text-sb-green-dark focus:border-sb-green-dark outline-none rounded-[2px] bg-white" />
-                                </div>
-                            </div>
-
-                             {/* Option 3 */}
-                             <div className="grid grid-cols-1 md:grid-cols-7 gap-4 items-center">
-                                <span className="text-xs font-bold uppercase tracking-wide text-gray-400 md:col-span-1">Option 3</span>
-                                <div className="md:col-span-3">
-                                    <input type="date" className="w-full border border-gray-300 px-3 py-2 text-sm text-sb-green-dark focus:border-sb-green-dark outline-none rounded-[2px] bg-white" />
-                                </div>
-                                <div className="md:col-span-3 relative">
-                                    <input type="time" className="w-full border border-gray-300 px-3 py-2 text-sm text-sb-green-dark focus:border-sb-green-dark outline-none rounded-[2px] bg-white" />
-                                </div>
-                            </div>
-                         </div>
-                    </div>
-
-                    {/* BLOC D : MESSAGE */}
-                    <div className="space-y-6">
-                        <h3 className="text-xs font-bold uppercase tracking-math-wide text-sb-green-dark border-b border-gray-100 pb-2">03. Contexte & Précisions</h3>
-                        <div className="space-y-2">
-                             <label className="text-xs font-bold uppercase tracking-wide text-gray-500">Message (Optionnel)</label>
-                            <textarea rows={4} className="w-full border border-gray-300 px-4 py-3 text-sb-green-dark focus:border-sb-green-dark outline-none rounded-[2px] resize-none transition-colors" placeholder="Décrivez brièvement la situation actuelle..."></textarea>
+                    <div className="bg-sb-green-dark text-white p-8 rounded-[2px] shadow-xl space-y-6">
+                        <div>
+                            <h4 className="font-serif text-xl mb-4 text-sb-beige flex items-center gap-2">
+                                <Phone size={20} className="text-[#C5A065]" /> 
+                                Format du RDV
+                            </h4>
+                            <p className="text-sm font-light leading-relaxed opacity-80">
+                                Le diagnostic dure <span className="text-sb-beige font-bold">30 minutes</span> et se déroule exclusivement par téléphone.
+                            </p>
+                        </div>
+                        <div className="pt-6 border-t border-white/10">
+                            <h4 className="font-serif text-xl mb-4 text-sb-beige">Engagement</h4>
+                            <p className="text-sm font-light leading-relaxed opacity-80 italic">
+                                "Chaque demande est traitée personnellement pour fixer un créneau de rappel. Confidentialité garantie."
+                            </p>
+                            <p className="mt-6 text-xs font-bold uppercase tracking-widest text-sb-beige">— M. Delacour</p>
                         </div>
                     </div>
+                </div>
 
-                    {/* BOUTON ACTION */}
-                    <button type="submit" className="w-full bg-sb-beige text-sb-green-dark py-5 font-bold uppercase tracking-math-wide hover:bg-sb-green-dark hover:text-sb-beige transition-all rounded-[2px] shadow-lg hover:shadow-xl text-sm md:text-base border border-transparent">
-                        SOLLICITER MON CRÉNEAU STRATÉGIQUE
-                    </button>
+                {/* COLONNE DROITE : FORMULAIRE */}
+                <div className="md:col-span-2">
+                    <div className="bg-white p-8 md:p-12 shadow-[0_10px_40px_rgba(0,0,0,0.05)] border border-gray-100 rounded-[2px]">
+                        <div className="mb-10 p-4 bg-sb-beige/30 border-l-4 border-[#C5A065] text-sb-green-dark">
+                            <p className="text-sm font-bold uppercase tracking-math-wide">Demande de Diagnostic de Faisabilité</p>
+                            <p className="text-xs opacity-70">Remplissez ce formulaire pour être rappelé et fixer votre rendez-vous.</p>
+                        </div>
 
-                </form>
+                        <form className="space-y-10" onSubmit={handleSubmit}>
+                            
+                            <div className="space-y-6">
+                                <h3 className="text-xs font-bold uppercase tracking-math-wide text-sb-green-dark border-b border-gray-100 pb-2">01. Identité & Coordonnées</h3>
+                                <div className="grid md:grid-cols-2 gap-x-6 gap-y-8">
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-bold uppercase tracking-wide text-gray-400">Prénom & Nom</label>
+                                        <input 
+                                          type="text" 
+                                          name="name"
+                                          required
+                                          value={formData.name}
+                                          onChange={handleChange}
+                                          className="w-full border-b border-gray-200 py-2 text-sb-green-dark focus:border-sb-green-dark outline-none transition-colors bg-transparent" 
+                                          placeholder="Ex: Jean Dupont" 
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-bold uppercase tracking-wide text-gray-400">E-mail Pro</label>
+                                        <input 
+                                          type="email" 
+                                          name="email"
+                                          required
+                                          value={formData.email}
+                                          onChange={handleChange}
+                                          className="w-full border-b border-gray-200 py-2 text-sb-green-dark focus:border-sb-green-dark outline-none transition-colors bg-transparent" 
+                                          placeholder="jean.dupont@societe.com" 
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-bold uppercase tracking-wide text-gray-400 flex items-center gap-1">
+                                            Téléphone <span className="text-[#C5A065]">*</span>
+                                        </label>
+                                        <input 
+                                          type="tel" 
+                                          name="phone"
+                                          required
+                                          value={formData.phone}
+                                          onChange={handleChange}
+                                          className="w-full border-b border-gray-200 py-2 text-sb-green-dark focus:border-sb-green-dark outline-none transition-colors bg-transparent" 
+                                          placeholder="06 00 00 00 00" 
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-bold uppercase tracking-wide text-gray-400">Société</label>
+                                        <input 
+                                          type="text" 
+                                          name="company"
+                                          value={formData.company}
+                                          onChange={handleChange}
+                                          className="w-full border-b border-gray-200 py-2 text-sb-green-dark focus:border-sb-green-dark outline-none transition-colors bg-transparent" 
+                                          placeholder="Raison sociale" 
+                                        />
+                                    </div>
+                                    <div className="md:col-span-2 space-y-2">
+                                        <label className="text-[10px] font-bold uppercase tracking-wide text-gray-400">Fonction</label>
+                                        <input 
+                                          type="text" 
+                                          name="function"
+                                          value={formData.function}
+                                          onChange={handleChange}
+                                          className="w-full border-b border-gray-200 py-2 text-sb-green-dark focus:border-sb-green-dark outline-none transition-colors bg-transparent" 
+                                          placeholder="DG, Responsable QHSE..." 
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-6">
+                                <h3 className="text-xs font-bold uppercase tracking-math-wide text-sb-green-dark border-b border-gray-100 pb-2">02. Votre Enjeu (Optionnel)</h3>
+                                <textarea 
+                                  name="message"
+                                  rows={4} 
+                                  value={formData.message}
+                                  onChange={handleChange}
+                                  className="w-full border-b border-gray-200 py-2 text-sb-green-dark focus:border-sb-green-dark outline-none resize-none transition-colors bg-transparent" 
+                                  placeholder="Détaillez brièvement votre problématique actuelle ou vos contraintes temporelles..."
+                                ></textarea>
+                            </div>
+
+                            {status === 'error' && (
+                              <div className="p-4 bg-red-50 text-red-800 text-xs rounded-[2px] border border-red-100">
+                                Une erreur est survenue lors de l'envoi. Veuillez réessayer ou me contacter par e-mail.
+                              </div>
+                            )}
+
+                            <div className="space-y-4">
+                                <button 
+                                  type="submit" 
+                                  disabled={status === 'submitting'}
+                                  className={`group w-full bg-[#C5A065] text-sb-green-dark py-5 font-bold uppercase tracking-math-wide hover:bg-sb-green-dark hover:text-white transition-all rounded-[2px] shadow-lg flex items-center justify-center gap-3 ${status === 'submitting' ? 'opacity-70 cursor-not-allowed' : ''}`}
+                                >
+                                    {status === 'submitting' ? (
+                                      <>ENVOI EN COURS <Loader2 size={16} className="animate-spin" /></>
+                                    ) : (
+                                      <>DEMANDER MON RDV DIAGNOSTIC <Send size={16} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" /></>
+                                    )}
+                                </button>
+                                <p className="text-center text-[9px] text-gray-400 uppercase tracking-widest">
+                                    En envoyant ce formulaire, vous acceptez d'être recontacté pour planifier cet échange.
+                                </p>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             </div>
             
-            <p className="text-center text-xs text-gray-400 mt-8 font-light">
-                Vos données sont strictement confidentielles. Aucune information n'est partagée.
+            <p className="text-center text-[10px] text-gray-400 mt-16 font-light uppercase tracking-widest">
+                Cabinet Delacour — Respect du RGPD & Confidentialité des Données.
             </p>
         </div>
 

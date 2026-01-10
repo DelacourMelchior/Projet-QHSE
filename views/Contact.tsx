@@ -11,7 +11,8 @@ const Contact: React.FC = () => {
     phone: '',
     company: '',
     function: '',
-    message: ''
+    message: '',
+    _gotcha: '' // Champ anti-spam (Honeypot)
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -26,16 +27,22 @@ const Contact: React.FC = () => {
     setStatus('submitting');
 
     try {
-      // Utilisation de Formspree pour l'envoi direct par mail
-      const response = await fetch('https://formspree.io/f/delacour.melchior@cabinetdelacour.com', {
+      // Endpoint corrigé pour l'envoi direct vers l'email sans Form ID
+      const response = await fetch('https://formspree.io/delacour.melchior@cabinetdelacour.com', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
         body: JSON.stringify({
-          ...formData,
-          _subject: `Nouveau Diagnostic de Faisabilité - ${formData.company}`
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          company: formData.company,
+          function: formData.function,
+          message: formData.message,
+          _subject: `Nouveau Diagnostic : ${formData.company} (${formData.name})`,
+          _gotcha: formData._gotcha
         })
       });
 
@@ -45,6 +52,7 @@ const Contact: React.FC = () => {
         setStatus('error');
       }
     } catch (error) {
+      console.error("Erreur d'envoi:", error);
       setStatus('error');
     }
   };
@@ -66,10 +74,10 @@ const Contact: React.FC = () => {
                 Je reviendrai vers vous personnellement sous <span className="font-bold border-b border-[#C5A065]">24 heures</span> pour convenir de notre créneau d'échange téléphonique de 30 minutes.
             </p>
             <button 
-                onClick={() => window.location.reload()}
+                onClick={() => setStatus('idle')}
                 className="text-xs font-bold uppercase tracking-widest text-sb-green-dark/40 hover:text-sb-green-dark transition-colors"
             >
-                Retour au formulaire
+                Envoyer une autre demande
             </button>
         </div>
       </Section>
@@ -136,7 +144,9 @@ const Contact: React.FC = () => {
                         </div>
 
                         <form className="space-y-10" onSubmit={handleSubmit}>
-                            
+                            {/* Champ Honeypot (Anti-Spam) caché */}
+                            <input type="text" name="_gotcha" value={formData._gotcha} onChange={handleChange} style={{ display: 'none' }} />
+
                             <div className="space-y-6">
                                 <h3 className="text-xs font-bold uppercase tracking-math-wide text-sb-green-dark border-b border-gray-100 pb-2">01. Identité & Coordonnées</h3>
                                 <div className="grid md:grid-cols-2 gap-x-6 gap-y-8">
@@ -216,8 +226,8 @@ const Contact: React.FC = () => {
                             </div>
 
                             {status === 'error' && (
-                              <div className="p-4 bg-red-50 text-red-800 text-xs rounded-[2px] border border-red-100">
-                                Une erreur est survenue lors de l'envoi. Veuillez réessayer ou me contacter par e-mail.
+                              <div className="p-4 bg-red-50 text-red-800 text-xs rounded-[2px] border border-red-100 animate-pulse">
+                                Une erreur est survenue lors de l'envoi. Veuillez vérifier votre connexion ou me contacter directement par e-mail.
                               </div>
                             )}
 

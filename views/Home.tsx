@@ -80,65 +80,73 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
         </div>
       </section>
 
-      {/* DIAGNOSTIC */}
+      {/* DIAGNOSTIC: LE LEVIER DE RENTABILITÉ */}
       <section className="bg-[#F8F9FA] py-fib-144 text-center border-b border-sb-green-dark/5">
         <div className="container mx-auto px-6">
-            <h2 className="font-serif text-3xl md:text-[45px] text-sb-green-dark uppercase leading-tight tracking-math-tight mb-8">
-                LE MUR DE LA COMPLEXITÉ
+            <h2 className="font-serif text-3xl md:text-[45px] font-bold text-sb-green-dark uppercase leading-tight tracking-math-tight mb-8">
+                LE LEVIER DE RENTABILITÉ
             </h2>
             <div className="w-20 h-px bg-sb-green-dark/20 mx-auto mb-10"></div>
             <p className="text-lg md:text-body text-sb-green-dark font-normal leading-loose max-w-[800px] mx-auto font-sans mb-16">
-                Vous êtes à un point de bascule. Soit votre croissance crée du chaos, soit vos donneurs d'ordres exigent des garanties de structuration. Vos méthodes deviennent aujourd'hui votre principal risque.
+                Une structure optimisée est votre premier gisement de profit net : c’est elle qui transforme votre activité en cash. Pour savoir si votre organisation actuelle est réellement configurée pour maximiser vos gains, posez-vous ces questions :
             </p>
 
             <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto mb-16">
+                {/* CARTE 1: EXIGENCE CLIENTS */}
                 <div className="bg-white p-8 md:p-10 border border-sb-green-dark/5 rounded-[2px] shadow-sm hover:shadow-lg transition-all duration-300 group">
                     <div className="mb-8 flex justify-center">
                         <Handshake size={48} strokeWidth={1} className="text-sb-green-dark group-hover:text-[#C5A065] transition-colors duration-300" />
                     </div>
                     <h3 className="font-serif font-bold uppercase tracking-wide text-lg mb-6 text-sb-green-dark">
-                        VOS CLIENTS DOUTENT-ILS ?
+                        EXIGENCE CLIENTS
                     </h3>
                     <p className="text-sb-green-dark/80 leading-loose font-medium font-sans text-left md:text-center text-sm md:text-base">
-                        Sentez-vous une résistance lors des négociations ? Vos donneurs d'ordres exigent-ils désormais des preuves de structuration pour continuer à vous suivre ?
+                        Votre structure actuelle est-elle capable de rassurer les donneurs d’ordres les plus exigeants sans que vous n'ayez à baisser vos prix ?
+                        <br /><br />
+                        Pouvez-vous affirmer que votre organisation n'est pas aujourd'hui le premier frein à la signature de vos contrats les plus lucratifs ?
                     </p>
                 </div>
 
+                {/* CARTE 2: CHARGE DE TRAVAIL */}
                 <div className="bg-white p-8 md:p-10 border border-sb-green-dark/5 rounded-[2px] shadow-sm hover:shadow-lg transition-all duration-300 group">
                     <div className="mb-8 flex justify-center">
                         <Settings size={48} strokeWidth={1} className="text-sb-green-dark group-hover:text-[#C5A065] transition-colors duration-300" />
                     </div>
                     <h3 className="font-serif font-bold uppercase tracking-wide text-lg mb-6 text-sb-green-dark">
-                        ET SI LA CHARGE DOUBLE ?
+                        CHARGE DE TRAVAIL
                     </h3>
                     <p className="text-sb-green-dark/80 leading-loose font-medium font-sans text-left md:text-center text-sm md:text-base">
-                        Si demain la demande explose, votre organisation tient-elle le choc ? Votre croissance génère-t-elle de la rentabilité ou juste de la désorganisation ?
+                        Votre structure est-elle réellement conçue pour que la croissance augmente vos profits au lieu de simplement multiplier vos problèmes ?
+                        <br /><br />
+                        Pouvez-vous affirmer que votre organisation ne dépend pas uniquement de votre énergie personnelle pour ne pas imploser face à la charge ?
                     </p>
                 </div>
 
+                {/* CARTE 3: PILOTAGE */}
                 <div className="bg-white p-8 md:p-10 border border-sb-green-dark/5 rounded-[2px] shadow-sm hover:shadow-lg transition-all duration-300 group">
                     <div className="mb-8 flex justify-center">
                         <Compass size={48} strokeWidth={1} className="text-sb-green-dark group-hover:text-[#C5A065] transition-colors duration-300" />
                     </div>
                     <h3 className="font-serif font-bold uppercase tracking-wide text-lg mb-6 text-sb-green-dark">
-                        PILOTEZ-VOUS À L'AVEUGLE ?
+                        PILOTAGE
                     </h3>
                     <p className="text-sb-green-dark/80 leading-loose font-medium font-sans text-left md:text-center text-sm md:text-base">
-                        Savez-vous précisément quels dossiers financent les autres ? Ou prenez-vous vos décisions au 'feeling' par manque de données fiables ?
+                        Pilotez-vous avec une vision chirurgicale en temps réel, ou naviguez-vous à vue avec des chiffres qui ont déjà deux semaines de retard sur la réalité du terrain ?
+                        <br /><br />
+                        Votre système actuel est-il capable de transformer votre intuition de dirigeant en une certitude mathématique de profit net ?
                     </p>
                 </div>
             </div>
 
             <div className="max-w-4xl mx-auto border-t border-sb-green-dark/10 pt-16">
-                <p className="font-serif text-2xl md:text-4xl text-sb-green-dark leading-tight mb-12">
-                    Si vous répondez <span className="font-bold text-[#8A1C1C]">OUI</span> à l'une de ces questions, votre 'Plafond de Verre' est atteint.<br className="hidden md:block" />
-                    Voyons comment le briser ensemble.
+                <p className="font-serif text-2xl md:text-3xl text-sb-green-dark leading-tight mb-12 italic">
+                    Un seul <span className="font-bold text-[#8A1C1C]">NON</span> confirme que votre organisation actuelle bride vos profits. Ne laissez plus votre rentabilité au hasard de l'opérationnel.
                 </p>
                 <button 
                     onClick={() => onNavigate(Page.CONTACT)}
                     className="group relative inline-flex items-center justify-center px-8 md:px-10 py-5 bg-[#C5A065] text-[#0A1F1C] font-bold uppercase tracking-math-wide text-xs md:text-sm transition-all duration-300 hover:bg-white hover:text-[#C5A065] shadow-lg hover:shadow-xl rounded-[2px] border border-transparent hover:border-[#C5A065]"
                 >
-                    BRISER CE PLAFOND DE VERRE <ArrowRight size={20} className="ml-2 group-hover:translate-x-1 transition-transform" />
+                    DÉVERROUILLER MON POTENTIEL DE GAIN <ArrowRight size={20} className="ml-2 group-hover:translate-x-1 transition-transform" />
                 </button>
             </div>
         </div>
@@ -203,7 +211,7 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                 <h2 className="font-serif text-3xl md:text-title text-sb-green-dark mb-4 tracking-math-tight">NOS PRESTATIONS</h2>
                 <p className="text-sb-green-dark font-bold uppercase tracking-math-wide text-xs md:text-sm">Catalogue d'Interventions</p>
              </div>
-             <button onClick={() => onNavigate(Page.SERVICES)} className="hidden md:flex items-center text-sb-green-dark font-bold uppercase tracking-math-wide text-xs hover:text-sb-green-light transition-colors mt-4 md:mt-0 pb-2 border-b border-transparent hover:border-sb-green-dark">
+             <button onClick={() => onNavigate(Page.SERVICES)} className="hidden md:flex items-center text-sb-green-dark font-bold uppercase tracking-math-wide text-xs hover:text-sb-green-light transition-colors mt-4 md:pt-0 pb-2 border-b border-transparent hover:border-sb-green-dark">
                 Voir le catalogue complet <ArrowRight size={16} className="ml-2" />
              </button>
         </div>

@@ -2,7 +2,7 @@
 import React from 'react';
 import Section from '../components/Section';
 import { Page } from '../types';
-import { Archive, TrendingDown, Wrench, CheckCircle, Briefcase } from 'lucide-react';
+import { Archive, TrendingDown, Wrench, CheckCircle, ArrowRight } from 'lucide-react';
 
 interface OfferExecutionProps {
   onNavigate: (page: Page) => void;
@@ -173,48 +173,17 @@ const OfferExecution: React.FC<OfferExecutionProps> = ({ onNavigate }) => {
         </div>
       </Section>
 
-      {/* 4. SECTION OFFRE (MANDAT) */}
-      <Section bg="cream" className="pb-fib-144 pt-24">
-        <div className="max-w-4xl mx-auto">
-            <div className="bg-[#0A1210] p-12 md:p-16 border border-sb-beige/30 relative overflow-hidden rounded-[2px] text-center">
-                {/* Decorative Pattern */}
-                <div className="absolute top-0 left-0 w-24 h-24 border-t-2 border-l-2 border-sb-beige/20"></div>
-                <div className="absolute bottom-0 right-0 w-24 h-24 border-b-2 border-r-2 border-sb-beige/20"></div>
-                
-                <div className="relative z-10">
-                    <div className="inline-flex items-center justify-center w-16 h-16 bg-sb-beige rounded-full mb-8 text-sb-green-dark">
-                        <Briefcase size={32} />
-                    </div>
-                    
-                    <h2 className="font-serif text-3xl md:text-4xl text-sb-beige mb-4 uppercase tracking-widest leading-tight">
-                        MANDAT DE STRUCTURATION & PERFORMANCE
-                    </h2>
-
-                    <div className="w-20 h-px bg-sb-beige/50 mx-auto mb-8"></div>
-                    
-                    <p className="font-serif text-xl text-white/80 italic mb-2">
-                        "Sortez de l'artisanat, entrez dans l'industrie."
-                    </p>
-                    <p className="text-white/70 text-sm font-sans font-light leading-relaxed max-w-2xl mx-auto mb-10">
-                        Nous construisons l'ossature invisible (règles, rôles, standards) qui permet à votre entreprise de grandir sans chaos, même en votre absence.
-                    </p>
-                    
-                    <div className="bg-white/5 border border-sb-beige/20 p-8 rounded-[2px] mb-12 max-w-lg mx-auto">
-                        <p className="text-sb-beige text-sm tracking-wide leading-relaxed">
-                            <span className="font-bold border-b border-sb-beige/30 pb-1 mb-2 inline-block">CONTINUITÉ STRATÉGIQUE :</span><br/>
-                            Votre diagnostic n'est pas une dépense, c'est un acompte. L'investissement de votre Audit de Robustesse est déductible du montant global de ce mandat.
-                        </p>
-                    </div>
-                    
-                    <button 
-                        onClick={() => onNavigate(Page.CONTACT)}
-                        className="bg-sb-beige text-sb-green-dark px-10 py-5 font-bold uppercase tracking-math-wide rounded-[2px] hover:bg-white transition-all duration-300 shadow-lg hover:shadow-xl"
-                    >
-                        DÉMARRER LA STRUCTURATION
-                    </button>
-                </div>
-            </div>
-        </div>
+      {/* 4. FINAL CTA */}
+      <Section bg="cream" className="py-24 text-center border-t border-sb-green-dark/10">
+        <h2 className="font-serif text-3xl md:text-4xl text-sb-green-dark mb-10 uppercase tracking-tight">
+            Prêt à structurer votre croissance ?
+        </h2>
+        <button 
+            onClick={() => onNavigate(Page.CONTACT)}
+            className="group inline-flex items-center justify-center px-10 py-5 bg-[#C5A065] text-sb-green-dark font-bold uppercase tracking-math-wide text-sm rounded-[2px] hover:bg-sb-green-dark hover:text-white transition-all shadow-lg"
+        >
+            RÉSERVER MON ENTRETIEN DE DIAGNOSTIC <ArrowRight size={18} className="ml-3 group-hover:translate-x-1 transition-transform" />
+        </button>
       </Section>
     </>
   );

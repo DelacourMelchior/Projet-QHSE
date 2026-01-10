@@ -1,7 +1,8 @@
+
 import React from 'react';
 import Section from '../components/Section';
 import { Page } from '../types';
-import { AlertTriangle, Layers, UserMinus, CheckCircle, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, Layers, UserMinus, CheckCircle, ArrowRight } from 'lucide-react';
 
 interface OfferIsoProps {
   onNavigate: (page: Page) => void;
@@ -141,7 +142,7 @@ const OfferIso: React.FC<OfferIsoProps> = ({ onNavigate }) => {
                  <div className="relative flex flex-col md:flex-row items-center justify-between w-full group">
                     <div className="md:w-5/12 text-left md:text-right pl-12 md:pl-0 md:pr-12 order-2 md:order-1">
                         <h3 className="font-serif text-2xl text-sb-beige mb-2">Phase 3 : L'Épreuve</h3>
-                        <p className="text-white/70 font-light leading-phi text-sm">Audit Blanc. Crash-Test en conditions réelles et Revue de Direction pour corriger les derniers écarts avant l'échéance.</p>
+                        <p className="text-white/70 font-light leading-phi text-sm">Audit Blanc. Crash-Test en conditions réelles et Revue de Direction pour corriger les derniers écarts avant l'épreuve.</p>
                     </div>
                     <div className="absolute left-4 md:left-1/2 -translate-x-1/2 w-8 h-8 bg-sb-green-dark border-2 border-sb-beige rounded-full flex items-center justify-center z-10 order-1 md:order-2">
                         <span className="w-2 h-2 bg-sb-beige rounded-full"></span>
@@ -168,33 +169,17 @@ const OfferIso: React.FC<OfferIsoProps> = ({ onNavigate }) => {
         </div>
       </Section>
 
-      {/* 4. SECTION GARANTIE */}
-      <Section bg="cream" className="pb-fib-144 pt-24">
-        <div className="max-w-4xl mx-auto">
-            <div className="bg-[#0A1210] p-12 md:p-16 border border-sb-beige/30 relative overflow-hidden rounded-[2px] text-center">
-                {/* Decorative Pattern */}
-                <div className="absolute top-0 left-0 w-24 h-24 border-t-2 border-l-2 border-sb-beige/20"></div>
-                <div className="absolute bottom-0 right-0 w-24 h-24 border-b-2 border-r-2 border-sb-beige/20"></div>
-                
-                <div className="relative z-10">
-                    <div className="inline-flex items-center justify-center w-16 h-16 bg-sb-beige rounded-full mb-8 text-sb-green-dark">
-                        <ShieldCheck size={32} />
-                    </div>
-                    <h2 className="font-serif text-3xl md:text-4xl text-sb-beige mb-6 uppercase tracking-widest">Garantie Delacour</h2>
-                    <div className="w-20 h-px bg-sb-beige/50 mx-auto mb-8"></div>
-                    <p className="text-white/90 text-body font-light leading-phi max-w-2xl mx-auto mb-10">
-                        Engagement de Résultat. Nous vous accompagnons jusqu'à l'obtention physique du certificat. Si des non-conformités majeures subsistent, nous prenons en charge les correctifs sans surcoût.
-                    </p>
-                    
-                    <button 
-                        onClick={() => onNavigate(Page.CONTACT)}
-                        className="bg-sb-beige text-sb-green-dark px-10 py-4 font-bold uppercase tracking-math-wide rounded-[2px] hover:bg-white transition-all duration-300"
-                    >
-                        Sécuriser ma certification
-                    </button>
-                </div>
-            </div>
-        </div>
+      {/* 4. FINAL CTA */}
+      <Section bg="cream" className="py-24 text-center border-t border-sb-green-dark/10">
+        <h2 className="font-serif text-3xl md:text-4xl text-sb-green-dark mb-10 uppercase tracking-tight">
+            Prêt à certifier votre excellence ?
+        </h2>
+        <button 
+            onClick={() => onNavigate(Page.CONTACT)}
+            className="group inline-flex items-center justify-center px-10 py-5 bg-[#C5A065] text-sb-green-dark font-bold uppercase tracking-math-wide text-sm rounded-[2px] hover:bg-sb-green-dark hover:text-white transition-all shadow-lg"
+        >
+            RÉSERVER MON ENTRETIEN DE DIAGNOSTIC <ArrowRight size={18} className="ml-3 group-hover:translate-x-1 transition-transform" />
+        </button>
       </Section>
     </>
   );

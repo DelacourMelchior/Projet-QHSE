@@ -1,4 +1,6 @@
+
 import React from 'react';
+import Section from '../components/Section';
 import { Page } from '../types';
 import { Database, EyeOff, Hourglass, ArrowRight } from 'lucide-react';
 
@@ -239,28 +241,21 @@ const ImpactData: React.FC<ImpactDataProps> = ({ onNavigate }) => {
                     </p>
                 </div>
              </div>
-
          </div>
       </section>
 
-      {/* ZONE 3 : CTA */}
-      <section className="bg-sb-green-dark py-24 text-center border-t border-[#C5A065]">
-        <div className="container mx-auto px-6">
-            <h2 className="font-serif text-4xl md:text-5xl text-white mb-8 uppercase tracking-tight">
-                PASSEZ DU BRUIT AU SIGNAL.
-            </h2>
-            <div className="w-16 h-px bg-[#C5A065] mx-auto mb-8"></div>
-            <p className="text-xl text-white/80 max-w-2xl mx-auto font-sans font-light leading-relaxed mb-12">
-                Arrêtez de piloter au feeling. Construisons le Cockpit qui vous donne le contrôle réel.
-            </p>
-            <button 
-                onClick={() => onNavigate(Page.CONTACT)}
-                className="group relative inline-flex items-center justify-center px-10 py-6 bg-[#C5A065] text-sb-green-dark font-bold uppercase tracking-math-wide text-sm md:text-base overflow-hidden transition-all duration-300 hover:bg-white hover:text-sb-green-dark hover:shadow-[0_0_40px_rgba(197,160,101,0.4)] rounded-[2px]"
-            >
-                AUDITER MES INDICATEURS <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
-            </button>
-        </div>
-      </section>
+      {/* 3. FINAL CTA */}
+      <Section bg="cream" className="py-24 text-center border-t border-sb-green-dark/10">
+        <h2 className="font-serif text-3xl md:text-4xl text-sb-green-dark mb-10 uppercase tracking-tight">
+            Sortez du brouillard décisionnel
+        </h2>
+        <button 
+            onClick={() => onNavigate(Page.CONTACT)}
+            className="group inline-flex items-center justify-center px-10 py-5 bg-[#C5A065] text-sb-green-dark font-bold uppercase tracking-math-wide text-sm rounded-[2px] hover:bg-sb-green-dark hover:text-white transition-all shadow-lg"
+        >
+            RÉSERVER MON ENTRETIEN DE DIAGNOSTIC <ArrowRight size={18} className="ml-3 group-hover:translate-x-1 transition-transform" />
+        </button>
+      </Section>
     </>
   );
 };

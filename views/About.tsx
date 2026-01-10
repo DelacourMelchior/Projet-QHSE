@@ -21,19 +21,19 @@ const About: React.FC<AboutProps> = ({ onNavigate }) => {
           
           <div className="space-y-8 text-body leading-relaxed text-sb-green-dark/80 font-light text-justify font-sans">
             <p>
-              Mon approche ne vient pas de la théorie mais du terrain critique.
+              Mon approche ne vient pas de la théorie, mais du terrain critique. Pour autant, elle s'appuie sur une base académique rigoureuse et spécialisée.
+            </p>
+            <p>
+              Titulaire d'un <span className="text-sb-green-dark font-medium italic">Master 2 en Management QHSE et Excellence Opérationnelle</span>, j'ai suivi un cursus universitaire de 5 années exclusivement dédié à ces disciplines. Ce socle théorique m'a permis de maîtriser les normes et les outils de performance les plus exigeants avant de les confronter à la réalité des flux industriels.
             </p>
             <p>
               J'ai construit ma méthodologie au cœur de la Sûreté Aéroportuaire, de l'Industrie Aéronautique et de la Mécanique de Précision. Dans ces environnements où l'erreur a des conséquences immédiates, j'ai appris que la fiabilité n'est pas un hasard. C'est le résultat d'une architecture invisible et implacable.
             </p>
             <p>
-              Aujourd'hui, je transfère cette culture de l'excellence vers les PME ambitieuses.
+              Aujourd'hui, je transfère cette culture de l'excellence vers les PME ambitieuses. Mon constat est simple : trop de dirigeants subissent leur croissance au lieu de la piloter. Ils possèdent la vision et l'énergie, mais il leur manque la structure pour passer à l'échelle supérieure sans créer de chaos interne.
             </p>
             <p>
-              Mon constat est simple. Trop de dirigeants subissent leur croissance au lieu de la piloter. Ils possèdent la vision et l'énergie, mais il leur manque la structure pour passer à l'échelle supérieure sans créer de chaos interne.
-            </p>
-            <p>
-              Je n'interviens pas pour alourdir votre quotidien. J'interviens pour bâtir la colonne vertébrale qui soutiendra votre développement futur. Mon rôle est d'élever vos standards opérationnels au niveau des leaders industriels, tout en préservant votre pragmatisme.
+              Je n'interviens pas pour alourdir votre quotidien. J'interviens pour bâtir la colonne vertébrale qui soutiendra votre développement futur. Mon rôle est d'élever vos standards opérationnels au niveau des leaders industriels, tout en préservant votre pragmatisme de dirigeant.
             </p>
           </div>
           

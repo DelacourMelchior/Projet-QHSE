@@ -27,8 +27,8 @@ const Contact: React.FC = () => {
     setStatus('submitting');
 
     try {
-      // Endpoint corrigé pour l'envoi direct vers l'email sans Form ID
-      const response = await fetch('https://formspree.io/delacour.melchior@cabinetdelacour.com', {
+      // Utilisation de l'ID Formspree fourni par l'utilisateur
+      const response = await fetch('https://formspree.io/f/xqeezlgv', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -122,7 +122,7 @@ const Contact: React.FC = () => {
                                 Format du RDV
                             </h4>
                             <p className="text-sm font-light leading-relaxed opacity-80">
-                                Le diagnostic dure <span className="text-sb-beige font-bold">30 minutes</span> et se déroule exclusivement par téléphone.
+                                Le diagnostic dure <span className="text-sb-beige font-bold">30 minutes</span> et se déroule par téléphone.
                             </p>
                         </div>
                         <div className="pt-6 border-t border-white/10">

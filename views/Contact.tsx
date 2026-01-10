@@ -71,7 +71,7 @@ const Contact: React.FC = () => {
             <p className="text-xl text-sb-green-dark/80 font-light leading-relaxed mb-12">
                 Merci, M. {formData.name.split(' ')[0]}. Votre demande de diagnostic de faisabilité a été transmise au cabinet. 
                 <br /><br />
-                Je reviendrai vers vous personnellement sous <span className="font-bold border-b border-[#C5A065]">24 heures</span> pour convenir de notre créneau d'échange téléphonique de 30 minutes.
+                Je reviendrai vers vous personnellement sous <span className="font-bold border-b border-[#C5A065]">24 heures ouvrées</span> (hors week-end) pour convenir de notre créneau d'échange téléphonique de 30 minutes.
             </p>
             <button 
                 onClick={() => setStatus('idle')}
@@ -110,7 +110,7 @@ const Contact: React.FC = () => {
                             <p className="text-xs font-bold uppercase text-gray-400 mb-1">Disponibilité</p>
                             <p className="text-sb-green-dark font-medium text-lg flex items-center gap-2">
                                 <Clock size={16} className="text-[#C5A065]" />
-                                Réponse sous 24h
+                                Sous 24h ouvrées
                             </p>
                         </div>
                     </div>
@@ -148,10 +148,16 @@ const Contact: React.FC = () => {
                             <input type="text" name="_gotcha" value={formData._gotcha} onChange={handleChange} style={{ display: 'none' }} />
 
                             <div className="space-y-6">
-                                <h3 className="text-xs font-bold uppercase tracking-math-wide text-sb-green-dark border-b border-gray-100 pb-2">01. Identité & Coordonnées</h3>
+                                <div className="flex justify-between items-end border-b border-gray-100 pb-2">
+                                    <h3 className="text-xs font-bold uppercase tracking-math-wide text-sb-green-dark">01. Identité & Coordonnées</h3>
+                                    <span className="text-[9px] font-bold uppercase tracking-widest text-[#C5A065] italic">* Champs obligatoires</span>
+                                </div>
+                                
                                 <div className="grid md:grid-cols-2 gap-x-6 gap-y-8">
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-bold uppercase tracking-wide text-gray-400">Prénom & Nom</label>
+                                        <label className="text-[10px] font-bold uppercase tracking-wide text-gray-400">
+                                            Prénom & Nom <span className="text-[#C5A065]">*</span>
+                                        </label>
                                         <input 
                                           type="text" 
                                           name="name"
@@ -163,7 +169,9 @@ const Contact: React.FC = () => {
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-bold uppercase tracking-wide text-gray-400">E-mail Pro</label>
+                                        <label className="text-[10px] font-bold uppercase tracking-wide text-gray-400">
+                                            E-mail Pro <span className="text-[#C5A065]">*</span>
+                                        </label>
                                         <input 
                                           type="email" 
                                           name="email"
@@ -175,7 +183,7 @@ const Contact: React.FC = () => {
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-bold uppercase tracking-wide text-gray-400 flex items-center gap-1">
+                                        <label className="text-[10px] font-bold uppercase tracking-wide text-gray-400">
                                             Téléphone <span className="text-[#C5A065]">*</span>
                                         </label>
                                         <input 
@@ -189,10 +197,13 @@ const Contact: React.FC = () => {
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-bold uppercase tracking-wide text-gray-400">Société</label>
+                                        <label className="text-[10px] font-bold uppercase tracking-wide text-gray-400">
+                                            Société <span className="text-[#C5A065]">*</span>
+                                        </label>
                                         <input 
                                           type="text" 
                                           name="company"
+                                          required
                                           value={formData.company}
                                           onChange={handleChange}
                                           className="w-full border-b border-gray-200 py-2 text-sb-green-dark focus:border-sb-green-dark outline-none transition-colors bg-transparent" 
@@ -200,10 +211,13 @@ const Contact: React.FC = () => {
                                         />
                                     </div>
                                     <div className="md:col-span-2 space-y-2">
-                                        <label className="text-[10px] font-bold uppercase tracking-wide text-gray-400">Fonction</label>
+                                        <label className="text-[10px] font-bold uppercase tracking-wide text-gray-400">
+                                            Fonction <span className="text-[#C5A065]">*</span>
+                                        </label>
                                         <input 
                                           type="text" 
                                           name="function"
+                                          required
                                           value={formData.function}
                                           onChange={handleChange}
                                           className="w-full border-b border-gray-200 py-2 text-sb-green-dark focus:border-sb-green-dark outline-none transition-colors bg-transparent" 

@@ -153,56 +153,62 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
       </section>
 
       {/* METHODOLOGY - LES 3 PILIERS */}
-      <Section bg="green" className="py-fib-144">
-        <div className="text-center mb-24 max-w-4xl mx-auto">
-            <h2 className="font-serif text-3xl md:text-[45px] text-white uppercase tracking-math-tight mb-6">
-                LES 3 PILIERS DE VOTRE PERFORMANCE
-            </h2>
-            <div className="w-16 h-px bg-sb-beige mx-auto mb-8"></div>
-            <p className="text-lg md:text-body text-white/90 font-medium leading-loose font-sans">
-                La performance n'est pas un hasard, c'est une architecture.
-            </p>
-        </div>
-
-        <div className="grid md:grid-cols-3 gap-8">
-          {VALUES.map((value: any, index) => (
-            <div key={index} className="group relative bg-[#1C2B29] border-t border-sb-beige p-8 lg:p-10 h-full hover:bg-[#233533] transition-colors duration-500 rounded-[2px] flex flex-col">
-              <div className="relative z-10 text-left flex-grow">
-                  <div className="transform transition-transform duration-500 group-hover:-translate-y-1">
-                      {getShape(index)}
-                  </div>
-
-                  {/* TYPOGRAPHY FIX: Adjusted tracking and size for tablet screens to prevent word breaks */}
-                  <h3 className="font-serif text-lg md:text-xl xl:text-h3-card text-white tracking-normal md:tracking-normal xl:tracking-widest uppercase mb-6 font-bold leading-tight break-normal">
-                    {value.title}
-                  </h3>
-                  
-                  <p className="font-sans text-sm md:text-base text-white/70 leading-relaxed font-normal mb-12 italic">
-                    {parseBoldText(value.text)}
-                  </p>
-              </div>
-
-              <div className="mt-auto pt-8 border-t border-white/10 relative z-10">
-                  <p className={`font-serif text-3xl md:text-4xl xl:text-5xl font-bold tracking-tight uppercase mb-2 leading-none ${value.color || 'text-[#8A1C1C]'}`}>
-                    {value.verdictTitle}
-                  </p>
-                  {value.verdictSubtitle && (
-                    <p className="font-serif text-xs md:text-sm italic text-white/50 mb-8 font-light">
-                        {value.verdictSubtitle}
-                    </p>
-                  )}
-                  
-                  <button 
-                    onClick={() => onNavigate(value.link)}
-                    className="w-full text-center py-4 border border-[#C5A065] text-[#C5A065] font-bold uppercase tracking-math-wide text-[10px] md:text-xs transition-all duration-300 rounded-[2px] hover:bg-[#C5A065] hover:text-sb-green-dark"
-                  >
-                      {value.buttonText}
-                  </button>
-              </div>
+      <section className="bg-sb-green-dark py-fib-144">
+        <div className="container mx-auto px-6">
+            <div className="text-center mb-24 max-w-4xl mx-auto">
+                <h2 className="font-serif text-3xl md:text-[45px] text-white uppercase tracking-math-tight mb-6">
+                    LES 3 PILIERS DE VOTRE PERFORMANCE
+                </h2>
+                <div className="w-16 h-px bg-sb-beige mx-auto mb-8"></div>
+                <p className="text-lg md:text-body text-white/90 font-medium leading-loose font-sans">
+                    La performance n'est pas un hasard, c'est une architecture.
+                </p>
             </div>
-          ))}
+
+            <div className="grid md:grid-cols-3 gap-8">
+            {VALUES.map((value: any, index) => (
+                <div key={index} className="group relative bg-[#1C2B29] border-t border-sb-beige p-8 lg:p-10 h-full hover:bg-[#233533] transition-colors duration-500 rounded-[2px] flex flex-col">
+                <div className="relative z-10 text-left flex-grow">
+                    <div className="transform transition-transform duration-500 group-hover:-translate-y-1">
+                        {getShape(index)}
+                    </div>
+
+                    <h3 className="font-serif text-lg md:text-xl xl:text-h3-card text-white tracking-normal md:tracking-normal xl:tracking-widest uppercase mb-6 font-bold leading-tight break-normal">
+                        {value.title}
+                    </h3>
+                    
+                    <p className="font-sans text-sm md:text-base text-white/70 leading-relaxed font-normal mb-12 italic whitespace-pre-line">
+                        {parseBoldText(value.text)}
+                    </p>
+                </div>
+
+                <div className="mt-auto pt-8 border-t border-white/10 relative z-10">
+                    <p className={`font-serif text-3xl md:text-4xl xl:text-5xl font-bold tracking-tight uppercase mb-2 leading-none ${value.color || 'text-[#8A1C1C]'}`}>
+                        {value.verdictTitle}
+                    </p>
+                    {value.verdictSubtitle && (
+                        <p className="font-serif text-xs md:text-sm italic text-white/50 mb-4 font-light uppercase">
+                            {value.verdictSubtitle}
+                        </p>
+                    )}
+                    {value.verdictText && (
+                        <p className="font-sans text-[11px] text-white/40 mb-8 leading-relaxed">
+                            {value.verdictText}
+                        </p>
+                    )}
+                    
+                    <button 
+                        onClick={() => onNavigate(value.link)}
+                        className="w-full text-center py-4 border border-[#C5A065] text-[#C5A065] font-bold uppercase tracking-math-wide text-[10px] md:text-xs transition-all duration-300 rounded-[2px] hover:bg-[#C5A065] hover:text-sb-green-dark"
+                    >
+                        {value.buttonText}
+                    </button>
+                </div>
+                </div>
+            ))}
+            </div>
         </div>
-      </Section>
+      </section>
 
       {/* Services Preview */}
       <Section bg="cream" className="pb-fib-144 border-t border-sb-green-dark/10">
@@ -346,7 +352,7 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                 </p>
             </div>
         </div>
-      </Section>
+      </section>
     </>
   );
 };

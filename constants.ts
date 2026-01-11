@@ -1,3 +1,4 @@
+
 import { Page, Service, Testimonial } from './types';
 import { CheckCircle, BarChart3, ShieldCheck, FileSearch, Users, TrendingUp } from 'lucide-react';
 
@@ -105,39 +106,39 @@ export const TESTIMONIALS: Testimonial[] = [
   }
 ];
 
-// Les 3 Piliers de la Performance (Coût de l'inaction)
+// Les 3 Piliers de la Performance (Coût de l'inaction transformé en Gisements de Gain)
 export const VALUES = [
   {
     id: "01",
     title: "IDENTIFICATION DES RISQUES",
-    text: "Le risque n'est pas que technique. C'est l'accumulation du **coût du retravail** (non-qualité), du **manque à gagner commercial** par défiance, et du **temps de direction perdu**. L'audit chiffre ces 3 fuites pour les stopper.",
+    text: "Identifier vos risques, c'est transformer vos vulnérabilités organisationnelles en gisements de rentabilité immédiate.\n\n- **Érosion des marges** : L'accumulation silencieuse des erreurs répétitives.\n- **Déficit d'image** : Le coût de la non-fiabilité face à des clients de plus en plus exigeants.\n- **Chaos opérationnel** : L'épuisement de la direction face à une structure qui ne \"tient\" pas seule.",
     verdictTitle: "1 110 000 € / AN",
-    verdictSubtitle: "Perte estimée pour une PME de 5M€ de CA",
-    verdictText: "",
+    verdictSubtitle: "SOMME À RÉCUPÉRER PAR L'IDENTIFICATION DES RISQUES",
+    verdictText: "Estimation du profit annuel récupérable pour une PME de 5M€ de CA après optimisation de son architecture opérationnelle.",
     link: Page.IMPACT_RISQUE,
-    color: "text-[#8A1C1C]", // Red Accent
+    color: "text-[#10B981]", // Emerald Green - Success/Growth
     buttonText: "VOIR L'ANALYSE DÉTAILLÉE →"
   },
   {
     id: "02",
     title: "STRUCTURATION DES PROCESSUS",
-    text: "L'absence de règles écrites coûte cher. Additionnez la **perte de productivité** (friction), le **coût de remplacement des experts** (savoir tribal) et le **CA refusé** faute de capacité (plafond de verre).",
+    text: "Une entreprise qui dépend exclusivement de l'individu est une entreprise fragile. Transformez votre savoir tribal en un actif industriel scalable.\n\n- **Fluidité de Production** : Éliminez les frictions et les doublons qui consument silencieusement 20% de votre temps collectif.\n- **Souveraineté du Savoir** : Sécurisez votre capital intellectuel pour qu'un départ d'expert ne devienne plus une crise majeure.\n- **Levée du Plafond de Verre** : Industrialisez vos méthodes pour absorber une croissance à deux chiffres sans augmenter votre niveau de chaos.",
     verdictTitle: "890 000 € / AN",
-    verdictSubtitle: "Manque à gagner estimé pour une PME de 5M€ de CA",
-    verdictText: "",
+    verdictSubtitle: "SOMME À RÉCUPÉRER PAR LA STRUCTURATION DES PROCESSUS",
+    verdictText: "Estimation du profit annuel récupérable pour une PME de 5M€ de CA après optimisation de son architecture opérationnelle.",
     link: Page.IMPACT_SYSTEME,
-    color: "text-[#8A1C1C]", // Red Accent
+    color: "text-[#10B981]", // Emerald Green - Success/Growth
     buttonText: "VOIR L'ANALYSE DÉTAILLÉE →"
   },
   {
     id: "03",
     title: "PILOTAGE PAR LA DATA",
-    text: "Piloter au feeling est un luxe. Entre les **salaires gaspillés** en reporting inutile, les **marges négatives** sur contrats toxiques et le **coût de l'inertie** : l'aveuglement détruit votre trésorerie.",
+    text: "L'instinct est un atout, la donnée est une certitude. Cessez de naviguer à vue et reprenez le contrôle mathématique de votre rentabilité.\n\n- **Productivité Décisionnelle** : Libérez vos cadres des reportings manuels chronophages pour les concentrer sur l'analyse et l'action à haute valeur ajoutée.\n- **Assainissement des Marges** : Détectez et neutralisez les « contrats toxiques » qui saturent votre production tout en détruisant votre trésorerie.\n- **Agilité de Direction** : Supprimez le coût de l'inertie grâce à un système d'alerte précoce qui vous permet de décider en 24h, là où vos concurrents hésitent pendant un mois.",
     verdictTitle: "190 000 € / AN",
-    verdictSubtitle: "Perte sèche estimée pour une PME de 5M€ de CA",
-    verdictText: "",
+    verdictSubtitle: "SOMME À RÉCUPÉRER PAR LE PILOTAGE DES DONNÉES",
+    verdictText: "Estimation du profit annuel récupérable pour une PME de 5M€ de CA après optimisation de son architecture opérationnelle.",
     link: Page.IMPACT_DATA,
-    color: "text-[#8A1C1C]", // Red Accent
+    color: "text-[#10B981]", // Emerald Green - Success/Growth
     buttonText: "VOIR L'ANALYSE DÉTAILLÉE →"
   }
 ];

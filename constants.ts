@@ -135,7 +135,7 @@ export const VALUES = [
     title: "PILOTAGE PAR LA DATA",
     text: "L'instinct est un atout, la donnée est une certitude. Cessez de naviguer à vue et reprenez le contrôle mathématique de votre rentabilité.\n\n- **Productivité Décisionnelle** : Libérez vos cadres des reportings manuels chronophages pour les concentrer sur l'analyse et l'action à haute valeur ajoutée.\n- **Assainissement des Marges** : Détectez et neutralisez les « contrats toxiques » qui saturent votre production tout en détruisant votre trésorerie.\n- **Agilité de Direction** : Supprimez le coût de l'inertie grâce à un système d'alerte précoce qui vous permet de décider en 24h, là où vos concurrents hésitent pendant un mois.",
     verdictTitle: "190 000 € / AN",
-    verdictSubtitle: "SOMME À RÉCUPÉRER PAR LE PILOTAGE DES DONNÉES",
+    verdictSubtitle: "SOMME À RÉCUPÉRER PAR LE PILOTAGE PAR LA DATA",
     verdictText: "Estimation du profit annuel récupérable pour une PME de 5M€ de CA après optimisation de son architecture opérationnelle.",
     link: Page.IMPACT_DATA,
     color: "text-[#10B981]", // Emerald Green - Success/Growth

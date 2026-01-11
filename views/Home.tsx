@@ -13,7 +13,7 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
   const getShape = (index: number) => {
       if (index === 0) {
           return (
-             <svg width="40" height="40" viewBox="0 0 40 40" fill="none" className="text-sb-beige mb-6">
+             <svg width="40" height="40" viewBox="0 0 40 40" fill="none" className="text-sb-beige mb-8">
                 <circle cx="20" cy="20" r="18" stroke="currentColor" strokeWidth="2"/>
                 <circle cx="20" cy="20" r="12" stroke="currentColor" strokeWidth="1.5" opacity="0.6"/>
                 <circle cx="20" cy="20" r="3" fill="currentColor"/>
@@ -21,13 +21,13 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
           );
       } else if (index === 1) {
           return (
-             <svg width="40" height="40" viewBox="0 0 40 40" fill="none" className="text-sb-beige mb-6">
+             <svg width="40" height="40" viewBox="0 0 40 40" fill="none" className="text-sb-beige mb-8">
                 <path d="M20 2L35.5885 11V29L20 38L4.41154 29V11L20 2Z" stroke="currentColor" strokeWidth="2"/>
              </svg>
           );
       } else {
           return (
-             <svg width="40" height="40" viewBox="0 0 40 40" fill="none" className="text-sb-beige mb-6">
+             <svg width="40" height="40" viewBox="0 0 40 40" fill="none" className="text-sb-beige mb-8">
                 <line x1="2" y1="38" x2="38" y2="38" stroke="currentColor" strokeWidth="2" strokeLinecap="square" />
                 <rect x="7" y="24" width="6" height="10" stroke="currentColor" strokeWidth="2" />
                 <rect x="17" y="16" width="6" height="18" stroke="currentColor" strokeWidth="2" />
@@ -165,45 +165,47 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                 </p>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-8">
+            <div className="grid md:grid-cols-3 gap-10 items-stretch">
             {VALUES.map((value: any, index) => (
-                <div key={index} className="group relative bg-[#1C2B29] border-t border-sb-beige p-8 lg:p-10 h-full hover:bg-[#233533] transition-colors duration-500 rounded-[2px] flex flex-col">
-                <div className="relative z-10 text-left flex-grow">
-                    <div className="transform transition-transform duration-500 group-hover:-translate-y-1">
-                        {getShape(index)}
+                <div key={index} className="group flex flex-col relative bg-[#1C2B29] border-t border-sb-beige p-8 lg:p-12 h-full hover:bg-[#233533] transition-all duration-500 rounded-[2px] shadow-xl">
+                    <div className="relative z-10 text-left flex-grow">
+                        <div className="transform transition-transform duration-500 group-hover:-translate-y-1">
+                            {getShape(index)}
+                        </div>
+
+                        <h3 className="font-serif text-xl md:text-2xl xl:text-h3-card text-white tracking-wide uppercase mb-8 font-bold leading-tight break-normal border-b border-white/5 pb-4">
+                            {value.title}
+                        </h3>
+                        
+                        <div className="font-sans text-sm md:text-base text-white/70 leading-phi font-normal mb-12 italic whitespace-pre-line">
+                            {parseBoldText(value.text)}
+                        </div>
                     </div>
 
-                    <h3 className="font-serif text-lg md:text-xl xl:text-h3-card text-white tracking-normal md:tracking-normal xl:tracking-widest uppercase mb-6 font-bold leading-tight break-normal">
-                        {value.title}
-                    </h3>
-                    
-                    <p className="font-sans text-sm md:text-base text-white/70 leading-relaxed font-normal mb-12 italic whitespace-pre-line">
-                        {parseBoldText(value.text)}
-                    </p>
-                </div>
-
-                <div className="mt-auto pt-8 border-t border-white/10 relative z-10">
-                    <p className={`font-serif text-3xl md:text-4xl xl:text-5xl font-bold tracking-tight uppercase mb-2 leading-none ${value.color || 'text-[#8A1C1C]'}`}>
-                        {value.verdictTitle}
-                    </p>
-                    {value.verdictSubtitle && (
-                        <p className="font-serif text-xs md:text-sm italic text-white/50 mb-4 font-light uppercase">
-                            {value.verdictSubtitle}
-                        </p>
-                    )}
-                    {value.verdictText && (
-                        <p className="font-sans text-[11px] text-white/40 mb-8 leading-relaxed">
-                            {value.verdictText}
-                        </p>
-                    )}
-                    
-                    <button 
-                        onClick={() => onNavigate(value.link)}
-                        className="w-full text-center py-4 border border-[#C5A065] text-[#C5A065] font-bold uppercase tracking-math-wide text-[10px] md:text-xs transition-all duration-300 rounded-[2px] hover:bg-[#C5A065] hover:text-sb-green-dark"
-                    >
-                        {value.buttonText}
-                    </button>
-                </div>
+                    <div className="mt-auto pt-10 border-t border-white/10 relative z-10 bg-[#1C2B29] group-hover:bg-[#233533] transition-colors duration-500">
+                        <div className="mb-8">
+                            <p className={`font-serif text-3xl md:text-4xl xl:text-5xl font-bold tracking-tight uppercase mb-3 leading-none ${value.color || 'text-[#10B981]'}`}>
+                                {value.verdictTitle}
+                            </p>
+                            {value.verdictSubtitle && (
+                                <p className="font-serif text-xs md:text-sm italic text-[#C5A065] mb-4 font-bold uppercase tracking-wider leading-relaxed">
+                                    {value.verdictSubtitle}
+                                </p>
+                            )}
+                            {value.verdictText && (
+                                <p className="font-sans text-[11px] text-white/40 leading-phi uppercase tracking-wide">
+                                    {value.verdictText}
+                                </p>
+                            )}
+                        </div>
+                        
+                        <button 
+                            onClick={() => onNavigate(value.link)}
+                            className="w-full text-center py-5 border border-[#C5A065] text-[#C5A065] font-bold uppercase tracking-math-wide text-[11px] md:text-xs transition-all duration-300 rounded-[2px] hover:bg-[#C5A065] hover:text-sb-green-dark group-hover:shadow-[0_0_20px_rgba(197,160,101,0.2)]"
+                        >
+                            {value.buttonText}
+                        </button>
+                    </div>
                 </div>
             ))}
             </div>

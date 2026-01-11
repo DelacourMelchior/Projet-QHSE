@@ -1,6 +1,6 @@
 
 import React from 'react';
-import Section from '../components/Section';
+import section from '../components/section';
 import { VALUES, SERVICES } from '../constants';
 import { Page } from '../types';
 import { ArrowRight, Handshake, Settings, Compass, Calendar, AlertTriangle, Zap, Target, FileText, CheckCircle2, Check } from 'lucide-react';
@@ -39,7 +39,7 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
 
   return (
     <>
-      {/* Hero Section */}
+      {/* Hero section */}
       <section className="relative min-h-screen flex items-center justify-center bg-sb-green-dark overflow-hidden">
         <div className="absolute inset-0 z-0">
           <img 
@@ -205,7 +205,7 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
       </section>
 
       {/* Services Preview */}
-      <Section bg="cream" className="pb-fib-144 border-t border-sb-green-dark/10">
+      <section bg="cream" className="pb-fib-144 border-t border-sb-green-dark/10">
         <div className="flex flex-col md:flex-row justify-between items-end mb-20">
              <div>
                 <h2 className="font-serif text-3xl md:text-title text-sb-green-dark mb-4 tracking-math-tight">NOS PRESTATIONS</h2>
@@ -276,10 +276,10 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
             </div>
           ))}
         </div>
-      </Section>
+      </section>
 
       {/* FINAL CTA */}
-      <Section bg="green" className="py-24 border-t border-sb-beige/10">
+      <section bg="green" className="py-24 border-t border-sb-beige/10">
         <div className="container mx-auto px-6 text-center">
             <h2 className="font-serif text-3xl md:text-[40px] text-white uppercase tracking-math-tight mb-8">
                 QUAND ALLEZ-VOUS SÉCURISER VOTRE AVENIR ?

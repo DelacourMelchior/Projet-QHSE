@@ -1,4 +1,3 @@
-
 import React from 'react';
 import Section from '../components/Section';
 import { Page } from '../types';
@@ -29,7 +28,7 @@ const OfferRobustesse: React.FC<OfferRobustesseProps> = ({ onNavigate }) => {
                 CABINET DELACOUR — AUDIT DE ROBUSTESSE
             </span>
             
-            <h1 className="font-serif text-5xl md:text-hero text-white leading-[1.1] tracking-math-tight mb-8 uppercase">
+            <h1 className="font-serif text-4xl sm:text-5xl md:text-hero text-white leading-[1.1] tracking-math-tight mb-8 uppercase">
               Sécurisation de la<br/>Chaîne de Valeur
             </h1>
             

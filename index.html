@@ -6,25 +6,8 @@
     <title>Cabinet Delacour | Stratégie & Performance QHSE</title>
     <meta name="description" content="Consultant expert en management de la qualité et audits ISO 9001. Stratégie et Performance QHSE." />
     
-    <!-- Script de gestion de redirection SPA -->
-    <script type="text/javascript">
-      (function(l) {
-        if (l.search[1] === 'p') {
-          var decoded = l.search.slice(1).split('&').map(function(s) { 
-            return s.replace(/~and~/g, '&') 
-          }).filter(function(v) { 
-            return v.indexOf('p=') === 0 
-          })[0].slice(2);
-
-          if (decoded !== l.pathname.slice(1)) {
-            window.history.replaceState(null, null, l.pathname.slice(0, -1) + decoded + (l.hash || ''));
-          }
-        }
-      }(window.location));
-    </script>
-
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" href="./Favicon.png" />
+    <!-- Favicon (Chemin absolu) -->
+    <link rel="icon" type="image/png" href="/Favicon.png" />
     
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -127,7 +110,7 @@
 </head>
   <body>
     <div id="root"></div>
-    <!-- Utilisation du chemin relatif ./ pour index.tsx -->
-    <script type="module" src="./index.tsx"></script>
+    <!-- Chemin absolu /index.tsx pour éviter les erreurs de chargement -->
+    <script type="module" src="/index.tsx"></script>
   </body>
 </html>

@@ -4,17 +4,12 @@
     <meta charset="utf-8">
     <title>Cabinet Delacour</title>
     <script type="text/javascript">
-      // Ce script prend le chemin actuel et le transforme en paramètre de requête 'p'
-      // Puis il redirige vers l'index.html qui traitera la redirection proprement.
-      var pathSegmentsToKeep = 0;
+      // Redirection immédiate vers la version Hash pour éviter le 404
       var l = window.location;
-      l.replace(
-        l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
-        l.pathname.split('/').slice(0, 1 + pathSegmentsToKeep).join('/') + '/?p=/' +
-        l.pathname.split('/').slice(1 + pathSegmentsToKeep).join('/').replace(/&/g, '~and~') +
-        (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
-        l.hash
-      );
+      var path = l.pathname;
+      // On retire le slash initial et on crée le hash
+      var target = l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') + '/#' + path;
+      l.replace(target);
     </script>
   </head>
   <body>

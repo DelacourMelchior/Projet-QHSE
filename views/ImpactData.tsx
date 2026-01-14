@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Page } from '../types';
-import { Database, EyeOff, Hourglass, ArrowRight } from 'lucide-react';
+import { Database, EyeOff, Hourglass, ArrowRight, BookOpen } from 'lucide-react';
 
 interface ImpactDataProps {
   onNavigate: (page: Page) => void;
@@ -60,12 +60,24 @@ const ImpactData: React.FC<ImpactDataProps> = ({ onNavigate }) => {
                             <span className="text-sb-green-dark font-bold uppercase tracking-wide mr-2 whitespace-nowrap">Le Calcul du Gaspillage :</span>
                             <span className="text-sb-green-dark/60 italic">Base 4 Responsables (~400€/jour) x 0,5j perdu/semaine à remplir des tableaux manuels inutiles = 2 jours perdus/mois x 12 mois.</span>
                         </p>
-                        <div className="pt-6 border-t border-gray-200 text-center md:text-right">
+                        <div className="py-6 text-center md:text-right">
                             <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1 md:mb-2">PERTE SÈCHE</p>
                             <p className="text-3xl md:text-5xl font-serif font-bold text-[#8B0000]">38 400 €</p>
                             <p className="text-[9px] text-gray-400 italic mt-1 md:mt-2">(Arrondi à 40 000 €)</p>
                         </div>
-                        <p className="text-center text-[8px] md:text-[9px] text-gray-400 italic font-light pt-2 md:pt-4">Source : Application du 'Principe de Parcimonie' (Kaplan & Norton, Balanced Scorecard) et Loi de Pareto.</p>
+                        
+                         {/* SOURCE VISIBLE */}
+                         <div className="pt-6 border-t border-gray-200 flex flex-col md:flex-row gap-4 items-start">
+                             <div className="text-[#C5A065] flex-shrink-0 mt-1">
+                                <BookOpen size={20} />
+                             </div>
+                             <div>
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-sb-green-dark mb-1">Source & Méthode</p>
+                                <p className="text-xs md:text-sm text-sb-green-dark/80 font-medium leading-relaxed">
+                                    Application du 'Principe de Parcimonie' (Kaplan & Norton, Balanced Scorecard) et Loi de Pareto appliquée au reporting.
+                                </p>
+                             </div>
+                        </div>
                     </div>
                 </div>
              </div>
@@ -124,7 +136,19 @@ const ImpactData: React.FC<ImpactDataProps> = ({ onNavigate }) => {
                                 </div>
                             </div>
                         </div>
-                        <p className="text-center text-[8px] md:text-[9px] text-gray-400 italic font-light pt-2 md:pt-4">Source : Méthodologie ABC (Activity-Based Costing) et analyse de la 'Whale Curve' de rentabilité (R. Kaplan).</p>
+                        
+                        {/* SOURCE VISIBLE */}
+                         <div className="pt-6 border-t border-gray-200 flex flex-col md:flex-row gap-4 items-start">
+                             <div className="text-[#C5A065] flex-shrink-0 mt-1">
+                                <BookOpen size={20} />
+                             </div>
+                             <div>
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-sb-green-dark mb-1">Source & Méthode</p>
+                                <p className="text-xs md:text-sm text-sb-green-dark/80 font-medium leading-relaxed">
+                                    Méthodologie ABC (Activity-Based Costing) et analyse de la 'Whale Curve' de rentabilité (Robert S. Kaplan).
+                                </p>
+                             </div>
+                        </div>
                     </div>
                 </div>
              </div>
@@ -161,12 +185,24 @@ const ImpactData: React.FC<ImpactDataProps> = ({ onNavigate }) => {
                             <span className="text-sb-green-dark font-bold uppercase tracking-wide mr-2 whitespace-nowrap">Le Scénario :</span>
                             <span className="text-sb-green-dark/60 italic">Dérive de 2% sur les coûts (Matière/Main d'œuvre) invisible pendant 3 mois (délai situation comptable) sur une base de 3M€ de coûts.</span>
                         </p>
-                        <div className="pt-6 border-t border-gray-200 text-center md:text-right">
+                        <div className="py-6 text-center md:text-right">
                             <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1 md:mb-2">PERTE IRRÉCUPÉRABLE</p>
                             <p className="text-3xl md:text-5xl font-serif font-bold text-[#8B0000]">25 000 €</p>
                             <p className="text-[9px] text-gray-400 italic mt-1 md:mt-2">(Argent brûlé par manque de réactivité)</p>
                         </div>
-                        <p className="text-center text-[8px] md:text-[9px] text-gray-400 italic font-light pt-2 md:pt-4">Source : Distinction 'Lagging vs Leading Indicators' (HBR) et principe du 'Short Interval Control' (Lean Management).</p>
+                        
+                         {/* SOURCE VISIBLE */}
+                         <div className="pt-6 border-t border-gray-200 flex flex-col md:flex-row gap-4 items-start">
+                             <div className="text-[#C5A065] flex-shrink-0 mt-1">
+                                <BookOpen size={20} />
+                             </div>
+                             <div>
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-sb-green-dark mb-1">Source & Méthode</p>
+                                <p className="text-xs md:text-sm text-sb-green-dark/80 font-medium leading-relaxed">
+                                    Distinction 'Lagging vs Leading Indicators' (HBR) et principe du 'Short Interval Control' (Lean Management).
+                                </p>
+                             </div>
+                        </div>
                     </div>
                 </div>
              </div>

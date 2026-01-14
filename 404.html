@@ -1,17 +1,15 @@
 <!DOCTYPE html>
 <html>
-  <head>
+<head>
     <meta charset="utf-8">
     <title>Cabinet Delacour</title>
     <script type="text/javascript">
-      // Redirection immédiate vers la version Hash pour éviter le 404
-      var l = window.location;
-      var path = l.pathname;
-      // On retire le slash initial et on crée le hash
-      var target = l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') + '/#' + path;
-      l.replace(target);
+        var path = window.location.pathname;
+        var host = window.location.protocol + '//' + window.location.host;
+        // On redirige tout vers la racine + le chemin en hash
+        window.location.replace(host + '/#' + path);
     </script>
-  </head>
-  <body>
-  </body>
+</head>
+<body>
+</body>
 </html>

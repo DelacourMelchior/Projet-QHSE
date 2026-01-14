@@ -54,7 +54,7 @@ const OfferAudit: React.FC<OfferAuditProps> = ({ onNavigate }) => {
                 <h2 style={{ fontSize: 'clamp(24px, 5vw, 55px)' }} className="font-serif text-sb-green-dark uppercase tracking-math-tight mb-8 leading-tight">
                     L'Épreuve du Réel
                 </h2>
-                <div className="relative p-6 md:p-10 bg-white border-l-4 border-[#8B0000] shadow-sm rounded-[2px]">
+                <div className="relative p-6 md:p-10 bg-white border-l-4 border-sb-green-dark shadow-sm rounded-[2px]">
                     <p className="font-serif text-lg md:text-3xl italic text-sb-green-dark leading-normal">
                         "L'échec d'une certification n'est pas un problème de qualité, c'est un problème de préparation."
                     </p>
@@ -63,8 +63,8 @@ const OfferAudit: React.FC<OfferAuditProps> = ({ onNavigate }) => {
 
             <div className="grid md:grid-cols-3 gap-6 md:gap-8 mt-16 px-2 md:px-0">
                 {/* Pain Point 1 */}
-                <div className="bg-white p-6 md:p-8 border border-gray-200 hover:border-[#8B0000]/30 transition-all duration-300 group rounded-[2px]">
-                    <div className="w-10 h-10 md:w-12 md:h-12 bg-sb-cream text-[#8B0000] flex items-center justify-center rounded-[2px] mb-6">
+                <div className="bg-white p-6 md:p-8 border border-gray-200 rounded-[2px] group">
+                    <div className="w-10 h-10 md:w-12 md:h-12 bg-sb-cream text-sb-green-dark flex items-center justify-center rounded-[2px] mb-6">
                         <AlertOctagon size={20} />
                     </div>
                     <h3 className="font-serif text-lg md:text-xl font-bold text-sb-green-dark mb-4">L'Angle Mort</h3>
@@ -73,8 +73,8 @@ const OfferAudit: React.FC<OfferAuditProps> = ({ onNavigate }) => {
                     </p>
                 </div>
 
-                <div className="bg-white p-6 md:p-8 border border-gray-200 hover:border-[#8B0000]/30 transition-all duration-300 group rounded-[2px]">
-                    <div className="w-10 h-10 md:w-12 md:h-12 bg-sb-cream text-[#8B0000] flex items-center justify-center rounded-[2px] mb-6">
+                <div className="bg-white p-6 md:p-8 border border-gray-200 rounded-[2px] group">
+                    <div className="w-10 h-10 md:w-12 md:h-12 bg-sb-cream text-sb-green-dark flex items-center justify-center rounded-[2px] mb-6">
                         <Timer size={20} />
                     </div>
                     <h3 className="font-serif text-lg md:text-xl font-bold text-sb-green-dark mb-4">Le Facteur Stress</h3>
@@ -83,8 +83,8 @@ const OfferAudit: React.FC<OfferAuditProps> = ({ onNavigate }) => {
                     </p>
                 </div>
 
-                <div className="bg-white p-6 md:p-8 border border-gray-200 hover:border-[#8B0000]/30 transition-all duration-300 group rounded-[2px]">
-                    <div className="w-10 h-10 md:w-12 md:h-12 bg-sb-cream text-[#8B0000] flex items-center justify-center rounded-[2px] mb-6">
+                <div className="bg-white p-6 md:p-8 border border-gray-200 rounded-[2px] group">
+                    <div className="w-10 h-10 md:w-12 md:h-12 bg-sb-cream text-sb-green-dark flex items-center justify-center rounded-[2px] mb-6">
                         <Siren size={20} />
                     </div>
                     <h3 className="font-serif text-lg md:text-xl font-bold text-sb-green-dark mb-4">L'Urgence Finale</h3>

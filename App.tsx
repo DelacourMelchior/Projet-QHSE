@@ -15,53 +15,48 @@ import ImpactSysteme from './views/ImpactSysteme';
 import ImpactData from './views/ImpactData';
 import { Page } from './types';
 
-const PAGE_TO_HASH: Record<Page, string> = {
-  [Page.HOME]: '#/',
-  [Page.ABOUT]: '#/a-propos',
-  [Page.SERVICES]: '#/prestations',
-  [Page.METHOD]: '#/methode',
-  [Page.CONTACT]: '#/contact',
-  [Page.LEGAL]: '#/mentions-legales',
-  [Page.OFFER_ISO]: '#/iso-9001',
-  [Page.OFFER_EXECUTION]: '#/structuration-performance',
-  [Page.OFFER_AUDIT]: '#/audit-blanc',
-  [Page.OFFER_ROBUSTESSE]: '#/audit-robustesse',
-  [Page.IMPACT_RISQUE]: '#/impact-financier',
-  [Page.IMPACT_SYSTEME]: '#/impact-systeme',
-  [Page.IMPACT_DATA]: '#/impact-data',
-};
-
-const HASH_TO_PAGE: Record<string, Page> = Object.entries(PAGE_TO_HASH).reduce(
-  (acc, [page, hash]) => ({ ...acc, [hash]: page as Page }),
-  {}
-);
+// Définition simplifiée des routes
+const ROUTES: { path: string; page: Page }[] = [
+  { path: '/a-propos', page: Page.ABOUT },
+  { path: '/prestations', page: Page.SERVICES },
+  { path: '/methode', page: Page.METHOD },
+  { path: '/contact', page: Page.CONTACT },
+  { path: '/mentions-legales', page: Page.LEGAL },
+  { path: '/iso-9001', page: Page.OFFER_ISO },
+  { path: '/structuration-performance', page: Page.OFFER_EXECUTION },
+  { path: '/audit-blanc', page: Page.OFFER_AUDIT },
+  { path: '/audit-robustesse', page: Page.OFFER_ROBUSTESSE },
+  { path: '/impact-financier', page: Page.IMPACT_RISQUE },
+  { path: '/impact-systeme', page: Page.IMPACT_SYSTEME },
+  { path: '/impact-data', page: Page.IMPACT_DATA },
+];
 
 const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<Page>(Page.HOME);
 
   const getPageFromHash = useCallback(() => {
-    const hash = window.location.hash;
+    const hash = window.location.hash || '';
     
-    // Nettoyage des résidus de redirection (?p=...)
-    const urlParams = new URLSearchParams(window.location.search);
-    const legacyPath = urlParams.get('p');
-    
-    if (legacyPath) {
-      // Si on détecte un ancien paramètre, on le transforme en hash et on nettoie l'URL
-      const cleanPath = legacyPath.startsWith('/') ? legacyPath : '/' + legacyPath;
-      const targetHash = '#' + cleanPath;
-      window.history.replaceState(null, '', window.location.pathname + targetHash);
-      return HASH_TO_PAGE[targetHash] || Page.HOME;
+    // 1. Si on a un paramètre ?p= (ancienne méthode), on nettoie l'URL et on ignore
+    if (window.location.search.includes('p=')) {
+        window.history.replaceState(null, '', window.location.pathname + (hash || '#/'));
     }
 
-    if (!hash || hash === '#' || hash === '#/') return Page.HOME;
-    return HASH_TO_PAGE[hash] || Page.HOME;
+    // 2. Recherche de la page correspondante
+    // On utilise endsWith pour être compatible avec les sous-dossiers de GitHub Pages
+    const matchedRoute = ROUTES.find(route => hash.endsWith(route.path));
+    
+    if (matchedRoute) {
+        return matchedRoute.page;
+    }
+
+    // 3. Par défaut, c'est l'accueil
+    return Page.HOME;
   }, []);
 
   useEffect(() => {
-    // Analyse au chargement
-    const initialPage = getPageFromHash();
-    setCurrentPage(initialPage);
+    // Initialisation
+    setCurrentPage(getPageFromHash());
 
     const handleHashChange = () => {
       setCurrentPage(getPageFromHash());
@@ -73,9 +68,13 @@ const App: React.FC = () => {
   }, [getPageFromHash]);
 
   const navigate = (page: Page) => {
-    const hash = PAGE_TO_HASH[page];
-    if (window.location.hash !== hash) {
-      window.location.hash = hash;
+    if (page === Page.HOME) {
+        window.location.hash = '#/';
+        return;
+    }
+    const route = ROUTES.find(r => r.page === page);
+    if (route) {
+        window.location.hash = '#' + route.path;
     }
   };
 

@@ -1,342 +1,284 @@
 
-import React from 'react';
-import { VALUES, SERVICES } from '../constants';
+import React, { useState } from 'react';
+import Section from '../components/Section';
 import { Page } from '../types';
-import { ArrowRight, Handshake, Settings, Compass, Calendar, AlertTriangle, Zap, Target, FileText, CheckCircle2, Check } from 'lucide-react';
+import { Mail, Send, Clock, Phone, CheckCircle2, Loader2 } from 'lucide-react';
 
-interface HomeProps {
-  onNavigate: (page: Page) => void;
+interface ContactProps {
+  onNavigate?: (page: Page) => void;
 }
 
-const Home: React.FC<HomeProps> = ({ onNavigate }) => {
-  const getShape = (index: number) => {
-      const className = "text-sb-beige mb-6 lg:mb-8";
-      if (index === 0) {
-          return (
-             <svg width="32" height="32" viewBox="0 0 40 40" fill="none" className={className}>
-                <circle cx="20" cy="20" r="18" stroke="currentColor" strokeWidth="2"/>
-                <circle cx="20" cy="20" r="12" stroke="currentColor" strokeWidth="1.5" opacity="0.6"/>
-                <circle cx="20" cy="20" r="3" fill="currentColor"/>
-             </svg>
-          );
-      } else if (index === 1) {
-          return (
-             <svg width="32" height="32" viewBox="0 0 40 40" fill="none" className={className}>
-                <path d="M20 2L35.5885 11V29L20 38L4.41154 29V11L20 2Z" stroke="currentColor" strokeWidth="2"/>
-             </svg>
-          );
-      } else {
-          return (
-             <svg width="32" height="32" viewBox="0 0 40 40" fill="none" className={className}>
-                <line x1="2" y1="38" x2="38" y2="38" stroke="currentColor" strokeWidth="2" strokeLinecap="square" />
-                <rect x="7" y="24" width="6" height="10" stroke="currentColor" strokeWidth="2" />
-                <rect x="17" y="16" width="6" height="18" stroke="currentColor" strokeWidth="2" />
-                <rect x="27" y="6" width="6" height="28" stroke="currentColor" strokeWidth="2" />
-             </svg>
-          );
-      }
+const Contact: React.FC<ContactProps> = ({ onNavigate }) => {
+  const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    company: '',
+    function: '',
+    message: '',
+    _gotcha: '' // Champ anti-spam (Honeypot)
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
   };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setStatus('submitting');
+
+    try {
+      // Utilisation de l'ID Formspree fourni par l'utilisateur
+      const response = await fetch('https://formspree.io/f/xqeezlgv', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          company: formData.company,
+          function: formData.function,
+          message: formData.message,
+          _subject: `Nouveau Diagnostic : ${formData.company} (${formData.name})`,
+          _gotcha: formData._gotcha
+        })
+      });
+
+      if (response.ok) {
+        setStatus('success');
+      } else {
+        setStatus('error');
+      }
+    } catch (error) {
+      console.error("Erreur d'envoi:", error);
+      setStatus('error');
+    }
+  };
+
+  if (status === 'success') {
+    return (
+      <Section bg="cream" className="py-32 md:py-48 min-h-screen flex items-center">
+        <div className="max-w-3xl mx-auto text-center px-6 animate-in fade-in zoom-in duration-700">
+            <div className="w-20 h-20 bg-sb-green-dark text-sb-beige flex items-center justify-center rounded-full mx-auto mb-10 shadow-xl">
+                <CheckCircle2 size={40} />
+            </div>
+            <h1 className="font-serif text-4xl md:text-5xl text-sb-green-dark mb-6 uppercase tracking-tight">
+                DEMANDE BIEN REÇUE.
+            </h1>
+            <div className="w-16 h-px bg-[#C5A065] mx-auto mb-10"></div>
+            <p className="text-xl text-sb-green-dark/80 font-light leading-relaxed mb-12">
+                Merci, M. {formData.name.split(' ')[0]}. Votre demande de diagnostic de faisabilité a été transmise au cabinet. 
+                <br /><br />
+                Je reviendrai vers vous personnellement sous <span className="font-bold border-b border-[#C5A065]">24 heures ouvrées</span> (hors week-end) pour convenir de notre créneau d'échange téléphonique de 30 minutes.
+            </p>
+            <button 
+                onClick={() => setStatus('idle')}
+                className="text-xs font-bold uppercase tracking-widest text-sb-green-dark/40 hover:text-sb-green-dark transition-colors"
+            >
+                Envoyer une autre demande
+            </button>
+        </div>
+      </Section>
+    );
+  }
 
   return (
     <>
-      {/* Hero Section */}
-      <section className="relative min-h-screen flex items-center justify-center bg-sb-green-dark overflow-hidden">
-        <div className="absolute inset-0 z-0">
-          <img 
-            src="https://image.pollinations.ai/prompt/luxury%20executive%20office%20desk%20dark%20green%20aesthetic%20cinematic%20lighting%20golden%20ratio%20symmetry%20intricate%20details%20photorealistic%208k%20oxford%20green%20wall?nologo=true" 
-            alt="Bureau de direction" 
-            className="w-full h-full object-cover opacity-30"
-          />
-          <div className="absolute inset-0 bg-sb-green-dark/80 mix-blend-multiply"></div>
-          <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-sb-green-dark to-transparent"></div>
-        </div>
+      <Section bg="cream" className="py-32 md:py-48 min-h-screen">
         
-        <div className="container mx-auto px-6 relative z-10 flex flex-col items-center justify-center text-center pt-48 md:pt-64 pb-20">
-            <h1 className="font-serif text-4xl sm:text-5xl md:text-hero text-white leading-[1.1] tracking-math-tight mb-12 drop-shadow-2xl uppercase font-normal">
-              L'ORDRE PRÉCÈDE<br/>
-              <span className="text-white">LA CROISSANCE</span>
-            </h1>
-            
-            <p className="text-lg md:text-body text-white/90 leading-loose max-w-2xl font-medium mb-0 tracking-wide font-sans">
-              Faites de la rigueur votre premier avantage concurrentiel.<br/>
-              <span className="block mt-4 opacity-90 text-xl font-normal">Audit, Structuration & Performance. Nous convertissons vos contraintes opérationnelles en leviers de rentabilité.</span>
-            </p>
-            
-            <div className="mt-24 w-full flex justify-center">
-                <button 
-                onClick={() => onNavigate(Page.CONTACT)}
-                className="group relative inline-flex items-center justify-center px-10 md:px-14 py-5 md:py-6 bg-sb-beige text-sb-green-dark font-bold uppercase tracking-math-wide text-xs md:text-sm transition-all duration-300 hover:bg-white hover:shadow-[0_0_30px_rgba(240,234,214,0.3)] rounded-[2px]"
-                >
-                    <span className="relative z-10">PARLER DE VOS ENJEUX</span>
-                </button>
-            </div>
+        {/* HEADER */}
+        <div className="max-w-4xl mx-auto text-center mb-24 px-6">
+             <h1 className="font-serif text-hero-mobile md:text-hero text-sb-green-dark mb-6 tracking-math-tight uppercase">
+                PARLONS STRATÉGIE.
+             </h1>
+             <div className="w-24 h-px bg-sb-green-dark mx-auto mb-8"></div>
+             <p className="text-body text-sb-green-dark/80 font-light leading-relaxed max-w-2xl mx-auto">
+                Demandez votre diagnostic de faisabilité offert. Un échange stratégique de 30 minutes pour évaluer le potentiel de structuration de votre organisation.
+             </p>
         </div>
-      </section>
 
-      {/* DIAGNOSTIC: LE LEVIER DE RENTABILITÉ */}
-      <section className="bg-[#F8F9FA] py-fib-144 text-center border-b border-sb-green-dark/5">
-        <div className="container mx-auto px-6">
-            <h2 className="font-serif text-3xl md:text-[45px] font-bold text-sb-green-dark uppercase leading-tight tracking-math-tight mb-8">
-                LE LEVIER DE RENTABILITÉ
-            </h2>
-            <div className="w-20 h-px bg-sb-green-dark/20 mx-auto mb-10"></div>
-            <p className="text-lg md:text-body text-sb-green-dark font-normal leading-loose max-w-[800px] mx-auto font-sans mb-16">
-                Une structure optimisée est votre premier gisement de profit net. Pour savoir si votre organisation actuelle est réellement configurée pour maximiser vos gains, posez-vous ces questions :
-            </p>
-
-            <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto mb-16">
-                <div className="bg-white p-8 md:p-10 border border-sb-green-dark/5 rounded-[2px] shadow-sm hover:shadow-lg transition-all duration-300 group">
-                    <div className="mb-8 flex justify-center">
-                        <Handshake size={48} strokeWidth={1} className="text-sb-green-dark group-hover:text-[#C5A065] transition-colors duration-300" />
+        <div className="max-w-6xl mx-auto px-6">
+            <div className="grid md:grid-cols-3 gap-16">
+                
+                {/* COLONNE GAUCHE : INFOS DIRECTES */}
+                <div className="md:col-span-1 space-y-12">
+                    <div className="space-y-6">
+                        <h3 className="text-xs font-bold uppercase tracking-math-wide text-sb-green-dark border-b border-sb-green-dark/20 pb-2">Contact Direct</h3>
+                        <div className="group">
+                            <p className="text-xs font-bold uppercase text-gray-400 mb-1">Disponibilité</p>
+                            <p className="text-sb-green-dark font-medium text-lg flex items-center gap-2">
+                                <Clock size={16} className="text-[#C5A065]" />
+                                Sous 24h ouvrées
+                            </p>
+                        </div>
                     </div>
-                    <h3 className="font-serif font-bold uppercase tracking-wide text-lg mb-6 text-sb-green-dark">EXIGENCE CLIENTS</h3>
-                    <p className="text-sb-green-dark/80 leading-loose font-medium font-sans text-left md:text-center text-sm md:text-base">
-                        Votre structure actuelle est-elle capable de rassurer les donneurs d’ordres exigeants sans que vous n'ayez à baisser vos prix ?
-                    </p>
+
+                    <div className="bg-sb-green-dark text-white p-8 rounded-[2px] shadow-xl space-y-6">
+                        <div>
+                            <h4 className="font-serif text-xl mb-4 text-sb-beige flex items-center gap-2">
+                                <Phone size={20} className="text-[#C5A065]" /> 
+                                Format du RDV
+                            </h4>
+                            <p className="text-sm font-light leading-relaxed opacity-80">
+                                Le diagnostic dure <span className="text-sb-beige font-bold">30 minutes</span> et se déroule par téléphone.
+                            </p>
+                        </div>
+                        <div className="pt-6 border-t border-white/10">
+                            <h4 className="font-serif text-xl mb-4 text-sb-beige">Engagement</h4>
+                            <p className="text-sm font-light leading-relaxed opacity-80 italic">
+                                "Chaque demande est traitée personnellement pour fixer un créneau de rappel. Confidentialité garantie."
+                            </p>
+                            <p className="mt-6 text-xs font-bold uppercase tracking-widest text-sb-beige">— M. Delacour</p>
+                        </div>
+                    </div>
                 </div>
 
-                <div className="bg-white p-8 md:p-10 border border-sb-green-dark/5 rounded-[2px] shadow-sm hover:shadow-lg transition-all duration-300 group">
-                    <div className="mb-8 flex justify-center">
-                        <Settings size={48} strokeWidth={1} className="text-sb-green-dark group-hover:text-[#C5A065] transition-colors duration-300" />
-                    </div>
-                    <h3 className="font-serif font-bold uppercase tracking-wide text-lg mb-6 text-sb-green-dark">CHARGE DE TRAVAIL</h3>
-                    <p className="text-sb-green-dark/80 leading-loose font-medium font-sans text-left md:text-center text-sm md:text-base">
-                        Votre structure est-elle conçue pour que la croissance augmente vos profits au lieu de simplement multiplier vos problèmes ?
-                    </p>
-                </div>
+                {/* COLONNE DROITE : FORMULAIRE */}
+                <div className="md:col-span-2">
+                    <div className="bg-white p-8 md:p-12 shadow-[0_10px_40px_rgba(0,0,0,0.05)] border border-gray-100 rounded-[2px]">
+                        <div className="mb-10 p-4 bg-sb-beige/30 border-l-4 border-[#C5A065] text-sb-green-dark">
+                            <p className="text-sm font-bold uppercase tracking-math-wide">Demande de Diagnostic de Faisabilité</p>
+                            <p className="text-xs opacity-70">Remplissez ce formulaire pour être rappelé et fixer votre rendez-vous.</p>
+                        </div>
 
-                <div className="bg-white p-8 md:p-10 border border-sb-green-dark/5 rounded-[2px] shadow-sm hover:shadow-lg transition-all duration-300 group">
-                    <div className="mb-8 flex justify-center">
-                        <Compass size={48} strokeWidth={1} className="text-sb-green-dark group-hover:text-[#C5A065] transition-colors duration-300" />
-                    </div>
-                    <h3 className="font-serif font-bold uppercase tracking-wide text-lg mb-6 text-sb-green-dark">PILOTAGE</h3>
-                    <p className="text-sb-green-dark/80 leading-loose font-medium font-sans text-left md:text-center text-sm md:text-base">
-                        Pilotez-vous avec une vision chirurgicale, ou naviguez-vous à vue avec des chiffres qui ont deux semaines de retard ?
-                    </p>
-                </div>
-            </div>
+                        <form className="space-y-10" onSubmit={handleSubmit}>
+                            {/* Champ Honeypot (Anti-Spam) caché */}
+                            <input type="text" name="_gotcha" value={formData._gotcha} onChange={handleChange} style={{ display: 'none' }} />
 
-            <div className="max-w-4xl mx-auto border-t border-sb-green-dark/10 pt-16">
-                <p className="font-serif text-2xl md:text-3xl text-sb-green-dark leading-tight mb-12 italic">
-                    Un seul <span className="font-bold text-[#8A1C1C]">NON</span> confirme que votre organisation actuelle bride vos profits.
-                </p>
-                <button 
-                    onClick={() => onNavigate(Page.CONTACT)}
-                    className="group relative inline-flex items-center justify-center px-8 md:px-10 py-5 bg-[#C5A065] text-[#0A1F1C] font-bold uppercase tracking-math-wide text-xs md:text-sm transition-all duration-300 hover:bg-white hover:text-[#C5A065] shadow-lg hover:shadow-xl rounded-[2px] border border-transparent hover:border-[#C5A065]"
-                >
-                    DÉVERROUILLER MON POTENTIEL DE GAIN <ArrowRight size={20} className="ml-2 group-hover:translate-x-1 transition-transform" />
-                </button>
-            </div>
-        </div>
-      </section>
-
-      {/* METHODOLOGY - LES 3 PILIERS DE LA PERFORMANCE */}
-      <section className="bg-sb-green-dark py-fib-144">
-        <div className="container mx-auto px-6">
-            <div className="text-center mb-24 max-w-4xl mx-auto">
-                <h2 className="font-serif text-3xl md:text-[45px] text-white uppercase tracking-math-tight mb-6">
-                    LES 3 PILIERS DE VOTRE PERFORMANCE
-                </h2>
-                <div className="w-16 h-px bg-sb-beige mx-auto mb-8"></div>
-                <p className="text-lg md:text-body text-white/90 font-medium leading-loose font-sans uppercase tracking-widest">
-                    La performance n'est pas un hasard, c'est une architecture.
-                </p>
-            </div>
-
-            <div className="grid md:grid-cols-3 gap-8 xl:gap-12 items-stretch">
-            {VALUES.map((value: any, index: number) => (
-                <div key={index} className="group flex flex-col relative bg-[#1C2B29] border-t-2 border-sb-beige/30 p-8 lg:p-10 xl:p-12 h-full hover:bg-[#233533] transition-all duration-500 rounded-[2px] shadow-2xl overflow-hidden">
-                    
-                    {/* 1. Zone Header - Aligne les titres horizontalement */}
-                    <div className="min-h-[140px] md:min-h-[220px] lg:min-h-[180px] mb-8">
-                        {getShape(index)}
-                        <h3 className="font-serif text-2xl xl:text-3xl text-white tracking-wide uppercase font-bold leading-tight border-b border-white/10 pb-6">
-                            {value.title}
-                        </h3>
-                    </div>
-
-                    {/* 2. Zone Description - Aligne les paragraphes d'accroche */}
-                    <div className="min-h-[80px] md:min-h-[160px] lg:min-h-[110px] mb-10">
-                        <p className="font-sans text-sm xl:text-base text-white/90 leading-relaxed font-medium italic">
-                            {value.description}
-                        </p>
-                    </div>
-
-                    {/* 3. Zone Impacts - Aligne le début de la liste à puces */}
-                    <div className="flex-grow min-h-[240px] md:min-h-[420px] lg:min-h-[320px]">
-                        <div className="space-y-8 mb-12">
-                            {value.impacts.map((impact: any, i: number) => (
-                                <div key={i} className="grid grid-cols-[20px_1fr] items-start gap-3">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-[#C5A065] mt-2 flex-shrink-0" />
-                                    <div>
-                                        <p className="text-white font-bold text-xs uppercase tracking-wider mb-1">
-                                            {impact.label}
-                                        </p>
-                                        <p className="text-white/60 text-[11px] xl:text-xs leading-relaxed font-light">
-                                            {impact.detail}
-                                        </p>
+                            <div className="space-y-6">
+                                <div className="flex justify-between items-end border-b border-gray-100 pb-2">
+                                    <h3 className="text-xs font-bold uppercase tracking-math-wide text-sb-green-dark">01. Identité & Coordonnées</h3>
+                                    <span className="text-[9px] font-bold uppercase tracking-widest text-[#C5A065] italic">* Champs obligatoires</span>
+                                </div>
+                                
+                                <div className="grid md:grid-cols-2 gap-x-6 gap-y-8">
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-bold uppercase tracking-wide text-gray-400">
+                                            Prénom & Nom <span className="text-[#C5A065]">*</span>
+                                        </label>
+                                        <input 
+                                          type="text" 
+                                          name="name"
+                                          required
+                                          value={formData.name}
+                                          onChange={handleChange}
+                                          className="w-full border-b border-gray-200 py-2 text-sb-green-dark focus:border-sb-green-dark outline-none transition-colors bg-transparent" 
+                                          placeholder="Ex: Jean Dupont" 
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-bold uppercase tracking-wide text-gray-400">
+                                            E-mail Pro <span className="text-[#C5A065]">*</span>
+                                        </label>
+                                        <input 
+                                          type="email" 
+                                          name="email"
+                                          required
+                                          value={formData.email}
+                                          onChange={handleChange}
+                                          className="w-full border-b border-gray-200 py-2 text-sb-green-dark focus:border-sb-green-dark outline-none transition-colors bg-transparent" 
+                                          placeholder="jean.dupont@societe.com" 
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-bold uppercase tracking-wide text-gray-400">
+                                            Téléphone <span className="text-[#C5A065]">*</span>
+                                        </label>
+                                        <input 
+                                          type="tel" 
+                                          name="phone"
+                                          required
+                                          value={formData.phone}
+                                          onChange={handleChange}
+                                          className="w-full border-b border-gray-200 py-2 text-sb-green-dark focus:border-sb-green-dark outline-none transition-colors bg-transparent" 
+                                          placeholder="06 00 00 00 00" 
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-bold uppercase tracking-wide text-gray-400">
+                                            Société <span className="text-[#C5A065]">*</span>
+                                        </label>
+                                        <input 
+                                          type="text" 
+                                          name="company"
+                                          required
+                                          value={formData.company}
+                                          onChange={handleChange}
+                                          className="w-full border-b border-gray-200 py-2 text-sb-green-dark focus:border-sb-green-dark outline-none transition-colors bg-transparent" 
+                                          placeholder="Raison sociale" 
+                                        />
+                                    </div>
+                                    <div className="md:col-span-2 space-y-2">
+                                        <label className="text-[10px] font-bold uppercase tracking-wide text-gray-400">
+                                            Fonction <span className="text-[#C5A065]">*</span>
+                                        </label>
+                                        <input 
+                                          type="text" 
+                                          name="function"
+                                          required
+                                          value={formData.function}
+                                          onChange={handleChange}
+                                          className="w-full border-b border-gray-200 py-2 text-sb-green-dark focus:border-sb-green-dark outline-none transition-colors bg-transparent" 
+                                          placeholder="DG, Responsable QHSE..." 
+                                        />
                                     </div>
                                 </div>
-                            ))}
-                        </div>
-                    </div>
+                            </div>
 
-                    {/* 4. Zone Verdict - Aligne le bas financier et le bouton */}
-                    <div className="mt-auto pt-10 border-t border-white/10">
-                        <div className="mb-10 bg-[#0A1210]/30 p-6 rounded-[2px] border border-white/5 min-h-[200px] md:min-h-[240px] lg:min-h-[210px] flex flex-col justify-center">
-                            <p className={`font-serif text-3xl lg:text-4xl xl:text-5xl font-bold tracking-tight uppercase mb-3 leading-none ${value.color || 'text-[#10B981]'}`}>
-                                {value.verdictTitle}
-                            </p>
-                            <p className="font-serif text-[10px] xl:text-xs text-[#C5A065] mb-4 font-bold uppercase tracking-widest leading-relaxed">
-                                {value.verdictSubtitle}
-                            </p>
-                            <div className="w-8 h-px bg-white/10 mb-4"></div>
-                            <p className="font-sans text-[10px] text-white/30 uppercase tracking-widest leading-relaxed max-w-[220px]">
-                                {value.verdictText}
-                            </p>
-                        </div>
-                        
-                        <button 
-                            onClick={() => onNavigate(value.link)}
-                            className="w-full text-center py-5 border border-[#C5A065]/30 text-[#C5A065] font-bold uppercase tracking-math-wide text-[10px] md:text-xs transition-all duration-300 rounded-[2px] hover:bg-[#C5A065] hover:text-sb-green-dark hover:border-[#C5A065] group-hover:border-[#C5A065]/100"
-                        >
-                            {value.buttonText}
-                        </button>
-                    </div>
-                </div>
-            ))}
-            </div>
-        </div>
-      </section>
+                            <div className="space-y-6">
+                                <h3 className="text-xs font-bold uppercase tracking-math-wide text-sb-green-dark border-b border-gray-100 pb-2">02. Votre Enjeu (Optionnel)</h3>
+                                <textarea 
+                                  name="message"
+                                  rows={4} 
+                                  value={formData.message}
+                                  onChange={handleChange}
+                                  className="w-full border-b border-gray-200 py-2 text-sb-green-dark focus:border-sb-green-dark outline-none resize-none transition-colors bg-transparent" 
+                                  placeholder="Détaillez brièvement votre problématique actuelle ou vos contraintes temporelles..."
+                                ></textarea>
+                            </div>
 
-      {/* Services Preview */}
-      <section className="bg-sb-cream text-sb-black border-t border-sb-green-dark/10">
-        <div className="container mx-auto px-6 py-fib-89 md:py-fib-89">
-            <div className="flex flex-col md:flex-row justify-between items-end mb-20">
-                <div>
-                    <h2 className="font-serif text-3xl md:text-title text-sb-green-dark mb-4 tracking-math-tight">NOS PRESTATIONS</h2>
-                    <p className="text-sb-green-dark font-bold uppercase tracking-math-wide text-xs md:text-sm opacity-60">Architecture de la performance</p>
-                </div>
-                <button onClick={() => onNavigate(Page.SERVICES)} className="hidden md:flex items-center text-sb-green-dark font-bold uppercase tracking-math-wide text-xs hover:text-[#C5A065] transition-colors pb-2 border-b border-sb-green-dark/20 hover:border-[#C5A065]">
-                    Voir le catalogue complet <ArrowRight size={16} className="ml-2" />
-                </button>
-            </div>
-        
-            <div className="grid grid-cols-1 gap-12">
-            {SERVICES.map((service) => (
-                <div key={service.id} className="bg-white border border-sb-green-dark/10 rounded-[2px] overflow-hidden group hover:border-sb-green-dark/30 transition-all duration-300">
-                    <div className="grid md:grid-cols-12 gap-0">
-                        <div className="md:col-span-4 p-8 md:p-10 bg-[#F7F7F4] flex flex-col justify-between border-b md:border-b-0 md:border-r border-sb-green-dark/5">
-                            <div>
-                                <span className="inline-block text-[10px] font-bold uppercase tracking-math-wide text-sb-green-dark border border-sb-green-dark/20 px-3 py-1 rounded-[2px] mb-6">
-                                    {service.subtitle}
-                                </span>
-                                <h4 className="font-serif text-2xl md:text-3xl font-bold text-sb-green-dark mb-6 leading-tight tracking-tight whitespace-pre-line">
-                                    {service.title}
-                                </h4>
-                                <p className="font-serif text-base text-sb-green-dark/80 italic leading-relaxed">
-                                    "{service.description}"
+                            {status === 'error' && (
+                              <div className="p-4 bg-red-50 text-red-800 text-xs rounded-[2px] border border-red-100 animate-pulse">
+                                Une erreur est survenue lors de l'envoi. Veuillez vérifier votre connexion ou me contacter directement par e-mail.
+                              </div>
+                            )}
+
+                            <div className="space-y-4">
+                                <button 
+                                  type="submit" 
+                                  disabled={status === 'submitting'}
+                                  className={`group w-full bg-[#C5A065] text-sb-green-dark py-5 font-bold uppercase tracking-math-wide hover:bg-sb-green-dark hover:text-white transition-all rounded-[2px] shadow-lg flex items-center justify-center gap-3 ${status === 'submitting' ? 'opacity-70 cursor-not-allowed' : ''}`}
+                                >
+                                    {status === 'submitting' ? (
+                                      <>ENVOI EN COURS <Loader2 size={16} className="animate-spin" /></>
+                                    ) : (
+                                      <>DEMANDER MON RDV DIAGNOSTIC <Send size={16} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" /></>
+                                    )}
+                                </button>
+                                <p className="text-center text-[9px] text-gray-400 uppercase tracking-widest">
+                                    En envoyant ce formulaire, vous acceptez d'être recontacté pour planifier cet échange.
                                 </p>
                             </div>
-                            <div className="mt-8">
-                                <button 
-                                    onClick={() => service.link && onNavigate(service.link)}
-                                    className="w-full bg-sb-green-dark text-sb-beige font-bold uppercase tracking-math-wide text-[10px] md:text-xs px-6 py-4 rounded-[2px] hover:bg-black transition-colors flex items-center justify-center"
-                                >
-                                    EXPLORER CE MODULE <ArrowRight size={16} className="ml-2" />
-                                </button>
-                            </div>
-                        </div>
-
-                        <div className="md:col-span-8 p-8 md:p-10 bg-white">
-                            <div className="grid sm:grid-cols-2 gap-12">
-                                <div>
-                                    <h5 className="flex items-center gap-2 text-sb-green-dark font-bold uppercase tracking-math-wide text-[10px] mb-6 pb-2 border-b border-sb-green-dark/10">
-                                        <Target size={16} className="text-[#C5A065]" /> BÉNÉFICES FINANCIERS
-                                    </h5>
-                                    <ul className="space-y-4">
-                                        {service.benefits.map((item, i) => (
-                                            <li key={i} className="flex items-start gap-3 text-sm text-sb-green-dark/80 font-medium leading-relaxed">
-                                                <Check size={16} className="text-sb-green-dark mt-1 flex-shrink-0" />
-                                                <span>{item}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                                <div>
-                                    <h5 className="flex items-center gap-2 text-sb-green-dark font-bold uppercase tracking-math-wide text-[10px] mb-6 pb-2 border-b border-sb-green-dark/10">
-                                        <FileText size={16} className="text-[#C5A065]" /> LIVRABLES CONCRETS
-                                    </h5>
-                                    <ul className="space-y-4">
-                                        {service.deliverables.map((item, i) => (
-                                            <li key={i} className="flex items-start gap-3 text-sm text-sb-green-dark/80 font-medium leading-relaxed">
-                                                <CheckCircle2 size={16} className="text-[#C5A065] mt-1 flex-shrink-0" />
-                                                <span>{item}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
+                        </form>
                     </div>
                 </div>
-            ))}
             </div>
+            
+            <p className="text-center text-[10px] text-gray-400 mt-16 font-light uppercase tracking-widest">
+                Cabinet Delacour — Respect du RGPD & Confidentialité des Données.
+            </p>
         </div>
-      </section>
 
-      {/* FINAL CTA */}
-      <section className="bg-sb-green-dark text-sb-cream py-fib-89 md:py-fib-89 border-t border-sb-beige/10">
-        <div className="container mx-auto px-6 text-center">
-            <h2 className="font-serif text-3xl md:text-[40px] text-white uppercase tracking-math-tight mb-8">
-                QUAND ALLEZ-VOUS SÉCURISER VOTRE AVENIR ?
-            </h2>
-            <div className="w-24 h-px bg-sb-beige mx-auto mb-20"></div>
-
-            <div className="grid md:grid-cols-3 gap-12 md:gap-0 max-w-6xl mx-auto mb-20 items-stretch">
-                <div className="flex flex-col items-center justify-start p-8 border-r-0 md:border-r border-white/10 last:border-0">
-                    <div className="mb-8 text-[#C5A065]">
-                        <Calendar size={40} strokeWidth={1} />
-                    </div>
-                    <h3 className="font-serif text-2xl text-white mb-6 uppercase tracking-wide">Dans 6 mois...</h3>
-                    <p className="text-white/70 font-sans text-base font-light leading-relaxed max-w-xs mx-auto">
-                        Vous constaterez que le chiffre d'affaires a monté, mais pas la marge. Vous aurez travaillé deux fois plus pour le même résultat net.
-                    </p>
-                </div>
-
-                <div className="flex flex-col items-center justify-start p-8 border-r-0 md:border-r border-white/10 last:border-0">
-                    <div className="mb-8 text-[#C5A065]">
-                        <AlertTriangle size={40} strokeWidth={1} />
-                    </div>
-                    <h3 className="font-serif text-2xl text-white mb-6 uppercase tracking-wide">La semaine prochaine...</h3>
-                    <p className="text-white/70 font-sans text-base font-light leading-relaxed max-w-xs mx-auto">
-                        Un incident qualité critique ou un retard majeur mettra en péril votre plus gros client. Vous serez en mode 'Pompier'.
-                    </p>
-                </div>
-
-                <div className="flex flex-col items-center justify-center p-10 bg-[#0A1F1C] border border-[#C5A065] rounded-[2px] relative z-10 shadow-2xl md:-my-6 md:scale-105 transform">
-                    <div className="mb-8 text-[#C5A065]">
-                        <Zap size={48} fill="currentColor" strokeWidth={0} />
-                    </div>
-                    <h3 className="font-sans font-bold uppercase tracking-widest text-xl text-[#C5A065] mb-6">DÈS MAINTENANT</h3>
-                    <p className="text-white font-sans text-base font-medium leading-relaxed max-w-xs mx-auto">
-                        Vous reprenez le contrôle. Nous identifions les fuites et structurons votre croissance. Vous dormez enfin l'esprit tranquille.
-                    </p>
-                </div>
-            </div>
-
-            <div className="flex flex-col items-center justify-center mt-20">
-                 <button 
-                    onClick={() => onNavigate(Page.CONTACT)}
-                    className="group relative inline-flex items-center justify-center px-8 md:px-10 py-5 bg-[#C5A065] text-sb-green-dark font-bold uppercase tracking-math-wide text-xs md:text-sm overflow-hidden transition-all duration-300 hover:bg-white rounded-[2px]"
-                >
-                    DÉMARRER LA TRANSFORMATION <ArrowRight size={20} className="ml-2 group-hover:translate-x-1 transition-transform" />
-                 </button>
-            </div>
-        </div>
-      </section>
+      </Section>
     </>
   );
 };
 
-export default Home;
+export default Contact;

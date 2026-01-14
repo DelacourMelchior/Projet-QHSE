@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Page } from '../types';
-import { TrendingDown, Users, Layers, ArrowRight } from 'lucide-react';
+import { TrendingDown, Users, Layers, ArrowRight, BookOpen } from 'lucide-react';
 
 interface ImpactSystemeProps {
   onNavigate: (page: Page) => void;
@@ -60,11 +60,23 @@ const ImpactSysteme: React.FC<ImpactSystemeProps> = ({ onNavigate }) => {
                             <span className="text-sb-green-dark font-bold uppercase tracking-wide mr-2 whitespace-nowrap">Scénario PME (CA 5M€ / AN) :</span>
                             <span className="text-sb-green-dark/60 italic">Sur une masse salariale opérationnelle d'environ 1,2M€, l'absence de processus optimisés génère 25% de temps improductif (recherche, attente, flou).</span>
                         </p>
-                        <div className="pt-6 border-t border-gray-200 text-center md:text-right">
+                        <div className="py-6 text-center md:text-right">
                             <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1 md:mb-2">SALAIRES À FONDS PERDUS</p>
                             <p className="text-3xl md:text-5xl font-serif font-bold text-[#8B0000]">300 000 € <span className="text-sm md:text-xl font-sans font-bold">/ AN</span></p>
                         </div>
-                        <p className="text-center text-[8px] md:text-[9px] text-gray-400 italic font-light pt-2 md:pt-4">Source : Études IDC sur la productivité (recherche d'information) et méthodologie Lean Office.</p>
+                        
+                        {/* SOURCE VISIBLE */}
+                        <div className="pt-6 border-t border-gray-200 flex flex-col md:flex-row gap-4 items-start">
+                             <div className="text-[#C5A065] flex-shrink-0 mt-1">
+                                <BookOpen size={20} />
+                             </div>
+                             <div>
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-sb-green-dark mb-1">Source & Méthode</p>
+                                <p className="text-xs md:text-sm text-sb-green-dark/80 font-medium leading-relaxed">
+                                    Études IDC sur la productivité ("The High Cost of Not Finding Information") et méthodologie standard Lean Office.
+                                </p>
+                             </div>
+                        </div>
                     </div>
                 </div>
              </div>
@@ -101,11 +113,23 @@ const ImpactSysteme: React.FC<ImpactSystemeProps> = ({ onNavigate }) => {
                             <span className="text-sb-green-dark font-bold uppercase tracking-wide mr-2 whitespace-nowrap">Impact Financier Réel :</span>
                             <span className="text-sb-green-dark/60 italic">Remplacer un expert (60k€/an) coûte 150% de son salaire (Recrutement + Formation + Perte de productivité).</span>
                         </p>
-                        <div className="pt-6 border-t border-gray-200 text-center md:text-right">
+                        <div className="py-6 text-center md:text-right">
                             <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1 md:mb-2">PERTE SÈCHE</p>
                             <p className="text-3xl md:text-5xl font-serif font-bold text-[#8B0000]">90 000 € <span className="text-sm md:text-xl font-sans font-bold">/ DÉMISSION</span></p>
                         </div>
-                        <p className="text-center text-[8px] md:text-[9px] text-gray-400 italic font-light pt-2 md:pt-4">Source : Données SHRM évaluant le coût de remplacement d'un expert entre 150% et 200% du salaire annuel.</p>
+                        
+                         {/* SOURCE VISIBLE */}
+                         <div className="pt-6 border-t border-gray-200 flex flex-col md:flex-row gap-4 items-start">
+                             <div className="text-[#C5A065] flex-shrink-0 mt-1">
+                                <BookOpen size={20} />
+                             </div>
+                             <div>
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-sb-green-dark mb-1">Source & Méthode</p>
+                                <p className="text-xs md:text-sm text-sb-green-dark/80 font-medium leading-relaxed">
+                                    Données SHRM (Society for Human Resource Management) évaluant le coût de remplacement d'un expert entre 150% et 200% du salaire annuel.
+                                </p>
+                             </div>
+                        </div>
                     </div>
                 </div>
              </div>
@@ -142,11 +166,23 @@ const ImpactSysteme: React.FC<ImpactSystemeProps> = ({ onNavigate }) => {
                             <span className="text-sb-green-dark font-bold uppercase tracking-wide mr-2 whitespace-nowrap">Impact Financier Réel :</span>
                             <span className="text-sb-green-dark/60 italic">Sur un CA de 5M€, vous laissez échapper 10% de croissance par incapacité à absorber la charge supplémentaire.</span>
                         </p>
-                        <div className="pt-6 border-t border-gray-200 text-center md:text-right">
+                        <div className="py-6 text-center md:text-right">
                             <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1 md:mb-2">ARGENT LAISSÉ SUR LA TABLE</p>
                             <p className="text-3xl md:text-5xl font-serif font-bold text-[#8B0000]">500 000 € <span className="text-sm md:text-xl font-sans font-bold">/ AN</span></p>
                         </div>
-                        <p className="text-center text-[8px] md:text-[9px] text-gray-400 italic font-light pt-2 md:pt-4">Source : Modèle de la 'Courbe de Greiner' (Crise d'Autonomie) et analyse du 'Paradoxe de la Croissance' (Bain & Co).</p>
+                        
+                         {/* SOURCE VISIBLE */}
+                         <div className="pt-6 border-t border-gray-200 flex flex-col md:flex-row gap-4 items-start">
+                             <div className="text-[#C5A065] flex-shrink-0 mt-1">
+                                <BookOpen size={20} />
+                             </div>
+                             <div>
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-sb-green-dark mb-1">Source & Méthode</p>
+                                <p className="text-xs md:text-sm text-sb-green-dark/80 font-medium leading-relaxed">
+                                    Modèle de la 'Courbe de Greiner' (Crise d'Autonomie) et analyse du 'Paradoxe de la Croissance' (Bain & Co).
+                                </p>
+                             </div>
+                        </div>
                     </div>
                 </div>
              </div>

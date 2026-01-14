@@ -15,47 +15,55 @@ import ImpactSysteme from './views/ImpactSysteme';
 import ImpactData from './views/ImpactData';
 import { Page } from './types';
 
-// Définition simplifiée des routes
-const ROUTES: { path: string; page: Page }[] = [
-  { path: '/a-propos', page: Page.ABOUT },
-  { path: '/prestations', page: Page.SERVICES },
-  { path: '/methode', page: Page.METHOD },
-  { path: '/contact', page: Page.CONTACT },
-  { path: '/mentions-legales', page: Page.LEGAL },
-  { path: '/iso-9001', page: Page.OFFER_ISO },
-  { path: '/structuration-performance', page: Page.OFFER_EXECUTION },
-  { path: '/audit-blanc', page: Page.OFFER_AUDIT },
-  { path: '/audit-robustesse', page: Page.OFFER_ROBUSTESSE },
-  { path: '/impact-financier', page: Page.IMPACT_RISQUE },
-  { path: '/impact-systeme', page: Page.IMPACT_SYSTEME },
-  { path: '/impact-data', page: Page.IMPACT_DATA },
-];
+// On mappe le "slug" (le dernier mot de l'URL) directement vers la Page
+const SLUG_TO_PAGE: Record<string, Page> = {
+  'a-propos': Page.ABOUT,
+  'prestations': Page.SERVICES,
+  'methode': Page.METHOD,
+  'contact': Page.CONTACT,
+  'mentions-legales': Page.LEGAL,
+  'iso-9001': Page.OFFER_ISO,
+  'structuration-performance': Page.OFFER_EXECUTION,
+  'audit-blanc': Page.OFFER_AUDIT,
+  'audit-robustesse': Page.OFFER_ROBUSTESSE,
+  'impact-financier': Page.IMPACT_RISQUE,
+  'impact-systeme': Page.IMPACT_SYSTEME,
+  'impact-data': Page.IMPACT_DATA,
+  // Pas de slug pour Home, c'est le défaut
+};
 
 const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<Page>(Page.HOME);
 
   const getPageFromHash = useCallback(() => {
-    const hash = window.location.hash || '';
-    
-    // 1. Si on a un paramètre ?p= (ancienne méthode), on nettoie l'URL et on ignore
-    if (window.location.search.includes('p=')) {
-        window.history.replaceState(null, '', window.location.pathname + (hash || '#/'));
+    // 1. Récupération du hash brut
+    let hash = window.location.hash;
+
+    // 2. Nettoyage radical : on enlève les paramètres de requête (?) et le slash de fin
+    if (hash.includes('?')) hash = hash.split('?')[0];
+    if (hash.endsWith('/')) hash = hash.slice(0, -1);
+
+    // 3. Extraction du dernier segment (ex: "#/mon-repo/contact" -> "contact")
+    const segments = hash.split('/');
+    const lastSegment = segments[segments.length - 1];
+
+    // 4. Correspondance
+    // Si le segment est vide ou n'existe pas dans notre liste, c'est l'ACCUEIL
+    if (!lastSegment || lastSegment === '#' || !SLUG_TO_PAGE[lastSegment]) {
+        return Page.HOME;
     }
 
-    // 2. Recherche de la page correspondante
-    // On utilise endsWith pour être compatible avec les sous-dossiers de GitHub Pages
-    const matchedRoute = ROUTES.find(route => hash.endsWith(route.path));
-    
-    if (matchedRoute) {
-        return matchedRoute.page;
-    }
-
-    // 3. Par défaut, c'est l'accueil
-    return Page.HOME;
+    return SLUG_TO_PAGE[lastSegment];
   }, []);
 
   useEffect(() => {
-    // Initialisation
+    // Nettoyage de l'URL au chargement (suppression des vieux ?p=)
+    if (window.location.search.includes('p=')) {
+        const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + window.location.hash;
+        window.history.replaceState({}, document.title, cleanUrl);
+    }
+
+    // Définition de la page initiale
     setCurrentPage(getPageFromHash());
 
     const handleHashChange = () => {
@@ -68,13 +76,17 @@ const App: React.FC = () => {
   }, [getPageFromHash]);
 
   const navigate = (page: Page) => {
+    // Pour naviguer, on reconstruit un hash simple
     if (page === Page.HOME) {
         window.location.hash = '#/';
         return;
     }
-    const route = ROUTES.find(r => r.page === page);
-    if (route) {
-        window.location.hash = '#' + route.path;
+
+    // On trouve le slug correspondant à la page demandée
+    const slug = Object.keys(SLUG_TO_PAGE).find(key => SLUG_TO_PAGE[key] === page);
+    
+    if (slug) {
+        window.location.hash = '#/' + slug;
     }
   };
 

@@ -1,9 +1,14 @@
 
 import React from 'react';
 import Section from '../components/Section';
+import { Page } from '../types';
 import { Shield, Lock, FileText, Server, Mail } from 'lucide-react';
 
-const Legal: React.FC = () => {
+interface LegalProps {
+  onNavigate?: (page: Page) => void;
+}
+
+const Legal: React.FC<LegalProps> = ({ onNavigate }) => {
   return (
     <>
       <div className="bg-sb-green-dark text-sb-cream py-32 text-center border-b-4 border-sb-beige">

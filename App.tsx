@@ -16,62 +16,63 @@ import ImpactSysteme from './views/ImpactSysteme';
 import ImpactData from './views/ImpactData';
 import { Page } from './types';
 
-// Mapping des pages vers les chemins URL
-const PAGE_TO_PATH: Record<Page, string> = {
-  [Page.HOME]: '/',
-  [Page.ABOUT]: '/a-propos',
-  [Page.SERVICES]: '/prestations',
-  [Page.METHOD]: '/methode',
-  [Page.CONTACT]: '/contact',
-  [Page.LEGAL]: '/mentions-legales',
-  [Page.OFFER_ISO]: '/iso-9001',
-  [Page.OFFER_EXECUTION]: '/structuration-performance',
-  [Page.OFFER_AUDIT]: '/audit-blanc',
-  [Page.OFFER_ROBUSTESSE]: '/audit-robustesse',
-  [Page.IMPACT_RISQUE]: '/impact-financier',
-  [Page.IMPACT_SYSTEME]: '/impact-systeme',
-  [Page.IMPACT_DATA]: '/impact-data',
+// Mapping des pages vers les fragments de hachage (Hash)
+const PAGE_TO_HASH: Record<Page, string> = {
+  [Page.HOME]: '#/',
+  [Page.ABOUT]: '#/a-propos',
+  [Page.SERVICES]: '#/prestations',
+  [Page.METHOD]: '#/methode',
+  [Page.CONTACT]: '#/contact',
+  [Page.LEGAL]: '#/mentions-legales',
+  [Page.OFFER_ISO]: '#/iso-9001',
+  [Page.OFFER_EXECUTION]: '#/structuration-performance',
+  [Page.OFFER_AUDIT]: '#/audit-blanc',
+  [Page.OFFER_ROBUSTESSE]: '#/audit-robustesse',
+  [Page.IMPACT_RISQUE]: '#/impact-financier',
+  [Page.IMPACT_SYSTEME]: '#/impact-systeme',
+  [Page.IMPACT_DATA]: '#/impact-data',
 };
 
-// Mapping inverse pour retrouver la page à partir du chemin
-const PATH_TO_PAGE: Record<string, Page> = Object.entries(PAGE_TO_PATH).reduce(
-  (acc, [page, path]) => ({ ...acc, [path]: page as Page }),
+// Mapping inverse pour retrouver la page à partir du hash
+const HASH_TO_PAGE: Record<string, Page> = Object.entries(PAGE_TO_HASH).reduce(
+  (acc, [page, hash]) => ({ ...acc, [hash]: page as Page }),
   {}
 );
 
 const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<Page>(Page.HOME);
 
-  // Fonction pour déterminer la page basée sur l'URL actuelle
-  const getPageFromLocation = useCallback(() => {
-    const path = window.location.pathname;
-    return PATH_TO_PAGE[path] || Page.HOME;
+  // Fonction pour déterminer la page basée sur le hash actuel
+  const getPageFromHash = useCallback(() => {
+    const hash = window.location.hash || '#/';
+    return HASH_TO_PAGE[hash] || Page.HOME;
   }, []);
 
-  // Initialisation au chargement
+  // Initialisation et écoute des changements d'URL
   useEffect(() => {
-    setCurrentPage(getPageFromLocation());
+    // Déterminer la page au chargement initial
+    setCurrentPage(getPageFromHash());
 
-    // Écouteur pour les boutons précédent/suivant du navigateur
-    const handlePopState = () => {
-      setCurrentPage(getPageFromLocation());
+    // Écouter les changements de hachage (clic sur liens, bouton retour, etc.)
+    const handleHashChange = () => {
+      setCurrentPage(getPageFromHash());
     };
 
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, [getPageFromLocation]);
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, [getPageFromHash]);
 
-  // Scroll to top on page change
+  // Remonter en haut de page à chaque changement de vue
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [currentPage]);
 
-  // Fonction de navigation enrichie
+  // Fonction de navigation
   const navigate = (page: Page) => {
-    const path = PAGE_TO_PATH[page];
-    if (window.location.pathname !== path) {
-      window.history.pushState(null, '', path);
-      setCurrentPage(page);
+    const hash = PAGE_TO_HASH[page];
+    if (window.location.hash !== hash) {
+      window.location.hash = hash;
+      // L'état sera mis à jour via l'événement hashchange
     }
   };
 

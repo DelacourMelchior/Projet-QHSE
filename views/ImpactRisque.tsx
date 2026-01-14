@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Page } from '../types';
-import { Factory, Briefcase, Clock, ArrowRight } from 'lucide-react';
+import { Factory, Briefcase, Clock, ArrowRight, BookOpen } from 'lucide-react';
 
 interface ImpactRisqueProps {
   onNavigate: (page: Page) => void;
@@ -60,12 +60,24 @@ const ImpactRisque: React.FC<ImpactRisqueProps> = ({ onNavigate }) => {
                             <span className="text-sb-green-dark font-bold uppercase tracking-wide mr-2 whitespace-nowrap">Le Calcul :</span>
                             <span className="text-sb-green-dark/60 italic">15% du CA consommé par la non-qualité (rebuts, temps de reprise, avoirs, gestion des litiges).</span>
                         </p>
-                        <div className="pt-6 border-t border-gray-200 text-center md:text-right">
+                        <div className="py-6 text-center md:text-right">
                             <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1 md:mb-2">PERTE ANNUELLE RÉCURRENTE</p>
                             <p className="text-3xl md:text-5xl font-serif font-bold text-[#8B0000]">750 000 €</p>
                             <p className="text-[9px] text-gray-400 italic mt-1 md:mt-2">(Tant que la cause racine n'est pas traitée)</p>
                         </div>
-                        <p className="text-center text-[8px] md:text-[9px] text-gray-400 italic font-light pt-2 md:pt-4">Source : Estimation conservatrice basée sur le modèle de P. Crosby et les référentiels AFNOR.</p>
+                        
+                        {/* SOURCE VISIBLE */}
+                        <div className="pt-6 border-t border-gray-200 flex flex-col md:flex-row gap-4 items-start">
+                             <div className="text-[#C5A065] flex-shrink-0 mt-1">
+                                <BookOpen size={20} />
+                             </div>
+                             <div>
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-sb-green-dark mb-1">Source & Méthode</p>
+                                <p className="text-xs md:text-sm text-sb-green-dark/80 font-medium leading-relaxed">
+                                    Estimation conservatrice basée sur le modèle de P. Crosby ("Quality is Free") et les référentiels AFNOR sur les coûts de non-qualité.
+                                </p>
+                             </div>
+                        </div>
                     </div>
                 </div>
              </div>
@@ -101,12 +113,24 @@ const ImpactRisque: React.FC<ImpactRisqueProps> = ({ onNavigate }) => {
                             <span className="text-sb-green-dark font-bold uppercase tracking-wide mr-2 whitespace-nowrap">Simulation :</span>
                             <span className="text-sb-green-dark/60 italic">Disqualification sur un appel d'offres stratégique (ou perte client Top 5) due à une note 'Fiabilité' insuffisante.</span>
                         </p>
-                        <div className="pt-6 border-t border-gray-200 text-center md:text-right">
+                        <div className="py-6 text-center md:text-right">
                             <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1 md:mb-2">MANQUE À GAGNER</p>
                             <p className="text-3xl md:text-5xl font-serif font-bold text-[#8B0000]">200 000 € <span className="text-sm md:text-xl font-sans font-bold">NET</span></p>
                             <p className="text-[9px] text-gray-400 italic mt-1 md:mt-2">(Marge directe perdue sur 3 ans)</p>
                         </div>
-                        <p className="text-center text-[8px] md:text-[9px] text-gray-400 italic font-light pt-2 md:pt-4">Source : Application du principe de 'Taxe de la Défiance' (S.M.R. Covey) et des critères de disqualification Achats (ISO 19011).</p>
+                        
+                         {/* SOURCE VISIBLE */}
+                         <div className="pt-6 border-t border-gray-200 flex flex-col md:flex-row gap-4 items-start">
+                             <div className="text-[#C5A065] flex-shrink-0 mt-1">
+                                <BookOpen size={20} />
+                             </div>
+                             <div>
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-sb-green-dark mb-1">Source & Méthode</p>
+                                <p className="text-xs md:text-sm text-sb-green-dark/80 font-medium leading-relaxed">
+                                    Application du principe de 'Taxe de la Défiance' (S.M.R. Covey) et des critères standards de disqualification Achats (Norme ISO 19011 - Audit).
+                                </p>
+                             </div>
+                        </div>
                     </div>
                 </div>
              </div>
@@ -143,12 +167,24 @@ const ImpactRisque: React.FC<ImpactRisqueProps> = ({ onNavigate }) => {
                             <span className="text-sb-green-dark font-bold uppercase tracking-wide mr-2 whitespace-nowrap">Le Calcul :</span>
                             <span className="text-sb-green-dark/60 italic">40% du temps de la Direction (Masse salariale chargée ~400k€) absorbé par la gestion de crise.</span>
                         </p>
-                        <div className="pt-6 border-t border-gray-200 text-center md:text-right">
+                        <div className="py-6 text-center md:text-right">
                             <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1 md:mb-2">GASPILLAGE SALARIAL</p>
                             <p className="text-3xl md:text-5xl font-serif font-bold text-[#8B0000]">160 000 € <span className="text-sm md:text-xl font-sans font-bold">/ AN</span></p>
                             <p className="text-[9px] text-gray-400 italic mt-1 md:mt-2">(Sans compter le CA non développé faute de temps)</p>
                         </div>
-                        <p className="text-center text-[8px] md:text-[9px] text-gray-400 italic font-light pt-2 md:pt-4">Source : Corrélation basée sur les études HBR (How CEOs Manage Time) et Bain & Company sur la surcharge organisationnelle.</p>
+                        
+                         {/* SOURCE VISIBLE */}
+                         <div className="pt-6 border-t border-gray-200 flex flex-col md:flex-row gap-4 items-start">
+                             <div className="text-[#C5A065] flex-shrink-0 mt-1">
+                                <BookOpen size={20} />
+                             </div>
+                             <div>
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-sb-green-dark mb-1">Source & Méthode</p>
+                                <p className="text-xs md:text-sm text-sb-green-dark/80 font-medium leading-relaxed">
+                                    Corrélation basée sur les études HBR ("How CEOs Manage Time") et Bain & Company sur la surcharge organisationnelle.
+                                </p>
+                             </div>
+                        </div>
                     </div>
                 </div>
              </div>

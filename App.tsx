@@ -37,17 +37,29 @@ const HASH_TO_PAGE: Record<string, Page> = Object.entries(PAGE_TO_HASH).reduce(
 );
 
 const App: React.FC = () => {
-  // On force HOME comme état initial
   const [currentPage, setCurrentPage] = useState<Page>(Page.HOME);
 
   const getPageFromHash = useCallback(() => {
     const hash = window.location.hash;
+    
+    // Nettoyage des résidus de redirection (?p=...)
+    const urlParams = new URLSearchParams(window.location.search);
+    const legacyPath = urlParams.get('p');
+    
+    if (legacyPath) {
+      // Si on détecte un ancien paramètre, on le transforme en hash et on nettoie l'URL
+      const cleanPath = legacyPath.startsWith('/') ? legacyPath : '/' + legacyPath;
+      const targetHash = '#' + cleanPath;
+      window.history.replaceState(null, '', window.location.pathname + targetHash);
+      return HASH_TO_PAGE[targetHash] || Page.HOME;
+    }
+
     if (!hash || hash === '#' || hash === '#/') return Page.HOME;
     return HASH_TO_PAGE[hash] || Page.HOME;
   }, []);
 
   useEffect(() => {
-    // Analyse immédiate du hash au montage
+    // Analyse au chargement
     const initialPage = getPageFromHash();
     setCurrentPage(initialPage);
 

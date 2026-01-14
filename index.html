@@ -24,7 +24,7 @@
     </script>
 
     <!-- Favicon -->
-    <link rel="icon" type="image/png" href="/Favicon.png" />
+    <link rel="icon" type="image/png" href="./Favicon.png" />
     
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -99,6 +99,8 @@
         color: #152822;
         font-family: 'Montserrat', sans-serif;
         line-height: 1.618;
+        margin: 0;
+        padding: 0;
       }
       h1, h2, h3, h4, h5, h6 {
         font-family: 'Playfair Display', serif;
@@ -125,6 +127,7 @@
 </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/index.tsx"></script>
+    <!-- Utilisation d'un chemin relatif pour index.tsx pour une meilleure compatibilité -->
+    <script type="module" src="./index.tsx"></script>
   </body>
 </html>

@@ -17,7 +17,7 @@ const Method: React.FC<MethodProps> = ({ onNavigate }) => {
             
             <h1 className="font-serif text-5xl md:text-7xl mb-10 tracking-tight font-medium leading-tight text-white">
                 NOTRE PROTOCOLE<br/>
-                D'INTERVENTION.
+                D'INTERVENTION
             </h1>
             
             <div className="w-32 h-2 bg-[#C5A065] mx-auto mb-12"></div>
@@ -88,7 +88,7 @@ const Method: React.FC<MethodProps> = ({ onNavigate }) => {
                 </h3>
 
                 <p className="text-xl md:text-2xl text-sb-green-dark/90 font-sans leading-loose text-justify">
-                    Rien ne se décide dans une tour d'ivoire. Cette phase est collaborative. En Audit, je confronte mon analyse à la réalité pour vérifier la conformité. En Conseil, nous bâtissons les processus ensemble lors d'ateliers ciblés. Dans les deux cas, nous validons chaque point avec vos experts pour garantir que la solution est applicable.
+                    Rien ne se décide dans une tour d'ivoire. Cette phase est collaborative. En Audit, je confronte mon analyse à la réalité pour vérifier la conformité. En Conseil, nous bâtissons les processus ensemble lors d'ateliers ciblés. Dans les deux cas, we validons chaque point avec vos experts pour garantir que la solution est applicable.
                 </p>
             </div>
 

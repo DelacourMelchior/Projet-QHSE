@@ -37,18 +37,19 @@ const HASH_TO_PAGE: Record<string, Page> = Object.entries(PAGE_TO_HASH).reduce(
 );
 
 const App: React.FC = () => {
+  // On force HOME comme état initial
   const [currentPage, setCurrentPage] = useState<Page>(Page.HOME);
 
   const getPageFromHash = useCallback(() => {
     const hash = window.location.hash;
-    // Si pas de hash ou hash vide, on est sur HOME
     if (!hash || hash === '#' || hash === '#/') return Page.HOME;
     return HASH_TO_PAGE[hash] || Page.HOME;
   }, []);
 
   useEffect(() => {
-    // Détection initiale de la page au chargement
-    setCurrentPage(getPageFromHash());
+    // Analyse immédiate du hash au montage
+    const initialPage = getPageFromHash();
+    setCurrentPage(initialPage);
 
     const handleHashChange = () => {
       setCurrentPage(getPageFromHash());

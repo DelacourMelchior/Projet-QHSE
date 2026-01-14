@@ -15,53 +15,56 @@ import ImpactSysteme from './views/ImpactSysteme';
 import ImpactData from './views/ImpactData';
 import { Page } from './types';
 
-const PAGE_TO_HASH: Record<Page, string> = {
-  [Page.HOME]: '#/',
-  [Page.ABOUT]: '#/a-propos',
-  [Page.SERVICES]: '#/prestations',
-  [Page.METHOD]: '#/methode',
-  [Page.CONTACT]: '#/contact',
-  [Page.LEGAL]: '#/mentions-legales',
-  [Page.OFFER_ISO]: '#/iso-9001',
-  [Page.OFFER_EXECUTION]: '#/structuration-performance',
-  [Page.OFFER_AUDIT]: '#/audit-blanc',
-  [Page.OFFER_ROBUSTESSE]: '#/audit-robustesse',
-  [Page.IMPACT_RISQUE]: '#/impact-financier',
-  [Page.IMPACT_SYSTEME]: '#/impact-systeme',
-  [Page.IMPACT_DATA]: '#/impact-data',
+const PAGE_TO_PATH: Record<Page, string> = {
+  [Page.HOME]: '/',
+  [Page.ABOUT]: '/a-propos',
+  [Page.SERVICES]: '/prestations',
+  [Page.METHOD]: '/methode',
+  [Page.CONTACT]: '/contact',
+  [Page.LEGAL]: '/mentions-legales',
+  [Page.OFFER_ISO]: '/iso-9001',
+  [Page.OFFER_EXECUTION]: '/structuration-performance',
+  [Page.OFFER_AUDIT]: '/audit-blanc',
+  [Page.OFFER_ROBUSTESSE]: '/audit-robustesse',
+  [Page.IMPACT_RISQUE]: '/impact-financier',
+  [Page.IMPACT_SYSTEME]: '/impact-systeme',
+  [Page.IMPACT_DATA]: '/impact-data',
 };
 
-const HASH_TO_PAGE: Record<string, Page> = Object.entries(PAGE_TO_HASH).reduce(
-  (acc, [page, hash]) => ({ ...acc, [hash]: page as Page }),
+const PATH_TO_PAGE: Record<string, Page> = Object.entries(PAGE_TO_PATH).reduce(
+  (acc, [page, path]) => ({ ...acc, [path]: page as Page }),
   {}
 );
 
 const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<Page>(Page.HOME);
 
-  const getPageFromHash = useCallback(() => {
-    const hash = window.location.hash;
-    if (!hash || hash === '#' || hash === '#/') return Page.HOME;
-    return HASH_TO_PAGE[hash] || Page.HOME;
+  const getPageFromPath = useCallback(() => {
+    const path = window.location.pathname;
+    // Nettoyage des slashs finaux éventuels pour la correspondance
+    const cleanPath = path.length > 1 && path.endsWith('/') ? path.slice(0, -1) : path;
+    return PATH_TO_PAGE[cleanPath] || Page.HOME;
   }, []);
 
   useEffect(() => {
-    // Détection initiale
-    setCurrentPage(getPageFromHash());
+    // Détection initiale après le script de restauration d'index.html
+    setCurrentPage(getPageFromPath());
 
-    const handleHashChange = () => {
-      setCurrentPage(getPageFromHash());
+    const handlePopState = () => {
+      setCurrentPage(getPageFromPath());
       window.scrollTo(0, 0);
     };
 
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
-  }, [getPageFromHash]);
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [getPageFromPath]);
 
   const navigate = (page: Page) => {
-    const hash = PAGE_TO_HASH[page];
-    if (window.location.hash !== hash) {
-      window.location.hash = hash;
+    const path = PAGE_TO_PATH[page];
+    if (window.location.pathname !== path) {
+      window.history.pushState(null, '', path);
+      setCurrentPage(page);
+      window.scrollTo(0, 0);
     }
   };
 

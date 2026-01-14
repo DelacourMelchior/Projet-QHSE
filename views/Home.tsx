@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { VALUES, SERVICES } from '../constants';
 import { Page } from '../types';
@@ -52,14 +51,14 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
         </div>
         
         <div className="container mx-auto px-6 relative z-10 flex flex-col items-center justify-center text-center pt-48 md:pt-64 pb-20">
-            <h1 className="font-serif text-4xl sm:text-5xl md:text-hero text-white leading-[1.1] tracking-math-tight mb-12 drop-shadow-2xl uppercase font-normal">
+            <h1 className="font-serif text-3xl sm:text-5xl md:text-7xl lg:text-hero text-white leading-[1.1] tracking-math-tight mb-12 drop-shadow-2xl uppercase font-normal">
               L'ORDRE PRÉCÈDE<br/>
               <span className="text-white">LA CROISSANCE</span>
             </h1>
             
-            <p className="text-lg md:text-body text-white/90 leading-loose max-w-2xl font-medium mb-0 tracking-wide font-sans">
+            <p className="text-base md:text-body text-white/90 leading-loose max-w-2xl font-medium mb-0 tracking-wide font-sans">
               Faites de la rigueur votre premier avantage concurrentiel.<br/>
-              <span className="block mt-4 opacity-90 text-xl font-normal">Audit, Structuration & Performance. Nous convertissons vos contraintes opérationnelles en leviers de rentabilité.</span>
+              <span className="block mt-4 opacity-90 text-lg md:text-xl font-normal">Audit, Structuration & Performance. Nous convertissons vos contraintes opérationnelles en leviers de rentabilité.</span>
             </p>
             
             <div className="mt-24 w-full flex justify-center">
@@ -74,13 +73,13 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
       </section>
 
       {/* DIAGNOSTIC: LE LEVIER DE RENTABILITÉ */}
-      <section className="bg-[#F8F9FA] py-fib-144 text-center border-b border-sb-green-dark/5">
+      <section className="bg-[#F8F9FA] py-20 md:py-fib-144 text-center border-b border-sb-green-dark/5">
         <div className="container mx-auto px-6">
-            <h2 className="font-serif text-3xl md:text-[45px] font-bold text-sb-green-dark uppercase leading-tight tracking-math-tight mb-8">
+            <h2 className="font-serif text-2xl sm:text-4xl md:text-title font-bold text-sb-green-dark uppercase leading-tight tracking-math-tight mb-8">
                 LE LEVIER DE RENTABILITÉ
             </h2>
             <div className="w-20 h-px bg-sb-green-dark/20 mx-auto mb-10"></div>
-            <p className="text-lg md:text-body text-sb-green-dark font-normal leading-loose max-w-[800px] mx-auto font-sans mb-16">
+            <p className="text-base md:text-body text-sb-green-dark font-normal leading-loose max-w-[800px] mx-auto font-sans mb-16">
                 Une structure optimisée est votre premier gisement de profit net. Pour savoir si votre organisation actuelle est réellement configurée pour maximiser vos gains, posez-vous ces questions :
             </p>
 
@@ -117,7 +116,7 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
             </div>
 
             <div className="max-w-4xl mx-auto border-t border-sb-green-dark/10 pt-16">
-                <p className="font-serif text-2xl md:text-3xl text-sb-green-dark leading-tight mb-12 italic">
+                <p className="font-serif text-xl md:text-3xl text-sb-green-dark leading-tight mb-12 italic">
                     Un seul <span className="font-bold text-[#8A1C1C]">NON</span> confirme que votre organisation actuelle bride vos profits.
                 </p>
                 <button 
@@ -131,14 +130,14 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
       </section>
 
       {/* METHODOLOGY - LES 3 PILIERS DE LA PERFORMANCE */}
-      <section className="bg-sb-green-dark py-fib-144">
+      <section className="bg-sb-green-dark py-20 md:py-fib-144">
         <div className="container mx-auto px-6">
             <div className="text-center mb-24 max-w-4xl mx-auto">
-                <h2 className="font-serif text-3xl md:text-[45px] text-white uppercase tracking-math-tight mb-6">
+                <h2 className="font-serif text-2xl sm:text-4xl md:text-title text-white uppercase tracking-math-tight mb-6">
                     LES 3 PILIERS DE VOTRE PERFORMANCE
                 </h2>
                 <div className="w-16 h-px bg-sb-beige mx-auto mb-8"></div>
-                <p className="text-lg md:text-body text-white/90 font-medium leading-loose font-sans uppercase tracking-widest">
+                <p className="text-base md:text-body text-white/90 font-medium leading-loose font-sans uppercase tracking-widest">
                     La performance n'est pas un hasard, c'est une architecture.
                 </p>
             </div>
@@ -147,32 +146,32 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
             {VALUES.map((value: any, index: number) => (
                 <div key={index} className="group flex flex-col relative bg-[#1C2B29] border-t-2 border-sb-beige/30 p-8 lg:p-10 xl:p-12 h-full hover:bg-[#233533] transition-all duration-500 rounded-[2px] shadow-2xl overflow-hidden">
                     
-                    {/* 1. Zone Header - Aligne les titres horizontalement */}
-                    <div className="min-h-[140px] md:min-h-[220px] lg:min-h-[180px] mb-8">
+                    {/* 1. Zone Header */}
+                    <div className="min-h-[120px] md:min-h-[200px] lg:min-h-[160px] mb-8">
                         {getShape(index)}
-                        <h3 className="font-serif text-2xl xl:text-3xl text-white tracking-wide uppercase font-bold leading-tight border-b border-white/10 pb-6">
+                        <h3 className="font-serif text-xl xl:text-3xl text-white tracking-wide uppercase font-bold leading-tight border-b border-white/10 pb-6">
                             {value.title}
                         </h3>
                     </div>
 
-                    {/* 2. Zone Description - Aligne les paragraphes d'accroche */}
-                    <div className="min-h-[80px] md:min-h-[160px] lg:min-h-[110px] mb-10">
-                        <p className="font-sans text-sm xl:text-base text-white/90 leading-relaxed font-medium italic">
+                    {/* 2. Zone Description */}
+                    <div className="min-h-[80px] md:min-h-[140px] lg:min-h-[100px] mb-10">
+                        <p className="font-sans text-xs xl:text-base text-white/90 leading-relaxed font-medium italic">
                             {value.description}
                         </p>
                     </div>
 
-                    {/* 3. Zone Impacts - Aligne le début de la liste à puces */}
-                    <div className="flex-grow min-h-[240px] md:min-h-[420px] lg:min-h-[320px]">
+                    {/* 3. Zone Impacts */}
+                    <div className="flex-grow min-h-[220px] md:min-h-[400px] lg:min-h-[300px]">
                         <div className="space-y-8 mb-12">
                             {value.impacts.map((impact: any, i: number) => (
                                 <div key={i} className="grid grid-cols-[20px_1fr] items-start gap-3">
                                     <div className="w-1.5 h-1.5 rounded-full bg-[#C5A065] mt-2 flex-shrink-0" />
                                     <div>
-                                        <p className="text-white font-bold text-xs uppercase tracking-wider mb-1">
+                                        <p className="text-white font-bold text-[10px] md:text-xs uppercase tracking-wider mb-1">
                                             {impact.label}
                                         </p>
-                                        <p className="text-white/60 text-[11px] xl:text-xs leading-relaxed font-light">
+                                        <p className="text-white/60 text-[10px] xl:text-xs leading-relaxed font-light">
                                             {impact.detail}
                                         </p>
                                     </div>
@@ -181,24 +180,24 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                         </div>
                     </div>
 
-                    {/* 4. Zone Verdict - Aligne le bas financier et le bouton */}
+                    {/* 4. Zone Verdict */}
                     <div className="mt-auto pt-10 border-t border-white/10">
-                        <div className="mb-10 bg-[#0A1210]/30 p-6 rounded-[2px] border border-white/5 min-h-[200px] md:min-h-[240px] lg:min-h-[210px] flex flex-col justify-center">
-                            <p className={`font-serif text-3xl lg:text-4xl xl:text-5xl font-bold tracking-tight uppercase mb-3 leading-none ${value.color || 'text-[#10B981]'}`}>
+                        <div className="mb-10 bg-[#0A1210]/30 p-6 rounded-[2px] border border-white/5 min-h-[180px] md:min-h-[220px] lg:min-h-[200px] flex flex-col justify-center">
+                            <p className={`font-serif text-2xl lg:text-4xl xl:text-5xl font-bold tracking-tight uppercase mb-3 leading-none ${value.color || 'text-[#10B981]'}`}>
                                 {value.verdictTitle}
                             </p>
-                            <p className="font-serif text-[10px] xl:text-xs text-[#C5A065] mb-4 font-bold uppercase tracking-widest leading-relaxed">
+                            <p className="font-serif text-[9px] xl:text-xs text-[#C5A065] mb-4 font-bold uppercase tracking-widest leading-relaxed">
                                 {value.verdictSubtitle}
                             </p>
                             <div className="w-8 h-px bg-white/10 mb-4"></div>
-                            <p className="font-sans text-[10px] text-white/30 uppercase tracking-widest leading-relaxed max-w-[220px]">
+                            <p className="font-sans text-[9px] text-white/30 uppercase tracking-widest leading-relaxed max-w-[220px]">
                                 {value.verdictText}
                             </p>
                         </div>
                         
                         <button 
                             onClick={() => onNavigate(value.link)}
-                            className="w-full text-center py-5 border border-[#C5A065]/30 text-[#C5A065] font-bold uppercase tracking-math-wide text-[10px] md:text-xs transition-all duration-300 rounded-[2px] hover:bg-[#C5A065] hover:text-sb-green-dark hover:border-[#C5A065] group-hover:border-[#C5A065]/100"
+                            className="w-full text-center py-5 border border-[#C5A065]/30 text-[#C5A065] font-bold uppercase tracking-math-wide text-[9px] md:text-xs transition-all duration-300 rounded-[2px] hover:bg-[#C5A065] hover:text-sb-green-dark hover:border-[#C5A065] group-hover:border-[#C5A065]/100"
                         >
                             {value.buttonText}
                         </button>
@@ -211,11 +210,11 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
 
       {/* Services Preview */}
       <section className="bg-sb-cream text-sb-black border-t border-sb-green-dark/10">
-        <div className="container mx-auto px-6 py-fib-89 md:py-fib-89">
+        <div className="container mx-auto px-6 py-20 md:py-fib-89">
             <div className="flex flex-col md:flex-row justify-between items-end mb-20">
-                <div>
+                <div className="text-center md:text-left w-full md:w-auto mb-10 md:mb-0">
                     <h2 className="font-serif text-3xl md:text-title text-sb-green-dark mb-4 tracking-math-tight">NOS PRESTATIONS</h2>
-                    <p className="text-sb-green-dark font-bold uppercase tracking-math-wide text-xs md:text-sm opacity-60">Architecture de la performance</p>
+                    <p className="text-sb-green-dark font-bold uppercase tracking-math-wide text-[10px] md:text-sm opacity-60">Architecture de la performance</p>
                 </div>
                 <button onClick={() => onNavigate(Page.SERVICES)} className="hidden md:flex items-center text-sb-green-dark font-bold uppercase tracking-math-wide text-xs hover:text-[#C5A065] transition-colors pb-2 border-b border-sb-green-dark/20 hover:border-[#C5A065]">
                     Voir le catalogue complet <ArrowRight size={16} className="ml-2" />
@@ -231,10 +230,10 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                                 <span className="inline-block text-[10px] font-bold uppercase tracking-math-wide text-sb-green-dark border border-sb-green-dark/20 px-3 py-1 rounded-[2px] mb-6">
                                     {service.subtitle}
                                 </span>
-                                <h4 className="font-serif text-2xl md:text-3xl font-bold text-sb-green-dark mb-6 leading-tight tracking-tight whitespace-pre-line">
+                                <h4 className="font-serif text-xl md:text-3xl font-bold text-sb-green-dark mb-6 leading-tight tracking-tight whitespace-pre-line">
                                     {service.title}
                                 </h4>
-                                <p className="font-serif text-base text-sb-green-dark/80 italic leading-relaxed">
+                                <p className="font-serif text-sm md:text-base text-sb-green-dark/80 italic leading-relaxed">
                                     "{service.description}"
                                 </p>
                             </div>
@@ -256,7 +255,7 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                                     </h5>
                                     <ul className="space-y-4">
                                         {service.benefits.map((item, i) => (
-                                            <li key={i} className="flex items-start gap-3 text-sm text-sb-green-dark/80 font-medium leading-relaxed">
+                                            <li key={i} className="flex items-start gap-3 text-xs md:text-sm text-sb-green-dark/80 font-medium leading-relaxed">
                                                 <Check size={16} className="text-sb-green-dark mt-1 flex-shrink-0" />
                                                 <span>{item}</span>
                                             </li>
@@ -269,7 +268,7 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                                     </h5>
                                     <ul className="space-y-4">
                                         {service.deliverables.map((item, i) => (
-                                            <li key={i} className="flex items-start gap-3 text-sm text-sb-green-dark/80 font-medium leading-relaxed">
+                                            <li key={i} className="flex items-start gap-3 text-xs md:text-sm text-sb-green-dark/80 font-medium leading-relaxed">
                                                 <CheckCircle2 size={16} className="text-[#C5A065] mt-1 flex-shrink-0" />
                                                 <span>{item}</span>
                                             </li>
@@ -286,9 +285,9 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
       </section>
 
       {/* FINAL CTA */}
-      <section className="bg-sb-green-dark text-sb-cream py-fib-89 md:py-fib-89 border-t border-sb-beige/10">
+      <section className="bg-sb-green-dark text-sb-cream py-20 md:py-fib-89 border-t border-sb-beige/10">
         <div className="container mx-auto px-6 text-center">
-            <h2 className="font-serif text-3xl md:text-[40px] text-white uppercase tracking-math-tight mb-8">
+            <h2 className="font-serif text-2xl md:text-[40px] text-white uppercase tracking-math-tight mb-8">
                 QUAND ALLEZ-VOUS SÉCURISER VOTRE AVENIR ?
             </h2>
             <div className="w-24 h-px bg-sb-beige mx-auto mb-20"></div>
@@ -298,8 +297,8 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                     <div className="mb-8 text-[#C5A065]">
                         <Calendar size={40} strokeWidth={1} />
                     </div>
-                    <h3 className="font-serif text-2xl text-white mb-6 uppercase tracking-wide">Dans 6 mois...</h3>
-                    <p className="text-white/70 font-sans text-base font-light leading-relaxed max-w-xs mx-auto">
+                    <h3 className="font-serif text-xl md:text-2xl text-white mb-6 uppercase tracking-wide">Dans 6 mois...</h3>
+                    <p className="text-white/70 font-sans text-sm md:text-base font-light leading-relaxed max-w-xs mx-auto">
                         Vous constaterez que le chiffre d'affaires a monté, mais pas la marge. Vous aurez travaillé deux fois plus pour le même résultat net.
                     </p>
                 </div>
@@ -308,8 +307,8 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                     <div className="mb-8 text-[#C5A065]">
                         <AlertTriangle size={40} strokeWidth={1} />
                     </div>
-                    <h3 className="font-serif text-2xl text-white mb-6 uppercase tracking-wide">La semaine prochaine...</h3>
-                    <p className="text-white/70 font-sans text-base font-light leading-relaxed max-w-xs mx-auto">
+                    <h3 className="font-serif text-xl md:text-2xl text-white mb-6 uppercase tracking-wide">La semaine prochaine...</h3>
+                    <p className="text-white/70 font-sans text-sm md:text-base font-light leading-relaxed max-w-xs mx-auto">
                         Un incident qualité critique ou un retard majeur mettra en péril votre plus gros client. Vous serez en mode 'Pompier'.
                     </p>
                 </div>
@@ -318,8 +317,8 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                     <div className="mb-8 text-[#C5A065]">
                         <Zap size={48} fill="currentColor" strokeWidth={0} />
                     </div>
-                    <h3 className="font-sans font-bold uppercase tracking-widest text-xl text-[#C5A065] mb-6">DÈS MAINTENANT</h3>
-                    <p className="text-white font-sans text-base font-medium leading-relaxed max-w-xs mx-auto">
+                    <h3 className="font-sans font-bold uppercase tracking-widest text-lg md:text-xl text-[#C5A065] mb-6">DÈS MAINTENANT</h3>
+                    <p className="text-white font-sans text-sm md:text-base font-medium leading-relaxed max-w-xs mx-auto">
                         Vous reprenez le contrôle. Nous identifions les fuites et structurons votre croissance. Vous dormez enfin l'esprit tranquille.
                     </p>
                 </div>

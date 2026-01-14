@@ -1,7 +1,5 @@
 
-
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Layout from './components/Layout';
 import Home from './views/Home';
 import About from './views/About';
@@ -18,49 +16,100 @@ import ImpactSysteme from './views/ImpactSysteme';
 import ImpactData from './views/ImpactData';
 import { Page } from './types';
 
+// Mapping des pages vers les chemins URL
+const PAGE_TO_PATH: Record<Page, string> = {
+  [Page.HOME]: '/',
+  [Page.ABOUT]: '/a-propos',
+  [Page.SERVICES]: '/prestations',
+  [Page.METHOD]: '/methode',
+  [Page.CONTACT]: '/contact',
+  [Page.LEGAL]: '/mentions-legales',
+  [Page.OFFER_ISO]: '/iso-9001',
+  [Page.OFFER_EXECUTION]: '/structuration-performance',
+  [Page.OFFER_AUDIT]: '/audit-blanc',
+  [Page.OFFER_ROBUSTESSE]: '/audit-robustesse',
+  [Page.IMPACT_RISQUE]: '/impact-financier',
+  [Page.IMPACT_SYSTEME]: '/impact-systeme',
+  [Page.IMPACT_DATA]: '/impact-data',
+};
+
+// Mapping inverse pour retrouver la page à partir du chemin
+const PATH_TO_PAGE: Record<string, Page> = Object.entries(PAGE_TO_PATH).reduce(
+  (acc, [page, path]) => ({ ...acc, [path]: page as Page }),
+  {}
+);
+
 const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<Page>(Page.HOME);
+
+  // Fonction pour déterminer la page basée sur l'URL actuelle
+  const getPageFromLocation = useCallback(() => {
+    const path = window.location.pathname;
+    return PATH_TO_PAGE[path] || Page.HOME;
+  }, []);
+
+  // Initialisation au chargement
+  useEffect(() => {
+    setCurrentPage(getPageFromLocation());
+
+    // Écouteur pour les boutons précédent/suivant du navigateur
+    const handlePopState = () => {
+      setCurrentPage(getPageFromLocation());
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [getPageFromLocation]);
 
   // Scroll to top on page change
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [currentPage]);
 
+  // Fonction de navigation enrichie
+  const navigate = (page: Page) => {
+    const path = PAGE_TO_PATH[page];
+    if (window.location.pathname !== path) {
+      window.history.pushState(null, '', path);
+      setCurrentPage(page);
+    }
+  };
+
   const renderPage = () => {
     switch (currentPage) {
       case Page.HOME:
-        return <Home onNavigate={setCurrentPage} />;
+        return <Home onNavigate={navigate} />;
       case Page.ABOUT:
-        return <About onNavigate={setCurrentPage} />;
+        return <About onNavigate={navigate} />;
       case Page.SERVICES:
-        return <Services onNavigate={setCurrentPage} />;
+        return <Services onNavigate={navigate} />;
       case Page.METHOD:
-        return <Method onNavigate={setCurrentPage} />;
+        return <Method onNavigate={navigate} />;
       case Page.CONTACT:
-        return <Contact />;
+        return <Contact onNavigate={navigate} />;
       case Page.LEGAL:
-        return <Legal />;
+        return <Legal onNavigate={navigate} />;
       case Page.OFFER_ISO:
-        return <OfferIso onNavigate={setCurrentPage} />;
+        return <OfferIso onNavigate={navigate} />;
       case Page.OFFER_EXECUTION:
-        return <OfferExecution onNavigate={setCurrentPage} />;
+        return <OfferExecution onNavigate={navigate} />;
       case Page.OFFER_AUDIT:
-        return <OfferAudit onNavigate={setCurrentPage} />;
+        return <OfferAudit onNavigate={navigate} />;
       case Page.OFFER_ROBUSTESSE:
-        return <OfferRobustesse onNavigate={setCurrentPage} />;
+        return <OfferRobustesse onNavigate={navigate} />;
       case Page.IMPACT_RISQUE:
-        return <ImpactRisque onNavigate={setCurrentPage} />;
+        return <ImpactRisque onNavigate={navigate} />;
       case Page.IMPACT_SYSTEME:
-        return <ImpactSysteme onNavigate={setCurrentPage} />;
+        return <ImpactSysteme onNavigate={navigate} />;
       case Page.IMPACT_DATA:
-        return <ImpactData onNavigate={setCurrentPage} />;
+        return <ImpactData onNavigate={navigate} />;
       default:
-        return <Home onNavigate={setCurrentPage} />;
+        return <Home onNavigate={navigate} />;
     }
   };
 
   return (
-    <Layout currentPage={currentPage} onNavigate={setCurrentPage}>
+    <Layout currentPage={currentPage} onNavigate={navigate}>
       {renderPage()}
     </Layout>
   );

@@ -4,10 +4,14 @@
     <meta charset="utf-8">
     <title>Cabinet Delacour</title>
     <script type="text/javascript">
+        // Récupère le chemin actuel (ex: /contact ou /mon-projet/contact)
         var path = window.location.pathname;
-        var host = window.location.protocol + '//' + window.location.host;
-        // On redirige tout vers la racine + le chemin en hash
-        window.location.replace(host + '/#' + path);
+        // Récupère la racine (protocol + domaine)
+        var origin = window.location.origin;
+        
+        // Redirige vers le hash pour que React puisse le lire
+        // On s'assure de ne pas doubler les slashes
+        window.location.replace(origin + '/#' + path);
     </script>
 </head>
 <body>

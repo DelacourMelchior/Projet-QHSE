@@ -24,17 +24,17 @@ const OfferIso: React.FC<OfferIsoProps> = ({ onNavigate }) => {
         </div>
         
         <div className="container mx-auto px-6 relative z-10 text-center pt-32 pb-20">
-            <span className="inline-block font-sans text-xs font-bold tracking-math-wide uppercase text-sb-beige mb-6 border border-sb-beige/30 px-4 py-2 rounded-[2px]">
+            <span className="inline-block font-sans text-[10px] md:text-xs font-bold tracking-math-wide uppercase text-sb-beige mb-6 border border-sb-beige/30 px-4 py-2 rounded-[2px]">
                 Cabinet Delacour — Programme Intégral de Transformation
             </span>
             
-            <h1 className="font-serif text-4xl sm:text-5xl md:text-hero text-white leading-[1.1] tracking-math-tight mb-8 uppercase">
+            <h1 className="font-serif text-3xl sm:text-5xl md:text-7xl lg:text-hero text-white leading-[1.1] tracking-math-tight mb-8 uppercase">
               Architecture &<br/>Certification ISO 9001
             </h1>
             
             <div className="w-24 h-px bg-sb-beige mx-auto mb-10"></div>
             
-            <p className="text-body text-white/90 leading-phi max-w-2xl mx-auto font-light mb-12 font-sans">
+            <p className="text-base md:text-body text-white/90 leading-phi max-w-2xl mx-auto font-light mb-12 font-sans">
               Votre certification en 6 à 9 mois.<br/>
               <span className="opacity-70">Transformez votre ambition stratégique en système de management certifié. Garantie de résultat.</span>
             </p>
@@ -49,12 +49,12 @@ const OfferIso: React.FC<OfferIsoProps> = ({ onNavigate }) => {
       </section>
 
       {/* 2. SECTION CONSTAT (TENSION) */}
-      <Section bg="cream" className="py-fib-144">
+      <Section bg="cream" className="py-20 md:py-fib-144">
         <div className="max-w-4xl mx-auto">
             <div className="text-center mb-16">
-                <h2 className="font-serif text-title text-sb-green-dark uppercase tracking-math-tight mb-8">L'Écueil Bureaucratique</h2>
-                <div className="relative p-10 bg-white border-l-4 border-sb-green-dark shadow-sm rounded-[2px]">
-                    <p className="font-serif text-2xl md:text-3xl italic text-sb-green-dark leading-normal">
+                <h2 className="font-serif text-2xl sm:text-4xl md:text-title text-sb-green-dark uppercase tracking-math-tight mb-8">L'Écueil Bureaucratique</h2>
+                <div className="relative p-6 md:p-10 bg-white border-l-4 border-sb-green-dark shadow-sm rounded-[2px]">
+                    <p className="font-serif text-xl md:text-3xl italic text-sb-green-dark leading-normal">
                         "Le risque n'est pas de rater l'examen, mais de construire un système lourd qui paralysera votre agilité pour les dix prochaines années."
                     </p>
                 </div>
@@ -98,10 +98,10 @@ const OfferIso: React.FC<OfferIsoProps> = ({ onNavigate }) => {
       </Section>
 
       {/* 3. SECTION MÉTHODOLOGIE (TIMELINE) */}
-      <Section bg="green" className="py-fib-144 relative border-t-4 border-sb-beige">
+      <Section bg="green" className="py-20 md:py-fib-144 relative border-t-4 border-sb-beige">
         <div className="text-center mb-24">
-            <h2 className="font-serif text-title text-white uppercase tracking-math-tight mb-4">Méthodologie</h2>
-            <p className="text-sb-beige font-sans uppercase tracking-math-wide text-sm">De la stratégie à la certification</p>
+            <h2 className="font-serif text-2xl sm:text-4xl md:text-title text-white uppercase tracking-math-tight mb-4">Méthodologie</h2>
+            <p className="text-sb-beige font-sans uppercase tracking-math-wide text-xs md:text-sm">De la stratégie à la certification</p>
         </div>
 
         <div className="relative max-w-4xl mx-auto">
@@ -112,27 +112,27 @@ const OfferIso: React.FC<OfferIsoProps> = ({ onNavigate }) => {
                 {/* Phase 1 */}
                 <div className="relative flex flex-col md:flex-row items-center justify-between w-full group">
                     <div className="md:w-5/12 text-left md:text-right pl-12 md:pl-0 md:pr-12 order-2 md:order-1">
-                        <h3 className="font-serif text-2xl text-sb-beige mb-2">Phase 1 : L'Architecture</h3>
+                        <h3 className="font-serif text-xl md:text-2xl text-sb-beige mb-2">Phase 1 : L'Architecture</h3>
                         <p className="text-white/70 font-light leading-phi text-sm">Cadrage & Stratégie. Design du Système, Audit initial (Gap Analysis) et cartographie des processus alignée sur la réalité business.</p>
                     </div>
                     <div className="absolute left-4 md:left-1/2 -translate-x-1/2 w-8 h-8 bg-sb-green-dark border-2 border-sb-beige rounded-full flex items-center justify-center z-10 order-1 md:order-2">
                         <span className="w-2 h-2 bg-sb-beige rounded-full"></span>
                     </div>
                     <div className="md:w-5/12 pl-12 md:pl-12 order-3">
-                         <span className="text-sb-beige/20 font-bold text-6xl font-serif">01</span>
+                         <span className="text-sb-beige/20 font-bold text-4xl md:text-6xl font-serif">01</span>
                     </div>
                 </div>
 
                 {/* Phase 2 */}
                 <div className="relative flex flex-col md:flex-row items-center justify-between w-full group">
                      <div className="md:w-5/12 text-right pr-12 hidden md:block order-1">
-                         <span className="text-sb-beige/20 font-bold text-6xl font-serif">02</span>
+                         <span className="text-sb-beige/20 font-bold text-4xl md:text-6xl font-serif">02</span>
                     </div>
                     <div className="absolute left-4 md:left-1/2 -translate-x-1/2 w-8 h-8 bg-sb-green-dark border-2 border-sb-beige rounded-full flex items-center justify-center z-10 order-1 md:order-2">
                         <span className="w-2 h-2 bg-sb-beige rounded-full"></span>
                     </div>
                     <div className="md:w-5/12 text-left pl-12 order-2 md:order-3">
-                        <h3 className="font-serif text-2xl text-sb-beige mb-2">Phase 2 : La Construction</h3>
+                        <h3 className="font-serif text-xl md:text-2xl text-sb-beige mb-2">Phase 2 : La Construction</h3>
                         <p className="text-white/70 font-light leading-phi text-sm">Déploiement & Ingénierie des Flux. Rédaction minimaliste, création des Tableaux de Bord et formation des pilotes.</p>
                     </div>
                 </div>
@@ -140,27 +140,27 @@ const OfferIso: React.FC<OfferIsoProps> = ({ onNavigate }) => {
                  {/* Phase 3 */}
                  <div className="relative flex flex-col md:flex-row items-center justify-between w-full group">
                     <div className="md:w-5/12 text-left md:text-right pl-12 md:pl-0 md:pr-12 order-2 md:order-1">
-                        <h3 className="font-serif text-2xl text-sb-beige mb-2">Phase 3 : L'Épreuve</h3>
+                        <h3 className="font-serif text-xl md:text-2xl text-sb-beige mb-2">Phase 3 : L'Épreuve</h3>
                         <p className="text-white/70 font-light leading-phi text-sm">Audit Blanc. Crash-Test en conditions réelles et Revue de Direction pour corriger les derniers écarts avant l'épreuve.</p>
                     </div>
                     <div className="absolute left-4 md:left-1/2 -translate-x-1/2 w-8 h-8 bg-sb-green-dark border-2 border-sb-beige rounded-full flex items-center justify-center z-10 order-1 md:order-2">
                         <span className="w-2 h-2 bg-sb-beige rounded-full"></span>
                     </div>
                     <div className="md:w-5/12 pl-12 md:pl-12 order-3">
-                         <span className="text-sb-beige/20 font-bold text-6xl font-serif">03</span>
+                         <span className="text-sb-beige/20 font-bold text-4xl md:text-6xl font-serif">03</span>
                     </div>
                 </div>
 
                 {/* Phase 4 */}
                 <div className="relative flex flex-col md:flex-row items-center justify-between w-full group">
                      <div className="md:w-5/12 text-right pr-12 hidden md:block order-1">
-                         <span className="text-sb-beige/20 font-bold text-6xl font-serif">04</span>
+                         <span className="text-sb-beige/20 font-bold text-4xl md:text-6xl font-serif">04</span>
                     </div>
                     <div className="absolute left-4 md:left-1/2 -translate-x-1/2 w-8 h-8 bg-sb-green-dark border-2 border-sb-beige rounded-full flex items-center justify-center z-10 order-1 md:order-2">
                         <CheckCircle size={16} className="text-sb-beige" />
                     </div>
                     <div className="md:w-5/12 text-left pl-12 order-2 md:order-3">
-                        <h3 className="font-serif text-2xl text-sb-beige mb-2">Phase 4 : Le Sacre</h3>
+                        <h3 className="font-serif text-xl md:text-2xl text-sb-beige mb-2">Phase 4 : Le Sacre</h3>
                         <p className="text-white/70 font-light leading-phi text-sm">Certification. Assistance lors de l'audit final et validation de votre nouveau standard d'excellence.</p>
                     </div>
                 </div>
@@ -170,7 +170,7 @@ const OfferIso: React.FC<OfferIsoProps> = ({ onNavigate }) => {
 
       {/* 4. FINAL CTA */}
       <Section bg="cream" className="py-24 text-center border-t border-sb-green-dark/10">
-        <h2 className="font-serif text-3xl md:text-4xl text-sb-green-dark mb-10 uppercase tracking-tight">
+        <h2 className="font-serif text-2xl md:text-4xl text-sb-green-dark mb-10 uppercase tracking-tight">
             Prêt à certifier votre excellence ?
         </h2>
         <button 

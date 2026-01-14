@@ -1,4 +1,3 @@
-
 import React from 'react';
 import Section from '../components/Section';
 import { Page } from '../types';
@@ -29,7 +28,7 @@ const OfferIso: React.FC<OfferIsoProps> = ({ onNavigate }) => {
                 Cabinet Delacour — Programme Intégral de Transformation
             </span>
             
-            <h1 className="font-serif text-5xl md:text-hero text-white leading-[1.1] tracking-math-tight mb-8 uppercase">
+            <h1 className="font-serif text-4xl sm:text-5xl md:text-hero text-white leading-[1.1] tracking-math-tight mb-8 uppercase">
               Architecture &<br/>Certification ISO 9001
             </h1>
             

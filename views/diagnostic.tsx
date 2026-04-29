@@ -109,9 +109,6 @@ const Diagnostic: React.FC<DiagnosticProps> = ({ onNavigate }) => {
   const [creditNotesAmount, setCreditNotesAmount] = useState<number>(0);
   const [monthlyDisputes, setMonthlyDisputes] = useState<number>(0);
   const [averageDisputeAmount, setAverageDisputeAmount] = useState<number>(0);
-  const [billingDelayDays, setBillingDelayDays] = useState<number>(0);
-
-  // Step 9: Le Renversement
   const [missedRevenueStruct, setMissedRevenueStruct] = useState<number>(0);
   const [missedRevenueCertif, setMissedRevenueCertif] = useState<number>(0);
 
@@ -173,9 +170,6 @@ const Diagnostic: React.FC<DiagnosticProps> = ({ onNavigate }) => {
   // 8. Litiges (Fuite Opérationnelle)
   const costDisputes = monthlyDisputes * averageDisputeAmount * 12 * 0.10;
 
-  // 9. Délai de Facturation (Fuite Opérationnelle)
-  const costBillingDelay = (revenue / 365) * Math.max(0, billingDelayDays - 2) * 0.10;
-
   // 10. Le Plan de Sécurisation (Manque à gagner)
   const costMissedRevenue = missedRevenueStruct + missedRevenueCertif;
 
@@ -184,7 +178,7 @@ const Diagnostic: React.FC<DiagnosticProps> = ({ onNavigate }) => {
   if (step >= 7) cumulativeValue += costAbsenteeism;
   if (step >= 8) cumulativeValue += costLeaderLost;
   if (step >= 9) cumulativeValue += costExcel + costLateKPI + costBlindness;
-  if (step >= 10) cumulativeValue += costRework + costCreditNotes + costDisputes + costBillingDelay;
+  if (step >= 10) cumulativeValue += costRework + costCreditNotes + costDisputes;
   if (step >= 11) cumulativeValue += costMissedRevenue;
 
   return (
@@ -822,17 +816,11 @@ const Diagnostic: React.FC<DiagnosticProps> = ({ onNavigate }) => {
                     <label className="block text-sm font-medium text-gray-600 mb-2 uppercase tracking-wider text-xs">Montant moyen d'une facture en litige (€)</label>
                     <input type="number" value={averageDisputeAmount} onChange={(e) => setAverageDisputeAmount(Number(e.target.value))} className="w-full p-4 border border-gray-300 rounded-lg bg-white focus:outline-none focus:border-sb-green-dark focus:ring-1 focus:ring-sb-green-dark transition-all font-mono text-xl text-gray-800 shadow-sm" />
                   </div>
-                  <StepperInput 
-                    label="Délai moyen commande-facturation (jours)"
-                    value={billingDelayDays}
-                    onChange={setBillingDelayDays}
-                    tooltip="Seuil d'acceptabilité : 2 jours. Au-delà, c'est de la trésorerie bloquée."
-                  />
                   <div className="mt-8 bg-[#F8F9FA] p-8 rounded-lg border border-[#E9ECEF] shadow-sm">
                     <p className="text-[#4A4A4A] text-base leading-relaxed">
-                      <strong className="font-bold">Calcul de la fuite opérationnelle :</strong> Somme des coûts de non-qualité (retouches), des avoirs clients, du temps de gestion des litiges et du coût de portage de la trésorerie liée aux délais de facturation.
+                      <strong className="font-bold">Calcul de la fuite opérationnelle :</strong> Somme des coûts de non-qualité (retouches), des avoirs clients et du temps de gestion des litiges.
                       <br />
-                      <em className="italic block mt-2 text-gray-500">Formule : (CA * (% Retouches - 3%) * 10%) + Avoirs + (Litiges * 10%) + (Retard facturation * 10%).</em>
+                      <em className="italic block mt-2 text-gray-500">Formule : (CA * (% Retouches - 3%) * 10%) + Avoirs + (Litiges * 10%).</em>
                     </p>
                   </div>
                 </motion.div>
@@ -1337,7 +1325,7 @@ const Diagnostic: React.FC<DiagnosticProps> = ({ onNavigate }) => {
                               {step >= 10 && (
                                 <div className="flex justify-between items-center p-3 bg-emerald-50 rounded-lg">
                                   <span className="text-sm font-medium text-emerald-900">Total Non-Qualité & Trésorerie</span>
-                                  <span className="font-mono font-bold text-emerald-700"><AnimatedNumber value={costRework + costCreditNotes + costDisputes + costBillingDelay} /> €</span>
+                                  <span className="font-mono font-bold text-emerald-700"><AnimatedNumber value={costRework + costCreditNotes + costDisputes} /> €</span>
                                 </div>
                               )}
                               {step >= 11 && (

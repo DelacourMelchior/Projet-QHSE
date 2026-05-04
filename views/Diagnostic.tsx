@@ -267,6 +267,9 @@ const Diagnostic: React.FC<DiagnosticProps> = ({ onNavigate }) => {
   if (step >= 10) cumulativeValue += costRework + costCreditNotes + costDisputes;
   if (step >= 11) cumulativeValue += costMissedRevenue;
 
+  // Total for PDF (always includes everything, independent of step)
+  const totalPotential = costTurnover + costAbsenteeism + costLeaderLost + costExcel + costLateKPI + costBlindness + costRework + costCreditNotes + costDisputes + costMissedRevenue;
+
   const handleReset = () => {
     if (window.confirm("Êtes-vous sûr de vouloir réinitialiser toutes les données ? Cette action est irréversible.")) {
       localStorage.removeItem('diagnostic_data');
@@ -1569,85 +1572,199 @@ const Diagnostic: React.FC<DiagnosticProps> = ({ onNavigate }) => {
         </div>
       </div>
 
-
       {/* Hidden container for full PDF report - Positioned off-screen for capture */}
       <div style={{ position: 'absolute', left: '-9999px', top: '0', width: '210mm' }}>
-        <div ref={fullReportRef} className="p-10 bg-white text-sb-green-dark">
-          <div className="text-center mb-10 border-b-2 border-sb-green-dark pb-6">
-            <h1 className="text-3xl font-serif mb-2">Rapport de Diagnostic QHSE</h1>
-            <p className="text-sm opacity-70">Généré le {new Date().toLocaleDateString('fr-FR')}</p>
+        <div ref={fullReportRef} style={{ fontFamily: 'Georgia, serif', color: '#1a1a1a', fontSize: '13px', lineHeight: '1.6' }}>
+
+          {/* PAGE 1: Cover */}
+          <div style={{ padding: '60px 50px', minHeight: '297mm', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center', background: 'linear-gradient(180deg, #f9f7f2 0%, #ffffff 100%)' }}>
+            <div style={{ borderBottom: '3px solid #2d4a3e', paddingBottom: '30px', marginBottom: '40px', width: '100%' }}>
+              <div style={{ fontSize: '11px', letterSpacing: '6px', textTransform: 'uppercase', color: '#8a7d6b', marginBottom: '20px' }}>Cabinet Delacour</div>
+              <h1 style={{ fontSize: '36px', fontWeight: 'bold', color: '#2d4a3e', margin: '0 0 10px 0', letterSpacing: '1px' }}>Rapport de Diagnostic</h1>
+              <h2 style={{ fontSize: '20px', fontWeight: 'normal', color: '#8a7d6b', margin: '0', letterSpacing: '3px', textTransform: 'uppercase' }}>Performance Opérationnelle & QHSE</h2>
+            </div>
+            <div style={{ fontSize: '18px', color: '#2d4a3e', fontWeight: 'bold', marginBottom: '10px' }}>{companyName || 'Entreprise'}</div>
+            <div style={{ fontSize: '13px', color: '#666' }}>Document confidentiel — Généré le {new Date().toLocaleDateString('fr-FR')}</div>
+            {userFirstName && <div style={{ fontSize: '12px', color: '#999', marginTop: '30px' }}>Préparé pour {userFirstName} {userLastName}</div>}
           </div>
-          
-          <div className="space-y-10">
-            {/* Business Profile */}
-            <section className="p-6 border border-gray-100 rounded-xl bg-gray-50">
-              <h2 className="text-lg font-bold uppercase tracking-widest mb-4 border-b pb-2">1. Profil de l'Organisation</h2>
-              <div className="grid grid-cols-2 gap-y-4 text-sm">
-                <div><span className="opacity-60 uppercase text-[10px] block">Entreprise</span><strong>{companyName || 'N/A'}</strong></div>
-                <div><span className="opacity-60 uppercase text-[10px] block">Effectif</span><strong>{totalEmployees || 'N/A'} salariés</strong></div>
-                <div><span className="opacity-60 uppercase text-[10px] block">Âge</span><strong>{companyAge || 'N/A'} ans</strong></div>
-                <div><span className="opacity-60 uppercase text-[10px] block">Structure</span><strong>{orgStructure || 'N/A'}</strong></div>
-              </div>
-            </section>
 
-            {/* Financial Leakage */}
-            <section className="p-6 border border-emerald-100 rounded-xl bg-emerald-50">
-              <h2 className="text-lg font-bold uppercase tracking-widest mb-4 text-emerald-800 border-b border-emerald-200 pb-2">2. Évaluation de l'Impôt Invisible</h2>
-              <div className="text-center py-6">
-                <span className="block text-[10px] uppercase tracking-widest text-emerald-600 mb-2">Potentiel de Gain Annuel Récupérable</span>
-                <div className="text-4xl font-mono font-bold text-emerald-700">{cumulativeValue.toLocaleString('fr-FR')} € / an</div>
+          {/* PAGE 2: Profil & Marché */}
+          <div style={{ padding: '50px', pageBreakBefore: 'always' as const }}>
+            <h2 style={{ fontSize: '22px', color: '#2d4a3e', borderBottom: '2px solid #2d4a3e', paddingBottom: '8px', marginBottom: '30px', letterSpacing: '2px', textTransform: 'uppercase' }}>1. Profil de l'Organisation</h2>
+            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '30px' }}>
+              <tbody>
+                {[
+                  ['Entreprise', companyName || 'N/A'],
+                  ['Âge', `${companyAge || 0} ans`],
+                  ['Effectif global', `${totalEmployees || 0} salariés`],
+                  ['Structure organisationnelle', orgStructure || 'N/A'],
+                ].map(([label, value], i) => (
+                  <tr key={i} style={{ borderBottom: '1px solid #eee' }}>
+                    <td style={{ padding: '12px 16px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '2px', color: '#999', width: '40%' }}>{label}</td>
+                    <td style={{ padding: '12px 16px', fontWeight: 'bold', color: '#2d4a3e' }}>{value}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {companyPresentation && (
+              <div style={{ background: '#f5f3ee', padding: '20px', borderRadius: '8px', borderLeft: '4px solid #2d4a3e', marginBottom: '30px' }}>
+                <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '3px', color: '#8a7d6b', marginBottom: '8px' }}>Présentation de l'activité</div>
+                <p style={{ margin: 0, fontSize: '14px', color: '#333' }}>{companyPresentation}</p>
               </div>
-              <div className="grid grid-cols-3 gap-4 text-center mt-4">
-                <div className="p-3 bg-white rounded border border-emerald-100">
-                  <span className="block text-[9px] uppercase tracking-widest text-gray-400">Absentéisme</span>
-                  <div className="font-bold text-sm">{absenteeismRate.toLocaleString('fr-FR')} %</div>
-                </div>
-                <div className="p-3 bg-white rounded border border-emerald-100">
-                  <span className="block text-[9px] uppercase tracking-widest text-gray-400">Temps Dirigeant</span>
-                  <div className="font-bold text-sm">{leaderLostHours} h/sem</div>
-                </div>
-                <div className="p-3 bg-white rounded border border-emerald-100">
-                  <span className="block text-[9px] uppercase tracking-widest text-gray-400">Coût Inaction</span>
-                  <div className="font-bold text-sm text-red-600">{Math.round(cumulativeValue/365)} €/j</div>
-                </div>
-              </div>
-            </section>
+            )}
 
-            {/* Internal Issues */}
-            <section className="p-6 border border-gray-100 rounded-xl">
-              <h2 className="text-lg font-bold uppercase tracking-widest mb-4 border-b pb-2">3. Zones de Friction Critiques</h2>
-              <div className="text-sm leading-relaxed text-gray-700">
-                {internalProblems.length > 0 
-                  ? internalProblems.join(', ')
-                  : "Aucune friction majeure déclarée."}
-              </div>
-            </section>
+            <h2 style={{ fontSize: '22px', color: '#2d4a3e', borderBottom: '2px solid #2d4a3e', paddingBottom: '8px', marginBottom: '30px', marginTop: '40px', letterSpacing: '2px', textTransform: 'uppercase' }}>2. Performance & Marché</h2>
+            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '30px' }}>
+              <tbody>
+                {[
+                  ['Cible client', targetClient || 'N/A'],
+                  ["Modèle d'acquisition", acquisitionModel || 'N/A'],
+                  ['Clients les plus rentables', profitableClients || 'N/A'],
+                  ['Clients les moins rentables', problematicClients || 'N/A'],
+                ].map(([label, value], i) => (
+                  <tr key={i} style={{ borderBottom: '1px solid #eee' }}>
+                    <td style={{ padding: '12px 16px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '2px', color: '#999', width: '40%' }}>{label}</td>
+                    <td style={{ padding: '12px 16px', fontWeight: 'bold', color: '#2d4a3e' }}>{value}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
 
-            {/* Audit Roadmap */}
-            <section className="p-8 bg-sb-green-dark text-white rounded-xl">
-              <h2 className="text-xl font-serif mb-6 text-sb-beige uppercase tracking-widest text-center">Plan Directeur Proposé</h2>
-              <div className="space-y-4 text-sm">
-                <div className="flex justify-between border-b border-white/10 pb-2">
-                  <span>Diagnostic Initial</span>
-                  <span className="font-bold">{diagnosticInitial || 'Standard'}</span>
-                </div>
-                <div className="flex justify-between border-b border-white/10 pb-2">
-                  <span>Horizon d'Intervention</span>
-                  <span className="font-bold">{interventionHorizon || 'À définir'}</span>
-                </div>
-                <div className="flex justify-between border-b border-white/10 pb-2">
-                  <span>Investissement Estimé</span>
-                  <span className="font-bold">4 000 € HT</span>
-                </div>
-              </div>
-              <p className="mt-8 text-[10px] text-center opacity-50 italic">
-                Ce document constitue une base de travail pour l'audit sur site.
+            <h2 style={{ fontSize: '22px', color: '#2d4a3e', borderBottom: '2px solid #2d4a3e', paddingBottom: '8px', marginBottom: '30px', marginTop: '40px', letterSpacing: '2px', textTransform: 'uppercase' }}>3. Axes d'Amélioration Prioritaires</h2>
+            <div style={{ background: '#f0fdf4', padding: '20px', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+              <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '3px', color: '#16a34a', marginBottom: '10px' }}>Zones de friction identifiées</div>
+              <p style={{ margin: 0, fontSize: '14px', color: '#333' }}>
+                {internalProblems.length > 0 ? internalProblems.filter(p => p !== 'Autre').join(' • ') : 'Aucune friction majeure déclarée.'}
+                {internalProblems.includes('Autre') && otherInternalProblem ? ` • Autre: ${otherInternalProblem}` : ''}
               </p>
-            </section>
+            </div>
           </div>
-          
-          <div className="mt-20 text-[10px] text-center text-gray-400 border-t pt-4">
-            Cabinet Delacour - Expertise QHSE & Performance Durable
+
+          {/* PAGE 3: Cadrage & Moteur Financier */}
+          <div style={{ padding: '50px', pageBreakBefore: 'always' as const }}>
+            <h2 style={{ fontSize: '22px', color: '#2d4a3e', borderBottom: '2px solid #2d4a3e', paddingBottom: '8px', marginBottom: '30px', letterSpacing: '2px', textTransform: 'uppercase' }}>4. Cadrage des Actions Souhaitées</h2>
+            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px' }}>
+              <tbody>
+                {[
+                  ['Diagnostic initial', diagnosticInitial || 'Non défini'],
+                  ["Horizon d'intervention", interventionHorizon || 'Non défini'],
+                ].map(([label, value], i) => (
+                  <tr key={i} style={{ borderBottom: '1px solid #eee' }}>
+                    <td style={{ padding: '12px 16px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '2px', color: '#999', width: '40%' }}>{label}</td>
+                    <td style={{ padding: '12px 16px', fontWeight: 'bold', color: '#2d4a3e' }}>{value}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {cadrageNotes && (
+              <div style={{ background: '#f5f3ee', padding: '16px', borderRadius: '8px', borderLeft: '4px solid #8a7d6b', marginBottom: '30px' }}>
+                <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '3px', color: '#8a7d6b', marginBottom: '6px' }}>Commentaires</div>
+                <p style={{ margin: 0, fontStyle: 'italic', color: '#555' }}>{cadrageNotes}</p>
+              </div>
+            )}
+
+            <h2 style={{ fontSize: '22px', color: '#2d4a3e', borderBottom: '2px solid #2d4a3e', paddingBottom: '8px', marginBottom: '30px', marginTop: '40px', letterSpacing: '2px', textTransform: 'uppercase' }}>5. Moteur Financier</h2>
+            <div style={{ display: 'flex', gap: '16px', marginBottom: '30px' }}>
+              <div style={{ flex: 1, background: '#f9f7f2', padding: '20px', borderRadius: '8px', textAlign: 'center' }}>
+                <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '3px', color: '#999', marginBottom: '8px' }}>CA Référence</div>
+                <div style={{ fontSize: '22px', fontWeight: 'bold', color: '#2d4a3e', fontFamily: 'monospace' }}>{revenue.toLocaleString('fr-FR')} €</div>
+              </div>
+              <div style={{ flex: 1, background: '#f9f7f2', padding: '20px', borderRadius: '8px', textAlign: 'center' }}>
+                <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '3px', color: '#999', marginBottom: '8px' }}>Marge Nette</div>
+                <div style={{ fontSize: '22px', fontWeight: 'bold', color: '#2d4a3e', fontFamily: 'monospace' }}>{netMargin} %</div>
+              </div>
+              <div style={{ flex: 1, background: '#f9f7f2', padding: '20px', borderRadius: '8px', textAlign: 'center' }}>
+                <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '3px', color: '#999', marginBottom: '8px' }}>Dynamique</div>
+                <div style={{ fontSize: '22px', fontWeight: 'bold', color: companyStatus === 'Croissance' ? '#16a34a' : companyStatus === 'Récession' ? '#dc2626' : '#ea580c' }}>{companyStatus || 'N/A'}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* PAGE 4: Impôt Invisible - Detail */}
+          <div style={{ padding: '50px', pageBreakBefore: 'always' as const }}>
+            <h2 style={{ fontSize: '22px', color: '#2d4a3e', borderBottom: '2px solid #2d4a3e', paddingBottom: '8px', marginBottom: '30px', letterSpacing: '2px', textTransform: 'uppercase' }}>6. Évaluation de l'Impôt Invisible</h2>
+
+            {/* Grand total box */}
+            <div style={{ background: '#f0fdf4', border: '2px solid #16a34a', borderRadius: '12px', padding: '30px', textAlign: 'center', marginBottom: '30px' }}>
+              <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '4px', color: '#16a34a', marginBottom: '10px' }}>Potentiel de Gain Annuel Récupérable</div>
+              <div style={{ fontSize: '42px', fontWeight: 'bold', color: '#15803d', fontFamily: 'monospace' }}>{totalPotential.toLocaleString('fr-FR')} € / an</div>
+            </div>
+
+            {/* Cost breakdown table */}
+            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '30px' }}>
+              <thead>
+                <tr style={{ background: '#2d4a3e', color: 'white' }}>
+                  <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '2px' }}>Poste de coût</th>
+                  <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '2px' }}>Détail</th>
+                  <th style={{ padding: '12px 16px', textAlign: 'right', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '2px' }}>Montant</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  ['Turnover & Ramp-up', `${executiveDepartures} cadres, ${operationalDepartures} opérationnels`, costTurnover],
+                  ['Absentéisme', `Taux total: ${(rateAT + rateMaladie).toFixed(1)}% (AT: ${rateAT}%, Maladie: ${rateMaladie}%)`, costAbsenteeism],
+                  ['Temps Dirigeant Perdu', `${leaderLostHours}h/semaine en micro-management`, costLeaderLost],
+                  ['Pilotage Excel', `${excelFilesCount} fichiers, complexité ${excelComplexity}/10`, costExcel + costBlindness],
+                  ['Retard KPI', `Délai de revue: ${kpiReviewDate} jours`, costLateKPI],
+                  ['Non-Qualité (Retouches)', `${reworkPercent}% de retouches`, costRework],
+                  ['Avoirs', 'Montant des avoirs clients', costCreditNotes],
+                  ['Litiges', `${yearlyDisputes} litiges, ${averageDisputeAmount.toLocaleString('fr-FR')}€ moyen`, costDisputes],
+                  ['Croissance Bridée', `Structure: ${missedRevenueStruct.toLocaleString('fr-FR')}€, Certifications: ${missedRevenueCertif.toLocaleString('fr-FR')}€`, costMissedRevenue],
+                ].map(([label, detail, value], i) => (
+                  <tr key={i} style={{ borderBottom: '1px solid #eee', background: i % 2 === 0 ? '#fafafa' : '#fff' }}>
+                    <td style={{ padding: '12px 16px', fontWeight: 'bold', fontSize: '12px', color: '#2d4a3e' }}>{label}</td>
+                    <td style={{ padding: '12px 16px', fontSize: '11px', color: '#666' }}>{detail}</td>
+                    <td style={{ padding: '12px 16px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 'bold', color: '#15803d', fontSize: '14px' }}>{(value as number).toLocaleString('fr-FR')} €</td>
+                  </tr>
+                ))}
+                <tr style={{ background: '#2d4a3e', color: 'white' }}>
+                  <td colSpan={2} style={{ padding: '14px 16px', fontWeight: 'bold', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '2px' }}>Total Potentiel Récupérable</td>
+                  <td style={{ padding: '14px 16px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 'bold', fontSize: '18px' }}>{totalPotential.toLocaleString('fr-FR')} €</td>
+                </tr>
+              </tbody>
+            </table>
+
+            {/* Key indicators */}
+            <div style={{ display: 'flex', gap: '16px' }}>
+              <div style={{ flex: 1, background: '#fef2f2', border: '1px solid #fecaca', padding: '20px', borderRadius: '8px', textAlign: 'center' }}>
+                <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '3px', color: '#dc2626', marginBottom: '8px' }}>Coût Journalier de l'Inaction</div>
+                <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#dc2626', fontFamily: 'monospace' }}>{Math.round(totalPotential / 365).toLocaleString('fr-FR')} € / jour</div>
+              </div>
+              <div style={{ flex: 1, background: '#f9f7f2', border: '1px solid #d6cfc0', padding: '20px', borderRadius: '8px', textAlign: 'center' }}>
+                <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '3px', color: '#8a7d6b', marginBottom: '8px' }}>Retour sur Investissement</div>
+                <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#2d4a3e', fontFamily: 'monospace' }}>
+                  {totalPotential > 0 ? `${(() => { const v = 4000 / (totalPotential / 365); return (v - Math.floor(v) <= 0.5) ? Math.floor(v) : Math.ceil(v); })()} jours` : 'N/A'}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* PAGE 5: Proposition */}
+          <div style={{ padding: '50px', pageBreakBefore: 'always' as const }}>
+            <h2 style={{ fontSize: '22px', color: '#2d4a3e', borderBottom: '2px solid #2d4a3e', paddingBottom: '8px', marginBottom: '30px', letterSpacing: '2px', textTransform: 'uppercase' }}>7. Proposition d'Accompagnement</h2>
+            <div style={{ display: 'flex', gap: '20px', marginBottom: '40px' }}>
+              {[
+                { phase: 'Phase 1', title: "L'Analyse Documentaire", desc: 'Cadrage OFF-SITE', detail: 'Analyse des pré-requis et cartographie des standards de votre marché.' },
+                { phase: 'Phase 2', title: "L'Audit sur Site", desc: 'Immersion ON-SITE', detail: "Audit des flux et évaluation in-situ de la résilience de vos processus." },
+                { phase: 'Phase 3', title: 'Restitution & Plan', desc: 'RESTITUTION', detail: "Rapport d'étonnement et plan directeur priorisé." },
+              ].map((p, i) => (
+                <div key={i} style={{ flex: 1, border: '1px solid #e5e7eb', borderRadius: '8px', padding: '20px', borderTop: '3px solid #2d4a3e' }}>
+                  <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '3px', color: '#999', marginBottom: '8px' }}>{p.phase} — {p.desc}</div>
+                  <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#2d4a3e', marginBottom: '8px' }}>{p.title}</div>
+                  <p style={{ margin: 0, fontSize: '12px', color: '#666' }}>{p.detail}</p>
+                </div>
+              ))}
+            </div>
+            <div style={{ background: '#2d4a3e', color: 'white', borderRadius: '12px', padding: '30px', textAlign: 'center' }}>
+              <div style={{ fontSize: '13px', textTransform: 'uppercase', letterSpacing: '4px', color: '#d4c5a9', marginBottom: '16px' }}>Investissement</div>
+              <div style={{ fontSize: '36px', fontWeight: 'bold', color: '#d4c5a9' }}>4 000 € HT</div>
+              <p style={{ margin: '16px 0 0 0', fontSize: '12px', opacity: 0.6 }}>Audit de Robustesse Opérationnelle — 3 phases sur mesure</p>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div style={{ padding: '20px 50px', borderTop: '1px solid #ddd', textAlign: 'center', fontSize: '10px', color: '#999' }}>
+            Cabinet Delacour — Expertise QHSE & Performance Durable — Document confidentiel
           </div>
         </div>
       </div>

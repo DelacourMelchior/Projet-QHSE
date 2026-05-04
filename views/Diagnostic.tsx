@@ -59,7 +59,7 @@ const StepperInput = ({ value, onChange, label, tooltip }: { value: number, onCh
 
 const Diagnostic: React.FC<DiagnosticProps> = ({ onNavigate }) => {
   const [step, setStep] = useState<number>(0);
-  const totalSteps = 14;
+  const totalSteps = 13;
 
   // Step 1: ADN & Structure
   const [companyName, setCompanyName] = useState<string>('');
@@ -354,7 +354,7 @@ const Diagnostic: React.FC<DiagnosticProps> = ({ onNavigate }) => {
         <div className="flex flex-col lg:flex-row gap-6 h-[850px]">
           
           {/* Left Column: 38.2% (1/phi^2) - Zone de Pilotage Consultant */}
-          {step > 0 && step < 12 && (
+          {step > 0 && step <= 13 && (
             <div className="w-full lg:flex-[38.2] bg-gray-50 p-8 border border-gray-200 shadow-inner flex flex-col rounded-xl relative">
             
             {/* Progress Bar */}
@@ -696,26 +696,15 @@ const Diagnostic: React.FC<DiagnosticProps> = ({ onNavigate }) => {
                       </div>
                       <span className="text-xl font-bold text-sb-green-dark font-mono bg-gray-100 px-3 py-1 rounded">{rateAT} %</span>
                     </div>
-                    <div className="flex items-center space-x-4">
-                      <input
-                        type="range"
-                        min="0"
-                        max="10"
-                        step="0.1"
-                        value={rateAT}
-                        onChange={(e) => setRateAT(Number(e.target.value))}
-                        className="flex-grow h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-sb-green-dark"
-                      />
-                      <input
-                        type="number"
-                        min="0"
-                        max="10"
-                        step="0.1"
-                        value={rateAT}
-                        onChange={(e) => setRateAT(Number(e.target.value))}
-                        className="w-20 p-2 border border-gray-300 rounded-lg font-mono text-center focus:border-sb-green-dark outline-none transition-colors"
-                      />
-                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="10"
+                      step="0.1"
+                      value={rateAT}
+                      onChange={(e) => setRateAT(Number(e.target.value))}
+                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-sb-green-dark"
+                    />
                   </div>
                   <div className="mb-8 bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
                     <div className="flex items-center justify-between mb-6">
@@ -724,26 +713,15 @@ const Diagnostic: React.FC<DiagnosticProps> = ({ onNavigate }) => {
                       </div>
                       <span className="text-xl font-bold text-sb-green-dark font-mono bg-gray-100 px-3 py-1 rounded">{rateMaladie} %</span>
                     </div>
-                    <div className="flex items-center space-x-4">
-                      <input
-                        type="range"
-                        min="0"
-                        max="20"
-                        step="0.1"
-                        value={rateMaladie}
-                        onChange={(e) => setRateMaladie(Number(e.target.value))}
-                        className="flex-grow h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-sb-green-dark"
-                      />
-                      <input
-                        type="number"
-                        min="0"
-                        max="20"
-                        step="0.1"
-                        value={rateMaladie}
-                        onChange={(e) => setRateMaladie(Number(e.target.value))}
-                        className="w-20 p-2 border border-gray-300 rounded-lg font-mono text-center focus:border-sb-green-dark outline-none transition-colors"
-                      />
-                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="20"
+                      step="0.1"
+                      value={rateMaladie}
+                      onChange={(e) => setRateMaladie(Number(e.target.value))}
+                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-sb-green-dark"
+                    />
                   </div>
                   <div className="mb-8 bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
                     <div className="flex items-center justify-between">
@@ -771,26 +749,7 @@ const Diagnostic: React.FC<DiagnosticProps> = ({ onNavigate }) => {
                       <label className="block text-sm font-medium text-gray-600 uppercase tracking-wider text-xs">Heures/semaine dirigeant (urgences/conflits)</label>
                       <span className="text-xl font-bold text-sb-green-dark font-mono bg-gray-100 px-3 py-1 rounded">{leaderLostHours} h/sem</span>
                     </div>
-                    <div className="flex items-center space-x-4">
-                      <input
-                        type="range"
-                        min="0"
-                        max="20"
-                        step="1"
-                        value={leaderLostHours}
-                        onChange={(e) => setLeaderLostHours(Number(e.target.value))}
-                        className="flex-grow h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-sb-green-dark"
-                      />
-                      <input
-                        type="number"
-                        min="0"
-                        max="20"
-                        step="1"
-                        value={leaderLostHours}
-                        onChange={(e) => setLeaderLostHours(Number(e.target.value))}
-                        className="w-20 p-2 border border-gray-300 rounded-lg font-mono text-center focus:border-sb-green-dark outline-none transition-colors"
-                      />
-                    </div>
+                    <input type="range" min="0" max="20" step="1" value={leaderLostHours} onChange={(e) => setLeaderLostHours(Number(e.target.value))} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-sb-green-dark" />
                     
                     <div className="mt-8 bg-[#F8F9FA] p-8 rounded-lg border border-[#E9ECEF] shadow-sm">
                       <p className="text-[#4A4A4A] text-base leading-relaxed">

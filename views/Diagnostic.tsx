@@ -1578,6 +1578,14 @@ const Diagnostic: React.FC<DiagnosticProps> = ({ onNavigate }) => {
 
           {/* PAGE 1: Cover */}
           <div style={{ padding: '60px 50px', minHeight: '297mm', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center', background: 'linear-gradient(180deg, #f9f7f2 0%, #ffffff 100%)' }}>
+            {/* Logo */}
+            <div style={{ marginBottom: '40px' }}>
+              <svg viewBox="0 0 100 87" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '80px', height: '70px' }}>
+                <path d="M50 3L97 84H3L50 3Z" stroke="#2d4a3e" strokeWidth="4" strokeLinecap="square" strokeLinejoin="miter"/>
+                <path d="M50 25L78 74H22L50 25Z" stroke="#2d4a3e" strokeWidth="3" strokeLinecap="square" strokeLinejoin="miter"/>
+                <path d="M50 49L52 55L58 57L52 59L50 65L48 59L42 57L48 55L50 49Z" fill="#8a7d6b" />
+              </svg>
+            </div>
             <div style={{ borderBottom: '3px solid #2d4a3e', paddingBottom: '30px', marginBottom: '40px', width: '100%' }}>
               <div style={{ fontSize: '11px', letterSpacing: '6px', textTransform: 'uppercase', color: '#8a7d6b', marginBottom: '20px' }}>Cabinet Delacour</div>
               <h1 style={{ fontSize: '36px', fontWeight: 'bold', color: '#2d4a3e', margin: '0 0 10px 0', letterSpacing: '1px' }}>Rapport de Diagnostic</h1>
@@ -1763,8 +1771,13 @@ const Diagnostic: React.FC<DiagnosticProps> = ({ onNavigate }) => {
           </div>
 
           {/* Footer */}
-          <div style={{ padding: '20px 50px', borderTop: '1px solid #ddd', textAlign: 'center', fontSize: '10px', color: '#999' }}>
-            Cabinet Delacour — Expertise QHSE & Performance Durable — Document confidentiel
+          <div style={{ padding: '20px 50px', borderTop: '1px solid #ddd', fontSize: '10px', color: '#999', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+            <svg viewBox="0 0 100 87" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '16px', height: '14px', flexShrink: 0 }}>
+              <path d="M50 3L97 84H3L50 3Z" stroke="#bbb" strokeWidth="4" strokeLinecap="square" strokeLinejoin="miter"/>
+              <path d="M50 25L78 74H22L50 25Z" stroke="#bbb" strokeWidth="3" strokeLinecap="square" strokeLinejoin="miter"/>
+              <path d="M50 49L52 55L58 57L52 59L50 65L48 59L42 57L48 55L50 49Z" fill="#bbb" />
+            </svg>
+            <span>Cabinet Delacour — Expertise QHSE &amp; Performance Durable — Document confidentiel</span>
           </div>
         </div>
       </div>

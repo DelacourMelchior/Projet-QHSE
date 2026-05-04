@@ -130,6 +130,82 @@ const Diagnostic: React.FC<DiagnosticProps> = ({ onNavigate }) => {
   const synthesisRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const saved = localStorage.getItem('diagnostic_data');
+    if (saved) {
+      try {
+        const data = JSON.parse(saved);
+        if (data.step !== undefined) setStep(data.step);
+        if (data.companyName !== undefined) setCompanyName(data.companyName);
+        if (data.companyAge !== undefined) setCompanyAge(data.companyAge);
+        if (data.companyPresentation !== undefined) setCompanyPresentation(data.companyPresentation);
+        if (data.orgStructure !== undefined) setOrgStructure(data.orgStructure);
+        if (data.totalEmployees !== undefined) setTotalEmployees(data.totalEmployees);
+        if (data.targetClient !== undefined) setTargetClient(data.targetClient);
+        if (data.profitableClients !== undefined) setProfitableClients(data.profitableClients);
+        if (data.problematicClients !== undefined) setProblematicClients(data.problematicClients);
+        if (data.acquisitionModel !== undefined) setAcquisitionModel(data.acquisitionModel);
+        if (data.internalProblems !== undefined) setInternalProblems(data.internalProblems);
+        if (data.otherInternalProblem !== undefined) setOtherInternalProblem(data.otherInternalProblem);
+        if (data.diagnosticInitial !== undefined) setDiagnosticInitial(data.diagnosticInitial);
+        if (data.interventionHorizon !== undefined) setInterventionHorizon(data.interventionHorizon);
+        if (data.cadrageNotes !== undefined) setCadrageNotes(data.cadrageNotes);
+        if (data.revenue !== undefined) setRevenue(data.revenue);
+        if (data.netMargin !== undefined) setNetMargin(data.netMargin);
+        if (data.companyStatus !== undefined) setCompanyStatus(data.companyStatus);
+        if (data.cadreSalary !== undefined) setCadreSalary(data.cadreSalary);
+        if (data.operationalSalary !== undefined) setOperationalSalary(data.operationalSalary);
+        if (data.executiveDepartures !== undefined) setExecutiveDepartures(data.executiveDepartures);
+        if (data.executiveRampUpMonths !== undefined) setExecutiveRampUpMonths(data.executiveRampUpMonths);
+        if (data.operationalDepartures !== undefined) setOperationalDepartures(data.operationalDepartures);
+        if (data.operationalRampUpMonths !== undefined) setOperationalRampUpMonths(data.operationalRampUpMonths);
+        if (data.absenteeismRate !== undefined) setAbsenteeismRate(data.absenteeismRate);
+        if (data.rateAT !== undefined) setRateAT(data.rateAT);
+        if (data.rateMaladie !== undefined) setRateMaladie(data.rateMaladie);
+        if (data.leaderLostHours !== undefined) setLeaderLostHours(data.leaderLostHours);
+        if (data.excelFilesCount !== undefined) setExcelFilesCount(data.excelFilesCount);
+        if (data.excelComplexity !== undefined) setExcelComplexity(data.excelComplexity);
+        if (data.kpiReviewDate !== undefined) setKpiReviewDate(data.kpiReviewDate);
+        if (data.reworkPercent !== undefined) setReworkPercent(data.reworkPercent);
+        if (data.creditNotesAmount !== undefined) setCreditNotesAmount(data.creditNotesAmount);
+        if (data.yearlyDisputes !== undefined) setYearlyDisputes(data.yearlyDisputes);
+        if (data.averageDisputeAmount !== undefined) setAverageDisputeAmount(data.averageDisputeAmount);
+        if (data.missedRevenueStruct !== undefined) setMissedRevenueStruct(data.missedRevenueStruct);
+        if (data.missedRevenueCertif !== undefined) setMissedRevenueCertif(data.missedRevenueCertif);
+        if (data.auditChecklist !== undefined) setAuditChecklist(data.auditChecklist);
+        if (data.startDate !== undefined) setStartDate(data.startDate);
+        if (data.conditions !== undefined) setConditions(data.conditions);
+      } catch (e) {
+        console.error("Failed to load diagnostic data", e);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    const data = {
+      step, companyName, companyAge, companyPresentation, orgStructure, totalEmployees,
+      targetClient, profitableClients, problematicClients, acquisitionModel,
+      internalProblems, otherInternalProblem, diagnosticInitial, interventionHorizon,
+      cadrageNotes, revenue, netMargin, companyStatus, cadreSalary, operationalSalary,
+      executiveDepartures, executiveRampUpMonths, operationalDepartures, operationalRampUpMonths,
+      absenteeismRate, rateAT, rateMaladie, leaderLostHours, excelFilesCount,
+      excelComplexity, kpiReviewDate, reworkPercent, creditNotesAmount, yearlyDisputes,
+      averageDisputeAmount, missedRevenueStruct, missedRevenueCertif, auditChecklist,
+      startDate, conditions
+    };
+    localStorage.setItem('diagnostic_data', JSON.stringify(data));
+  }, [
+    step, companyName, companyAge, companyPresentation, orgStructure, totalEmployees,
+    targetClient, profitableClients, problematicClients, acquisitionModel,
+    internalProblems, otherInternalProblem, diagnosticInitial, interventionHorizon,
+    cadrageNotes, revenue, netMargin, companyStatus, cadreSalary, operationalSalary,
+    executiveDepartures, executiveRampUpMonths, operationalDepartures, operationalRampUpMonths,
+    absenteeismRate, rateAT, rateMaladie, leaderLostHours, excelFilesCount,
+    excelComplexity, kpiReviewDate, reworkPercent, creditNotesAmount, yearlyDisputes,
+    averageDisputeAmount, missedRevenueStruct, missedRevenueCertif, auditChecklist,
+    startDate, conditions
+  ]);
+
+  useEffect(() => {
     if (synthesisRef.current) {
       const shouldScrollToTop = step >= 12;
       synthesisRef.current.scrollTo({
@@ -168,7 +244,7 @@ const Diagnostic: React.FC<DiagnosticProps> = ({ onNavigate }) => {
   const costCreditNotes = creditNotesAmount;
 
   // 8. Litiges (Fuite Opérationnelle)
-  const costDisputes = monthlyDisputes * averageDisputeAmount * 12 * 0.10;
+  const costDisputes = yearlyDisputes * averageDisputeAmount * 0.10;
 
   // 10. Le Plan de Sécurisation (Manque à gagner)
   const costMissedRevenue = missedRevenueStruct + missedRevenueCertif;

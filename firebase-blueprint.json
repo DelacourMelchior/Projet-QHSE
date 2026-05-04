@@ -1,0 +1,23 @@
+{
+  "entities": {
+    "Diagnostic": {
+      "title": "Diagnostic",
+      "description": "A complete diagnostic report for a company.",
+      "type": "object",
+      "properties": {
+        "companyName": { "type": "string", "description": "Name of the company" },
+        "data": { "type": "object", "description": "The full diagnostic state data" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Last update timestamp" },
+        "userId": { "type": "string", "description": "ID of the user who created the diagnostic" }
+      },
+      "required": ["companyName", "data", "createdAt", "userId"]
+    }
+  },
+  "firestore": {
+    "/diagnostics/{diagnosticId}": {
+      "schema": { "$ref": "Diagnostic" },
+      "description": "Collection of saved diagnostics"
+    }
+  }
+}

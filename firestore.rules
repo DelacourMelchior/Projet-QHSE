@@ -1,0 +1,42 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    // Collection: diagnostics
+    // Document ID: auto-generated
+    // Fields:
+    //   - companyName: string (required) - Name of the company
+    //   - data: map (required) - The full diagnostic state data
+    //   - createdAt: timestamp (required) - Creation timestamp
+    //   - updatedAt: timestamp (optional) - Last update timestamp
+    //   - userId: string (required) - ID of the user who created the diagnostic
+    // ===============================================================
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isValidDiagnostic(data) {
+      return data.keys().hasAll(['companyName', 'data', 'createdAt', 'userId']) &&
+             data.companyName is string && data.companyName.size() > 0 && data.companyName.size() < 255 &&
+             data.data is map &&
+             data.createdAt is timestamp &&
+             data.userId is string;
+    }
+
+    match /diagnostics/{diagnosticId} {
+      allow read: if isAuthenticated() && isOwner(resource.data.userId);
+      allow create: if isAuthenticated() && isOwner(request.resource.data.userId) && isValidDiagnostic(request.resource.data);
+      allow update: if isAuthenticated() && isOwner(resource.data.userId) && isOwner(request.resource.data.userId) && isValidDiagnostic(request.resource.data);
+      allow delete: if isAuthenticated() && isOwner(resource.data.userId);
+    }
+  }
+}

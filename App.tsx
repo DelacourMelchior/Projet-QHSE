@@ -13,6 +13,7 @@ import OfferRobustesse from './views/OfferRobustesse';
 import ImpactRisque from './views/ImpactRisque';
 import ImpactSysteme from './views/ImpactSysteme';
 import ImpactData from './views/ImpactData';
+import Diagnostic from './views/Diagnostic';
 import { Page } from './types';
 
 // On mappe le "slug" (le dernier mot de l'URL) directement vers la Page
@@ -29,6 +30,7 @@ const SLUG_TO_PAGE: Record<string, Page> = {
   'impact-financier': Page.IMPACT_RISQUE,
   'impact-systeme': Page.IMPACT_SYSTEME,
   'impact-data': Page.IMPACT_DATA,
+  'diagnostic': Page.DIAGNOSTIC,
   // Pas de slug pour Home, c'est le défaut
 };
 
@@ -105,6 +107,7 @@ const App: React.FC = () => {
       case Page.IMPACT_RISQUE: return <ImpactRisque onNavigate={navigate} />;
       case Page.IMPACT_SYSTEME: return <ImpactSysteme onNavigate={navigate} />;
       case Page.IMPACT_DATA: return <ImpactData onNavigate={navigate} />;
+      case Page.DIAGNOSTIC: return <Diagnostic onNavigate={navigate} />;
       default: return <Home onNavigate={navigate} />;
     }
   };

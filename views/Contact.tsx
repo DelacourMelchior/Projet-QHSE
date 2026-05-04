@@ -1,9 +1,14 @@
 
 import React, { useState } from 'react';
 import Section from '../components/Section';
-import { Mail, Send, Clock, Phone, CheckCircle2, Loader2 } from 'lucide-react';
+import { Page } from '../types';
+import { Mail, Send, Clock, Phone, CheckCircle2, Loader2, MapPin } from 'lucide-react';
 
-const Contact: React.FC = () => {
+interface ContactProps {
+  onNavigate?: (page: Page) => void;
+}
+
+const Contact: React.FC<ContactProps> = ({ onNavigate }) => {
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const [formData, setFormData] = useState({
     name: '',
@@ -27,7 +32,6 @@ const Contact: React.FC = () => {
     setStatus('submitting');
 
     try {
-      // Utilisation de l'ID Formspree fourni par l'utilisateur
       const response = await fetch('https://formspree.io/f/xqeezlgv', {
         method: 'POST',
         headers: {
@@ -71,7 +75,7 @@ const Contact: React.FC = () => {
             <p className="text-xl text-sb-green-dark/80 font-light leading-relaxed mb-12">
                 Merci, M. {formData.name.split(' ')[0]}. Votre demande de diagnostic de faisabilité a été transmise au cabinet. 
                 <br /><br />
-                Je reviendrai vers vous personnellement sous <span className="font-bold border-b border-[#C5A065]">24 heures ouvrées</span> (hors week-end) pour convenir de notre créneau d'échange téléphonique de 30 minutes.
+                Je reviendrai vers vous personnellement sous <span className="font-bold border-b border-[#C5A065]">24 heures ouvrées</span> pour convenir de notre créneau d'échange téléphonique.
             </p>
             <button 
                 onClick={() => setStatus('idle')}
@@ -86,194 +90,217 @@ const Contact: React.FC = () => {
 
   return (
     <>
-      <Section bg="cream" className="py-32 md:py-48 min-h-screen">
+      <Section bg="cream" className="pt-32 pb-20 md:pt-48 md:pb-32 min-h-screen">
         
-        {/* HEADER */}
-        <div className="max-w-4xl mx-auto text-center mb-24 px-6">
-             <h1 className="font-serif text-hero-mobile md:text-hero text-sb-green-dark mb-6 tracking-math-tight uppercase">
-                PARLONS STRATÉGIE.
-             </h1>
-             <div className="w-24 h-px bg-sb-green-dark mx-auto mb-8"></div>
-             <p className="text-body text-sb-green-dark/80 font-light leading-relaxed max-w-2xl mx-auto">
-                Demandez votre diagnostic de faisabilité offert. Un échange stratégique de 30 minutes pour évaluer le potentiel de structuration de votre organisation.
-             </p>
+        {/* HEADER SECTION */}
+        <div className="container mx-auto px-6 mb-20 md:mb-32">
+             <div className="max-w-4xl">
+                <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#C5A065] mb-4">Initialisation Stratégique</h3>
+                <h1 className="font-serif text-4xl md:text-6xl lg:text-7xl text-sb-green-dark mb-8 tracking-math-tight uppercase leading-[0.9]">
+                   Parlons de votre<br/><span className="italic text-sb-green-light">Prochaine Étape.</span>
+                </h1>
+                <p className="text-lg md:text-body text-sb-green-dark/70 font-light leading-relaxed max-w-2xl">
+                   Sollicitez votre diagnostic de faisabilité offert. Trente minutes d'expertise pour identifier vos leviers de performance immédiats.
+                </p>
+             </div>
         </div>
 
-        <div className="max-w-6xl mx-auto px-6">
-            <div className="grid md:grid-cols-3 gap-16">
+        <div className="container mx-auto px-6">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 xl:gap-24">
                 
-                {/* COLONNE GAUCHE : INFOS DIRECTES */}
-                <div className="md:col-span-1 space-y-12">
-                    <div className="space-y-6">
-                        <h3 className="text-xs font-bold uppercase tracking-math-wide text-sb-green-dark border-b border-sb-green-dark/20 pb-2">Contact Direct</h3>
-                        <div className="group">
-                            <p className="text-xs font-bold uppercase text-gray-400 mb-1">Disponibilité</p>
-                            <p className="text-sb-green-dark font-medium text-lg flex items-center gap-2">
-                                <Clock size={16} className="text-[#C5A065]" />
-                                Sous 24h ouvrées
-                            </p>
+                {/* COLONNE GAUCHE : CARTE D'INFORMATION (4 COLONNES) */}
+                <div className="lg:col-span-4 space-y-8">
+                    <div className="bg-white border border-sb-green-dark/5 p-8 md:p-10 shadow-[0_20px_50px_rgba(0,0,0,0.03)] rounded-[2px] relative overflow-hidden">
+                        {/* Decorative background element */}
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-sb-beige/10 rounded-full -mr-16 -mt-16"></div>
+                        
+                        <div className="relative z-10 space-y-12">
+                            <div>
+                                <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-sb-green-dark/40 mb-6 border-b border-sb-green-dark/10 pb-2">Engagement de service</h4>
+                                <div className="space-y-6">
+                                    <div className="flex items-start gap-4">
+                                        <div className="w-10 h-10 bg-sb-green-dark/5 flex items-center justify-center rounded-[2px] text-sb-green-dark flex-shrink-0">
+                                            <Clock size={18} />
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-bold uppercase text-sb-green-dark mb-1">Réactivité</p>
+                                            <p className="text-sm text-sb-green-dark/60 font-light">Réponse garantie sous 24h ouvrées.</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-start gap-4">
+                                        <div className="w-10 h-10 bg-sb-green-dark/5 flex items-center justify-center rounded-[2px] text-sb-green-dark flex-shrink-0">
+                                            <Phone size={18} />
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-bold uppercase text-sb-green-dark mb-1">Format</p>
+                                            <p className="text-sm text-sb-green-dark/60 font-light">30 min d'échange téléphonique stratégique.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="pt-8 border-t border-sb-green-dark/5">
+                                <h4 className="font-serif text-xl mb-4 text-sb-green-dark">Note du Consultant</h4>
+                                <p className="text-sm font-light leading-relaxed text-sb-green-dark/70 italic">
+                                    "Chaque organisation est unique. Ce diagnostic n'est pas une présentation commerciale, c'est une première analyse de la maturité de vos processus."
+                                </p>
+                                <div className="mt-6 flex items-center gap-3">
+                                    <div className="w-8 h-px bg-[#C5A065]"></div>
+                                    <p className="text-[10px] font-bold uppercase tracking-widest text-sb-green-dark">M. Delacour</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <div className="bg-sb-green-dark text-white p-8 rounded-[2px] shadow-xl space-y-6">
-                        <div>
-                            <h4 className="font-serif text-xl mb-4 text-sb-beige flex items-center gap-2">
-                                <Phone size={20} className="text-[#C5A065]" /> 
-                                Format du RDV
-                            </h4>
-                            <p className="text-sm font-light leading-relaxed opacity-80">
-                                Le diagnostic dure <span className="text-sb-beige font-bold">30 minutes</span> et se déroule par téléphone.
-                            </p>
-                        </div>
-                        <div className="pt-6 border-t border-white/10">
-                            <h4 className="font-serif text-xl mb-4 text-sb-beige">Engagement</h4>
-                            <p className="text-sm font-light leading-relaxed opacity-80 italic">
-                                "Chaque demande est traitée personnellement pour fixer un créneau de rappel. Confidentialité garantie."
-                            </p>
-                            <p className="mt-6 text-xs font-bold uppercase tracking-widest text-sb-beige">— M. Delacour</p>
-                        </div>
+                    <div className="px-8 py-6 bg-sb-green-dark text-sb-beige flex items-center justify-between rounded-[2px]">
+                        <span className="text-[10px] font-bold uppercase tracking-widest">Confidentialité Totale</span>
+                        <ShieldAlert size={16} className="text-[#C5A065]" />
                     </div>
                 </div>
 
-                {/* COLONNE DROITE : FORMULAIRE */}
-                <div className="md:col-span-2">
-                    <div className="bg-white p-8 md:p-12 shadow-[0_10px_40px_rgba(0,0,0,0.05)] border border-gray-100 rounded-[2px]">
-                        <div className="mb-10 p-4 bg-sb-beige/30 border-l-4 border-[#C5A065] text-sb-green-dark">
-                            <p className="text-sm font-bold uppercase tracking-math-wide">Demande de Diagnostic de Faisabilité</p>
-                            <p className="text-xs opacity-70">Remplissez ce formulaire pour être rappelé et fixer votre rendez-vous.</p>
-                        </div>
+                {/* COLONNE DROITE : FORMULAIRE (8 COLONNES) */}
+                <div className="lg:col-span-8">
+                    <div className="bg-white p-8 md:p-12 lg:p-16 shadow-[0_30px_60px_rgba(0,0,0,0.05)] border border-white rounded-[2px]">
+                        <form className="space-y-12" onSubmit={handleSubmit}>
+                            {/* Honeypot */}
+                            <input type="text" name="_gotcha" value={formData._gotcha} onChange={handleChange} className="hidden" />
 
-                        <form className="space-y-10" onSubmit={handleSubmit}>
-                            {/* Champ Honeypot (Anti-Spam) caché */}
-                            <input type="text" name="_gotcha" value={formData._gotcha} onChange={handleChange} style={{ display: 'none' }} />
-
-                            <div className="space-y-6">
-                                <div className="flex justify-between items-end border-b border-gray-100 pb-2">
-                                    <h3 className="text-xs font-bold uppercase tracking-math-wide text-sb-green-dark">01. Identité & Coordonnées</h3>
-                                    <span className="text-[9px] font-bold uppercase tracking-widest text-[#C5A065] italic">* Champs obligatoires</span>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-10">
+                                {/* Nom */}
+                                <div className="group relative">
+                                    <label className="text-[10px] font-bold uppercase tracking-widest text-sb-green-dark/40 mb-2 block transition-colors group-focus-within:text-[#C5A065]">
+                                        Prénom & Nom <span className="text-[#C5A065]">*</span>
+                                    </label>
+                                    <input 
+                                        type="text" 
+                                        name="name"
+                                        required
+                                        value={formData.name}
+                                        onChange={handleChange}
+                                        className="w-full bg-sb-cream/30 border border-sb-green-dark/5 px-4 py-3 text-sb-green-dark focus:border-[#C5A065] focus:bg-white outline-none transition-all rounded-[2px]" 
+                                        placeholder="Jean Dupont" 
+                                    />
                                 </div>
-                                
-                                <div className="grid md:grid-cols-2 gap-x-6 gap-y-8">
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-bold uppercase tracking-wide text-gray-400">
-                                            Prénom & Nom <span className="text-[#C5A065]">*</span>
-                                        </label>
-                                        <input 
-                                          type="text" 
-                                          name="name"
-                                          required
-                                          value={formData.name}
-                                          onChange={handleChange}
-                                          className="w-full border-b border-gray-200 py-2 text-sb-green-dark focus:border-sb-green-dark outline-none transition-colors bg-transparent" 
-                                          placeholder="Ex: Jean Dupont" 
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-bold uppercase tracking-wide text-gray-400">
-                                            E-mail Pro <span className="text-[#C5A065]">*</span>
-                                        </label>
-                                        <input 
-                                          type="email" 
-                                          name="email"
-                                          required
-                                          value={formData.email}
-                                          onChange={handleChange}
-                                          className="w-full border-b border-gray-200 py-2 text-sb-green-dark focus:border-sb-green-dark outline-none transition-colors bg-transparent" 
-                                          placeholder="jean.dupont@societe.com" 
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-bold uppercase tracking-wide text-gray-400">
-                                            Téléphone <span className="text-[#C5A065]">*</span>
-                                        </label>
-                                        <input 
-                                          type="tel" 
-                                          name="phone"
-                                          required
-                                          value={formData.phone}
-                                          onChange={handleChange}
-                                          className="w-full border-b border-gray-200 py-2 text-sb-green-dark focus:border-sb-green-dark outline-none transition-colors bg-transparent" 
-                                          placeholder="06 00 00 00 00" 
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-bold uppercase tracking-wide text-gray-400">
-                                            Société <span className="text-[#C5A065]">*</span>
-                                        </label>
-                                        <input 
-                                          type="text" 
-                                          name="company"
-                                          required
-                                          value={formData.company}
-                                          onChange={handleChange}
-                                          className="w-full border-b border-gray-200 py-2 text-sb-green-dark focus:border-sb-green-dark outline-none transition-colors bg-transparent" 
-                                          placeholder="Raison sociale" 
-                                        />
-                                    </div>
-                                    <div className="md:col-span-2 space-y-2">
-                                        <label className="text-[10px] font-bold uppercase tracking-wide text-gray-400">
-                                            Fonction <span className="text-[#C5A065]">*</span>
-                                        </label>
-                                        <input 
-                                          type="text" 
-                                          name="function"
-                                          required
-                                          value={formData.function}
-                                          onChange={handleChange}
-                                          className="w-full border-b border-gray-200 py-2 text-sb-green-dark focus:border-sb-green-dark outline-none transition-colors bg-transparent" 
-                                          placeholder="DG, Responsable QHSE..." 
-                                        />
-                                    </div>
-                                </div>
-                            </div>
 
-                            <div className="space-y-6">
-                                <h3 className="text-xs font-bold uppercase tracking-math-wide text-sb-green-dark border-b border-gray-100 pb-2">02. Votre Enjeu (Optionnel)</h3>
-                                <textarea 
-                                  name="message"
-                                  rows={4} 
-                                  value={formData.message}
-                                  onChange={handleChange}
-                                  className="w-full border-b border-gray-200 py-2 text-sb-green-dark focus:border-sb-green-dark outline-none resize-none transition-colors bg-transparent" 
-                                  placeholder="Détaillez brièvement votre problématique actuelle ou vos contraintes temporelles..."
-                                ></textarea>
+                                {/* Email */}
+                                <div className="group relative">
+                                    <label className="text-[10px] font-bold uppercase tracking-widest text-sb-green-dark/40 mb-2 block transition-colors group-focus-within:text-[#C5A065]">
+                                        Email Professionnel <span className="text-[#C5A065]">*</span>
+                                    </label>
+                                    <input 
+                                        type="email" 
+                                        name="email"
+                                        required
+                                        value={formData.email}
+                                        onChange={handleChange}
+                                        className="w-full bg-sb-cream/30 border border-sb-green-dark/5 px-4 py-3 text-sb-green-dark focus:border-[#C5A065] focus:bg-white outline-none transition-all rounded-[2px]" 
+                                        placeholder="j.dupont@societe.com" 
+                                    />
+                                </div>
+
+                                {/* Téléphone */}
+                                <div className="group relative">
+                                    <label className="text-[10px] font-bold uppercase tracking-widest text-sb-green-dark/40 mb-2 block transition-colors group-focus-within:text-[#C5A065]">
+                                        Téléphone <span className="text-[#C5A065]">*</span>
+                                    </label>
+                                    <input 
+                                        type="tel" 
+                                        name="phone"
+                                        required
+                                        value={formData.phone}
+                                        onChange={handleChange}
+                                        className="w-full bg-sb-cream/30 border border-sb-green-dark/5 px-4 py-3 text-sb-green-dark focus:border-[#C5A065] focus:bg-white outline-none transition-all rounded-[2px]" 
+                                        placeholder="06 00 00 00 00" 
+                                    />
+                                </div>
+
+                                {/* Société */}
+                                <div className="group relative">
+                                    <label className="text-[10px] font-bold uppercase tracking-widest text-sb-green-dark/40 mb-2 block transition-colors group-focus-within:text-[#C5A065]">
+                                        Société <span className="text-[#C5A065]">*</span>
+                                    </label>
+                                    <input 
+                                        type="text" 
+                                        name="company"
+                                        required
+                                        value={formData.company}
+                                        onChange={handleChange}
+                                        className="w-full bg-sb-cream/30 border border-sb-green-dark/5 px-4 py-3 text-sb-green-dark focus:border-[#C5A065] focus:bg-white outline-none transition-all rounded-[2px]" 
+                                        placeholder="Nom de l'entreprise" 
+                                    />
+                                </div>
+
+                                {/* Fonction */}
+                                <div className="md:col-span-2 group relative">
+                                    <label className="text-[10px] font-bold uppercase tracking-widest text-sb-green-dark/40 mb-2 block transition-colors group-focus-within:text-[#C5A065]">
+                                        Votre Fonction <span className="text-[#C5A065]">*</span>
+                                    </label>
+                                    <input 
+                                        type="text" 
+                                        name="function"
+                                        required
+                                        value={formData.function}
+                                        onChange={handleChange}
+                                        className="w-full bg-sb-cream/30 border border-sb-green-dark/5 px-4 py-3 text-sb-green-dark focus:border-[#C5A065] focus:bg-white outline-none transition-all rounded-[2px]" 
+                                        placeholder="DG, Responsable QHSE, Directeur de Site..." 
+                                    />
+                                </div>
+
+                                {/* Message */}
+                                <div className="md:col-span-2 group relative">
+                                    <label className="text-[10px] font-bold uppercase tracking-widest text-sb-green-dark/40 mb-2 block transition-colors group-focus-within:text-[#C5A065]">
+                                        Enjeux ou Objectifs de l'échange
+                                    </label>
+                                    <textarea 
+                                        name="message"
+                                        rows={4} 
+                                        value={formData.message}
+                                        onChange={handleChange}
+                                        className="w-full bg-sb-cream/30 border border-sb-green-dark/5 px-4 py-3 text-sb-green-dark focus:border-[#C5A065] focus:bg-white outline-none transition-all rounded-[2px] resize-none" 
+                                        placeholder="Décrivez brièvement votre contexte actuel..."
+                                    ></textarea>
+                                </div>
                             </div>
 
                             {status === 'error' && (
-                              <div className="p-4 bg-red-50 text-red-800 text-xs rounded-[2px] border border-red-100 animate-pulse">
-                                Une erreur est survenue lors de l'envoi. Veuillez vérifier votre connexion ou me contacter directement par e-mail.
+                              <div className="p-4 bg-red-50 text-red-800 text-xs rounded-[2px] border border-red-100">
+                                Une erreur est survenue. Veuillez vérifier votre saisie ou contacter le cabinet par e-mail.
                               </div>
                             )}
 
-                            <div className="space-y-4">
+                            <div className="pt-6 flex flex-col md:flex-row items-center justify-between gap-8">
+                                <p className="text-[9px] text-gray-400 uppercase tracking-widest max-w-xs text-center md:text-left">
+                                    En soumettant ce formulaire, vous acceptez d'être recontacté exclusivement pour ce diagnostic.
+                                </p>
                                 <button 
                                   type="submit" 
                                   disabled={status === 'submitting'}
-                                  className={`group w-full bg-[#C5A065] text-sb-green-dark py-5 font-bold uppercase tracking-math-wide hover:bg-sb-green-dark hover:text-white transition-all rounded-[2px] shadow-lg flex items-center justify-center gap-3 ${status === 'submitting' ? 'opacity-70 cursor-not-allowed' : ''}`}
+                                  className={`group px-12 py-5 bg-[#C5A065] text-sb-green-dark font-bold uppercase tracking-math-wide hover:bg-sb-green-dark hover:text-white transition-all rounded-[2px] shadow-xl flex items-center justify-center gap-3 min-w-[280px] ${status === 'submitting' ? 'opacity-70 cursor-not-allowed' : ''}`}
                                 >
                                     {status === 'submitting' ? (
-                                      <>ENVOI EN COURS <Loader2 size={16} className="animate-spin" /></>
+                                      <>Traitement... <Loader2 size={18} className="animate-spin" /></>
                                     ) : (
-                                      <>DEMANDER MON RDV DIAGNOSTIC <Send size={16} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" /></>
+                                      <>Valider ma demande <Send size={18} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" /></>
                                     )}
                                 </button>
-                                <p className="text-center text-[9px] text-gray-400 uppercase tracking-widest">
-                                    En envoyant ce formulaire, vous acceptez d'être recontacté pour planifier cet échange.
-                                </p>
                             </div>
                         </form>
                     </div>
                 </div>
             </div>
-            
-            <p className="text-center text-[10px] text-gray-400 mt-16 font-light uppercase tracking-widest">
-                Cabinet Delacour — Respect du RGPD & Confidentialité des Données.
-            </p>
         </div>
-
       </Section>
     </>
   );
 };
+
+// Simple icon for alert/shield decorative
+const ShieldAlert: React.FC<{size?: number, className?: string}> = ({size = 16, className = ""}) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        <line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+    </svg>
+);
 
 export default Contact;

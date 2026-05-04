@@ -42,7 +42,7 @@
               'h3-card': '24px',
               'subtitle': '34px',
               'title': '55px',
-              'hero-mobile': '42px',
+              'hero-mobile': '32px',
               'hero': '89px',
             },
             lineHeight: {
@@ -94,11 +94,13 @@
       }
       h1, h2, h3, h4, h5, h6 {
         font-family: 'Playfair Display', serif;
-        letter-spacing: -0.02em;
-        overflow-wrap: break-word;
-        word-wrap: break-word;
-        word-break: break-word;
-        hyphens: auto;
+        letter-spacing: -0.01em;
+        /* Règle stricte : jamais de césure, jamais de coupe */
+        -webkit-hyphens: none;
+        -ms-hyphens: none;
+        hyphens: none;
+        word-break: normal;
+        overflow-wrap: normal;
       }
       .smooth-scroll {
         scroll-behavior: smooth;
@@ -107,15 +109,14 @@
           border-radius: 2px !important;
           letter-spacing: 0.2em;
       }
-      /* Amélioration du comportement des containers */
       .container {
         width: 100%;
         margin-left: auto;
         margin-right: auto;
-        padding-left: 1.25rem;
-        padding-right: 1.25rem;
+        padding-left: 1rem;
+        padding-right: 1rem;
       }
-      @media (min-width: 640px) { .container { max-width: 640px; } }
+      @media (min-width: 640px) { .container { max-width: 640px; padding-left: 1.5rem; padding-right: 1.5rem; } }
       @media (min-width: 768px) { .container { max-width: 768px; } }
       @media (min-width: 1024px) { .container { max-width: 1024px; } }
       @media (min-width: 1280px) { .container { max-width: 1240px; } }
@@ -130,9 +131,11 @@
   }
 }
 </script>
+<link rel="stylesheet" href="/index.css">
 </head>
   <body>
     <div id="root"></div>
     <script type="module" src="./index.tsx"></script>
-  </body>
+  <script type="module" src="/index.tsx"></script>
+</body>
 </html>

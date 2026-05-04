@@ -6,6 +6,7 @@ export const NAV_ITEMS = [
   { label: 'À Propos', page: Page.ABOUT },
   { label: 'Prestations', page: Page.SERVICES },
   { label: 'Méthode', page: Page.METHOD },
+  { label: 'Diagnostic', page: Page.DIAGNOSTIC },
   { label: 'Contact', page: Page.CONTACT },
 ];
 

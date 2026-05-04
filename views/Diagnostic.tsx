@@ -123,6 +123,7 @@ const Diagnostic: React.FC<DiagnosticProps> = ({ onNavigate }) => {
   const [userLastName, setUserLastName] = useState<string>('');
   const [userEmail, setUserEmail] = useState<string>('');
   const [isLeadCaptured, setIsLeadCaptured] = useState<boolean>(false);
+  const fullReportRef = useRef<HTMLDivElement>(null);
   const [yearlyDisputes, setYearlyDisputes] = useState<number>(0);
 
   // Calculations
@@ -274,9 +275,9 @@ const Diagnostic: React.FC<DiagnosticProps> = ({ onNavigate }) => {
   };
 
   const handleGeneratePDF = () => {
-    if (!synthesisRef.current) return;
+    if (!fullReportRef.current) return;
 
-    const element = synthesisRef.current;
+    const element = fullReportRef.current;
     const opt = {
       margin: [10, 10] as [number, number],
       filename: `Diagnostic_QHSE_${companyName || 'Export'}_${new Date().toLocaleDateString('fr-FR').replace(/\//g, '-')}.pdf`,
@@ -286,7 +287,6 @@ const Diagnostic: React.FC<DiagnosticProps> = ({ onNavigate }) => {
       pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
     };
 
-    // Temporarily hide elements if needed
     html2pdf().set(opt).from(element).save();
   };
 
@@ -354,7 +354,7 @@ const Diagnostic: React.FC<DiagnosticProps> = ({ onNavigate }) => {
         <div className="flex flex-col lg:flex-row gap-6 h-[850px]">
           
           {/* Left Column: 38.2% (1/phi^2) - Zone de Pilotage Consultant */}
-          {step > 0 && step <= 13 && (
+          {step > 0 && step < 12 && (
             <div className="w-full lg:flex-[38.2] bg-gray-50 p-8 border border-gray-200 shadow-inner flex flex-col rounded-xl relative">
             
             {/* Progress Bar */}
@@ -949,107 +949,12 @@ const Diagnostic: React.FC<DiagnosticProps> = ({ onNavigate }) => {
                 </motion.div>
               )}
 
-              {/* Step 12 */}
-              {step === 12 && (
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-                  <h3 className="font-serif text-xl text-sb-green-dark mb-4">Synthèse finale</h3>
-                  <p className="font-sans text-sm text-gray-700">Vous avez complété toutes les étapes de saisie. Vous pouvez maintenant consulter la synthèse détaillée à droite et passer à l'étape suivante pour générer votre proposition d'audit.</p>
-                </motion.div>
-              )}
-
-              {/* Step 13 */}
-              {step === 13 && (
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-                  {!isLeadCaptured ? (
-                    <div className="bg-white p-8 rounded-xl border border-gray-200 shadow-lg">
-                      <div className="flex items-center space-x-3 mb-6">
-                        <div className="p-2 bg-sb-green-dark/10 rounded-lg text-sb-green-dark">
-                          <Mail size={24} />
-                        </div>
-                        <h3 className="font-serif text-2xl text-sb-green-dark">Recevoir votre rapport détaillé</h3>
-                      </div>
-                      
-                      <p className="text-gray-600 mb-8 leading-relaxed">
-                        Pour débloquer l'export PDF professionnel de votre diagnostic et recevoir une copie confidentielle par email, merci de renseigner vos coordonnées.
-                      </p>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                        <div>
-                          <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Prénom</label>
-                          <div className="relative">
-                            <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                            <input
-                              type="text"
-                              value={userFirstName}
-                              onChange={(e) => setUserFirstName(e.target.value)}
-                              className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:border-sb-green-dark outline-none transition-all"
-                              placeholder="Jean"
-                            />
-                          </div>
-                        </div>
-                        <div>
-                          <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Nom</label>
-                          <div className="relative">
-                            <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                            <input
-                              type="text"
-                              value={userLastName}
-                              onChange={(e) => setUserLastName(e.target.value)}
-                              className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:border-sb-green-dark outline-none transition-all"
-                              placeholder="Dupont"
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="mb-8">
-                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Email Professionnel</label>
-                        <div className="relative">
-                          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                          <input
-                            type="email"
-                            value={userEmail}
-                            onChange={(e) => setUserEmail(e.target.value)}
-                            className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:border-sb-green-dark outline-none transition-all"
-                            placeholder="jean.dupont@entreprise.fr"
-                          />
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={() => {
-                          if (userEmail && userFirstName && userLastName) {
-                            setIsLeadCaptured(true);
-                          } else {
-                            alert("Merci de remplir tous les champs pour continuer.");
-                          }
-                        }}
-                        className="w-full py-4 bg-sb-green-dark text-white font-bold uppercase tracking-widest rounded-lg shadow-xl hover:bg-sb-green-dark/90 transition-all flex items-center justify-center space-x-3"
-                      >
-                        <FileText size={20} />
-                        <span>Valider et Générer le Rapport</span>
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="bg-white p-8 rounded-xl border border-emerald-100 shadow-lg text-center">
-                      <div className="w-16 h-16 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <Check size={32} />
-                      </div>
-                      <h3 className="font-serif text-2xl text-sb-green-dark mb-4">Diagnostic Débloqué</h3>
-                      <p className="text-gray-600 mb-8">
-                        Merci {userFirstName}. Votre rapport professionnel est prêt. Vous pouvez le télécharger ci-dessous au format PDF.
-                      </p>
-                      <button
-                        onClick={handleGeneratePDF}
-                        className="inline-flex items-center space-x-3 px-10 py-4 bg-sb-green-dark text-white font-bold uppercase tracking-widest rounded-lg shadow-xl hover:bg-sb-green-dark/90 transition-all"
-                      >
-                        <Download size={20} />
-                        <span>Télécharger le PDF</span>
-                      </button>
+                  {/* Steps 0 to 11 logic... */}
+                  {step > 0 && step <= 11 && (
+                    <div className="text-gray-500 italic text-sm">
+                      Utilisez les contrôles ci-dessous pour renseigner les données.
                     </div>
                   )}
-                </motion.div>
-              )}
 
             </div>
 
@@ -1099,6 +1004,71 @@ const Diagnostic: React.FC<DiagnosticProps> = ({ onNavigate }) => {
                     <div className="w-24 h-1 bg-sb-beige mx-auto mb-6"></div>
                     <p className="text-xl text-gray-600 font-light max-w-3xl mx-auto">Une immersion stratégique pour transformer vos gisements de profit invisibles en résultats concrets.</p>
                   </div>
+
+                  {!isLeadCaptured && (
+                    <div className="max-w-3xl mx-auto mb-16">
+                      <div className="bg-white p-8 rounded-xl border-2 border-sb-green-dark shadow-2xl">
+                        <div className="flex items-center space-x-3 mb-6">
+                          <div className="p-2 bg-sb-green-dark/10 rounded-lg text-sb-green-dark">
+                            <Mail size={24} />
+                          </div>
+                          <h3 className="font-serif text-2xl text-sb-green-dark">Recevoir ce rapport par email</h3>
+                        </div>
+                        
+                        <p className="text-gray-600 mb-8 leading-relaxed">
+                          Pour débloquer l'export PDF complet de votre diagnostic et recevoir votre feuille de route confidentielle, merci de valider vos coordonnées.
+                        </p>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                          <div>
+                            <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Prénom</label>
+                            <input
+                              type="text"
+                              value={userFirstName}
+                              onChange={(e) => setUserFirstName(e.target.value)}
+                              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-sb-green-dark outline-none"
+                              placeholder="Jean"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Nom</label>
+                            <input
+                              type="text"
+                              value={userLastName}
+                              onChange={(e) => setUserLastName(e.target.value)}
+                              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-sb-green-dark outline-none"
+                              placeholder="Dupont"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="mb-8">
+                          <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Email Professionnel</label>
+                          <input
+                            type="email"
+                            value={userEmail}
+                            onChange={(e) => setUserEmail(e.target.value)}
+                            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-sb-green-dark outline-none"
+                            placeholder="jean.dupont@entreprise.fr"
+                          />
+                        </div>
+
+                        <button
+                          onClick={() => {
+                            if (userEmail && userFirstName && userLastName) {
+                              setIsLeadCaptured(true);
+                            } else {
+                              alert("Merci de remplir tous les champs.");
+                            }
+                          }}
+                          className="w-full py-4 bg-sb-green-dark text-white font-bold uppercase tracking-widest rounded-lg hover:bg-sb-green-dark/90 transition-all flex items-center justify-center space-x-3"
+                        >
+                          <Check size={20} />
+                          <span>Accéder au Rapport Complet</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                     <div className="bg-white p-8 rounded-xl border border-gray-100 shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
@@ -1265,8 +1235,16 @@ const Diagnostic: React.FC<DiagnosticProps> = ({ onNavigate }) => {
                   <div className="space-y-8">
                     {/* Synthesis Header */}
                     {step >= 1 && (
-                      <div className="bg-sb-green-dark text-white p-4 rounded-t-xl mb-0">
-                        <h2 className="font-serif text-lg">Synthèse des indicateurs</h2>
+                      <div className="bg-sb-green-dark text-white p-6 rounded-t-xl mb-0 flex items-center justify-between">
+                        <div>
+                          <h2 className="font-serif text-2xl uppercase tracking-wider">Rapport de Synthèse</h2>
+                          <p className="text-xs opacity-60 uppercase tracking-widest mt-1">Diagnostic Performance Opérationnelle</p>
+                        </div>
+                        {step === 12 && (
+                          <div className="bg-white/10 px-4 py-2 rounded-lg border border-white/20">
+                            <span className="text-xs font-bold uppercase tracking-widest text-sb-beige">Statut : Terminé</span>
+                          </div>
+                        )}
                       </div>
                     )}
                     <div className="bg-white p-6 rounded-b-xl border border-gray-100 shadow-sm space-y-8">
@@ -1588,6 +1566,89 @@ const Diagnostic: React.FC<DiagnosticProps> = ({ onNavigate }) => {
             )}
           </div>
 
+        </div>
+      </div>
+
+
+      {/* Hidden container for full PDF report - Positioned off-screen for capture */}
+      <div style={{ position: 'absolute', left: '-9999px', top: '0', width: '210mm' }}>
+        <div ref={fullReportRef} className="p-10 bg-white text-sb-green-dark">
+          <div className="text-center mb-10 border-b-2 border-sb-green-dark pb-6">
+            <h1 className="text-3xl font-serif mb-2">Rapport de Diagnostic QHSE</h1>
+            <p className="text-sm opacity-70">Généré le {new Date().toLocaleDateString('fr-FR')}</p>
+          </div>
+          
+          <div className="space-y-10">
+            {/* Business Profile */}
+            <section className="p-6 border border-gray-100 rounded-xl bg-gray-50">
+              <h2 className="text-lg font-bold uppercase tracking-widest mb-4 border-b pb-2">1. Profil de l'Organisation</h2>
+              <div className="grid grid-cols-2 gap-y-4 text-sm">
+                <div><span className="opacity-60 uppercase text-[10px] block">Entreprise</span><strong>{companyName || 'N/A'}</strong></div>
+                <div><span className="opacity-60 uppercase text-[10px] block">Effectif</span><strong>{totalEmployees || 'N/A'} salariés</strong></div>
+                <div><span className="opacity-60 uppercase text-[10px] block">Âge</span><strong>{companyAge || 'N/A'} ans</strong></div>
+                <div><span className="opacity-60 uppercase text-[10px] block">Structure</span><strong>{orgStructure || 'N/A'}</strong></div>
+              </div>
+            </section>
+
+            {/* Financial Leakage */}
+            <section className="p-6 border border-emerald-100 rounded-xl bg-emerald-50">
+              <h2 className="text-lg font-bold uppercase tracking-widest mb-4 text-emerald-800 border-b border-emerald-200 pb-2">2. Évaluation de l'Impôt Invisible</h2>
+              <div className="text-center py-6">
+                <span className="block text-[10px] uppercase tracking-widest text-emerald-600 mb-2">Potentiel de Gain Annuel Récupérable</span>
+                <div className="text-4xl font-mono font-bold text-emerald-700">{cumulativeValue.toLocaleString('fr-FR')} € / an</div>
+              </div>
+              <div className="grid grid-cols-3 gap-4 text-center mt-4">
+                <div className="p-3 bg-white rounded border border-emerald-100">
+                  <span className="block text-[9px] uppercase tracking-widest text-gray-400">Absentéisme</span>
+                  <div className="font-bold text-sm">{absenteeismRate.toLocaleString('fr-FR')} %</div>
+                </div>
+                <div className="p-3 bg-white rounded border border-emerald-100">
+                  <span className="block text-[9px] uppercase tracking-widest text-gray-400">Temps Dirigeant</span>
+                  <div className="font-bold text-sm">{leaderLostHours} h/sem</div>
+                </div>
+                <div className="p-3 bg-white rounded border border-emerald-100">
+                  <span className="block text-[9px] uppercase tracking-widest text-gray-400">Coût Inaction</span>
+                  <div className="font-bold text-sm text-red-600">{Math.round(cumulativeValue/365)} €/j</div>
+                </div>
+              </div>
+            </section>
+
+            {/* Internal Issues */}
+            <section className="p-6 border border-gray-100 rounded-xl">
+              <h2 className="text-lg font-bold uppercase tracking-widest mb-4 border-b pb-2">3. Zones de Friction Critiques</h2>
+              <div className="text-sm leading-relaxed text-gray-700">
+                {internalProblems.length > 0 
+                  ? internalProblems.join(', ')
+                  : "Aucune friction majeure déclarée."}
+              </div>
+            </section>
+
+            {/* Audit Roadmap */}
+            <section className="p-8 bg-sb-green-dark text-white rounded-xl">
+              <h2 className="text-xl font-serif mb-6 text-sb-beige uppercase tracking-widest text-center">Plan Directeur Proposé</h2>
+              <div className="space-y-4 text-sm">
+                <div className="flex justify-between border-b border-white/10 pb-2">
+                  <span>Diagnostic Initial</span>
+                  <span className="font-bold">{diagnosticInitial || 'Standard'}</span>
+                </div>
+                <div className="flex justify-between border-b border-white/10 pb-2">
+                  <span>Horizon d'Intervention</span>
+                  <span className="font-bold">{interventionHorizon || 'À définir'}</span>
+                </div>
+                <div className="flex justify-between border-b border-white/10 pb-2">
+                  <span>Investissement Estimé</span>
+                  <span className="font-bold">4 000 € HT</span>
+                </div>
+              </div>
+              <p className="mt-8 text-[10px] text-center opacity-50 italic">
+                Ce document constitue une base de travail pour l'audit sur site.
+              </p>
+            </section>
+          </div>
+          
+          <div className="mt-20 text-[10px] text-center text-gray-400 border-t pt-4">
+            Cabinet Delacour - Expertise QHSE & Performance Durable
+          </div>
         </div>
       </div>
 

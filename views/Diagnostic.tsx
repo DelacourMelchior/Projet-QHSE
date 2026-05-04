@@ -1471,20 +1471,20 @@ const Diagnostic: React.FC<DiagnosticProps> = ({ onNavigate }) => {
 
         </div>
       </div>
-    </div>
 
-    {/* Floating Reset Button */}
-    <div className="fixed bottom-8 right-8 z-50">
-      <button
-        onClick={handleReset}
-        className="group flex items-center space-x-2 bg-white text-sb-green-dark p-3 rounded-full shadow-lg border border-gray-200 hover:bg-red-50 hover:text-red-600 transition-all transform hover:scale-110"
-        title="Réinitialiser le diagnostic"
-      >
-        <RotateCcw size={20} className="group-hover:rotate-[-45deg] transition-transform" />
-        <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-300 ease-in-out whitespace-nowrap text-sm font-bold uppercase tracking-widest">
-          Réinitialiser
-        </span>
-      </button>
+      {/* Floating Reset Button */}
+      <div className="fixed bottom-8 right-8 z-50">
+        <button
+          onClick={handleReset}
+          className="group flex items-center space-x-2 bg-white text-sb-green-dark p-3 rounded-full shadow-lg border border-gray-200 hover:bg-red-50 hover:text-red-600 transition-all transform hover:scale-110"
+          title="Réinitialiser le diagnostic"
+        >
+          <RotateCcw size={20} className="group-hover:rotate-[-45deg] transition-transform" />
+          <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-300 ease-in-out whitespace-nowrap text-sm font-bold uppercase tracking-widest">
+            Réinitialiser
+          </span>
+        </button>
+      </div>
     </div>
   );
 };

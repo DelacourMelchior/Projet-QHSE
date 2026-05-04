@@ -118,11 +118,6 @@ const Diagnostic: React.FC<DiagnosticProps> = ({ onNavigate }) => {
   const [startDate, setStartDate] = useState<string>('');
   const [conditions, setConditions] = useState<string>('');
 
-  // Lead Capture
-  const [userFirstName, setUserFirstName] = useState<string>('');
-  const [userLastName, setUserLastName] = useState<string>('');
-  const [userEmail, setUserEmail] = useState<string>('');
-  const [isLeadCaptured, setIsLeadCaptured] = useState<boolean>(false);
   const fullReportRef = useRef<HTMLDivElement>(null);
   const [yearlyDisputes, setYearlyDisputes] = useState<number>(0);
 
@@ -198,8 +193,7 @@ const Diagnostic: React.FC<DiagnosticProps> = ({ onNavigate }) => {
       absenteeismRate, rateAT, rateMaladie, leaderLostHours, excelFilesCount,
       excelComplexity, kpiReviewDate, reworkPercent, creditNotesAmount, yearlyDisputes,
       averageDisputeAmount, missedRevenueStruct, missedRevenueCertif, auditChecklist,
-      startDate, conditions,
-      userFirstName, userLastName, userEmail, isLeadCaptured
+      startDate, conditions
     };
     localStorage.setItem('diagnostic_data', JSON.stringify(data));
   }, [
@@ -211,8 +205,7 @@ const Diagnostic: React.FC<DiagnosticProps> = ({ onNavigate }) => {
     absenteeismRate, rateAT, rateMaladie, leaderLostHours, excelFilesCount,
     excelComplexity, kpiReviewDate, reworkPercent, creditNotesAmount, yearlyDisputes,
     averageDisputeAmount, missedRevenueStruct, missedRevenueCertif, auditChecklist,
-    startDate, conditions,
-    userFirstName, userLastName, userEmail, isLeadCaptured
+    startDate, conditions
   ]);
 
   useEffect(() => {
@@ -1008,71 +1001,6 @@ const Diagnostic: React.FC<DiagnosticProps> = ({ onNavigate }) => {
                     <p className="text-xl text-gray-600 font-light max-w-3xl mx-auto">Une immersion stratégique pour transformer vos gisements de profit invisibles en résultats concrets.</p>
                   </div>
 
-                  {!isLeadCaptured && (
-                    <div className="max-w-3xl mx-auto mb-16">
-                      <div className="bg-white p-8 rounded-xl border-2 border-sb-green-dark shadow-2xl">
-                        <div className="flex items-center space-x-3 mb-6">
-                          <div className="p-2 bg-sb-green-dark/10 rounded-lg text-sb-green-dark">
-                            <Mail size={24} />
-                          </div>
-                          <h3 className="font-serif text-2xl text-sb-green-dark">Recevoir ce rapport par email</h3>
-                        </div>
-                        
-                        <p className="text-gray-600 mb-8 leading-relaxed">
-                          Pour débloquer l'export PDF complet de votre diagnostic et recevoir votre feuille de route confidentielle, merci de valider vos coordonnées.
-                        </p>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                          <div>
-                            <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Prénom</label>
-                            <input
-                              type="text"
-                              value={userFirstName}
-                              onChange={(e) => setUserFirstName(e.target.value)}
-                              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-sb-green-dark outline-none"
-                              placeholder="Jean"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Nom</label>
-                            <input
-                              type="text"
-                              value={userLastName}
-                              onChange={(e) => setUserLastName(e.target.value)}
-                              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-sb-green-dark outline-none"
-                              placeholder="Dupont"
-                            />
-                          </div>
-                        </div>
-
-                        <div className="mb-8">
-                          <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Email Professionnel</label>
-                          <input
-                            type="email"
-                            value={userEmail}
-                            onChange={(e) => setUserEmail(e.target.value)}
-                            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-sb-green-dark outline-none"
-                            placeholder="jean.dupont@entreprise.fr"
-                          />
-                        </div>
-
-                        <button
-                          onClick={() => {
-                            if (userEmail && userFirstName && userLastName) {
-                              setIsLeadCaptured(true);
-                            } else {
-                              alert("Merci de remplir tous les champs.");
-                            }
-                          }}
-                          className="w-full py-4 bg-sb-green-dark text-white font-bold uppercase tracking-widest rounded-lg hover:bg-sb-green-dark/90 transition-all flex items-center justify-center space-x-3"
-                        >
-                          <Check size={20} />
-                          <span>Accéder au Rapport Complet</span>
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                     <div className="bg-white p-8 rounded-xl border border-gray-100 shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
                       <div className="absolute top-0 left-0 w-full h-1 bg-sb-green-dark/10 group-hover:bg-sb-green-dark transition-colors"></div>
@@ -1168,20 +1096,14 @@ const Diagnostic: React.FC<DiagnosticProps> = ({ onNavigate }) => {
                     </div>
                   </div>
 
-                  <div className="text-center pt-8 print:hidden">
-                    {!isLeadCaptured && step === 13 ? (
-                      <div className="p-6 bg-sb-beige/10 border border-sb-beige/30 rounded-xl">
-                        <p className="text-sb-green-dark font-medium italic">Remplissez le formulaire à gauche pour débloquer l'exportation.</p>
-                      </div>
-                    ) : (
-                      <button 
-                        onClick={handleGeneratePDF}
-                        className="px-12 py-6 bg-sb-green-dark text-white font-bold uppercase tracking-widest rounded shadow-2xl hover:bg-sb-green-dark/90 transition-all transform hover:-translate-y-1 flex items-center mx-auto space-x-3"
-                      >
-                        <Download size={20} />
-                        <span>Télécharger le rapport (PDF)</span>
-                      </button>
-                    )}
+                  <div className="text-center pt-16 print:hidden">
+                    <button 
+                      onClick={handleGeneratePDF}
+                      className="px-12 py-6 bg-sb-green-dark text-white font-bold uppercase tracking-widest rounded shadow-2xl hover:bg-sb-green-dark/90 transition-all transform hover:-translate-y-1 flex items-center mx-auto space-x-3"
+                    >
+                      <Download size={20} />
+                      <span>Télécharger mon Rapport Complet (PDF)</span>
+                    </button>
                   </div>
                 </motion.div>
               ) : (
@@ -1593,7 +1515,6 @@ const Diagnostic: React.FC<DiagnosticProps> = ({ onNavigate }) => {
             </div>
             <div style={{ fontSize: '18px', color: '#2d4a3e', fontWeight: 'bold', marginBottom: '10px' }}>{companyName || 'Entreprise'}</div>
             <div style={{ fontSize: '13px', color: '#666' }}>Document confidentiel — Généré le {new Date().toLocaleDateString('fr-FR')}</div>
-            {userFirstName && <div style={{ fontSize: '12px', color: '#999', marginTop: '30px' }}>Préparé pour {userFirstName} {userLastName}</div>}
           </div>
 
           {/* PAGE 2: Profil & Marché */}

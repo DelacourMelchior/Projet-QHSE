@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Page } from '../types';
-import { Info, Quote, TrendingDown, Users, AlertTriangle, Clock, Target, Anchor, TrendingUp, ShieldCheck, Zap, Layout, Check } from 'lucide-react';
+import { Info, Quote, TrendingDown, Users, AlertTriangle, Clock, Target, Anchor, TrendingUp, ShieldCheck, Zap, Layout, Check, RotateCcw } from 'lucide-react';
 import { motion, useSpring, useTransform, AnimatePresence } from 'framer-motion';
 
 interface DiagnosticProps {
@@ -256,6 +256,13 @@ const Diagnostic: React.FC<DiagnosticProps> = ({ onNavigate }) => {
   if (step >= 9) cumulativeValue += costExcel + costLateKPI + costBlindness;
   if (step >= 10) cumulativeValue += costRework + costCreditNotes + costDisputes;
   if (step >= 11) cumulativeValue += costMissedRevenue;
+
+  const handleReset = () => {
+    if (window.confirm("Êtes-vous sûr de vouloir réinitialiser toutes les données ? Cette action est irréversible.")) {
+      localStorage.removeItem('diagnostic_data');
+      window.location.reload();
+    }
+  };
 
   return (
     <div className="pt-12 pb-12 bg-sb-cream min-h-screen">
@@ -1464,6 +1471,20 @@ const Diagnostic: React.FC<DiagnosticProps> = ({ onNavigate }) => {
 
         </div>
       </div>
+    </div>
+
+    {/* Floating Reset Button */}
+    <div className="fixed bottom-8 right-8 z-50">
+      <button
+        onClick={handleReset}
+        className="group flex items-center space-x-2 bg-white text-sb-green-dark p-3 rounded-full shadow-lg border border-gray-200 hover:bg-red-50 hover:text-red-600 transition-all transform hover:scale-110"
+        title="Réinitialiser le diagnostic"
+      >
+        <RotateCcw size={20} className="group-hover:rotate-[-45deg] transition-transform" />
+        <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-300 ease-in-out whitespace-nowrap text-sm font-bold uppercase tracking-widest">
+          Réinitialiser
+        </span>
+      </button>
     </div>
   );
 };

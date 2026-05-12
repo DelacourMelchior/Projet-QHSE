@@ -33,8 +33,8 @@ const About: React.FC<AboutProps> = ({ onNavigate }) => {
                 "Ingénierie de la fiabilité totale",
                 "Gestion de crise et anticipation"
               ].map((text, i) => (
-                <div key={i} className="flex items-center gap-3">
-                  <div className="w-1.5 h-1.5 rounded-full bg-sb-beige" />
+                <div key={i} className="flex items-start gap-3">
+                  <div className="w-1.5 h-1.5 flex-shrink-0 mt-1.5 rounded-full bg-sb-beige" />
                   <p className="text-white font-medium tracking-wide uppercase text-sm">{text}</p>
                 </div>
               ))}
@@ -78,8 +78,8 @@ const About: React.FC<AboutProps> = ({ onNavigate }) => {
                 "Outils avancés de l'Excellence Opérationnelle",
                 "Architecture des Systèmes de Management"
               ].map((text, i) => (
-                <div key={i} className="flex items-center gap-3">
-                  <div className="w-1.5 h-1.5 rounded-full bg-sb-beige" />
+                <div key={i} className="flex items-start gap-3">
+                  <div className="w-1.5 h-1.5 flex-shrink-0 mt-1.5 rounded-full bg-sb-beige" />
                   <p className="text-white font-medium tracking-wide uppercase text-sm">{text}</p>
                 </div>
               ))}
@@ -96,11 +96,11 @@ const About: React.FC<AboutProps> = ({ onNavigate }) => {
       content: (
         <div className="grid lg:grid-cols-2 gap-12 items-center h-full">
           <div>
-            <h2 className="font-serif text-3xl md:text-5xl text-white leading-tight uppercase mb-8">
+            <h2 className="font-serif text-3xl md:text-5xl text-white leading-tight uppercase mb-6">
               JE VOULAIS MON INDÉPENDANCE.<br/>
               <span className="text-sb-beige italic">ET J'AI CIBLÉ L'URGENCE.</span>
             </h2>
-            <p className="text-xl text-white/70 font-light leading-relaxed mb-8">
+            <p className="text-xl text-white/70 font-light leading-relaxed mb-6">
               Comme vous, j'ai la fibre entrepreneuriale. Plutôt que d'être un rouage dans un grand groupe qui a déjà des armées de qualiticiens pour faire de la paperasse, j'ai cherché où mon expertise aurait un impact vital. La réponse était évidente : les PME. Pourquoi ?
             </p>
             <div className="space-y-4">
@@ -109,8 +109,8 @@ const About: React.FC<AboutProps> = ({ onNavigate }) => {
                 "Sans structure, leur croissance risquerait de se transformer en chaos opérationnel",
                 "Le dirigeant pourrait finir par s'épuiser et perdre la liberté qu'il cherchait"
               ].map((text, i) => (
-                <div key={i} className="flex items-center gap-3">
-                  <div className="w-1.5 h-1.5 rounded-full bg-[#8A1C1C] opacity-80" />
+                <div key={i} className="flex items-start gap-3">
+                  <div className="w-1.5 h-1.5 flex-shrink-0 mt-1.5 rounded-full bg-sb-beige" />
                   <p className="text-white font-medium tracking-wide uppercase text-sm">{text}</p>
                 </div>
               ))}
@@ -168,7 +168,7 @@ const About: React.FC<AboutProps> = ({ onNavigate }) => {
       </div>
 
       {/* Header Nav / Progress */}
-      <div className="container mx-auto px-8 pt-24 pb-8 flex justify-between items-center relative z-10">
+      <div className="flex-none container mx-auto px-8 pt-8 pb-4 flex justify-between items-center relative z-10">
         <div className="flex flex-wrap items-center gap-x-8 gap-y-4 max-w-[70%]">
           {steps.map((step, i) => (
             <button
@@ -184,15 +184,15 @@ const About: React.FC<AboutProps> = ({ onNavigate }) => {
       </div>
 
       {/* Main Content Area */}
-      <main className="flex-grow container mx-auto px-8 relative z-10 flex flex-col justify-center py-6">
-        <div className="max-w-6xl w-full mx-auto flex flex-col justify-center">
+      <main className="flex-1 min-h-0 container mx-auto px-8 relative z-10 flex flex-col justify-center py-2">
+        <div className="max-w-6xl w-full mx-auto">
           <AnimatePresence mode="wait">
             <motion.div
               key={currentStep}
               initial={{ opacity: 0, x: 50 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -50 }}
-              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
               className="w-full"
             >
               <header className="mb-10">
@@ -213,7 +213,7 @@ const About: React.FC<AboutProps> = ({ onNavigate }) => {
       </main>
 
       {/* Footer Navigation Controls */}
-      <div className="container mx-auto px-8 pb-12 flex justify-between items-end relative z-10 mt-auto">
+      <div className="flex-none container mx-auto px-8 pb-8 flex justify-between items-end relative z-10">
         <div className="flex gap-4">
           <button 
             disabled={currentStep === 0}

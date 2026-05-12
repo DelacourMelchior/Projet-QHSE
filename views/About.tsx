@@ -10,6 +10,7 @@ interface AboutProps {
 
 const About: React.FC<AboutProps> = ({ onNavigate }) => {
   const [currentStep, setCurrentStep] = useState(0);
+  const [direction, setDirection] = useState(1);
 
   const steps = [
     {
@@ -156,8 +157,18 @@ const About: React.FC<AboutProps> = ({ onNavigate }) => {
     }
   ];
 
-  const nextStep = () => currentStep < steps.length - 1 && setCurrentStep(currentStep + 1);
-  const prevStep = () => currentStep > 0 && setCurrentStep(currentStep - 1);
+  const nextStep = () => {
+    if (currentStep < steps.length - 1) {
+      setDirection(1);
+      setCurrentStep(currentStep + 1);
+    }
+  };
+  const prevStep = () => {
+    if (currentStep > 0) {
+      setDirection(-1);
+      setCurrentStep(currentStep - 1);
+    }
+  };
 
   return (
     <div className="h-screen w-full bg-sb-green-dark text-white overflow-hidden flex flex-col relative">
@@ -173,7 +184,10 @@ const About: React.FC<AboutProps> = ({ onNavigate }) => {
           {steps.map((step, i) => (
             <button
               key={i}
-              onClick={() => setCurrentStep(i)}
+              onClick={() => {
+                setDirection(i > currentStep ? 1 : -1);
+                setCurrentStep(i);
+              }}
               className={`group flex flex-col gap-2 text-left transition-all duration-500 ${currentStep === i ? 'opacity-100' : 'opacity-30 hover:opacity-50'}`}
             >
               <p className="text-[10px] font-bold tracking-[0.3em] uppercase">{step.label}</p>
@@ -189,9 +203,9 @@ const About: React.FC<AboutProps> = ({ onNavigate }) => {
           <AnimatePresence mode="wait">
             <motion.div
               key={currentStep}
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -50 }}
+              initial={{ opacity: 0, x: direction * 40, scale: 0.97 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: direction * -40, scale: 0.97 }}
               transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
               className="w-full"
             >

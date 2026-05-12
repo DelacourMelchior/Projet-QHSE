@@ -1,7 +1,6 @@
-
-import React from 'react';
-import { motion } from 'framer-motion';
-import { GraduationCap, Plane, Eye, Target } from 'lucide-react';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { GraduationCap, Plane, Target, ArrowRight, Zap, ShieldCheck, BarChart3, ChevronRight, Activity, ChevronLeft, LayoutDashboard, Microscope, Layers } from 'lucide-react';
 import Section from '../components/Section';
 import { Page } from '../types';
 
@@ -10,129 +9,243 @@ interface AboutProps {
 }
 
 const About: React.FC<AboutProps> = ({ onNavigate }) => {
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.2
-      }
-    }
-  };
+  const [currentStep, setCurrentStep] = useState(0);
 
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }
-  };
-
-  return (
-    <>
-      <Section bg="cream" className="pt-32 pb-32 overflow-hidden">
-        <div className="max-w-6xl mx-auto px-4 md:px-8">
-          <motion.div 
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-center mb-16"
-          >
-            <h3 className="text-xs text-sb-green-dark font-bold uppercase tracking-widest mb-4 border-b border-sb-green-dark inline-block pb-2">
-              À propos
-            </h3>
-            <h2 className="font-serif text-4xl md:text-5xl lg:text-6xl text-sb-green-dark leading-[1.1] mt-4 tracking-tight uppercase max-w-4xl mx-auto">
-              LA RIGUEUR DES GRANDS GROUPES.<br/>
-              <span className="text-sb-green-dark/80 italic font-serif">L'AGILITÉ D'UNE PME.</span>
+  const steps = [
+    {
+      id: 0,
+      label: "L'AUTORITÉ",
+      title: "M. DELACOUR",
+      subtitle: "L'EXIGENCE DES MILIEUX CRITIQUES",
+      content: (
+        <div className="grid lg:grid-cols-2 gap-12 items-center h-full">
+          <div>
+            <h2 className="font-serif text-4xl md:text-5xl lg:text-6xl text-white leading-tight uppercase mb-8">
+              OÙ L'ERREUR N'EST PAS UNE OPTION.<br/>
+              <span className="text-sb-beige italic">C'EST UNE CRISE MAJEURE.</span>
             </h2>
-            <p className="mt-10 text-xl md:text-2xl text-sb-green-dark/80 font-light max-w-3xl mx-auto leading-relaxed italic">
-              "Mon approche ne vient pas de la théorie, mais du terrain critique. Pour autant, elle s'appuie sur une base académique rigoureuse et spécialisée."
+            <p className="text-xl text-white/70 font-light leading-relaxed mb-8">
+              J'ai construit mon expertise au cœur de la <span className="font-medium text-white">Sûreté Aéroportuaire</span>, de l'<span className="font-medium text-white">Industrie Aéronautique</span> et de la <span className="font-medium text-white">Mécanique de Précision</span>.
             </p>
-          </motion.div>
-
-          <motion.div 
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-            className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-10 mt-16"
+            <div className="space-y-4">
+              {[
+                "Tolérance zéro sur la défaillance",
+                "Ingénierie de la fiabilité totale",
+                "Gestion de crise et anticipation"
+              ].map((text, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <div className="w-1.5 h-1.5 rounded-full bg-sb-beige" />
+                  <p className="text-white font-medium tracking-wide uppercase text-sm">{text}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="bg-[#1C2B29] p-10 rounded-2xl border border-white/5 shadow-2xl relative">
+            <Plane size={48} className="text-sb-beige mb-6 opacity-30" />
+            <p className="text-2xl font-serif text-white italic leading-relaxed">
+              "Dans ces environnements, un processus défaillant ne coûte pas quelques points de marge. Il coûte des vies ou des millions. J'y ai appris à construire des systèmes infaillibles."
+            </p>
+          </div>
+        </div>
+      )
+    },
+    {
+      id: 1,
+      label: "LA VALIDATION",
+      title: "LE SOCLE ACADÉMIQUE",
+      subtitle: "LA GARANTIE TECHNIQUE",
+      content: (
+        <div className="grid lg:grid-cols-2 gap-12 items-center h-full">
+          <div className="bg-[#1C2B29] p-10 rounded-2xl border border-white/5 shadow-2xl relative flex flex-col justify-center">
+            <GraduationCap size={48} className="text-sb-beige mb-6 opacity-30" />
+            <h3 className="text-3xl font-serif text-white mb-6 uppercase">Master 2 QHSE</h3>
+            <p className="text-xl text-white/80 font-light leading-relaxed">
+              & Excellence Opérationnelle
+            </p>
+            <div className="w-12 h-1 bg-sb-beige/30 mt-8"></div>
+          </div>
+          <div>
+            <h2 className="font-serif text-3xl md:text-5xl text-white leading-tight uppercase mb-8">
+              L'APPROCHE STRUCTURÉE DE<br/>
+              <span className="text-sb-beige italic">L'INGÉNIERIE DES ORGANISATIONS</span>
+            </h2>
+            <p className="text-xl text-white/70 font-light leading-relaxed mb-8">
+              L'expérience terrain donne l'intuition, mais elle ne suffit pas pour sécuriser une croissance. C'est pourquoi mon approche n'est pas uniquement empirique : elle s'appuie sur un bagage académique de haut niveau pour garantir une maîtrise totale de l'architecture de vos processus.
+            </p>
+            <div className="space-y-4">
+              {[
+                "Méthodologie d'analyse rigoureuse",
+                "Outils avancés de l'Excellence Opérationnelle",
+                "Architecture des Systèmes de Management"
+              ].map((text, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <div className="w-1.5 h-1.5 rounded-full bg-sb-beige" />
+                  <p className="text-white font-medium tracking-wide uppercase text-sm">{text}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )
+    },
+    {
+      id: 2,
+      label: "LA MISSION",
+      title: "LE CHOIX STRATÉGIQUE",
+      subtitle: "DE L'AÉRONAUTIQUE À L'ENTREPRENEURIAT",
+      content: (
+        <div className="grid lg:grid-cols-2 gap-12 items-center h-full">
+          <div>
+            <h2 className="font-serif text-3xl md:text-5xl text-white leading-tight uppercase mb-8">
+              JE VOULAIS MON INDÉPENDANCE.<br/>
+              <span className="text-sb-beige italic">ET J'AI CIBLÉ L'URGENCE.</span>
+            </h2>
+            <p className="text-xl text-white/70 font-light leading-relaxed mb-8">
+              Comme vous, j'ai la fibre entrepreneuriale. Plutôt que d'être un rouage dans un grand groupe qui a déjà des armées de qualiticiens pour faire de la paperasse, j'ai cherché où mon expertise aurait un impact vital. La réponse était évidente : les PME. Pourquoi ?
+            </p>
+            <div className="space-y-4">
+              {[
+                "Elles ont l'agilité et le savoir-faire, mais pourraient manquer de 'colonne vertébrale'",
+                "Sans structure, leur croissance risquerait de se transformer en chaos opérationnel",
+                "Le dirigeant pourrait finir par s'épuiser et perdre la liberté qu'il cherchait"
+              ].map((text, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#8A1C1C] opacity-80" />
+                  <p className="text-white font-medium tracking-wide uppercase text-sm">{text}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="bg-[#1C2B29] p-10 rounded-2xl border border-white/5 shadow-2xl relative">
+            <Target size={48} className="text-sb-beige mb-6 opacity-30" />
+            <p className="text-2xl font-serif text-white italic leading-relaxed">
+              "Mon objectif : adapter les méthodes de haute performance des grands groupes, enlever toute la lourdeur bureaucratique, et les implanter chez vous pour vous rendre la maîtrise totale de votre entreprise."
+            </p>
+          </div>
+        </div>
+      )
+    },
+    {
+      id: 3,
+      label: "TRANSITION",
+      title: "PASSONS À VOTRE RÉALITÉ",
+      subtitle: "LE DIAGNOSTIC",
+      content: (
+        <div className="flex flex-col items-center justify-center text-center h-full">
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="max-w-2xl"
           >
-            {/* Block 1: Académique */}
-            <motion.div variants={itemVariants} className="bg-white p-8 md:p-10 rounded-2xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-sb-green-dark/5 relative overflow-hidden group hover:border-sb-green-dark/20 hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.1)] transition-all duration-300">
-              <div className="absolute -top-4 -right-4 p-8 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity duration-500 pointer-events-none">
-                <GraduationCap size={160} className="text-sb-green-dark" strokeWidth={1} />
-              </div>
-              <div className="relative z-10">
-                <div className="w-14 h-14 bg-sb-green-dark/5 rounded-xl flex items-center justify-center mb-6">
-                  <GraduationCap size={28} className="text-sb-green-dark" />
-                </div>
-                <h4 className="text-2xl font-serif text-sb-green-dark mb-4">Le Socle Académique</h4>
-                <p className="text-lg leading-relaxed text-sb-green-dark/80 font-light">
-                  Titulaire d'un <span className="font-medium text-sb-green-dark">Master 2 en Management QHSE et Excellence Opérationnelle</span>, j'ai suivi un cursus universitaire de 5 années exclusivement dédié à ces disciplines. Ce socle m'a permis de maîtriser les normes et les outils de performance les plus exigeants.
-                </p>
-              </div>
-            </motion.div>
-
-            {/* Block 2: Terrain */}
-            <motion.div variants={itemVariants} className="bg-white p-8 md:p-10 rounded-2xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-sb-green-dark/5 relative overflow-hidden group hover:border-sb-green-dark/20 hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.1)] transition-all duration-300">
-              <div className="absolute -top-4 -right-4 p-8 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity duration-500 pointer-events-none">
-                <Plane size={160} className="text-sb-green-dark" strokeWidth={1} />
-              </div>
-              <div className="relative z-10">
-                <div className="w-14 h-14 bg-sb-green-dark/5 rounded-xl flex items-center justify-center mb-6">
-                  <Plane size={28} className="text-sb-green-dark" />
-                </div>
-                <h4 className="text-2xl font-serif text-sb-green-dark mb-4">Le Terrain Critique</h4>
-                <p className="text-lg leading-relaxed text-sb-green-dark/80 font-light">
-                  J'ai construit ma méthodologie au cœur de la <span className="font-medium text-sb-green-dark">Sûreté Aéroportuaire</span>, de l'<span className="font-medium text-sb-green-dark">Industrie Aéronautique</span> et de la <span className="font-medium text-sb-green-dark">Mécanique de Précision</span>. Dans ces environnements, j'ai appris que la fiabilité n'est pas un hasard : c'est une architecture.
-                </p>
-              </div>
-            </motion.div>
-
-            {/* Block 3: Constat */}
-            <motion.div variants={itemVariants} className="bg-white p-8 md:p-10 rounded-2xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-sb-green-dark/5 relative overflow-hidden group hover:border-sb-green-dark/20 hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.1)] transition-all duration-300">
-              <div className="absolute -top-4 -right-4 p-8 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity duration-500 pointer-events-none">
-                <Eye size={160} className="text-sb-green-dark" strokeWidth={1} />
-              </div>
-              <div className="relative z-10">
-                <div className="w-14 h-14 bg-sb-green-dark/5 rounded-xl flex items-center justify-center mb-6">
-                  <Eye size={28} className="text-sb-green-dark" />
-                </div>
-                <h4 className="text-2xl font-serif text-sb-green-dark mb-4">Le Constat</h4>
-                <p className="text-lg leading-relaxed text-sb-green-dark/80 font-light">
-                  Aujourd'hui, je transfère cette culture de l'excellence vers les PME. <span className="font-medium text-sb-green-dark">Trop de dirigeants subissent leur croissance au lieu de la piloter</span>. Il leur manque la structure pour passer à l'échelle supérieure sans créer de chaos interne.
-                </p>
-              </div>
-            </motion.div>
-
-            {/* Block 4: Promesse */}
-            <motion.div variants={itemVariants} className="bg-white p-8 md:p-10 rounded-2xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-sb-green-dark/5 relative overflow-hidden group hover:border-sb-green-dark/20 hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.1)] transition-all duration-300">
-              <div className="absolute -top-4 -right-4 p-8 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity duration-500 pointer-events-none">
-                <Target size={160} className="text-sb-green-dark" strokeWidth={1} />
-              </div>
-              <div className="relative z-10">
-                <div className="w-14 h-14 bg-sb-green-dark/5 rounded-xl flex items-center justify-center mb-6">
-                  <Target size={28} className="text-sb-green-dark" />
-                </div>
-                <h4 className="text-2xl font-serif text-sb-green-dark mb-4">La Promesse</h4>
-                <p className="text-lg leading-relaxed text-sb-green-dark/80 font-light">
-                  Je n'interviens pas pour alourdir votre quotidien. J'interviens pour <span className="font-medium text-sb-green-dark">bâtir la colonne vertébrale qui soutiendra votre développement futur</span>. Mon rôle est d'élever vos standards opérationnels, tout en préservant votre pragmatisme.
-                </p>
-              </div>
-            </motion.div>
-          </motion.div>
-
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.6, duration: 0.8 }}
-            className="pt-20 mt-12 text-center"
-          >
-            <div className="w-24 h-px bg-sb-green-dark/20 mx-auto mb-10"></div>
-            <p className="font-serif text-4xl text-sb-green-dark italic">M. DELACOUR</p>
-            <p className="text-sm font-bold uppercase tracking-[0.2em] text-sb-green-dark/40 mt-4">Fondateur du Cabinet Delacour</p>
+            <p className="text-2xl md:text-3xl font-serif text-white italic mb-12 leading-relaxed">
+              "Maintenant que vous savez d'où je viens et pourquoi je suis là, regardons concrètement où se trouvent vos opportunités d'optimisation."
+            </p>
+            <button 
+              onClick={() => onNavigate(Page.DIAGNOSTIC)}
+              className="group relative inline-flex items-center justify-center px-10 py-6 bg-sb-beige text-sb-green-dark font-bold uppercase tracking-widest text-sm transition-all duration-300 hover:bg-white rounded-[2px] shadow-2xl"
+            >
+              LANCER LE DIAGNOSTIC <ArrowRight size={20} className="ml-3 group-hover:translate-x-2 transition-transform" />
+            </button>
+            <div className="mt-20">
+              <p className="font-serif text-3xl text-white italic">M. DELACOUR</p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-sb-beige/40 mt-4">Fondateur du Cabinet Delacour</p>
+            </div>
           </motion.div>
         </div>
-      </Section>
-    </>
+      )
+    }
+  ];
+
+  const nextStep = () => currentStep < steps.length - 1 && setCurrentStep(currentStep + 1);
+  const prevStep = () => currentStep > 0 && setCurrentStep(currentStep - 1);
+
+  return (
+    <div className="h-screen w-full bg-sb-green-dark text-white overflow-hidden flex flex-col relative">
+      {/* Dynamic Background */}
+      <div className="absolute inset-0 opacity-10 pointer-events-none overflow-hidden">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-sb-beige rounded-full blur-[120px] opacity-20"></div>
+        <div className="absolute bottom-[-10%] right-[-10%] w-[30%] h-[30%] bg-sb-beige rounded-full blur-[100px] opacity-10"></div>
+      </div>
+
+      {/* Header Nav / Progress */}
+      <div className="container mx-auto px-8 pt-24 pb-8 flex justify-between items-center relative z-10">
+        <div className="flex flex-wrap items-center gap-x-8 gap-y-4 max-w-[70%]">
+          {steps.map((step, i) => (
+            <button
+              key={i}
+              onClick={() => setCurrentStep(i)}
+              className={`group flex flex-col gap-2 text-left transition-all duration-500 ${currentStep === i ? 'opacity-100' : 'opacity-30 hover:opacity-50'}`}
+            >
+              <p className="text-[10px] font-bold tracking-[0.3em] uppercase">{step.label}</p>
+              <div className={`h-0.5 transition-all duration-500 ${currentStep === i ? 'bg-sb-beige w-12' : 'bg-white/20 w-8 group-hover:w-10'}`} />
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Main Content Area */}
+      <main className="flex-grow container mx-auto px-8 relative z-10 flex flex-col justify-center py-6">
+        <div className="max-w-6xl w-full mx-auto h-[60vh] flex flex-col justify-center">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentStep}
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -50 }}
+              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+              className="w-full"
+            >
+              <header className="mb-10">
+                <span className="text-sb-beige text-[10px] font-bold uppercase tracking-[0.4em] mb-4 block">
+                  {steps[currentStep].subtitle}
+                </span>
+                <h1 className="font-serif text-xl md:text-2xl text-white/40 uppercase tracking-[0.5em]">
+                  {steps[currentStep].title}
+                </h1>
+              </header>
+
+              <div className="min-h-[40vh]">
+                {steps[currentStep].content}
+              </div>
+            </motion.div>
+          </AnimatePresence>
+        </div>
+      </main>
+
+      {/* Footer Navigation Controls */}
+      <div className="container mx-auto px-8 pb-12 flex justify-between items-end relative z-10 mt-auto">
+        <div className="flex gap-4">
+          <button 
+            disabled={currentStep === 0}
+            onClick={prevStep}
+            className={`p-4 rounded-full border border-white/10 transition-all ${currentStep === 0 ? 'opacity-10 cursor-not-allowed' : 'hover:bg-white/5 hover:border-white/30 cursor-pointer'}`}
+          >
+            <ChevronLeft size={24} />
+          </button>
+          <button 
+            disabled={currentStep === steps.length - 1}
+            onClick={nextStep}
+            className={`p-4 rounded-full border border-white/10 transition-all ${currentStep === steps.length - 1 ? 'opacity-10 cursor-not-allowed' : 'hover:bg-white/5 hover:border-white/30 text-sb-beige cursor-pointer'}`}
+          >
+            <ChevronRight size={24} />
+          </button>
+        </div>
+        
+        <div className="flex flex-col items-end">
+           <p className="text-[10px] font-bold tracking-[0.3em] uppercase text-sb-beige mb-2">Slide</p>
+           <p className="text-4xl font-serif leading-none">0{currentStep + 1}<span className="text-white/20"> / 0{steps.length}</span></p>
+        </div>
+      </div>
+
+      {/* Bottom Progress Bar */}
+      <div className="absolute bottom-0 left-0 w-full h-1 bg-white/5">
+        <motion.div 
+          initial={false}
+          animate={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
+          className="h-full bg-sb-beige"
+        />
+      </div>
+    </div>
   );
 };
 

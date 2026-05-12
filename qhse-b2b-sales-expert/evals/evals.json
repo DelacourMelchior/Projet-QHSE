@@ -1,0 +1,17 @@
+{
+  "skill_name": "qhse-b2b-sales-expert",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Rédige-moi un email de prospection à froid (cold email) à envoyer au PDG d'une PME industrielle de 50 personnes. L'objectif est d'obtenir un RDV de 15 min pour lui vendre notre accompagnement à la certification ISO 9001.",
+      "expected_output": "Un email court, percutant, qui ne parle pas de norme ISO comme d'une fin en soi, mais comme d'un outil pour réduire les coûts de non-qualité ou gagner de nouveaux marchés.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Je dois faire un pitch de 2 minutes lors d'une réunion de réseau (type BNI) devant des chefs d'entreprise. Je veux pitcher mon offre d'externalisation de la fonction Qualité (Responsable Qualité à temps partagé). Que dois-je dire ?",
+      "expected_output": "Un pitch oral structuré autour des douleurs du dirigeant (manque de temps, coûts cachés) et présentant l'externalisation de la qualité comme un investissement ROIste.",
+      "files": []
+    }
+  ]
+}

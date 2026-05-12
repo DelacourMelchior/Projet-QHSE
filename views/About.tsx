@@ -185,7 +185,7 @@ const About: React.FC<AboutProps> = ({ onNavigate }) => {
 
       {/* Main Content Area */}
       <main className="flex-grow container mx-auto px-8 relative z-10 flex flex-col justify-center py-6">
-        <div className="max-w-6xl w-full mx-auto h-[60vh] flex flex-col justify-center">
+        <div className="max-w-6xl w-full mx-auto flex flex-col justify-center">
           <AnimatePresence mode="wait">
             <motion.div
               key={currentStep}
@@ -235,15 +235,6 @@ const About: React.FC<AboutProps> = ({ onNavigate }) => {
            <p className="text-[10px] font-bold tracking-[0.3em] uppercase text-sb-beige mb-2">Slide</p>
            <p className="text-4xl font-serif leading-none">0{currentStep + 1}<span className="text-white/20"> / 0{steps.length}</span></p>
         </div>
-      </div>
-
-      {/* Bottom Progress Bar */}
-      <div className="absolute bottom-0 left-0 w-full h-1 bg-white/5">
-        <motion.div 
-          initial={false}
-          animate={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
-          className="h-full bg-sb-beige"
-        />
       </div>
     </div>
   );

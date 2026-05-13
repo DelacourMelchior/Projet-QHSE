@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Page } from '../types';
-import { Info, Quote, TrendingDown, Users, AlertTriangle, Clock, Target, Anchor, TrendingUp, ShieldCheck, Zap, Layout, Check, RotateCcw, Mail, User, Building, FileText, Download } from 'lucide-react';
+import { Info, Quote, TrendingDown, Users, AlertTriangle, Clock, Target, Anchor, TrendingUp, ShieldCheck, Zap, Layout, Check, RotateCcw, Mail, User, Building, FileText, Download, ArrowRight } from 'lucide-react';
 import html2pdf from 'html2pdf.js';
 import { motion, useSpring, useTransform, AnimatePresence } from 'framer-motion';
 
@@ -270,17 +270,56 @@ const Diagnostic: React.FC<DiagnosticProps> = ({ onNavigate }) => {
     }
   };
 
+  const handleLoadDemoData = () => {
+    setCompanyName('TechIndustrie SAS');
+    setCompanyAge(12);
+    setCompanyPresentation('Usinage de précision pour le secteur aéronautique et médical. Croissance rapide mais des problèmes de qualité récurrents avec certains fournisseurs.');
+    setOrgStructure('Direction générale, 1 directeur de prod, équipe admin de 3 personnes, 45 opérateurs.');
+    setTotalEmployees(50);
+    setTargetClient('Grands comptes aéronautiques (Airbus, Safran)');
+    setProfitableClients('Secteur médical (marges plus élevées, petites séries)');
+    setProblematicClients('Sous-traitants rang 2 avec cahier des charges flou');
+    setAcquisitionModel('Majorité de clients historiques');
+    setInternalProblems(['Optimiser les processus', 'Réduire le turnover', 'Clarifier les rôles et responsabilités']);
+    setDiagnosticInitial('Risque financier non mesuré jusqu\'à présent');
+    setInterventionHorizon('Court terme - Dans le trimestre');
+    setCadrageNotes("Le dirigeant est sous l'eau et n'a plus le temps de piloter. L'équipe de production fait au mieux mais le manque de process coûte cher. Besoin de structuration.");
+    setRevenue(3500000);
+    setNetMargin(8);
+    setCompanyStatus('Croissance');
+    setCadreSalary(65000);
+    setOperationalSalary(32000);
+    setExecutiveDepartures(1);
+    setExecutiveRampUpMonths(6);
+    setOperationalDepartures(4);
+    setOperationalRampUpMonths(3);
+    setAbsenteeismRate(8);
+    setRateAT(2);
+    setRateMaladie(6);
+    setLeaderLostHours(15);
+    setExcelFilesCount(12);
+    setExcelComplexity(3);
+    setKpiReviewDate(15);
+    setReworkPercent(5);
+    setCreditNotesAmount(45000);
+    setMonthlyDisputes(3);
+    setAverageDisputeAmount(2500);
+    setMissedRevenueStruct(150000);
+    setMissedRevenueCertif(300000);
+    setStep(12);
+  };
+
   const handleGeneratePDF = () => {
     if (!fullReportRef.current) return;
 
     const element = fullReportRef.current;
     const opt = {
-      margin: [10, 10] as [number, number],
+      margin: 0,
       filename: `Diagnostic_QHSE_${companyName || 'Export'}_${new Date().toLocaleDateString('fr-FR').replace(/\//g, '-')}.pdf`,
       image: { type: 'jpeg' as const, quality: 0.98 },
       html2canvas: { scale: 2, useCORS: true, logging: false },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const },
-      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+      pagebreak: { mode: ['css', 'legacy'] }
     };
 
     html2pdf().set(opt).from(element).save();
@@ -291,63 +330,64 @@ const Diagnostic: React.FC<DiagnosticProps> = ({ onNavigate }) => {
       <div className="container mx-auto px-4 max-w-[1600px]">
         
         {/* Header Section */}
-        <div className="mb-8">
-          <h1 className="font-serif text-3xl md:text-4xl text-sb-green-dark leading-tight mb-2">
-            Console de Diagnostic en Direct
-          </h1>
-          <p className="font-sans text-base text-sb-green-dark/70">
-            Analyse de maturité et évaluation de l'Impôt Invisible.
-          </p>
-        </div>
-
-        {/* Navigation Stepper */}
-        <div className="mb-8 overflow-x-auto pb-4 custom-scrollbar">
-          <div className="flex items-center space-x-4 min-w-max">
-            {Array.from({ length: totalSteps }).map((_, i) => {
-              const stepNum = i + 1;
-              const isActive = step === stepNum;
-              const isCompleted = step > stepNum;
-              
-              return (
-                <button
-                  key={stepNum}
-                  onClick={() => setStep(stepNum)}
-                  className={`flex items-center space-x-2 px-4 py-2 rounded-full transition-all border ${
-                    isActive 
-                      ? 'bg-sb-green-dark text-white border-sb-green-dark shadow-md scale-105' 
-                      : isCompleted
-                        ? 'bg-sb-green-dark/10 text-sb-green-dark border-sb-green-dark/20 hover:bg-sb-green-dark/20'
-                        : 'bg-white text-gray-400 border-gray-200 hover:border-sb-green-dark/40 hover:text-sb-green-dark/60'
-                  }`}
-                >
-                  <span className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${
-                    isActive ? 'bg-white text-sb-green-dark' : isCompleted ? 'bg-sb-green-dark text-white' : 'bg-gray-100 text-gray-400'
-                  }`}>
-                    {stepNum}
-                  </span>
-                  <span className="text-sm font-medium whitespace-nowrap">
-                    {stepNum === 1 && "ADN"}
-                    {stepNum === 2 && "Écosystème"}
-                    {stepNum === 3 && "Problèmes"}
-                    {stepNum === 4 && "Risques"}
-                    {stepNum === 5 && "Finances"}
-                    {stepNum === 6 && "RH"}
-                    {stepNum === 7 && "Absentéisme"}
-                    {stepNum === 8 && "Dirigeant"}
-                    {stepNum === 9 && "Pilotage"}
-                    {stepNum === 10 && "Fuites"}
-                    {stepNum === 11 && "Renversement"}
-                    {stepNum === 12 && "Synthèse"}
-                    {stepNum === 13 && "Audit"}
-                  </span>
-                </button>
-              );
-            })}
+        {step > 0 && (
+          <div className="mb-8">
+            <h1 className="font-serif text-3xl md:text-4xl text-sb-green-dark leading-tight mb-2">
+              Console de Diagnostic en Direct
+            </h1>
           </div>
-        </div>
+        )}
+
+
+
+        {/* Step 0 - Landing Seamless */}
+        {step === 0 && (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }} 
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col items-center justify-center min-h-[calc(100vh-6rem)] max-w-5xl mx-auto"
+          >
+            <div className="text-center space-y-12 w-full max-w-4xl">
+              <div className="space-y-6">
+                <h2 className="text-5xl md:text-7xl font-serif text-sb-green-dark leading-tight tracking-tight">
+                  Diagnostic de Performance
+                </h2>
+                <p className="text-2xl text-sb-green-dark/70 font-light leading-relaxed mx-auto max-w-3xl">
+                  L'objectif de cette séance est d'identifier les gisements de marge inexploités au sein de votre organisation, de localiser précisément ces opportunités et d'estimer le potentiel financier récupérable.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-3 gap-8 w-full max-w-2xl mx-auto pt-8 border-t border-sb-green-dark/10">
+                <div className="space-y-2">
+                  <div className="text-2xl font-mono font-bold text-sb-green-dark">30 min</div>
+                  <div className="text-xs uppercase tracking-widest text-sb-green-dark/50 font-bold">DURÉE ESTIMÉE</div>
+                </div>
+                <div className="space-y-2">
+                  <div className="text-2xl font-mono font-bold text-sb-green-dark">12</div>
+                  <div className="text-xs uppercase tracking-widest text-sb-green-dark/50 font-bold">ÉTAPES</div>
+                </div>
+                <div className="space-y-2">
+                  <div className="text-2xl font-mono font-bold text-sb-green-dark">100%</div>
+                  <div className="text-xs uppercase tracking-widest text-sb-green-dark/50 font-bold">CONFIDENTIALITÉ</div>
+                </div>
+              </div>
+
+              <div className="pt-12">
+                <button 
+                  onClick={() => setStep(1)}
+                  className="px-10 py-5 bg-sb-green-dark text-white font-bold uppercase tracking-widest rounded-full shadow-2xl hover:bg-sb-green-dark/90 hover:shadow-xl transition-all transform hover:-translate-y-1 text-sm flex items-center justify-center mx-auto space-x-3 group"
+                >
+                  <span>Démarrer le diagnostic flash</span>
+                  <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         {/* Golden Ratio Layout */}
-        <div className="flex flex-col lg:flex-row gap-6 h-[850px]">
+        {step > 0 && (
+        <div className={`flex flex-col lg:flex-row gap-6 ${step > 0 ? 'h-[850px]' : 'h-[calc(100vh-8rem)] min-h-[500px]'}`}>
           
           {/* Left Column: 38.2% (1/phi^2) - Zone de Pilotage Consultant */}
           {step > 0 && step < 12 && (
@@ -982,6 +1022,13 @@ const Diagnostic: React.FC<DiagnosticProps> = ({ onNavigate }) => {
                 </button>
               </div>
             )}
+
+            {/* DEMO BUTTON */}
+            <div className="mt-4 pt-4 border-t border-gray-100 border-dashed text-center">
+               <button onClick={handleLoadDemoData} className="text-[10px] text-gray-400 hover:text-sb-green-dark uppercase tracking-widest font-bold transition-colors">
+                 [Remplir données Démo PME]
+               </button>
+            </div>
           </div>
           )}
 
@@ -1108,53 +1155,6 @@ const Diagnostic: React.FC<DiagnosticProps> = ({ onNavigate }) => {
                 </motion.div>
               ) : (
                 <div className="space-y-8">
-                
-                {step === 0 && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 20 }} 
-                    animate={{ opacity: 1, y: 0 }}
-                    className="flex flex-col items-center justify-center p-4 max-w-5xl mx-auto h-full"
-                  >
-                    <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-xl text-center space-y-6 w-full max-w-3xl">
-                      <div className="w-14 h-14 bg-sb-green-dark/5 rounded-full flex items-center justify-center mx-auto">
-                        <Target size={28} className="text-sb-green-dark animate-pulse" />
-                      </div>
-                      
-                      <div className="space-y-3">
-                        <h2 className="text-4xl md:text-6xl font-serif text-sb-green-dark leading-tight">
-                          Diagnostic de Performance
-                        </h2>
-                        <p className="text-xl text-gray-600 font-light leading-relaxed mx-auto">
-                          L'objectif de cette séance est d'identifier les gisements de marge inexploités au sein de votre organisation, de localiser précisément ces opportunités et d'estimer le potentiel financier récupérable.
-                        </p>
-                      </div>
-
-                      <div className="grid grid-cols-3 gap-6 w-full pt-6 border-t border-gray-100">
-                        <div className="space-y-1">
-                          <div className="text-xl font-mono font-bold text-sb-green-dark">30 min</div>
-                          <div className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">DURÉE ESTIMÉE</div>
-                        </div>
-                        <div className="space-y-1">
-                          <div className="text-xl font-mono font-bold text-sb-green-dark">12</div>
-                          <div className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">ÉTAPES</div>
-                        </div>
-                        <div className="space-y-1">
-                          <div className="text-xl font-mono font-bold text-sb-green-dark">100%</div>
-                          <div className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">CONFIDENTIALITÉ</div>
-                        </div>
-                      </div>
-
-                      <div className="pt-6">
-                        <button 
-                          onClick={() => setStep(1)}
-                          className="px-8 py-3 bg-sb-green-dark text-white font-bold uppercase tracking-widest rounded-full shadow-xl hover:bg-sb-green-dark/90 transition-all transform hover:scale-105 text-sm"
-                        >
-                          Commencer le diagnostic
-                        </button>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
 
                 {step > 0 && (
                   <div className="space-y-8">
@@ -1492,213 +1492,274 @@ const Diagnostic: React.FC<DiagnosticProps> = ({ onNavigate }) => {
           </div>
 
         </div>
+        )}
       </div>
 
       {/* Hidden container for full PDF report - Positioned off-screen for capture */}
       <div style={{ position: 'absolute', left: '-9999px', top: '0', width: '210mm' }}>
-        <div ref={fullReportRef} style={{ fontFamily: 'Georgia, serif', color: '#1a1a1a', fontSize: '13px', lineHeight: '1.6' }}>
+        <div ref={fullReportRef} style={{ fontFamily: '"Playfair Display", Georgia, serif', color: '#1a1a1a', fontSize: '13px', lineHeight: '1.6', backgroundColor: '#ffffff' }}>
 
           {/* PAGE 1: Cover */}
-          <div style={{ padding: '60px 50px', minHeight: '297mm', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center', background: 'linear-gradient(180deg, #f9f7f2 0%, #ffffff 100%)' }}>
-            {/* Logo */}
-            <div style={{ marginBottom: '40px' }}>
-              <svg viewBox="0 0 100 87" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '80px', height: '70px' }}>
-                <path d="M50 3L97 84H3L50 3Z" stroke="#2d4a3e" strokeWidth="4" strokeLinecap="square" strokeLinejoin="miter"/>
-                <path d="M50 25L78 74H22L50 25Z" stroke="#2d4a3e" strokeWidth="3" strokeLinecap="square" strokeLinejoin="miter"/>
-                <path d="M50 49L52 55L58 57L52 59L50 65L48 59L42 57L48 55L50 49Z" fill="#8a7d6b" />
+          <div style={{ padding: '60px 50px', height: '296mm', boxSizing: 'border-box', overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column', backgroundColor: '#2d4a3e', color: '#f9f7f2' }}>
+            {/* Decorative Borders */}
+            <div style={{ position: 'absolute', top: '20px', left: '20px', right: '20px', bottom: '20px', border: '1px solid rgba(249, 247, 242, 0.2)' }}></div>
+            <div style={{ position: 'absolute', top: '30px', left: '30px', right: '30px', bottom: '30px', border: '1px solid rgba(249, 247, 242, 0.5)' }}></div>
+            
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center', zIndex: 10 }}>
+              <svg viewBox="0 0 100 87" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100px', height: '87px', marginBottom: '60px' }}>
+                <path d="M50 3L97 84H3L50 3Z" stroke="#d4c5a9" strokeWidth="4" strokeLinecap="square" strokeLinejoin="miter"/>
+                <path d="M50 25L78 74H22L50 25Z" stroke="#d4c5a9" strokeWidth="3" strokeLinecap="square" strokeLinejoin="miter"/>
+                <path d="M50 49L52 55L58 57L52 59L50 65L48 59L42 57L48 55L50 49Z" fill="#d4c5a9" />
               </svg>
+              <div style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '6px', color: '#d4c5a9', marginBottom: '20px', fontFamily: '"Inter", sans-serif' }}>Document Confidentiel</div>
+              <h1 style={{ fontSize: '42px', fontWeight: 'bold', margin: '0 0 20px 0', lineHeight: '1.2', letterSpacing: '1px' }}>Audit de Robustesse<br/>Opérationnelle</h1>
+              <div style={{ width: '60px', height: '2px', backgroundColor: '#d4c5a9', margin: '0 auto 30px auto' }}></div>
+              <h2 style={{ fontSize: '20px', fontWeight: 'normal', color: 'rgba(249, 247, 242, 0.8)', fontStyle: 'italic', marginBottom: '80px' }}>Évaluation des Processus & Calcul de l'Impôt Invisible</h2>
+              
+              <div style={{ padding: '30px 50px', backgroundColor: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(249, 247, 242, 0.1)', borderRadius: '4px' }}>
+                <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '3px', color: '#d4c5a9', marginBottom: '10px', fontFamily: '"Inter", sans-serif' }}>Préparé exclusivement pour</div>
+                <div style={{ fontSize: '28px', fontWeight: 'bold' }}>{companyName || 'Entreprise'}</div>
+                <div style={{ fontSize: '14px', marginTop: '10px', opacity: 0.7, fontFamily: '"Inter", sans-serif' }}>Le {new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
+              </div>
             </div>
-            <div style={{ borderBottom: '3px solid #2d4a3e', paddingBottom: '30px', marginBottom: '40px', width: '100%' }}>
-              <div style={{ fontSize: '11px', letterSpacing: '6px', textTransform: 'uppercase', color: '#8a7d6b', marginBottom: '20px' }}>Cabinet Delacour</div>
-              <h1 style={{ fontSize: '36px', fontWeight: 'bold', color: '#2d4a3e', margin: '0 0 10px 0', letterSpacing: '1px' }}>Rapport de Diagnostic</h1>
-              <h2 style={{ fontSize: '20px', fontWeight: 'normal', color: '#8a7d6b', margin: '0', letterSpacing: '3px', textTransform: 'uppercase' }}>Performance Opérationnelle & QHSE</h2>
+            
+            <div style={{ textAlign: 'center', zIndex: 10, paddingBottom: '20px' }}>
+              <div style={{ fontSize: '14px', letterSpacing: '2px', fontFamily: '"Inter", sans-serif' }}>CABINET DELACOUR</div>
+              <div style={{ fontSize: '10px', opacity: 0.6, marginTop: '5px', letterSpacing: '1px', fontFamily: '"Inter", sans-serif' }}>Expertise QHSE & Performance Durable</div>
             </div>
-            <div style={{ fontSize: '18px', color: '#2d4a3e', fontWeight: 'bold', marginBottom: '10px' }}>{companyName || 'Entreprise'}</div>
-            <div style={{ fontSize: '13px', color: '#666' }}>Document confidentiel — Généré le {new Date().toLocaleDateString('fr-FR')}</div>
           </div>
 
-          {/* PAGE 2: Profil & Marché */}
-          <div style={{ padding: '50px', pageBreakBefore: 'always' as const }}>
-            <h2 style={{ fontSize: '22px', color: '#2d4a3e', borderBottom: '2px solid #2d4a3e', paddingBottom: '8px', marginBottom: '30px', letterSpacing: '2px', textTransform: 'uppercase' }}>1. Profil de l'Organisation</h2>
-            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '30px' }}>
-              <tbody>
-                {[
-                  ['Entreprise', companyName || 'N/A'],
-                  ['Âge', `${companyAge || 0} ans`],
-                  ['Effectif global', `${totalEmployees || 0} salariés`],
-                  ['Structure organisationnelle', orgStructure || 'N/A'],
-                ].map(([label, value], i) => (
-                  <tr key={i} style={{ borderBottom: '1px solid #eee' }}>
-                    <td style={{ padding: '12px 16px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '2px', color: '#999', width: '40%' }}>{label}</td>
-                    <td style={{ padding: '12px 16px', fontWeight: 'bold', color: '#2d4a3e' }}>{value}</td>
+          {/* PAGE 2: Introduction */}
+          <div style={{ padding: '40px 50px', height: '296mm', boxSizing: 'border-box', overflow: 'hidden', pageBreakBefore: 'always', position: 'relative' }}>
+            <div style={{ position: 'absolute', top: 0, left: '50px', right: '50px', height: '4px', backgroundColor: '#2d4a3e' }}></div>
+            
+            <h2 style={{ fontSize: '32px', color: '#2d4a3e', marginTop: '40px', marginBottom: '30px' }}>Le Mot du Cabinet</h2>
+            
+            <div style={{ fontSize: '16px', lineHeight: '1.8', color: '#333', textAlign: 'justify' }}>
+              <p style={{ marginBottom: '20px' }}>Madame, Monsieur,</p>
+              
+              <p style={{ marginBottom: '20px' }}>Vous avez entre les mains la synthèse de notre diagnostic de performance opérationnelle. Ce document n'est pas un simple constat : c'est <strong>une photographie financière de vos dysfonctionnements internes</strong>.</p>
+              
+              <p style={{ marginBottom: '20px' }}>Dans la majorité des PME en croissance, la focalisation naturelle se porte sur le développement commercial et l'innovation. Cependant, avec l'augmentation des volumes et la complexification des flux, un phénomène silencieux s'installe : <strong>L'Impôt Invisible</strong>.</p>
+              
+              <p style={{ marginBottom: '20px' }}>L'Impôt Invisible correspond à la somme de toutes les marges qui s'évaporent quotidiennement au sein de votre organisation à cause d'un manque de structuration :</p>
+              <ul style={{ marginBottom: '20px', paddingLeft: '20px', color: '#555' }}>
+                <li style={{ marginBottom: '10px' }}>Les retouches, la non-qualité et les litiges clients qui rognent la rentabilité nette.</li>
+                <li style={{ marginBottom: '10px' }}>Le temps précieux que vous et vos cadres perdez à faire du micro-management ou à compenser l'absence de processus clairs.</li>
+                <li style={{ marginBottom: '10px' }}>Le coût exorbitant du turnover généré par des collaborateurs désengagés face à la désorganisation.</li>
+                <li style={{ marginBottom: '10px' }}>La croissance bridée par manque de certifications (ISO) ou de robustesse pour adresser de nouveaux marchés.</li>
+              </ul>
+              
+              <p style={{ marginBottom: '40px' }}>L'objectif de cet audit n'est pas de pointer des erreurs, mais de <strong>révéler des gisements de trésorerie inexploités</strong>. Les pages suivantes détaillent poste par poste le montant exact de cet impôt invisible dans votre structure, et proposent une feuille de route pour le récupérer de manière pérenne.</p>
+              
+              <div style={{ borderLeft: '4px solid #d4c5a9', paddingLeft: '20px', fontStyle: 'italic', color: '#666', fontSize: '18px' }}>
+                "La rentabilité ne se trouve pas toujours dans l'acquisition de nouveaux clients, mais bien souvent dans la suppression des frictions internes."
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div style={{ position: 'absolute', bottom: '40px', left: '50px', right: '50px', borderTop: '1px solid #eee', paddingTop: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '10px', color: '#999', fontFamily: '"Inter", sans-serif' }}>
+              <div>Cabinet Delacour — Document Confidentiel</div>
+              <div>Page 2</div>
+            </div>
+          </div>
+
+          {/* PAGE 3: Profil & Cadrage */}
+          <div style={{ padding: '40px 50px', height: '296mm', boxSizing: 'border-box', overflow: 'hidden', pageBreakBefore: 'always', position: 'relative' }}>
+            <div style={{ position: 'absolute', top: 0, left: '50px', right: '50px', height: '4px', backgroundColor: '#2d4a3e' }}></div>
+            
+            <h2 style={{ fontSize: '28px', color: '#2d4a3e', marginTop: '40px', marginBottom: '40px', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>Profil de l'Entreprise & Cadrage</h2>
+            
+            <div style={{ display: 'flex', gap: '20px', marginBottom: '30px' }}>
+              <div style={{ flex: '1', backgroundColor: '#f9f7f2', padding: '25px', borderRadius: '4px', borderTop: '3px solid #d4c5a9' }}>
+                <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '2px', color: '#8a7d6b', marginBottom: '5px', fontFamily: '"Inter", sans-serif' }}>Identité</div>
+                <div style={{ fontSize: '22px', fontWeight: 'bold', color: '#2d4a3e', marginBottom: '15px' }}>{companyName}</div>
+                <div style={{ fontSize: '13px', color: '#555', marginBottom: '5px' }}><strong>Âge :</strong> {companyAge} ans</div>
+                <div style={{ fontSize: '13px', color: '#555' }}><strong>Effectif :</strong> {totalEmployees} collaborateurs</div>
+              </div>
+              
+              <div style={{ flex: '1', backgroundColor: '#f9f7f2', padding: '25px', borderRadius: '4px', borderTop: '3px solid #d4c5a9' }}>
+                <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '2px', color: '#8a7d6b', marginBottom: '5px', fontFamily: '"Inter", sans-serif' }}>Moteur Financier</div>
+                <div style={{ fontSize: '22px', fontWeight: 'bold', color: '#2d4a3e', marginBottom: '15px', fontFamily: '"Inter", sans-serif' }}>{revenue.toLocaleString('fr-FR')} €</div>
+                <div style={{ fontSize: '13px', color: '#555', marginBottom: '5px' }}><strong>Marge Nette :</strong> {netMargin}%</div>
+                <div style={{ fontSize: '13px', color: '#555' }}>
+                  <strong>Dynamique :</strong> <span style={{ color: companyStatus === 'Croissance' ? '#16a34a' : companyStatus === 'Récession' ? '#dc2626' : '#ea580c', fontWeight: 'bold' }}>{companyStatus || 'N/A'}</span>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: '30px' }}>
+              <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '2px', color: '#2d4a3e', marginBottom: '10px', fontWeight: 'bold', fontFamily: '"Inter", sans-serif' }}>Écosystème & Marché</div>
+              <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #eee', fontFamily: '"Inter", sans-serif', fontSize: '13px' }}>
+                <tbody>
+                  <tr style={{ borderBottom: '1px solid #eee' }}>
+                    <td style={{ padding: '15px', width: '30%', backgroundColor: '#fafafa', color: '#666' }}>Modèle d'acquisition</td>
+                    <td style={{ padding: '15px', fontWeight: '500', color: '#1a1a1a' }}>{acquisitionModel || 'Non renseigné'}</td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-            {companyPresentation && (
-              <div style={{ background: '#f5f3ee', padding: '20px', borderRadius: '8px', borderLeft: '4px solid #2d4a3e', marginBottom: '30px' }}>
-                <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '3px', color: '#8a7d6b', marginBottom: '8px' }}>Présentation de l'activité</div>
-                <p style={{ margin: 0, fontSize: '14px', color: '#333' }}>{companyPresentation}</p>
+                  <tr style={{ borderBottom: '1px solid #eee' }}>
+                    <td style={{ padding: '15px', width: '30%', backgroundColor: '#fafafa', color: '#666' }}>Clients les plus rentables</td>
+                    <td style={{ padding: '15px', fontWeight: '500', color: '#1a1a1a' }}>{profitableClients || 'Non renseigné'}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: '15px', width: '30%', backgroundColor: '#fafafa', color: '#666' }}>Clients problématiques</td>
+                    <td style={{ padding: '15px', fontWeight: '500', color: '#1a1a1a' }}>{problematicClients || 'Non renseigné'}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div style={{ marginBottom: '30px' }}>
+              <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '2px', color: '#2d4a3e', marginBottom: '10px', fontWeight: 'bold', fontFamily: '"Inter", sans-serif' }}>Cadrage Stratégique</div>
+              <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #eee', fontFamily: '"Inter", sans-serif', fontSize: '13px' }}>
+                <tbody>
+                  <tr style={{ borderBottom: '1px solid #eee' }}>
+                    <td style={{ padding: '15px', width: '30%', backgroundColor: '#fafafa', color: '#666' }}>Diagnostic du dirigeant</td>
+                    <td style={{ padding: '15px', fontWeight: '500', color: '#1a1a1a' }}>{diagnosticInitial || 'Non renseigné'}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: '15px', width: '30%', backgroundColor: '#fafafa', color: '#666' }}>Horizon d'intervention</td>
+                    <td style={{ padding: '15px', fontWeight: '500', color: '#1a1a1a' }}>{interventionHorizon || 'Non renseigné'}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            {internalProblems.length > 0 && (
+              <div style={{ marginBottom: '30px' }}>
+                <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '2px', color: '#2d4a3e', marginBottom: '10px', fontWeight: 'bold', fontFamily: '"Inter", sans-serif' }}>Zones de Frictions Identifiées</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                  {internalProblems.filter(p => p !== 'Autre').map((problem, i) => (
+                    <span key={i} style={{ backgroundColor: '#f0fdf4', color: '#16a34a', padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontFamily: '"Inter", sans-serif', border: '1px solid #bbf7d0' }}>{problem}</span>
+                  ))}
+                  {internalProblems.includes('Autre') && otherInternalProblem && (
+                    <span style={{ backgroundColor: '#f0fdf4', color: '#16a34a', padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontFamily: '"Inter", sans-serif', border: '1px solid #bbf7d0' }}>{otherInternalProblem}</span>
+                  )}
+                </div>
               </div>
             )}
 
-            <h2 style={{ fontSize: '22px', color: '#2d4a3e', borderBottom: '2px solid #2d4a3e', paddingBottom: '8px', marginBottom: '30px', marginTop: '40px', letterSpacing: '2px', textTransform: 'uppercase' }}>2. Performance & Marché</h2>
-            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '30px' }}>
-              <tbody>
-                {[
-                  ['Cible client', targetClient || 'N/A'],
-                  ["Modèle d'acquisition", acquisitionModel || 'N/A'],
-                  ['Clients les plus rentables', profitableClients || 'N/A'],
-                  ['Clients les moins rentables', problematicClients || 'N/A'],
-                ].map(([label, value], i) => (
-                  <tr key={i} style={{ borderBottom: '1px solid #eee' }}>
-                    <td style={{ padding: '12px 16px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '2px', color: '#999', width: '40%' }}>{label}</td>
-                    <td style={{ padding: '12px 16px', fontWeight: 'bold', color: '#2d4a3e' }}>{value}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
-            <h2 style={{ fontSize: '22px', color: '#2d4a3e', borderBottom: '2px solid #2d4a3e', paddingBottom: '8px', marginBottom: '30px', marginTop: '40px', letterSpacing: '2px', textTransform: 'uppercase' }}>3. Axes d'Amélioration Prioritaires</h2>
-            <div style={{ background: '#f0fdf4', padding: '20px', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
-              <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '3px', color: '#16a34a', marginBottom: '10px' }}>Zones de friction identifiées</div>
-              <p style={{ margin: 0, fontSize: '14px', color: '#333' }}>
-                {internalProblems.length > 0 ? internalProblems.filter(p => p !== 'Autre').join(' • ') : 'Aucune friction majeure déclarée.'}
-                {internalProblems.includes('Autre') && otherInternalProblem ? ` • Autre: ${otherInternalProblem}` : ''}
-              </p>
-            </div>
-          </div>
-
-          {/* PAGE 3: Cadrage & Moteur Financier */}
-          <div style={{ padding: '50px', pageBreakBefore: 'always' as const }}>
-            <h2 style={{ fontSize: '22px', color: '#2d4a3e', borderBottom: '2px solid #2d4a3e', paddingBottom: '8px', marginBottom: '30px', letterSpacing: '2px', textTransform: 'uppercase' }}>4. Cadrage des Actions Souhaitées</h2>
-            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px' }}>
-              <tbody>
-                {[
-                  ['Diagnostic initial', diagnosticInitial || 'Non défini'],
-                  ["Horizon d'intervention", interventionHorizon || 'Non défini'],
-                ].map(([label, value], i) => (
-                  <tr key={i} style={{ borderBottom: '1px solid #eee' }}>
-                    <td style={{ padding: '12px 16px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '2px', color: '#999', width: '40%' }}>{label}</td>
-                    <td style={{ padding: '12px 16px', fontWeight: 'bold', color: '#2d4a3e' }}>{value}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
             {cadrageNotes && (
-              <div style={{ background: '#f5f3ee', padding: '16px', borderRadius: '8px', borderLeft: '4px solid #8a7d6b', marginBottom: '30px' }}>
-                <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '3px', color: '#8a7d6b', marginBottom: '6px' }}>Commentaires</div>
-                <p style={{ margin: 0, fontStyle: 'italic', color: '#555' }}>{cadrageNotes}</p>
+              <div style={{ backgroundColor: '#fff', border: '1px solid #eee', padding: '20px', borderRadius: '4px', borderLeft: '4px solid #2d4a3e' }}>
+                <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '2px', color: '#666', marginBottom: '10px', fontFamily: '"Inter", sans-serif' }}>Notes du consultant</div>
+                <p style={{ margin: 0, fontStyle: 'italic', color: '#444', lineHeight: '1.6' }}>"{cadrageNotes}"</p>
               </div>
             )}
 
-            <h2 style={{ fontSize: '22px', color: '#2d4a3e', borderBottom: '2px solid #2d4a3e', paddingBottom: '8px', marginBottom: '30px', marginTop: '40px', letterSpacing: '2px', textTransform: 'uppercase' }}>5. Moteur Financier</h2>
-            <div style={{ display: 'flex', gap: '16px', marginBottom: '30px' }}>
-              <div style={{ flex: 1, background: '#f9f7f2', padding: '20px', borderRadius: '8px', textAlign: 'center' }}>
-                <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '3px', color: '#999', marginBottom: '8px' }}>CA Référence</div>
-                <div style={{ fontSize: '22px', fontWeight: 'bold', color: '#2d4a3e', fontFamily: 'monospace' }}>{revenue.toLocaleString('fr-FR')} €</div>
-              </div>
-              <div style={{ flex: 1, background: '#f9f7f2', padding: '20px', borderRadius: '8px', textAlign: 'center' }}>
-                <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '3px', color: '#999', marginBottom: '8px' }}>Marge Nette</div>
-                <div style={{ fontSize: '22px', fontWeight: 'bold', color: '#2d4a3e', fontFamily: 'monospace' }}>{netMargin} %</div>
-              </div>
-              <div style={{ flex: 1, background: '#f9f7f2', padding: '20px', borderRadius: '8px', textAlign: 'center' }}>
-                <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '3px', color: '#999', marginBottom: '8px' }}>Dynamique</div>
-                <div style={{ fontSize: '22px', fontWeight: 'bold', color: companyStatus === 'Croissance' ? '#16a34a' : companyStatus === 'Récession' ? '#dc2626' : '#ea580c' }}>{companyStatus || 'N/A'}</div>
-              </div>
+            {/* Footer */}
+            <div style={{ position: 'absolute', bottom: '40px', left: '50px', right: '50px', borderTop: '1px solid #eee', paddingTop: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '10px', color: '#999', fontFamily: '"Inter", sans-serif' }}>
+              <div>Cabinet Delacour — Document Confidentiel</div>
+              <div>Page 3</div>
             </div>
           </div>
 
-          {/* PAGE 4: Impôt Invisible - Detail */}
-          <div style={{ padding: '50px', pageBreakBefore: 'always' as const }}>
-            <h2 style={{ fontSize: '22px', color: '#2d4a3e', borderBottom: '2px solid #2d4a3e', paddingBottom: '8px', marginBottom: '30px', letterSpacing: '2px', textTransform: 'uppercase' }}>6. Évaluation de l'Impôt Invisible</h2>
+          {/* PAGE 4: Impôt Invisible */}
+          <div style={{ padding: '40px 50px', height: '296mm', boxSizing: 'border-box', overflow: 'hidden', pageBreakBefore: 'always', position: 'relative' }}>
+            <div style={{ position: 'absolute', top: 0, left: '50px', right: '50px', height: '4px', backgroundColor: '#2d4a3e' }}></div>
+            
+            <h2 style={{ fontSize: '28px', color: '#2d4a3e', marginTop: '30px', marginBottom: '25px', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>Évaluation de l'Impôt Invisible</h2>
 
             {/* Grand total box */}
-            <div style={{ background: '#f0fdf4', border: '2px solid #16a34a', borderRadius: '12px', padding: '30px', textAlign: 'center', marginBottom: '30px' }}>
-              <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '4px', color: '#16a34a', marginBottom: '10px' }}>Potentiel de Gain Annuel Récupérable</div>
-              <div style={{ fontSize: '42px', fontWeight: 'bold', color: '#15803d', fontFamily: 'monospace' }}>{totalPotential.toLocaleString('fr-FR')} € / an</div>
+            <div style={{ backgroundColor: '#f9f7f2', border: '1px solid #d4c5a9', borderRadius: '8px', padding: '25px', textAlign: 'center', marginBottom: '25px', position: 'relative', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', backgroundColor: '#2d4a3e' }}></div>
+              <div style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '4px', color: '#8a7d6b', marginBottom: '15px', fontFamily: '"Inter", sans-serif' }}>Potentiel de Gain Annuel Récupérable</div>
+              <div style={{ fontSize: '56px', fontWeight: 'bold', color: '#2d4a3e', fontFamily: '"Inter", sans-serif', letterSpacing: '-1px' }}>{totalPotential.toLocaleString('fr-FR')} € <span style={{ fontSize: '24px', color: '#8a7d6b', fontWeight: 'normal' }}>/ an</span></div>
+              <div style={{ fontSize: '14px', color: '#666', marginTop: '15px', fontStyle: 'italic' }}>
+                Soit l'équivalent de <strong>{Math.round(totalPotential / 365).toLocaleString('fr-FR')} €</strong> perdus chaque jour d'inaction.
+              </div>
             </div>
 
-            {/* Cost breakdown table */}
-            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '30px' }}>
+            <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '2px', color: '#2d4a3e', marginBottom: '15px', fontWeight: 'bold', fontFamily: '"Inter", sans-serif' }}>Détail des Fuites Opérationnelles</div>
+            
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: '"Inter", sans-serif', fontSize: '13px' }}>
               <thead>
-                <tr style={{ background: '#2d4a3e', color: 'white' }}>
-                  <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '2px' }}>Poste de coût</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '2px' }}>Détail</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'right', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '2px' }}>Montant</th>
+                <tr style={{ borderBottom: '2px solid #2d4a3e' }}>
+                  <th style={{ padding: '10px', textAlign: 'left', color: '#2d4a3e', textTransform: 'uppercase', fontSize: '10px', letterSpacing: '2px' }}>Poste de Coût</th>
+                  <th style={{ padding: '10px', textAlign: 'left', color: '#2d4a3e', textTransform: 'uppercase', fontSize: '10px', letterSpacing: '2px' }}>Mode de Calcul / Détail</th>
+                  <th style={{ padding: '10px', textAlign: 'right', color: '#2d4a3e', textTransform: 'uppercase', fontSize: '10px', letterSpacing: '2px' }}>Impact Financier</th>
                 </tr>
               </thead>
               <tbody>
                 {[
-                  ['Turnover & Ramp-up', `${executiveDepartures} cadres, ${operationalDepartures} opérationnels`, costTurnover],
-                  ['Absentéisme', `Taux total: ${(rateAT + rateMaladie).toFixed(1)}% (AT: ${rateAT}%, Maladie: ${rateMaladie}%)`, costAbsenteeism],
-                  ['Temps Dirigeant Perdu', `${leaderLostHours}h/semaine en micro-management`, costLeaderLost],
-                  ['Pilotage Excel', `${excelFilesCount} fichiers, complexité ${excelComplexity}/10`, costExcel + costBlindness],
-                  ['Retard KPI', `Délai de revue: ${kpiReviewDate} jours`, costLateKPI],
-                  ['Non-Qualité (Retouches)', `${reworkPercent}% de retouches`, costRework],
-                  ['Avoirs', 'Montant des avoirs clients', costCreditNotes],
-                  ['Litiges', `${yearlyDisputes} litiges, ${averageDisputeAmount.toLocaleString('fr-FR')}€ moyen`, costDisputes],
-                  ['Croissance Bridée', `Structure: ${missedRevenueStruct.toLocaleString('fr-FR')}€, Certifications: ${missedRevenueCertif.toLocaleString('fr-FR')}€`, costMissedRevenue],
-                ].map(([label, detail, value], i) => (
-                  <tr key={i} style={{ borderBottom: '1px solid #eee', background: i % 2 === 0 ? '#fafafa' : '#fff' }}>
-                    <td style={{ padding: '12px 16px', fontWeight: 'bold', fontSize: '12px', color: '#2d4a3e' }}>{label}</td>
-                    <td style={{ padding: '12px 16px', fontSize: '11px', color: '#666' }}>{detail}</td>
-                    <td style={{ padding: '12px 16px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 'bold', color: '#15803d', fontSize: '14px' }}>{(value as number).toLocaleString('fr-FR')} €</td>
+                  ['Croissance Bridée', `Ventes non réalisées (Structure: ${missedRevenueStruct.toLocaleString('fr-FR')}€, Certifications: ${missedRevenueCertif.toLocaleString('fr-FR')}€)`, costMissedRevenue],
+                  ['Non-Qualité & Retouches', `Coût de reprise sur ${reworkPercent}% de la production affectée`, costRework],
+                  ['Litiges & Avoirs', `${yearlyDisputes} litiges annuels (${averageDisputeAmount.toLocaleString('fr-FR')}€ moy.) + Avoirs`, costDisputes + costCreditNotes],
+                  ['Turnover & Ramp-up', `Remplacement et formation de ${executiveDepartures} cadres et ${operationalDepartures} opérationnels`, costTurnover],
+                  ['Temps Dirigeant Perdu', `${leaderLostHours}h/sem. en micro-management au lieu de piloter`, costLeaderLost],
+                  ['Opacité & Pilotage Excel', `${excelFilesCount} fichiers critiques gérés manuellement`, costExcel + costBlindness],
+                  ['Absentéisme', `Désorganisation due au taux de ${(rateAT + rateMaladie).toFixed(1)}%`, costAbsenteeism],
+                  ['Prise de Décision Tardive', `Décalage de ${kpiReviewDate} jours sur la clôture`, costLateKPI],
+                ]
+                .filter(([,, value]) => (value as number) > 0)
+                .sort((a, b) => (b[2] as number) - (a[2] as number))
+                .map(([label, detail, value], i) => (
+                  <tr key={i} style={{ borderBottom: '1px solid #eee', backgroundColor: i % 2 === 0 ? '#fafafa' : '#fff' }}>
+                    <td style={{ padding: '10px', fontWeight: '600', color: '#1a1a1a' }}>{label}</td>
+                    <td style={{ padding: '10px', color: '#666', fontSize: '12px' }}>{detail}</td>
+                    <td style={{ padding: '10px', textAlign: 'right', fontWeight: 'bold', color: '#2d4a3e', fontSize: '14px' }}>{(value as number).toLocaleString('fr-FR')} €</td>
                   </tr>
                 ))}
-                <tr style={{ background: '#2d4a3e', color: 'white' }}>
-                  <td colSpan={2} style={{ padding: '14px 16px', fontWeight: 'bold', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '2px' }}>Total Potentiel Récupérable</td>
-                  <td style={{ padding: '14px 16px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 'bold', fontSize: '18px' }}>{totalPotential.toLocaleString('fr-FR')} €</td>
-                </tr>
               </tbody>
+              <tfoot>
+                <tr style={{ backgroundColor: '#2d4a3e', color: '#fff' }}>
+                  <td colSpan={2} style={{ padding: '12px 10px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '2px', fontSize: '12px' }}>Total Estimé</td>
+                  <td style={{ padding: '12px 10px', textAlign: 'right', fontWeight: 'bold', fontSize: '18px' }}>{totalPotential.toLocaleString('fr-FR')} €</td>
+                </tr>
+              </tfoot>
             </table>
 
-            {/* Key indicators */}
-            <div style={{ display: 'flex', gap: '16px' }}>
-              <div style={{ flex: 1, background: '#fef2f2', border: '1px solid #fecaca', padding: '20px', borderRadius: '8px', textAlign: 'center' }}>
-                <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '3px', color: '#dc2626', marginBottom: '8px' }}>Coût Journalier de l'Inaction</div>
-                <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#dc2626', fontFamily: 'monospace' }}>{Math.round(totalPotential / 365).toLocaleString('fr-FR')} € / jour</div>
-              </div>
-              <div style={{ flex: 1, background: '#f9f7f2', border: '1px solid #d6cfc0', padding: '20px', borderRadius: '8px', textAlign: 'center' }}>
-                <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '3px', color: '#8a7d6b', marginBottom: '8px' }}>Retour sur Investissement</div>
-                <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#2d4a3e', fontFamily: 'monospace' }}>
-                  {totalPotential > 0 ? `${(() => { const v = 4000 / (totalPotential / 365); return (v - Math.floor(v) <= 0.5) ? Math.floor(v) : Math.ceil(v); })()} jours` : 'N/A'}
-                </div>
-              </div>
+            {/* Footer */}
+            <div style={{ position: 'absolute', bottom: '40px', left: '50px', right: '50px', borderTop: '1px solid #eee', paddingTop: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '10px', color: '#999', fontFamily: '"Inter", sans-serif' }}>
+              <div>Cabinet Delacour — Document Confidentiel</div>
+              <div>Page 4</div>
             </div>
           </div>
 
           {/* PAGE 5: Proposition */}
-          <div style={{ padding: '50px', pageBreakBefore: 'always' as const }}>
-            <h2 style={{ fontSize: '22px', color: '#2d4a3e', borderBottom: '2px solid #2d4a3e', paddingBottom: '8px', marginBottom: '30px', letterSpacing: '2px', textTransform: 'uppercase' }}>7. Proposition d'Accompagnement</h2>
-            <div style={{ display: 'flex', gap: '20px', marginBottom: '40px' }}>
+          <div style={{ padding: '40px 50px', height: '296mm', boxSizing: 'border-box', overflow: 'hidden', pageBreakBefore: 'always', position: 'relative' }}>
+            <div style={{ position: 'absolute', top: 0, left: '50px', right: '50px', height: '4px', backgroundColor: '#2d4a3e' }}></div>
+            
+            <h2 style={{ fontSize: '28px', color: '#2d4a3e', marginTop: '30px', marginBottom: '20px' }}>Proposition d'Accompagnement</h2>
+            <p style={{ color: '#555', fontSize: '16px', marginBottom: '30px', lineHeight: '1.6' }}>
+              Pour récupérer ce potentiel financier, nous proposons une démarche structurée en 3 phases, garantissant un retour sur investissement rapide.
+            </p>
+
+            <div style={{ position: 'relative', paddingLeft: '40px', marginBottom: '30px' }}>
+              <div style={{ position: 'absolute', left: '11px', top: '10px', bottom: '10px', width: '2px', backgroundColor: '#e5e7eb' }}></div>
+              
               {[
-                { phase: 'Phase 1', title: "L'Analyse Documentaire", desc: 'Cadrage OFF-SITE', detail: 'Analyse des pré-requis et cartographie des standards de votre marché.' },
-                { phase: 'Phase 2', title: "L'Audit sur Site", desc: 'Immersion ON-SITE', detail: "Audit des flux et évaluation in-situ de la résilience de vos processus." },
-                { phase: 'Phase 3', title: 'Restitution & Plan', desc: 'RESTITUTION', detail: "Rapport d'étonnement et plan directeur priorisé." },
+                { phase: '01', title: "Analyse Documentaire & Cadrage Off-Site", desc: 'Analyse des pré-requis, cartographie des standards de votre marché et préparation des grilles d\'audit.' },
+                { phase: '02', title: "Immersion & Audit On-Site", desc: "Entretiens croisés, observation des flux réels et évaluation in-situ de la résilience de vos processus métier." },
+                { phase: '03', title: 'Restitution & Plan Directeur', desc: "Remise du rapport d'étonnement, présentation des écarts et co-construction de la feuille de route priorisée." },
               ].map((p, i) => (
-                <div key={i} style={{ flex: 1, border: '1px solid #e5e7eb', borderRadius: '8px', padding: '20px', borderTop: '3px solid #2d4a3e' }}>
-                  <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '3px', color: '#999', marginBottom: '8px' }}>{p.phase} — {p.desc}</div>
-                  <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#2d4a3e', marginBottom: '8px' }}>{p.title}</div>
-                  <p style={{ margin: 0, fontSize: '12px', color: '#666' }}>{p.detail}</p>
+                <div key={i} style={{ position: 'relative', marginBottom: i === 2 ? 0 : '25px' }}>
+                  <div style={{ position: 'absolute', left: '-40px', top: '0', width: '24px', height: '24px', borderRadius: '50%', backgroundColor: '#2d4a3e', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '10px', fontWeight: 'bold', zIndex: 2, fontFamily: '"Inter", sans-serif' }}>{p.phase}</div>
+                  <div style={{ backgroundColor: '#f9f7f2', padding: '15px 20px', borderRadius: '8px', border: '1px solid #eee' }}>
+                    <h3 style={{ margin: '0 0 5px 0', fontSize: '18px', color: '#2d4a3e' }}>{p.title}</h3>
+                    <p style={{ margin: 0, fontSize: '14px', color: '#666', lineHeight: '1.5' }}>{p.desc}</p>
+                  </div>
                 </div>
               ))}
             </div>
-            <div style={{ background: '#2d4a3e', color: 'white', borderRadius: '12px', padding: '30px', textAlign: 'center' }}>
-              <div style={{ fontSize: '13px', textTransform: 'uppercase', letterSpacing: '4px', color: '#d4c5a9', marginBottom: '16px' }}>Investissement</div>
-              <div style={{ fontSize: '36px', fontWeight: 'bold', color: '#d4c5a9' }}>4 000 € HT</div>
-              <p style={{ margin: '16px 0 0 0', fontSize: '12px', opacity: 0.6 }}>Audit de Robustesse Opérationnelle — 3 phases sur mesure</p>
-            </div>
-          </div>
 
-          {/* Footer */}
-          <div style={{ padding: '20px 50px', borderTop: '1px solid #ddd', fontSize: '10px', color: '#999', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
-            <svg viewBox="0 0 100 87" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '16px', height: '14px', flexShrink: 0 }}>
-              <path d="M50 3L97 84H3L50 3Z" stroke="#bbb" strokeWidth="4" strokeLinecap="square" strokeLinejoin="miter"/>
-              <path d="M50 25L78 74H22L50 25Z" stroke="#bbb" strokeWidth="3" strokeLinecap="square" strokeLinejoin="miter"/>
-              <path d="M50 49L52 55L58 57L52 59L50 65L48 59L42 57L48 55L50 49Z" fill="#bbb" />
-            </svg>
-            <span>Cabinet Delacour — Expertise QHSE &amp; Performance Durable — Document confidentiel</span>
+            <div style={{ backgroundColor: '#2d4a3e', color: 'white', borderRadius: '8px', padding: '30px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
+              {/* Decorative accent */}
+              <div style={{ position: 'absolute', top: 0, right: 0, width: '150px', height: '150px', backgroundColor: 'rgba(212, 197, 169, 0.1)', borderRadius: '50%', transform: 'translate(50%, -50%)' }}></div>
+              
+              <div style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '4px', color: '#d4c5a9', marginBottom: '15px', fontFamily: '"Inter", sans-serif' }}>Investissement Forfaitaire</div>
+              <div style={{ fontSize: '48px', fontWeight: 'bold', color: '#fff', fontFamily: '"Inter", sans-serif' }}>4 000 € <span style={{ fontSize: '20px', fontWeight: 'normal', opacity: 0.8 }}>HT</span></div>
+              <div style={{ width: '40px', height: '2px', backgroundColor: '#d4c5a9', margin: '20px auto' }}></div>
+              <p style={{ margin: 0, fontSize: '14px', opacity: 0.9, fontStyle: 'italic' }}>
+                Retour sur investissement estimé à <strong>
+                {totalPotential > 0 ? `${(() => { const v = 4000 / (totalPotential / 365); return (v - Math.floor(v) <= 0.5) ? Math.floor(v) : Math.ceil(v); })()} jours` : 'N/A'}
+                </strong> grâce à la récupération de l'impôt invisible.
+              </p>
+            </div>
+
+            {/* Footer */}
+            <div style={{ position: 'absolute', bottom: '40px', left: '50px', right: '50px', borderTop: '1px solid #eee', paddingTop: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '10px', color: '#999', fontFamily: '"Inter", sans-serif' }}>
+              <div>Cabinet Delacour — Document Confidentiel</div>
+              <div>Page 5</div>
+            </div>
           </div>
         </div>
       </div>

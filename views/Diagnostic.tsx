@@ -1525,7 +1525,7 @@ const Diagnostic: React.FC<DiagnosticProps> = ({ onNavigate }) => {
             
             <div style={{ textAlign: 'center', zIndex: 10, paddingBottom: '20px' }}>
               <div style={{ fontSize: '14px', letterSpacing: '2px', fontFamily: '"Inter", sans-serif' }}>CABINET DELACOUR</div>
-              <div style={{ fontSize: '10px', opacity: 0.6, marginTop: '5px', letterSpacing: '1px', fontFamily: '"Inter", sans-serif' }}>Expertise QHSE & Performance Durable</div>
+              <div style={{ fontSize: '10px', opacity: 0.6, marginTop: '5px', letterSpacing: '1px', fontFamily: '"Inter", sans-serif' }}>Stratégie et performance QHSE</div>
             </div>
           </div>
 

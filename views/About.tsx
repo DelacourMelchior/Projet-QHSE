@@ -179,8 +179,8 @@ const About: React.FC<AboutProps> = ({ onNavigate }) => {
       </div>
 
       {/* Header Nav / Progress */}
-      <div className="flex-none container mx-auto px-8 pt-8 pb-4 flex justify-between items-center relative z-10">
-        <div className="flex flex-wrap items-center gap-x-8 gap-y-4 max-w-[70%]">
+      <div className="flex-none container mx-auto px-4 lg:px-8 pt-4 lg:pt-8 pb-2 lg:pb-4 flex justify-between items-center relative z-10">
+        <div className="flex flex-wrap items-center gap-x-4 lg:gap-x-8 gap-y-2 lg:gap-y-4 max-w-full lg:max-w-[70%]">
           {steps.map((step, i) => (
             <button
               key={i}
@@ -198,8 +198,8 @@ const About: React.FC<AboutProps> = ({ onNavigate }) => {
       </div>
 
       {/* Main Content Area */}
-      <main className="flex-1 min-h-0 container mx-auto px-8 relative z-10 flex flex-col justify-center py-2">
-        <div className="max-w-6xl w-full mx-auto">
+      <main className="flex-1 min-h-0 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] container mx-auto px-4 lg:px-8 relative z-10 flex flex-col justify-start lg:justify-center py-4 lg:py-2">
+        <div className="max-w-6xl w-full mx-auto my-auto">
           <AnimatePresence mode="wait">
             <motion.div
               key={currentStep}
@@ -227,7 +227,7 @@ const About: React.FC<AboutProps> = ({ onNavigate }) => {
       </main>
 
       {/* Footer Navigation Controls */}
-      <div className="flex-none container mx-auto px-8 pb-8 flex justify-between items-end relative z-10">
+      <div className="flex-none container mx-auto px-4 lg:px-8 pb-4 lg:pb-8 flex justify-between items-end relative z-10">
         <div className="flex gap-4">
           <button 
             disabled={currentStep === 0}

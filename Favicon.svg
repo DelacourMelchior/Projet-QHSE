@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 87" fill="none">
+  <style>
+    path.outer, path.inner {
+      stroke: #152822;
+      transition: stroke 0.3s ease;
+    }
+    path.star {
+      fill: #C5A065;
+    }
+    @media (prefers-color-scheme: dark) {
+      path.outer, path.inner {
+        stroke: #F0EAD6; /* Beige noble pour un contraste parfait sur onglets sombres */
+      }
+    }
+  </style>
+  <path class="outer" d="M50 3L97 84H3L50 3Z" stroke-width="5" stroke-linecap="square" stroke-linejoin="miter"/>
+  <path class="inner" d="M50 25L78 74H22L50 25Z" stroke-width="4" stroke-linecap="square" stroke-linejoin="miter"/>
+  <path class="star" d="M50 49L52 55L58 57L52 59L50 65L48 59L42 57L48 55L50 49Z" />
+</svg>

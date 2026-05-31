@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Page } from '../types';
-import { Info, Quote, TrendingDown, Users, AlertTriangle, Clock, Target, Anchor, TrendingUp, ShieldCheck, Zap, Layout, Check, RotateCcw, Mail, User, Building, FileText, Download, ArrowRight } from 'lucide-react';
+import { Info, Quote, TrendingDown, Users, AlertTriangle, Clock, Target, Anchor, TrendingUp, ShieldCheck, Zap, Layout, Check, RotateCcw, Mail, User, Building, FileText, Download, ArrowRight, Edit2 } from 'lucide-react';
 import html2pdf from 'html2pdf.js';
 import { motion, useSpring, useTransform, AnimatePresence } from 'framer-motion';
 
@@ -112,6 +112,7 @@ const Diagnostic: React.FC<DiagnosticProps> = ({ onNavigate }) => {
   const [averageDisputeAmount, setAverageDisputeAmount] = useState<number>(0);
   const [missedRevenueStruct, setMissedRevenueStruct] = useState<number>(0);
   const [missedRevenueCertif, setMissedRevenueCertif] = useState<number>(0);
+  const [prestationPrice, setPrestationPrice] = useState<number | ''>('');
 
   // Step 10: Le Plan de Sécurisation
   const [auditChecklist, setAuditChecklist] = useState<string[]>([]);
@@ -174,6 +175,7 @@ const Diagnostic: React.FC<DiagnosticProps> = ({ onNavigate }) => {
         if (data.averageDisputeAmount !== undefined) setAverageDisputeAmount(data.averageDisputeAmount);
         if (data.missedRevenueStruct !== undefined) setMissedRevenueStruct(data.missedRevenueStruct);
         if (data.missedRevenueCertif !== undefined) setMissedRevenueCertif(data.missedRevenueCertif);
+        if (data.prestationPrice !== undefined) setPrestationPrice(data.prestationPrice);
         if (data.auditChecklist !== undefined) setAuditChecklist(data.auditChecklist);
         if (data.startDate !== undefined) setStartDate(data.startDate);
         if (data.conditions !== undefined) setConditions(data.conditions);
@@ -192,7 +194,7 @@ const Diagnostic: React.FC<DiagnosticProps> = ({ onNavigate }) => {
       executiveDepartures, executiveRampUpMonths, operationalDepartures, operationalRampUpMonths,
       absenteeismRate, rateAT, rateMaladie, leaderLostHours, excelFilesCount,
       excelComplexity, kpiReviewDate, reworkPercent, creditNotesAmount, yearlyDisputes,
-      averageDisputeAmount, missedRevenueStruct, missedRevenueCertif, auditChecklist,
+      averageDisputeAmount, missedRevenueStruct, missedRevenueCertif, prestationPrice, auditChecklist,
       startDate, conditions
     };
     localStorage.setItem('diagnostic_data', JSON.stringify(data));
@@ -204,7 +206,7 @@ const Diagnostic: React.FC<DiagnosticProps> = ({ onNavigate }) => {
     executiveDepartures, executiveRampUpMonths, operationalDepartures, operationalRampUpMonths,
     absenteeismRate, rateAT, rateMaladie, leaderLostHours, excelFilesCount,
     excelComplexity, kpiReviewDate, reworkPercent, creditNotesAmount, yearlyDisputes,
-    averageDisputeAmount, missedRevenueStruct, missedRevenueCertif, auditChecklist,
+    averageDisputeAmount, missedRevenueStruct, missedRevenueCertif, prestationPrice, auditChecklist,
     startDate, conditions
   ]);
 
@@ -306,6 +308,7 @@ const Diagnostic: React.FC<DiagnosticProps> = ({ onNavigate }) => {
     setAverageDisputeAmount(2500);
     setMissedRevenueStruct(150000);
     setMissedRevenueCertif(300000);
+    setPrestationPrice(4000);
     setStep(12);
   };
 
@@ -1116,16 +1119,32 @@ const Diagnostic: React.FC<DiagnosticProps> = ({ onNavigate }) => {
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-                        <div className="text-center p-6 bg-white/5 rounded-xl border border-white/10">
-                          <span className="block text-xs uppercase tracking-widest text-gray-400 mb-2">Investissement</span>
-                          <span className="text-3xl font-bold text-sb-beige">4 000 € HT</span>
+                        <div className="text-center p-6 bg-white/5 rounded-xl border border-white/10 hover:border-sb-beige/30 transition-all group relative">
+                          <span className="block text-xs uppercase tracking-widest text-gray-400 mb-2 flex items-center justify-center gap-1.5">
+                            Investissement personnalisé
+                            <Edit2 size={12} className="text-gray-500 group-hover:text-sb-beige transition-colors" />
+                          </span>
+                          <div className="inline-flex items-center justify-center">
+                            <input
+                              type="number"
+                              value={prestationPrice}
+                              onChange={(e) => setPrestationPrice(e.target.value === '' ? '' : Math.max(0, Number(e.target.value)))}
+                              className="bg-transparent text-center text-3xl font-bold text-sb-beige font-mono w-36 border-b border-transparent hover:border-sb-beige/30 focus:border-sb-beige focus:outline-none transition-colors p-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:ring-0"
+                              title="Cliquez pour ajuster le prix"
+                              placeholder="0"
+                            />
+                            <span className="text-3xl font-bold text-sb-beige ml-1">€ HT</span>
+                          </div>
+                          <span className="block text-[10px] text-gray-500 mt-2 italic group-hover:text-gray-400 transition-colors">
+                            Cliquez sur le montant pour le modifier
+                          </span>
                         </div>
                         <div className="text-center p-6 bg-white/5 rounded-xl border border-white/10">
                           <span className="block text-xs uppercase tracking-widest text-gray-400 mb-2">Temps de retour sur investissement</span>
                           <span className="text-3xl font-bold text-sb-beige">
-                            {cumulativeValue > 0 
+                            {cumulativeValue > 0 && prestationPrice !== ''
                               ? (() => {
-                                  const val = 4000 / (cumulativeValue / 365);
+                                  const val = Number(prestationPrice) / (cumulativeValue / 365);
                                   return (val - Math.floor(val) <= 0.5) ? Math.floor(val) : Math.ceil(val);
                                 })() 
                               : 0} jours
@@ -1746,11 +1765,11 @@ const Diagnostic: React.FC<DiagnosticProps> = ({ onNavigate }) => {
               <div style={{ position: 'absolute', top: 0, right: 0, width: '150px', height: '150px', backgroundColor: 'rgba(212, 197, 169, 0.1)', borderRadius: '50%', transform: 'translate(50%, -50%)' }}></div>
               
               <div style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '4px', color: '#d4c5a9', marginBottom: '15px', fontFamily: '"Inter", sans-serif' }}>Investissement Forfaitaire</div>
-              <div style={{ fontSize: '48px', fontWeight: 'bold', color: '#fff', fontFamily: '"Inter", sans-serif' }}>4 000 € <span style={{ fontSize: '20px', fontWeight: 'normal', opacity: 0.8 }}>HT</span></div>
+              <div style={{ fontSize: '48px', fontWeight: 'bold', color: '#fff', fontFamily: '"Inter", sans-serif' }}>{(Number(prestationPrice) || 0).toLocaleString('fr-FR')} € <span style={{ fontSize: '20px', fontWeight: 'normal', opacity: 0.8 }}>HT</span></div>
               <div style={{ width: '40px', height: '2px', backgroundColor: '#d4c5a9', margin: '20px auto' }}></div>
               <p style={{ margin: 0, fontSize: '14px', opacity: 0.9, fontStyle: 'italic' }}>
                 Retour sur investissement estimé à <strong>
-                {totalPotential > 0 ? `${(() => { const v = 4000 / (totalPotential / 365); return (v - Math.floor(v) <= 0.5) ? Math.floor(v) : Math.ceil(v); })()} jours` : 'N/A'}
+                {totalPotential > 0 && prestationPrice !== '' ? `${(() => { const v = Number(prestationPrice) / (totalPotential / 365); return (v - Math.floor(v) <= 0.5) ? Math.floor(v) : Math.ceil(v); })()} jours` : 'N/A'}
                 </strong> grâce à la récupération de l'impôt invisible.
               </p>
             </div>

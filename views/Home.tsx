@@ -614,17 +614,20 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
           {/* Bouton Final - Diagnostic */}
           <div className="flex flex-col items-center justify-center mt-20 text-center">
             <p className="text-sb-green-dark font-serif text-lg md:text-xl font-bold uppercase tracking-tight mb-4">
-              Arrêtez de payer vos propres inefficacités.
+              Arrêtez de tolérer ces fuites de rentabilité.
             </p>
             <button
               onClick={() => onNavigate(Page.CONTACT)}
-              className="group relative inline-flex items-center justify-center px-12 py-5 bg-[#C5A065] text-sb-green-dark font-sans font-bold uppercase tracking-math-wide text-xs md:text-sm transition-all duration-300 hover:bg-[#11201B] hover:text-[#C5A065] rounded-[2px] shadow-lg hover:shadow-[0_12px_45px_rgba(197,160,101,0.25)]"
+              className="group relative inline-flex items-center justify-center px-16 py-6 bg-sb-green-dark text-[#C5A065] font-sans font-extrabold uppercase tracking-[0.2em] text-xs transition-all duration-500 overflow-hidden border border-sb-green-dark rounded-[2px] shadow-lg hover:shadow-[0_12px_45px_rgba(197,160,101,0.25)] hover:bg-[#C5A065] hover:text-sb-green-dark hover:-translate-y-1"
             >
-              <span className="relative z-10 flex items-center gap-2">
-                <span>Chiffrer mes pertes réelles (Diagnostic Visio 10 min)</span>
-                <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform duration-300" />
+              <span className="relative z-10 flex items-center gap-3">
+                <span>Chiffrer mes pertes réelles</span>
+                <ArrowRight size={14} className="group-hover:translate-x-1.5 transition-transform duration-500" />
               </span>
             </button>
+            <p className="text-[11px] font-sans font-medium text-sb-green-dark/60 uppercase tracking-widest mt-4">
+              Visioconférence de 30 minutes • 100% offert & sans engagement
+            </p>
           </div>
         </div>
       </section>

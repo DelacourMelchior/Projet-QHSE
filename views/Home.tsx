@@ -625,9 +625,6 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                 <ArrowRight size={14} className="group-hover:translate-x-1.5 transition-transform duration-500" />
               </span>
             </button>
-            <p className="text-[11px] font-sans font-medium text-sb-green-dark/60 uppercase tracking-widest mt-4">
-              Visioconférence de 30 minutes • 100% offert & sans engagement
-            </p>
           </div>
         </div>
       </section>

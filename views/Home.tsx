@@ -389,7 +389,7 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
             className="space-y-8 text-left"
           >
             <p className="text-base md:text-lg text-sb-green-dark/95 leading-relaxed font-sans">
-              Les <strong>grands groupes</strong> ont des services entiers dédiés à la chasse au gaspillage. En tant que dirigeant de PME, vous n'avez <strong>ni ce temps, ni le budget</strong> pour recruter un ingénieur méthodes à temps plein.
+              Les <strong>grands groupes</strong> ont des services entiers dédiés à la chasse au gaspillage. Pour votre PME, nous adaptons ces méthodes pour les implanter de façon <strong>simple, fluide et parfaitement dimensionnée</strong> à la taille et aux besoins de votre structure.
             </p>
             
             <div className="border-l-2 border-[#C5A065] pl-6 my-8 space-y-4">

@@ -261,7 +261,7 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                 className="bg-white border border-sb-green-dark/5 p-5 md:p-6 rounded-[2px] shadow-md flex flex-col justify-start space-y-6 relative group hover:border-[#C5A065]/30 hover:shadow-lg transition-all duration-300 h-full"
               >
                 {/* En-tête (Icone + Titre) */}
-                <div className="flex items-center gap-3 lg:min-h-[64px]">
+                <div className="flex items-center gap-3 md:min-h-[80px]">
                   <div className="p-2 bg-sb-cream text-[#C5A065] rounded-[2px] border border-[#C5A065]/5">
                     <SubIcon size={18} strokeWidth={1.5} />
                   </div>
@@ -271,7 +271,7 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                 </div>
 
                 {/* Le Chiffre de perte marquant */}
-                <div className="text-center py-4 border-y border-sb-green-dark/5 bg-[#F6F4EE]/30 rounded-[2px] lg:min-h-[96px] flex flex-col justify-center">
+                <div className="text-center py-4 border-y border-sb-green-dark/5 bg-[#F6F4EE]/30 rounded-[2px] md:min-h-[96px] flex flex-col justify-center">
                   <p className="text-sb-green-dark font-serif text-3xl font-extrabold tracking-tight">
                     {detail.loss}
                   </p>
@@ -281,7 +281,7 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                 </div>
 
                 {/* Calculateur précis */}
-                <div className="bg-[#F5F2EA]/50 border border-[#E2DCCC]/30 p-4 md:p-4.5 rounded-[2px] lg:min-h-[160px] flex flex-col justify-start">
+                <div className="bg-[#F5F2EA]/50 border border-[#E2DCCC]/30 p-4 md:p-4.5 rounded-[2px] md:min-h-[210px] flex flex-col justify-start">
                   <span className="text-[10px] font-sans font-bold text-sb-green-dark/60 uppercase tracking-widest block mb-1.5">
                     {detail.calculationLabel}
                   </span>
@@ -291,7 +291,7 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                 </div>
 
                 {/* Source scientifique */}
-                <div className="pt-3 border-t border-sb-green-dark/5 flex items-start gap-2 lg:min-h-[120px] mt-auto">
+                <div className="pt-3 border-t border-sb-green-dark/5 flex items-start gap-2 md:min-h-[120px] mt-auto">
                   <BookOpen size={14} className="text-[#C5A065] shrink-0 mt-0.5" />
                   <div>
                     <span className="text-[9px] font-sans font-bold text-[#C5A065] uppercase tracking-wider block">

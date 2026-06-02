@@ -471,7 +471,7 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                 <React.Fragment key={pillar.id}>
                   <motion.div
                     variants={cardVariants}
-                    className={`bg-white border rounded-[2px] shadow-xl p-8 relative flex flex-col justify-start group overflow-hidden transition-all duration-500 hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-[#C5A065]/5 cursor-pointer ${isExpanded
+                    className={`bg-white border rounded-[2px] shadow-xl p-[34px] relative flex flex-col justify-start group overflow-hidden transition-all duration-500 hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-[#C5A065]/5 cursor-pointer ${isExpanded
                         ? 'border-[#C5A065] ring-1 ring-[#C5A065]/20 shadow-2xl shadow-[#C5A065]/5 translate-y-[-6px] opacity-100'
                         : isAnyExpanded
                           ? 'border-sb-green-dark/5 opacity-60 hover:opacity-95'
@@ -481,7 +481,7 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                   >
                     <div className="flex-grow flex flex-col justify-start">
                       {/* En-tête de la carte */}
-                      <div className="flex items-center gap-4 mb-6 lg:min-h-[90px]">
+                      <div className="flex items-center gap-4 mb-[34px] lg:min-h-[90px]">
                         <div className="p-3 bg-sb-cream border border-sb-green-dark/5 rounded-[2px] text-[#C5A065] group-hover:bg-[#11201B]/5 group-hover:text-[#C5A065] transition-colors duration-500">
                           <IconComponent size={24} strokeWidth={1.5} />
                         </div>
@@ -496,32 +496,32 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                       </div>
 
                       {/* Le Choc / La Question */}
-                      <div className="mb-6 lg:min-h-[80px]">
-                        <p className="font-sans text-sm md:text-base font-semibold text-sb-green-dark leading-relaxed">
+                      <div className="mb-[21px] lg:min-h-[89px]">
+                        <p className="font-sans text-sm md:text-base font-semibold text-sb-green-dark leading-[1.618] tracking-wide">
                           {pillar.question}
                         </p>
                       </div>
 
                       {/* Constat / Réalité (Prestigieux Beige sans rouge) */}
-                      <div className="bg-[#F6F4EE]/60 border border-[#E2DCCC]/40 p-4.5 rounded-[2px] mb-6 transition-colors duration-500 group-hover:bg-[#F6F4EE]/90 lg:min-h-[220px] flex flex-col justify-start">
-                        <span className="text-[9px] font-sans font-bold text-[#C5A065] uppercase tracking-widest block mb-1.5">
+                      <div className="bg-[#F6F4EE]/60 border border-[#E2DCCC]/40 p-[21px] rounded-[2px] mb-[34px] transition-colors duration-500 group-hover:bg-[#F6F4EE]/90 lg:min-h-[240px] flex flex-col justify-start">
+                        <span className="text-[9px] font-sans font-bold text-[#C5A065] uppercase tracking-widest block mb-2">
                           La Réalité
                         </span>
-                        <p className="text-xs md:text-sm text-sb-green-dark/85 font-sans leading-relaxed">
+                        <p className="text-xs md:text-sm text-sb-green-dark/85 font-sans leading-[1.618] tracking-wide">
                           {pillar.reality}
                         </p>
                       </div>
 
                       {/* L'Hémorragie */}
-                      <div className="pt-6 border-t border-sb-green-dark/5 lg:min-h-[110px]">
-                        <div className="flex items-start gap-2.5 bg-sb-cream/40 p-4 rounded-[2px] border border-sb-green-dark/[0.02] flex flex-col justify-start">
-                          <div className="flex items-center gap-1.5 mb-1">
+                      <div className="pt-[21px] border-t border-sb-green-dark/5 lg:min-h-[120px]">
+                        <div className="flex items-start gap-2.5 bg-sb-cream/40 p-[21px] rounded-[2px] border border-sb-green-dark/[0.02] flex flex-col justify-start">
+                          <div className="flex items-center gap-1.5 mb-1.5">
                             <TrendingDown size={15} className="text-[#C86B5C] shrink-0" />
                             <span className="text-[9px] font-sans font-bold text-[#C86B5C] uppercase tracking-widest block">
                               L'Hémorragie
                             </span>
                           </div>
-                          <p className="text-xs md:text-sm text-sb-green-dark/95 font-sans font-semibold leading-relaxed">
+                          <p className="text-xs md:text-sm text-sb-green-dark/95 font-sans font-semibold leading-[1.618]">
                             {pillar.hemorragie}
                           </p>
                         </div>
@@ -534,7 +534,7 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                         e.stopPropagation();
                         setExpandedPillar(isExpanded ? null : pillar.id);
                       }}
-                      className="mt-auto w-full flex items-center justify-center gap-2 py-4 bg-transparent border-2 border-[#C5A065]/70 hover:border-[#C5A065] text-sb-green-dark font-sans font-extrabold uppercase tracking-widest text-[11px] rounded-[2px] shadow-sm hover:bg-[#C5A065]/5 transition-all duration-300"
+                      className="mt-[34px] w-full flex items-center justify-center gap-2 py-4 bg-transparent border-2 border-[#C5A065]/70 hover:border-[#C5A065] text-sb-green-dark font-sans font-extrabold uppercase tracking-widest text-[11px] rounded-[2px] shadow-sm hover:bg-[#C5A065]/5 transition-all duration-300"
                     >
                       <span>
                         {isExpanded ? "Masquer l'analyse" : "Révéler l'étude & l'impact (Voir plus)"}

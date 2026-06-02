@@ -2,17 +2,17 @@ import React, { useState } from 'react';
 import { SERVICES } from '../constants';
 import { Page } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  ArrowRight, 
-  Clock, 
-  Flame, 
-  ShieldAlert, 
-  Target, 
-  FileText, 
-  CheckCircle2, 
-  Check, 
-  AlertTriangle, 
-  Zap, 
+import {
+  ArrowRight,
+  Clock,
+  Flame,
+  ShieldAlert,
+  Target,
+  FileText,
+  CheckCircle2,
+  Check,
+  AlertTriangle,
+  Zap,
   TrendingUp,
   TrendingDown,
   Sliders,
@@ -45,32 +45,26 @@ const QUICK_TURNOVERS = [
 const PILLARS_DATA = [
   {
     id: "01",
-    title: "La Standardisation",
-    question: "« Que se passe-t-il si votre meilleur collaborateur est en arrêt demain ? »",
-    subQuestion: "Vos équipes peuvent-elles dérouler la production sans vous poser la moindre question ?",
-    reality: "Non. Le savoir est tribal. Si une personne clé part, le service s'effondre.",
-    solution: "Consiste à formaliser la méthode de référence pour chaque tâche critique. Il suffit d'en fixer la règle pour transférer le savoir-faire de l'individu vers l'entreprise, rendant vos opérations immédiatement autonomes.",
-    gain: "Transforme une charge salariale incertaine en un actif d'entreprise scalable.",
+    title: "L'Autonomie des équipes",
+    question: "« Que se passe-t-il si votre meilleur collaborateur est en arrêt demain matin ? »",
+    reality: "Le savoir est bloqué dans la tête de vos trois meilleurs gars. Si votre chef d'équipe ou votre secrétaire s'absente, tout s'arrête. Vos salariés passent la moitié de la journée à vous chercher pour vous demander où est rangé ce bon ou comment faire cette procédure. Vous passez votre temps à faire le standardiste pour des évidences.",
+    hemorragie: "Vous perdez 25% de temps productif. Sur 10 salariés, c’est comme si vous payiez 2 personnes à temps plein pour brasser du vent.",
     icon: FileText
   },
   {
     id: "02",
-    title: "La Chasse aux erreurs",
+    title: "Le Stop au double travail",
     question: "« Payez-vous vos équipes pour faire, ou pour refaire ? »",
-    subQuestion: "Combien de fois cette semaine avez-vous dû régler un problème qui s'était déjà produit le mois dernier ?",
-    reality: "Le double travail détruit votre marge brute en silence.",
-    solution: "Consiste à traiter chaque anomalie directement à sa source. Il suffit d'automatiser sa résolution définitive pour bloquer sa récurrence, évitant ainsi de payer plusieurs fois le coût d'un travail mal fait.",
-    gain: "Bloque net la fuite de rentabilité et redonne du temps productif.",
+    reality: "Entre un rapport de chantier incomplet, une mauvaise référence saisie sur Excel et une facture qui part avec une erreur, vos équipes passent leur temps à écoper l'eau au lieu de couper le robinet. Des clients râlent, les gars font des allers-retours inutiles, et vous payez des heures de bureau uniquement pour corriger des boulettes.",
+    hemorragie: "15% de votre chiffre d'affaires est consumé par ce SAV interne. Sur 30 salariés, 5 ne bossent que sur les erreurs des autres.",
     icon: Target
   },
   {
     id: "03",
-    title: "Le Pilotage visuel",
+    title: "L'Écran de contrôle",
     question: "« Prenez-vous vos décisions sur des sensations ou sur des faits ? »",
-    subQuestion: "Si je vous demande votre marge nette réelle à cet instant précis, devez-vous demander un rapport à votre équipe ?",
-    reality: "On ne peut pas optimiser ce qu'on ne mesure pas. Le pilotage aux ressentis mène aux urgences.",
-    solution: "Consiste à rendre la performance de l'activité lisible en un coup d'œil. Il suffit d'aligner vos indicateurs clés pour permettre à vos responsables de décider sur des faits réels et d'anticiper les dérives sans réunionite.",
-    gain: "Raccourcit le temps de décision de la direction de 80%.",
+    reality: "Si je vous demande votre marge nette réelle à cet instant précis, vous devez fouiller dans trois tableaux Excel différents, demander un rapport par mail ou caler une réunion de deux heures. Vous pilotez à l'aveugle et vous découvrez votre vraie marge à la fin du mois, quand le comptable vous donne le bilan. Il est déjà trop tard.",
+    hemorragie: "Vous perdez 40% de votre temps de dirigeant dans ce micro-management de crise au lieu de piloter la stratégie.",
     icon: LayoutDashboard
   }
 ];
@@ -237,10 +231,9 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
     if (!pillarData) return null;
 
     return (
-      <div className={`bg-[#F5F2EA]/40 border border-[#E3DCCC]/60 backdrop-blur-md rounded-[2px] relative text-left ${
-        isMobile ? 'p-5 md:p-6' : 'p-6 md:p-10'
-      }`}>
-        
+      <div className={`bg-[#F5F2EA]/40 border border-[#E3DCCC]/60 backdrop-blur-md rounded-[2px] relative text-left ${isMobile ? 'p-5 md:p-6' : 'p-6 md:p-10'
+        }`}>
+
         {/* Entête du Cockpit de Gisement */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-[#E3DCCC]/60 pb-6 mb-8 gap-4">
           <div>
@@ -334,13 +327,13 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
       <section className="relative min-h-screen flex items-center justify-center bg-sb-green-dark overflow-hidden">
         {/* Background sophistiqué */}
         <div className="absolute inset-0 z-0">
-          <img 
-            src="https://image.pollinations.ai/prompt/luxury%20executive%20office%20desk%20dark%20green%20aesthetic%20cinematic%20lighting%20golden%20ratio%20symmetry%20intricate%20details%20photorealistic%208k%20oxford%20green%20wall?nologo=true" 
-            alt="Cabinet Delacour - Conseil de direction" 
+          <img
+            src="https://image.pollinations.ai/prompt/luxury%20executive%20office%20desk%20dark%20green%20aesthetic%20cinematic%20lighting%20golden%20ratio%20symmetry%20intricate%20details%20photorealistic%208k%20oxford%20green%20wall?nologo=true"
+            alt="Cabinet Delacour - Conseil de direction"
             className="w-full h-full object-cover opacity-20 scale-105"
           />
           <div className="absolute inset-0 bg-sb-green-dark/90 mix-blend-multiply"></div>
-          
+
           {/* Lignes fines dorées - Trame architecturale */}
           <div className="absolute inset-0 opacity-15 flex items-center justify-center pointer-events-none">
             <div className="w-[1000px] h-[1000px] border border-[#C5A065]/40 rounded-full absolute animate-[spin_240s_linear_infinite]"></div>
@@ -351,44 +344,44 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
           </div>
           <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-sb-green-dark to-transparent"></div>
         </div>
-        
-        <motion.div 
+
+        <motion.div
           variants={containerVariants}
           initial="hidden"
           animate="visible"
           className="container mx-auto px-6 relative z-10 flex flex-col items-center justify-center text-center pt-36 md:pt-48 pb-24"
         >
           {/* Titre Principal : Raccourci psychologique fort */}
-          <motion.h1 
+          <motion.h1
             variants={cardVariants}
             className="font-serif text-4xl sm:text-5xl md:text-6xl lg:text-7xl text-white leading-[1.1] tracking-math-tight mb-8 uppercase font-normal max-w-5xl"
           >
             Récupérez <span className="text-[#C5A065] relative inline-block">
               15% de votre CA
               <span className="absolute bottom-1 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-[#C5A065]/40 to-transparent"></span>
-            </span><br/>
-            <span className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl block mt-4 text-white/90">
-              en utilisant les méthodes que tous les grands groupes utilisent.
+            </span><br />
+            <span className="text-3xl sm:text-4xl md:text-5xl block mt-4 text-white/90 normal-case">
+              qui s'évapore chaque jour sur le terrain.
             </span>
           </motion.h1>
-          
+
           {/* Subtitle ultra-ciseleur */}
-          <motion.p 
+          <motion.p
             variants={cardVariants}
             className="text-base md:text-lg text-white/90 leading-relaxed max-w-3xl font-medium mb-12 tracking-wide font-sans mx-auto"
           >
-            Ces groupes ont des équipes entières dédiées à l'ingénierie des processus. Puisque vous dirigez une PME et que vous manquez de temps, <strong className="text-[#C5A065]">nous vous proposons d'externaliser cette fonction stratégique</strong>. Nous l'implantons pour vous de manière fluide, indolore, et sans charge de gestion.
+            J'implante les méthodes opérationnelles des grands groupes dans votre PME pour stopper le gaspillage, <strong className="text-[#C5A065]">sans embaucher le moindre salarié supplémentaire</strong>.
           </motion.p>
-          
+
           {/* Unique Bouton de Prise de RDV Strategic d'Exception */}
           <motion.div variants={cardVariants} className="mt-10">
-            <button 
+            <button
               onClick={() => onNavigate(Page.CONTACT)}
               className="group relative inline-flex items-center justify-center px-16 py-6 bg-transparent text-[#C5A065] font-sans font-bold uppercase tracking-[0.2em] text-xs transition-all duration-500 overflow-hidden border border-[#C5A065]/60 rounded-[2px] shadow-lg hover:shadow-[0_12px_45px_rgba(197,160,101,0.25)] hover:border-white hover:text-sb-green-dark hover:-translate-y-1"
             >
               <span className="absolute inset-0 bg-[#C5A065] transform translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-[0.16,1,0.3,1] z-0"></span>
               <span className="relative z-10 flex items-center gap-3">
-                <span>Prendre rendez-vous</span>
+                <span>Chiffrer ce que je peux récupérer</span>
                 <ArrowRight size={14} className="group-hover:translate-x-1.5 transition-transform duration-500" />
               </span>
             </button>
@@ -396,10 +389,66 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
         </motion.div>
       </section>
 
+      {/* SECTION INTRO - POUR LE PATRON PRESSÉ */}
+      <section className="bg-white py-20 border-b border-sb-green-dark/5 relative">
+        <div className="container mx-auto px-6 max-w-4xl">
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-40px" }}
+            transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+            className="space-y-8 text-left"
+          >
+            <p className="text-base md:text-lg text-sb-green-dark/95 leading-relaxed font-sans">
+              Les <strong>grands groupes</strong> ont des services entiers dédiés à la chasse au gaspillage. En tant que dirigeant de PME, vous n'avez <strong>ni ce temps, ni le budget</strong> pour embaucher trois ingénieurs sur plusieurs années.
+            </p>
+            
+            <div className="border-l-2 border-[#C5A065] pl-6 my-8 space-y-4">
+              <h3 className="font-serif text-lg md:text-xl font-bold text-sb-green-dark uppercase tracking-tight">
+                Notre métier, c'est de régler les <span className="text-[#C5A065]">micro-problèmes du quotidien</span> qui vous coûtent une fortune en silence :
+              </h3>
+              
+              <ul className="space-y-4 mt-6">
+                <li className="flex items-start gap-4 text-sm md:text-base text-sb-green-dark/90 font-sans leading-relaxed">
+                  <div className="p-1 bg-[#F5F2EA] text-[#C5A065] rounded-[2px] mt-1 flex-shrink-0">
+                    <ShieldAlert size={16} strokeWidth={1.5} />
+                  </div>
+                  <span>Les <strong>fiches d'intervention papier</strong> que vos équipes doivent ressaisir manuellement sur ordinateur.</span>
+                </li>
+                <li className="flex items-start gap-4 text-sm md:text-base text-sb-green-dark/90 font-sans leading-relaxed">
+                  <div className="p-1 bg-[#F5F2EA] text-[#C5A065] rounded-[2px] mt-1 flex-shrink-0">
+                    <ShieldAlert size={16} strokeWidth={1.5} />
+                  </div>
+                  <span>Les <strong>erreurs de préparation ou de livraison</strong> qui vous obligent à refaire le travail deux fois à vos frais.</span>
+                </li>
+                <li className="flex items-start gap-4 text-sm md:text-base text-sb-green-dark/90 font-sans leading-relaxed">
+                  <div className="p-1 bg-[#F5F2EA] text-[#C5A065] rounded-[2px] mt-1 flex-shrink-0">
+                    <ShieldAlert size={16} strokeWidth={1.5} />
+                  </div>
+                  <span>Le <strong>savoir-faire critique</strong> stocké uniquement dans la tête de vos collaborateurs historiques et qui disparaît avec eux.</span>
+                </li>
+              </ul>
+            </div>
+
+            <div className="space-y-6 pt-4 text-base md:text-lg text-sb-green-dark/95 leading-relaxed font-sans">
+              <p>
+                Vous bénéficiez de la puissance de ces méthodes, <strong>sans la charge salariale</strong>. J'interviens directement dans votre structure pour implanter ces systèmes en une seule fois.
+              </p>
+              
+              <div className="bg-[#F5F2EA] border-l-4 border-[#C5A065] p-5 rounded-[2px] mt-6 shadow-sm">
+                <p className="font-serif text-lg md:text-xl text-sb-green-dark font-semibold leading-relaxed">
+                  « Une bascule <span className="text-[#C5A065]">fluide, indolore</span>, et sans aucune charge de gestion pour vous. »
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
       {/* SECTION 2 : L'AUTO-DIAGNOSTIC DU DIRIGEANT */}
       <section className="bg-sb-cream py-20 md:py-fib-144 border-b border-sb-green-dark/5 relative">
         <div className="container mx-auto px-6">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 15 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-40px" }}
@@ -407,18 +456,18 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
             className="text-center max-w-4xl mx-auto mb-[89px]"
           >
             <span className="text-[#C5A065] font-sans font-bold text-[10px] md:text-xs uppercase tracking-math-wide block mb-3">
-              Diagnostic Opérationnel
+              Diagnostic de Terrain
             </span>
             <h2 className="font-serif text-2xl sm:text-3xl lg:text-[40px] xl:text-[42px] font-bold text-sb-green-dark uppercase leading-tight tracking-math-tight mb-6">
-              Chef d'Entreprise ou Pompier ?
+              Sur le terrain, où s'évapore votre rentabilité ?
             </h2>
             <div className="w-20 h-px bg-sb-green-dark/20 mx-auto mb-8"></div>
-            <p className="text-base md:text-body text-sb-green-dark/80 font-normal leading-loose font-sans max-w-3xl mx-auto">
-              Chaque heure passée à résoudre un incident "urgent" est une heure volée à l'architecture de votre croissance. Posez-vous ces trois questions pour évaluer la vulnérabilité de votre structure.
+            <p className="text-base md:text-lg text-sb-green-dark/80 font-medium leading-relaxed font-sans max-w-3xl mx-auto">
+              Posez-vous ces 3 questions simples sur votre quotidien :
             </p>
           </motion.div>
 
-          <motion.div 
+          <motion.div
             variants={containerVariants}
             initial="hidden"
             whileInView="visible"
@@ -433,67 +482,58 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                 <React.Fragment key={pillar.id}>
                   <motion.div
                     variants={cardVariants}
-                    className={`bg-white border rounded-[2px] shadow-xl p-8 relative flex flex-col justify-between group overflow-hidden transition-all duration-500 hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-[#C5A065]/5 cursor-pointer ${
-                      isExpanded 
-                        ? 'border-[#C5A065] ring-1 ring-[#C5A065]/20 shadow-2xl shadow-[#C5A065]/5 translate-y-[-6px] opacity-100' 
-                        : isAnyExpanded 
-                          ? 'border-sb-green-dark/5 opacity-60 hover:opacity-95' 
+                    className={`bg-white border rounded-[2px] shadow-xl p-8 relative flex flex-col justify-start group overflow-hidden transition-all duration-500 hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-[#C5A065]/5 cursor-pointer ${isExpanded
+                        ? 'border-[#C5A065] ring-1 ring-[#C5A065]/20 shadow-2xl shadow-[#C5A065]/5 translate-y-[-6px] opacity-100'
+                        : isAnyExpanded
+                          ? 'border-sb-green-dark/5 opacity-60 hover:opacity-95'
                           : 'border-sb-green-dark/5 opacity-100'
-                    }`}
+                      }`}
                     onClick={() => setExpandedPillar(isExpanded ? null : pillar.id)}
                   >
-                    {/* Filigrane numéro éditorial */}
-                    <span className="font-serif text-7xl font-bold text-sb-green-dark/[0.04] select-none absolute top-6 right-6 transition-all duration-500 group-hover:text-[#C5A065]/10">
-                      {pillar.id}
-                    </span>
-
-                    <div>
+                    <div className="flex-grow flex flex-col justify-start">
                       {/* En-tête de la carte */}
-                      <div className="flex items-center gap-4 mb-6">
+                      <div className="flex items-center gap-4 mb-6 lg:min-h-[90px]">
                         <div className="p-3 bg-sb-cream border border-sb-green-dark/5 rounded-[2px] text-[#C5A065] group-hover:bg-[#11201B]/5 group-hover:text-[#C5A065] transition-colors duration-500">
                           <IconComponent size={24} strokeWidth={1.5} />
                         </div>
                         <div>
-                          <span className="text-[10px] font-sans font-bold text-[#C5A065] uppercase tracking-widest block">
+                          <span className="text-xs md:text-sm font-sans font-bold text-[#C5A065] uppercase tracking-[0.2em] block mb-1">
                             Pilier {pillar.id}
                           </span>
-                          <h3 className="font-serif text-lg font-bold text-sb-green-dark uppercase tracking-tight">
+                          <h3 className="font-serif text-xl md:text-2xl font-bold text-sb-green-dark uppercase tracking-tight leading-snug">
                             {pillar.title}
                           </h3>
                         </div>
                       </div>
 
                       {/* Le Choc / La Question */}
-                      <div className="mb-6 lg:min-h-[155px]">
-                        <p className="font-serif text-md font-bold text-sb-green-dark leading-snug italic mb-2">
+                      <div className="mb-6 lg:min-h-[80px]">
+                        <p className="font-sans text-sm md:text-base font-semibold text-sb-green-dark leading-relaxed">
                           {pillar.question}
-                        </p>
-                        <p className="font-sans text-sm text-sb-green-dark/80 mt-1.5">
-                          {pillar.subQuestion}
                         </p>
                       </div>
 
                       {/* Constat / Réalité (Prestigieux Beige sans rouge) */}
-                      <div className="bg-[#F6F4EE]/60 border border-[#E2DCCC]/40 p-4.5 rounded-[2px] mb-6 transition-colors duration-500 group-hover:bg-[#F6F4EE]/90 lg:min-h-[115px]">
-                        <span className="text-[9px] font-sans font-bold text-[#C5A065] uppercase tracking-widest block mb-1">
+                      <div className="bg-[#F6F4EE]/60 border border-[#E2DCCC]/40 p-4.5 rounded-[2px] mb-6 transition-colors duration-500 group-hover:bg-[#F6F4EE]/90 lg:min-h-[220px] flex flex-col justify-start">
+                        <span className="text-[9px] font-sans font-bold text-[#C5A065] uppercase tracking-widest block mb-1.5">
                           La Réalité
                         </span>
-                        <p className="text-xs text-sb-green-dark/85 font-sans font-medium leading-relaxed">
+                        <p className="text-xs md:text-sm text-sb-green-dark/85 font-sans leading-relaxed">
                           {pillar.reality}
                         </p>
                       </div>
-                    </div>
 
-                    {/* La Clé / Méthode et le Gain */}
-                    <div className="mt-4 pt-6 border-t border-sb-green-dark/5 flex flex-col justify-between h-full">
-                      <div>
-                        <p className="text-xs text-sb-green-dark/75 font-sans leading-relaxed mb-6 lg:min-h-[125px]">
-                          {pillar.solution}
-                        </p>
-                        <div className="flex items-start gap-2.5 bg-sb-cream/40 p-3 rounded-[2px] border border-sb-green-dark/[0.02] lg:min-h-[65px]">
-                          <TrendingUp size={15} className="text-[#C5A065] shrink-0 mt-0.5" />
-                          <p className="text-[11px] text-sb-green-dark/90 font-sans font-semibold leading-normal">
-                            {pillar.gain}
+                      {/* L'Hémorragie */}
+                      <div className="pt-6 border-t border-sb-green-dark/5 lg:min-h-[110px]">
+                        <div className="flex items-start gap-2.5 bg-sb-cream/40 p-4 rounded-[2px] border border-sb-green-dark/[0.02] flex flex-col justify-start">
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <TrendingDown size={15} className="text-[#C86B5C] shrink-0" />
+                            <span className="text-[9px] font-sans font-bold text-[#C86B5C] uppercase tracking-widest block">
+                              L'Hémorragie
+                            </span>
+                          </div>
+                          <p className="text-xs md:text-sm text-sb-green-dark/95 font-sans font-semibold leading-relaxed">
+                            {pillar.hemorragie}
                           </p>
                         </div>
                       </div>
@@ -505,14 +545,14 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                         e.stopPropagation();
                         setExpandedPillar(isExpanded ? null : pillar.id);
                       }}
-                      className="mt-6 w-full flex items-center justify-center gap-2 py-4 bg-transparent border-2 border-[#C5A065]/70 hover:border-[#C5A065] text-sb-green-dark font-sans font-extrabold uppercase tracking-widest text-[11px] rounded-[2px] shadow-sm hover:bg-[#C5A065]/5 transition-all duration-300"
+                      className="mt-auto w-full flex items-center justify-center gap-2 py-4 bg-transparent border-2 border-[#C5A065]/70 hover:border-[#C5A065] text-sb-green-dark font-sans font-extrabold uppercase tracking-widest text-[11px] rounded-[2px] shadow-sm hover:bg-[#C5A065]/5 transition-all duration-300"
                     >
                       <span>
                         {isExpanded ? "Masquer l'analyse" : "Révéler l'étude & l'impact (Voir plus)"}
                       </span>
-                      <ChevronDown 
-                        size={14} 
-                        className={`text-[#C5A065] transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} 
+                      <ChevronDown
+                        size={14}
+                        className={`text-[#C5A065] transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}
                       />
                     </button>
                   </motion.div>
@@ -522,18 +562,18 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                     {isExpanded && (
                       <motion.div
                         initial={{ opacity: 0, height: 0, marginTop: 0 }}
-                        animate={{ 
-                          opacity: 1, 
-                          height: "auto", 
+                        animate={{
+                          opacity: 1,
+                          height: "auto",
                           marginTop: 20,
                           transition: {
                             height: { duration: 0.35, ease: "easeOut" },
                             opacity: { duration: 0.22, delay: 0.08 }
                           }
                         }}
-                        exit={{ 
-                          opacity: 0, 
-                          height: 0, 
+                        exit={{
+                          opacity: 0,
+                          height: 0,
                           marginTop: 0,
                           transition: {
                             opacity: { duration: 0.15 },
@@ -557,18 +597,18 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
               <motion.div
                 key={expandedPillar}
                 initial={{ opacity: 0, height: 0, marginTop: 0 }}
-                animate={{ 
-                  opacity: 1, 
-                  height: "auto", 
+                animate={{
+                  opacity: 1,
+                  height: "auto",
                   marginTop: 55, // Golden Ratio spacing
                   transition: {
                     height: { duration: 0.75, ease: "easeOut" },
                     opacity: { duration: 0.45, delay: 0.15 }
                   }
                 }}
-                exit={{ 
-                  opacity: 0, 
-                  height: 0, 
+                exit={{
+                  opacity: 0,
+                  height: 0,
                   marginTop: 0,
                   transition: {
                     opacity: { duration: 0.3 },
@@ -581,6 +621,22 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* Bouton Final - Diagnostic */}
+          <div className="flex flex-col items-center justify-center mt-20 text-center">
+            <p className="text-sb-green-dark font-serif text-lg md:text-xl font-bold uppercase tracking-tight mb-4">
+              Arrêtez de payer vos propres inefficacités.
+            </p>
+            <button
+              onClick={() => onNavigate(Page.CONTACT)}
+              className="group relative inline-flex items-center justify-center px-12 py-5 bg-[#C5A065] text-sb-green-dark font-sans font-bold uppercase tracking-math-wide text-xs md:text-sm transition-all duration-300 hover:bg-[#11201B] hover:text-[#C5A065] rounded-[2px] shadow-lg hover:shadow-[0_12px_45px_rgba(197,160,101,0.25)]"
+            >
+              <span className="relative z-10 flex items-center gap-2">
+                <span>Chiffrer mes pertes réelles (Diagnostic Visio 10 min)</span>
+                <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform duration-300" />
+              </span>
+            </button>
+          </div>
         </div>
       </section>
 
@@ -608,7 +664,7 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                 <span className="text-[#C5A065]">CHIFFREZ LE COÛT DE L'INACTION</span>
               </h2>
               <div className="w-16 h-0.5 bg-[#C5A065] my-6"></div>
-              
+
               <div className="space-y-6 text-white/80 font-sans text-sm md:text-base leading-relaxed">
                 <p>
                   Chaque jour d'attentisme opérationnel est une taxe directe sur votre EBITDA. L’absence de standards et de processus formalisés ne se traduit pas seulement par une surcharge mentale et des urgences quotidiennes. <strong className="text-white font-semibold">Elle constitue une fuite financière constante et mesurable.</strong>
@@ -628,7 +684,7 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
               <div className="absolute -top-3.5 right-8 px-4 py-1.5 bg-gradient-to-r from-[#C86B5C] to-[#b35647] text-white font-sans font-bold text-[9px] uppercase tracking-[0.25em] rounded-full shadow-lg shadow-[#C86B5C]/20 border border-white/10">
                 Gisement de Marge Brute Captive
               </div>
-              
+
               <div className="space-y-8 text-left">
                 {/* CA Slider */}
                 <div>
@@ -640,21 +696,21 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                       {formatCurrency(turnover)}
                     </span>
                   </div>
-                  
+
                   {/* Slider au style minimaliste épuré avec piste bicolore dynamique */}
-                  <input 
-                    type="range" 
-                    min={500000} 
-                    max={20000000} 
+                  <input
+                    type="range"
+                    min={500000}
+                    max={20000000}
                     step={250000}
-                    value={turnover} 
-                    onChange={(e) => setTurnover(Number(e.target.value))} 
+                    value={turnover}
+                    onChange={(e) => setTurnover(Number(e.target.value))}
                     className="w-full h-1.5 rounded-full appearance-none cursor-pointer accent-[#C5A065] focus:outline-none transition-all"
                     style={{
                       background: `linear-gradient(to right, #C5A065 0%, #C5A065 ${((turnover - 500000) / (20000000 - 500000)) * 100}%, #182B27 ${((turnover - 500000) / (20000000 - 500000)) * 100}%, #182B27 100%)`
                     }}
                   />
-                  
+
                   {/* Graduation de repères Chiffres d'Affaires */}
                   <div className="flex justify-between items-center text-[9px] font-mono text-white/30 px-1 mt-2.5 select-none">
                     <span>500 k€</span>
@@ -663,18 +719,17 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                     <span>15 M€</span>
                     <span>20 M€</span>
                   </div>
-                  
+
                   {/* Boutons de CA préconfigurés */}
                   <div className="flex flex-wrap gap-2 mt-5">
                     {QUICK_TURNOVERS.map((item) => (
                       <button
                         key={item.value}
                         onClick={() => setTurnover(item.value)}
-                        className={`px-3 py-1.5 text-[10px] font-sans font-bold uppercase tracking-wider transition-all duration-300 rounded-[2px] border ${
-                          turnover === item.value 
-                            ? 'bg-[#C5A065] text-[#0A1412] border-[#C5A065] shadow-[0_0_15px_rgba(197,160,101,0.35)] font-extrabold' 
+                        className={`px-3 py-1.5 text-[10px] font-sans font-bold uppercase tracking-wider transition-all duration-300 rounded-[2px] border ${turnover === item.value
+                            ? 'bg-[#C5A065] text-[#0A1412] border-[#C5A065] shadow-[0_0_15px_rgba(197,160,101,0.35)] font-extrabold'
                             : 'bg-white/[0.02] text-white/50 hover:text-white border-white/[0.06] hover:border-white/20 hover:bg-white/[0.04]'
-                        }`}
+                          }`}
                       >
                         {item.label}
                       </button>
@@ -700,7 +755,7 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                       {formatCurrency(annualLeak)}
                     </p>
                   </div>
-                  
+
                   {/* Dérive Mensuelle */}
                   <div className="bg-black/30 p-5 md:p-6 border border-white/5 rounded-[2px] hover:border-[#C86B5C]/35 hover:bg-[#182926]/40 transition-all duration-500 flex flex-col justify-between text-left group shadow-lg hover:shadow-black/20">
                     <div>
@@ -744,25 +799,25 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                       Fuite de Rentabilité (15%)
                     </span>
                   </div>
-                  
+
                   {/* Barre de progression haut de gamme avec effet glossy */}
                   <div className="w-full h-3 bg-[#0B1513] rounded-full overflow-hidden flex p-0.5 border border-white/[0.06] shadow-inner">
-                    <motion.div 
-                      className="h-full bg-gradient-to-r from-[#C5A065]/60 to-[#C5A065] rounded-full origin-left shadow-inner" 
+                    <motion.div
+                      className="h-full bg-gradient-to-r from-[#C5A065]/60 to-[#C5A065] rounded-full origin-left shadow-inner"
                       initial={{ width: '0%' }}
                       whileInView={{ width: '85%' }}
                       viewport={{ once: true, margin: "-50px" }}
                       transition={{ duration: 4.5, ease: "easeOut" }}
                     ></motion.div>
-                    <motion.div 
-                      className="h-full bg-[#C86B5C] rounded-full ml-1 origin-left shadow-[0_0_8px_rgba(200,107,92,0.4)]" 
+                    <motion.div
+                      className="h-full bg-[#C86B5C] rounded-full ml-1 origin-left shadow-[0_0_8px_rgba(200,107,92,0.4)]"
                       initial={{ width: '0%' }}
                       whileInView={{ width: '15%' }}
                       viewport={{ once: true, margin: "-50px" }}
                       transition={{ duration: 3.0, ease: "easeOut", delay: 2.4 }}
                     ></motion.div>
                   </div>
-                  
+
                   {/* Texte final - Proposition 1 avec grossissement */}
                   <p className="text-xs md:text-sm text-white/70 text-center mt-6 font-sans leading-relaxed max-w-xl mx-auto italic border-t border-white/5 pt-4">
                     « Ce capital n'est pas perdu : il est simplement captif de vos processus actuels. Rétablir des standards rigoureux suffit à réinjecter ces sommes directement dans votre trésorerie. »
@@ -771,7 +826,7 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
 
                 {/* Main CTA */}
                 <div className="text-center pt-2">
-                  <button 
+                  <button
                     onClick={() => onNavigate(Page.CONTACT)}
                     className="group relative w-full flex items-center justify-center px-8 py-5.5 bg-transparent text-[#C5A065] font-sans font-extrabold uppercase tracking-[0.25em] text-xs transition-all duration-500 overflow-hidden border border-[#C5A065] rounded-[2px] hover:text-[#0A1412] hover:-translate-y-0.5 shadow-lg hover:shadow-[0_12px_45px_rgba(197,160,101,0.25)]"
                   >
@@ -805,15 +860,15 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                 Nos interventions pour sécuriser votre valeur
               </p>
             </div>
-            
-            <button 
-              onClick={() => onNavigate(Page.SERVICES)} 
+
+            <button
+              onClick={() => onNavigate(Page.SERVICES)}
               className="hidden md:flex items-center text-sb-green-dark font-sans font-bold uppercase tracking-math-wide text-xs hover:text-[#C5A065] transition-colors pb-2 border-b border-sb-green-dark/20 hover:border-[#C5A065] group"
             >
               Voir le catalogue complet <ArrowRight size={16} className="ml-2 group-hover:translate-x-1 transition-transform" />
             </button>
           </div>
-        
+
           <div className="grid grid-cols-1 gap-12 max-w-6xl mx-auto">
             {SERVICES.map((service) => (
               <div key={service.id} className="bg-white border border-sb-green-dark/10 rounded-[2px] overflow-hidden group hover:border-[#C5A065]/40 hover:shadow-xl transition-all duration-300">
@@ -831,9 +886,9 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                         "{service.description}"
                       </p>
                     </div>
-                    
+
                     <div className="mt-8">
-                      <button 
+                      <button
                         onClick={() => service.link && onNavigate(service.link)}
                         className="w-full bg-sb-green-dark text-sb-beige font-sans font-bold uppercase tracking-math-wide text-[10px] md:text-xs px-6 py-4 rounded-[2px] hover:bg-black transition-colors flex items-center justify-center group/btn"
                       >
@@ -858,7 +913,7 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                           ))}
                         </ul>
                       </div>
-                      
+
                       <div>
                         <h5 className="flex items-center gap-2 text-sb-green-dark font-sans font-bold uppercase tracking-math-wide text-[10px] mb-6 pb-2 border-b border-sb-green-dark/10">
                           <FileText size={16} className="text-[#C5A065]" /> LIVRABLES DE TRANSFORMATION
@@ -964,7 +1019,7 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
 
           {/* Bouton central d'action */}
           <div className="flex flex-col items-center justify-center mt-12">
-            <button 
+            <button
               onClick={() => onNavigate(Page.CONTACT)}
               className="group relative inline-flex items-center justify-center px-12 py-6 bg-[#C5A065] text-sb-green-dark font-sans font-bold uppercase tracking-math-wide text-xs md:text-sm transition-all duration-300 hover:bg-white rounded-[2px]"
             >

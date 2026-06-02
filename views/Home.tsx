@@ -47,7 +47,7 @@ const PILLARS_DATA = [
     id: "01",
     title: "L'Autonomie des équipes",
     question: "« Que se passe-t-il si votre meilleur collaborateur est en arrêt demain matin ? »",
-    reality: "Le savoir est bloqué dans la tête de vos trois meilleurs gars. Si votre chef d'équipe ou votre secrétaire s'absente, tout s'arrête. Vos salariés passent la moitié de la journée à vous chercher pour vous demander où est rangé ce bon ou comment faire cette procédure. Vous passez votre temps à faire le standardiste pour des évidences.",
+    reality: "Le savoir est bloqué dans la tête de vos trois meilleurs gars. Si votre chef d'équipe ou votre secrétaire s'absente, tout s'arrête.\n\nVos salariés passent la moitié de la journée à vous chercher pour vous demander où est rangé ce bon ou comment faire cette procédure. Vous passez votre temps à faire le standardiste pour des évidences.",
     hemorragie: "Vous perdez 25% de temps productif. Sur 10 salariés, c’est comme si vous payiez 2 personnes à temps plein pour brasser du vent.",
     icon: FileText
   },
@@ -55,7 +55,7 @@ const PILLARS_DATA = [
     id: "02",
     title: "Le Stop au double travail",
     question: "« Payez-vous vos équipes pour faire, ou pour refaire ? »",
-    reality: "Entre un rapport de chantier incomplet, une mauvaise référence saisie sur Excel et une facture qui part avec une erreur, vos équipes passent leur temps à écoper l'eau au lieu de couper le robinet. Des clients râlent, les gars font des allers-retours inutiles, et vous payez des heures de bureau uniquement pour corriger des boulettes.",
+    reality: "Entre un rapport de chantier incomplet, une mauvaise référence saisie sur Excel et une facture qui part avec une erreur, vos équipes passent leur temps à écoper l'eau au lieu de couper le robinet.\n\nDes clients râlent, les gars font des allers-retours inutiles, et vous payez des heures de bureau uniquement pour corriger des boulettes.",
     hemorragie: "15% de votre chiffre d'affaires est consumé par ce SAV interne. Sur 30 salariés, 5 ne bossent que sur les erreurs des autres.",
     icon: Target
   },
@@ -63,7 +63,7 @@ const PILLARS_DATA = [
     id: "03",
     title: "L'Écran de contrôle",
     question: "« Prenez-vous vos décisions sur des sensations ou sur des faits ? »",
-    reality: "Si je vous demande votre marge nette réelle à cet instant précis, vous devez fouiller dans trois tableaux Excel différents, demander un rapport par mail ou caler une réunion de deux heures. Vous pilotez à l'aveugle et vous découvrez votre vraie marge à la fin du mois, quand le comptable vous donne le bilan. Il est déjà trop tard.",
+    reality: "Si je vous demande votre marge nette réelle à cet instant précis, vous devez fouiller dans trois tableaux Excel différents, demander un rapport par mail ou caler une réunion de deux heures.\n\nVous pilotez à l'aveugle et vous découvrez votre vraie marge à la fin du mois, quand le comptable vous donne le bilan. Il est déjà trop tard.",
     hemorragie: "Vous perdez 40% de votre temps de dirigeant dans ce micro-management de crise au lieu de piloter la stratégie.",
     icon: LayoutDashboard
   }
@@ -503,11 +503,11 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                       </div>
 
                       {/* Constat / Réalité (Prestigieux Beige sans rouge) */}
-                      <div className="bg-[#F6F4EE]/60 border border-[#E2DCCC]/40 p-[21px] rounded-[2px] mb-[34px] transition-colors duration-500 group-hover:bg-[#F6F4EE]/90 lg:min-h-[240px] flex flex-col justify-start">
+                      <div className="bg-[#F6F4EE]/60 border border-[#E2DCCC]/40 p-[21px] rounded-[2px] mb-[34px] transition-colors duration-500 group-hover:bg-[#F6F4EE]/90 lg:min-h-[270px] flex flex-col justify-start">
                         <span className="text-[9px] font-sans font-bold text-[#C5A065] uppercase tracking-widest block mb-2">
                           La Réalité
                         </span>
-                        <p className="text-xs md:text-sm text-sb-green-dark/85 font-sans leading-[1.618] tracking-wide">
+                        <p className="text-xs md:text-sm text-sb-green-dark/85 font-sans leading-[1.618] tracking-wide whitespace-pre-line">
                           {pillar.reality}
                         </p>
                       </div>

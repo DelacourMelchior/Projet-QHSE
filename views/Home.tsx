@@ -746,7 +746,7 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                         {formatCurrency(monthlyLeak)}
                       </p>
                     </div>
-                    <span className="block text-xs md:text-sm text-white/60 font-semibold mt-3 font-sans">
+                    <span className="block text-xs md:text-sm text-[#C86B5C] font-semibold mt-3 font-sans">
                       (Par mois d'inaction)
                     </span>
                   </div>
@@ -773,7 +773,7 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                 {/* Graphique de répartition visuelle */}
                 <div className="bg-[#142320]/50 p-6 border border-white/[0.05] rounded-[2px] text-left">
                   <div className="flex justify-between text-[10px] md:text-xs text-white/60 mb-3 font-sans font-bold tracking-wide">
-                    <span>Performance Opérationnelle Actuelle <strong className="text-white">(85%)</strong></span>
+                    <span>Performance Opérationnelle Actuelle <strong className="text-[#C5A065]">(85%)</strong></span>
                     <span className="text-[#C86B5C] flex items-center gap-1.5 font-bold">
                       <span className="w-1.5 h-1.5 rounded-full bg-[#C86B5C] animate-pulse"></span>
                       Fuite de Rentabilité (15%)

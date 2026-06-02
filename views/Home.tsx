@@ -258,59 +258,48 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                 key={idx}
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0, transition: { delay: idx * 0.05, duration: 0.4 } }}
-                className="bg-white border border-sb-green-dark/5 p-5 md:p-6 rounded-[2px] shadow-md flex flex-col space-y-6 relative group hover:border-[#C5A065]/30 hover:shadow-lg transition-all duration-300"
+                className="bg-white border border-sb-green-dark/5 p-5 md:p-6 rounded-[2px] shadow-md flex flex-col justify-start space-y-6 relative group hover:border-[#C5A065]/30 hover:shadow-lg transition-all duration-300 h-full"
               >
-                {/* Section du Haut (Titre + Récit) */}
-                <div className="md:min-h-[440px]">
-                  {/* Icone et Titre */}
-                  <div className="flex items-center gap-3 mb-4 md:min-h-[64px]">
-                    <div className="p-2 bg-sb-cream text-[#C5A065] rounded-[2px] border border-[#C5A065]/5">
-                      <SubIcon size={18} strokeWidth={1.5} />
-                    </div>
-                    <h5 className="font-serif text-sm font-bold text-sb-green-dark uppercase tracking-tight leading-snug">
-                      {detail.title}
-                    </h5>
+                {/* En-tête (Icone + Titre) */}
+                <div className="flex items-center gap-3 lg:min-h-[64px]">
+                  <div className="p-2 bg-sb-cream text-[#C5A065] rounded-[2px] border border-[#C5A065]/5">
+                    <SubIcon size={18} strokeWidth={1.5} />
                   </div>
+                  <h5 className="font-serif text-sm font-bold text-sb-green-dark uppercase tracking-tight leading-snug">
+                    {detail.title}
+                  </h5>
+                </div>
 
-                  {/* Récit explicatif */}
-                  <p className="text-sm text-sb-green-dark/80 font-sans leading-relaxed mb-6 text-left md:min-h-[355px]">
-                    {detail.description}
+                {/* Le Chiffre de perte marquant */}
+                <div className="text-center py-4 border-y border-sb-green-dark/5 bg-[#F6F4EE]/30 rounded-[2px] lg:min-h-[96px] flex flex-col justify-center">
+                  <p className="text-sb-green-dark font-serif text-3xl font-extrabold tracking-tight">
+                    {detail.loss}
+                  </p>
+                  <p className="text-[10px] text-[#C5A065] font-sans font-bold uppercase tracking-wider mt-0.5">
+                    {detail.lossLabel}
                   </p>
                 </div>
 
-                {/* Section du Bas (Pertes + Calculs + Méthodologies) */}
-                <div className="md:min-h-[520px] flex flex-col space-y-4">
-                  {/* Le Chiffre de perte marquant */}
-                  <div className="text-center py-4 border-y border-sb-green-dark/5 bg-[#F6F4EE]/30 rounded-[2px] md:min-h-[96px] flex flex-col justify-center">
-                    <p className="text-sb-green-dark font-serif text-3xl font-extrabold tracking-tight">
-                      {detail.loss}
-                    </p>
-                    <p className="text-[10px] text-[#C5A065] font-sans font-bold uppercase tracking-wider mt-0.5">
-                      {detail.lossLabel}
-                    </p>
-                  </div>
+                {/* Calculateur précis */}
+                <div className="bg-[#F5F2EA]/50 border border-[#E2DCCC]/30 p-4 md:p-4.5 rounded-[2px] lg:min-h-[160px] flex flex-col justify-start">
+                  <span className="text-[10px] font-sans font-bold text-sb-green-dark/60 uppercase tracking-widest block mb-1.5">
+                    {detail.calculationLabel}
+                  </span>
+                  <p className="text-xs md:text-sm text-sb-green-dark/95 font-sans leading-relaxed">
+                    {detail.calculationDetails}
+                  </p>
+                </div>
 
-                  {/* Calculateur précis */}
-                  <div className="bg-[#F5F2EA]/50 border border-[#E2DCCC]/30 p-4 md:p-4.5 rounded-[2px] md:min-h-[195px]">
-                    <span className="text-[10px] font-sans font-bold text-sb-green-dark/60 uppercase tracking-widest block mb-1.5">
-                      {detail.calculationLabel}
+                {/* Source scientifique */}
+                <div className="pt-3 border-t border-sb-green-dark/5 flex items-start gap-2 lg:min-h-[120px] mt-auto">
+                  <BookOpen size={14} className="text-[#C5A065] shrink-0 mt-0.5" />
+                  <div>
+                    <span className="text-[9px] font-sans font-bold text-[#C5A065] uppercase tracking-wider block">
+                      Méthodologie Validée
                     </span>
-                    <p className="text-xs md:text-sm text-sb-green-dark/95 font-sans leading-relaxed">
-                      {detail.calculationDetails}
+                    <p className="text-xs text-sb-green-dark/80 font-sans leading-snug">
+                      {detail.sourceDetails}
                     </p>
-                  </div>
-
-                  {/* Source scientifique */}
-                  <div className="pt-3 border-t border-sb-green-dark/5 flex items-start gap-2 md:min-h-[195px]">
-                    <BookOpen size={14} className="text-[#C5A065] shrink-0 mt-0.5" />
-                    <div>
-                      <span className="text-[9px] font-sans font-bold text-[#C5A065] uppercase tracking-wider block">
-                        Méthodologie Validée
-                      </span>
-                      <p className="text-xs text-sb-green-dark/80 font-sans leading-snug">
-                        {detail.sourceDetails}
-                      </p>
-                    </div>
                   </div>
                 </div>
               </motion.div>

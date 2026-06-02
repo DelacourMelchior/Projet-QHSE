@@ -808,12 +808,12 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                 <div className="text-center pt-2">
                   <button
                     onClick={() => onNavigate(Page.CONTACT)}
-                    className="group relative w-full flex items-center justify-center px-8 py-5.5 bg-transparent text-[#C5A065] font-sans font-extrabold uppercase tracking-[0.25em] text-xs transition-all duration-500 overflow-hidden border border-[#C5A065] rounded-[2px] hover:text-[#0A1412] hover:-translate-y-0.5 shadow-lg hover:shadow-[0_12px_45px_rgba(197,160,101,0.25)]"
+                    className="group relative inline-flex items-center justify-center px-16 py-6 bg-transparent text-[#C5A065] font-sans font-bold uppercase tracking-[0.2em] text-xs transition-all duration-500 overflow-hidden border border-[#C5A065] rounded-[2px] shadow-lg hover:shadow-[0_12px_45px_rgba(197,160,101,0.25)] hover:border-white hover:text-sb-green-dark hover:-translate-y-1"
                   >
                     <span className="absolute inset-0 bg-[#C5A065] transform translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-[0.16,1,0.3,1] z-0"></span>
                     <span className="relative z-10 flex items-center gap-3">
                       <span>Boucher mes fuites de marge</span>
-                      <ArrowRight size={14} strokeWidth={2.5} className="group-hover:translate-x-1.5 transition-transform duration-500" />
+                      <ArrowRight size={14} className="group-hover:translate-x-1.5 transition-transform duration-500" />
                     </span>
                   </button>
                 </div>

@@ -642,33 +642,24 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
         <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-[#C86B5C]/5 rounded-full blur-3xl pointer-events-none"></div>
 
         <div className="container mx-auto px-6 relative z-10">
-          <div className="grid lg:grid-cols-12 gap-12 lg:gap-20 items-center max-w-6xl mx-auto">
-            {/* Copywriting Executif Ciseleur */}
-            <div className="lg:col-span-5 space-y-8 text-left">
-              <span className="text-[#C5A065] font-sans font-bold text-[10px] md:text-xs uppercase tracking-[0.25em] block">
-                Diagnostic de Performance Financière
-              </span>
-              <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold uppercase leading-[1.15] tracking-tight">
-                L'HÉMORRAGIE SILENCIEUSE : <br />
-                <span className="text-[#C5A065]">CHIFFREZ LE COÛT DE L'INACTION</span>
-              </h2>
-              <div className="w-16 h-0.5 bg-[#C5A065] my-6"></div>
+          {/* Titre centré sur le haut de la section et texte synthétisé */}
+          <div className="text-center max-w-4xl mx-auto mb-16 space-y-6">
+            <span className="text-[#C5A065] font-sans font-bold text-[10px] md:text-xs uppercase tracking-[0.25em] block mb-3">
+              Diagnostic de Performance Financière
+            </span>
+            <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold uppercase leading-[1.15] tracking-tight text-white">
+              L'HÉMORRAGIE SILENCIEUSE : <br />
+              <span className="text-[#C5A065]">CHIFFREZ LE COÛT DE L'INACTION</span>
+            </h2>
+            <div className="w-20 h-px bg-[#C5A065] mx-auto my-6"></div>
+            <p className="text-base md:text-lg text-white/80 font-sans leading-[1.618] max-w-3xl mx-auto">
+              Chaque jour d'attentisme opérationnel est une taxe directe sur votre EBITDA. Dans une PME en croissance, environ <strong className="text-white font-semibold">15 % de l'effort collectif</strong> est gaspillé par le double travail, les lourdeurs administratives et la perte d'informations. C'est une fuite financière invisible, constante et mesurable.
+            </p>
+          </div>
 
-              <div className="space-y-6 text-white/80 font-sans text-sm md:text-base leading-relaxed">
-                <p>
-                  Chaque jour d'attentisme opérationnel est une taxe directe sur votre EBITDA. L’absence de standards et de processus formalisés ne se traduit pas seulement par une surcharge mentale et des urgences quotidiennes. <strong className="text-white font-semibold">Elle constitue une fuite financière constante et mesurable.</strong>
-                </p>
-                <p>
-                  Dans une PME en croissance, <strong className="text-[#C5A065] font-semibold">environ 15 % de l'effort collectif est consumé</strong> par le double travail, les litiges administratifs, et la déperdition d'information liée au savoir tribal. C'est une taxe invisible que vous payez chaque jour à vos propres inefficacités.
-                </p>
-                <p className="text-white/60 text-xs md:text-sm">
-                  Ajustez le curseur ci-contre pour matérialiser en temps réel ce gisement de marge brute inexploité. Sécuriser vos processus opérationnels n'est pas un coût de conformité, c'est le levier de ROI le plus rapide et le plus souverain à votre disposition.
-                </p>
-              </div>
-            </div>
-
-            {/* Dashboard interactif de prestige */}
-            <div className="lg:col-span-7 bg-[#0B1513]/90 border border-white/[0.08] p-8 md:p-12 rounded-[4px] shadow-[0_30px_100px_-15px_rgba(0,0,0,0.8)] relative backdrop-blur-md hover:border-[#C5A065]/35 transition-all duration-700">
+          {/* Dashboard de prestige centré, proportions conservées */}
+          <div className="max-w-3xl mx-auto">
+            <div className="bg-[#0B1513]/90 border border-white/[0.08] p-8 md:p-12 rounded-[4px] shadow-[0_30px_100px_-15px_rgba(0,0,0,0.8)] relative backdrop-blur-md hover:border-[#C5A065]/35 transition-all duration-700">
               {/* Badge supérieur prestigieux en Terracotta noble */}
               <div className="absolute -top-3.5 right-8 px-4 py-1.5 bg-gradient-to-r from-[#C86B5C] to-[#b35647] text-white font-sans font-bold text-[9px] uppercase tracking-[0.25em] rounded-full shadow-lg shadow-[#C86B5C]/20 border border-white/10">
                 Gisement de Marge Brute Captive
@@ -700,13 +691,13 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                     }}
                   />
 
-                  {/* Graduation de repères Chiffres d'Affaires */}
-                  <div className="flex justify-between items-center text-[9px] font-mono text-white/30 px-1 mt-2.5 select-none">
-                    <span>500 k€</span>
-                    <span>5 M€</span>
-                    <span>10 M€</span>
-                    <span>15 M€</span>
-                    <span>20 M€</span>
+                  {/* Graduation de repères Chiffres d'Affaires alignée avec la graduation physique */}
+                  <div className="relative w-full h-4 text-[9px] font-mono text-white/40 mt-2 select-none">
+                    <span className="absolute left-0 -translate-x-0">500 k€</span>
+                    <span className="absolute left-[23%] -translate-x-1/2">5 M€</span>
+                    <span className="absolute left-[48.7%] -translate-x-1/2">10 M€</span>
+                    <span className="absolute left-[74.3%] -translate-x-1/2">15 M€</span>
+                    <span className="absolute right-0 -translate-x-0">20 M€</span>
                   </div>
 
                   {/* Boutons de CA préconfigurés */}
@@ -736,7 +727,7 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                       <p className="text-[10px] md:text-xs font-sans text-white/40 uppercase tracking-widest font-bold">
                         Gisement Annuel Captif
                       </p>
-                      <span className="block text-[8px] md:text-[9px] text-[#C86B5C]/60 font-sans">
+                      <span className="block text-xs md:text-sm text-[#C86B5C] font-semibold font-sans mt-1">
                         (15% du CA inexploité par an)
                       </span>
                     </div>
@@ -755,7 +746,7 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                         {formatCurrency(monthlyLeak)}
                       </p>
                     </div>
-                    <span className="block text-[8px] md:text-[9px] text-white/30 mt-3 font-sans">
+                    <span className="block text-xs md:text-sm text-white/60 font-semibold mt-3 font-sans">
                       (Par mois d'inaction)
                     </span>
                   </div>
@@ -773,7 +764,7 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                         {formatCurrency(dailyLeak)}
                       </p>
                     </div>
-                    <span className="block text-[8px] md:text-[9px] text-white/35 mt-3 font-sans">
+                    <span className="block text-xs md:text-sm text-[#C86B5C] font-semibold mt-3 font-sans">
                       (Sur 220 jours ouvrés)
                     </span>
                   </div>
@@ -782,8 +773,8 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                 {/* Graphique de répartition visuelle */}
                 <div className="bg-[#142320]/50 p-6 border border-white/[0.05] rounded-[2px] text-left">
                   <div className="flex justify-between text-[10px] md:text-xs text-white/60 mb-3 font-sans font-bold tracking-wide">
-                    <span>Performance Opérationnelle Actuelle (85%)</span>
-                    <span className="text-[#C86B5C] flex items-center gap-1.5">
+                    <span>Performance Opérationnelle Actuelle <strong className="text-white">(85%)</strong></span>
+                    <span className="text-[#C86B5C] flex items-center gap-1.5 font-bold">
                       <span className="w-1.5 h-1.5 rounded-full bg-[#C86B5C] animate-pulse"></span>
                       Fuite de Rentabilité (15%)
                     </span>

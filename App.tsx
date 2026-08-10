@@ -14,6 +14,7 @@ import ImpactRisque from './views/ImpactRisque';
 import ImpactSysteme from './views/ImpactSysteme';
 import ImpactData from './views/ImpactData';
 import Diagnostic from './views/Diagnostic';
+import ExitModal from './components/ExitModal';
 import { Page } from './types';
 
 // On mappe le "slug" (le dernier mot de l'URL) directement vers la Page
@@ -115,6 +116,7 @@ const App: React.FC = () => {
   return (
     <Layout currentPage={currentPage} onNavigate={navigate}>
       {renderPage()}
+      <ExitModal onNavigate={navigate} />
     </Layout>
   );
 };

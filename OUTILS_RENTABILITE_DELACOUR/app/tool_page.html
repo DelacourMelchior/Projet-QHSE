@@ -2977,7 +2977,7 @@
                 goalDirection: "higher",
                 targetVal: 30.0,
                 target: "≥ 30,0 %",
-                months: ["34,5 %", "29,0 %", "32,0 %", "33,5 %", "35,0 %", "31,5 %", "30,5 %", "31,0 %", "33,0 %", "34,5 %", "32,5 %", "30,5 %"],
+                months: ["34,5 %", "29,0 %", "32,0 %", "33,5 %", "35,0 %", "35,0 %", "34,5 %", "34,0 %", "33,0 %", "32,0 %", "31,5 %", "30,5 %"],
                 isConfidential: false,
                 actionPilot: "",
                 actionDeadline: "",
@@ -6430,6 +6430,32 @@
     // ==========================================================
     // PILIERS DE FIABILISATION PME : GESTION DU MOIS D'ANALYSE & CADENAS
     // ==========================================================
+    // 3-month moving average at each column (null unless the 3 consecutive months are entered)
+    function kpiMovingAverage(ind) {
+      const nums = ind.months.map(m => parseKpiNumber(m));
+      return nums.map((_, i) => (i >= 2 && nums[i] !== null && nums[i - 1] !== null && nums[i - 2] !== null)
+        ? (nums[i] + nums[i - 1] + nums[i - 2]) / 3 : null);
+    }
+
+    // Trend of the moving average over the last 3 months, up to the active month.
+    // Needs at least 6 entered months; returns null otherwise.
+    function kpiTrend(ind, activeIdx) {
+      const entered = ind.months.slice(0, activeIdx + 1).filter(m => parseKpiNumber(m) !== null).length;
+      if (entered < 6) return null;
+      const ma = kpiMovingAverage(ind);
+      const to = ma[activeIdx], from = ma[activeIdx - 3];
+      if (to === null || to === undefined || from === null || from === undefined) return null;
+      const pct = from !== 0 ? ((to - from) / Math.abs(from)) * 100 : 0;
+      const dir = Math.abs(pct) < 2 ? 'stable' : (pct > 0 ? 'up' : 'down');
+      const isGood = dir === 'stable' ? null : ((dir === 'up') === (ind.goalDirection !== 'lower'));
+      // slow drift: still compliant this month, but the average worsened 3 months in a row
+      const worse = (a, b) => ind.goalDirection === 'lower' ? b > a : b < a;
+      const st = computeKpiStatus(ind, activeIdx);
+      const drifting = !st.isAlert && !st.isPending &&
+        [1, 2, 3].every(k => ma[activeIdx - k] !== null && ma[activeIdx - k + 1] !== null && worse(ma[activeIdx - k], ma[activeIdx - k + 1]));
+      return { from, to, pct, dir, isGood, drifting };
+    }
+
     // Year-to-date sum of a KPI: columns of the same calendar year as the active column, up to it
     function kpiYearToDate(tool, ind, activeIdx) {
       const cols = getToolColumns(tool);
@@ -6573,6 +6599,17 @@
       });
       if (orphanAlerts.length > 0) {
         insights.unshift(`<strong>Pilote à désigner :</strong> ${orphanAlerts.length} indicateur(s) en dérive sans pilote désigné (${orphanAlerts.map(escapeHtml).join(', ')}). Nommez un pilote et une échéance pour chacun.`);
+      }
+
+      // Early warning: compliant KPIs whose 3-month average has worsened 3 months in a row
+      const slowDrifts = [];
+      tool.processes.forEach(p => p.indicators.forEach(ind => {
+        const tr = kpiTrend(ind, activeMonthIdx);
+        if (tr && tr.drifting && !(isConfidentialMode && ind.isConfidential)) slowDrifts.push({ ind, tr });
+      }));
+      if (slowDrifts.length > 0) {
+        insights.push(`<strong>Dérive lente :</strong> ${slowDrifts.slice(0, 3).map(({ ind, tr }) =>
+          `${escapeHtml(ind.name.replace(/\s*\(.*\)\s*$/, ''))} (moyenne 3 mois ${formatProcessChartVal(tr.from, ind.unit, false)} → ${formatProcessChartVal(tr.to, ind.unit, false)})`).join(', ')}. Encore conforme${slowDrifts.length > 1 ? 's' : ''}, mais en dégradation depuis 3 mois : à surveiller avant l'alerte.`);
       }
       let retouchesInd = findKpiById(tool, 'kpi_retouches');
       let otifInd = findKpiById(tool, 'kpi_otif');
@@ -7343,6 +7380,18 @@
 
         const polyline = `<polyline fill="none" stroke="${s.color.stroke}" stroke-width="${seriesData.length > 1 ? '2.5' : '3'}" stroke-linecap="round" stroke-linejoin="round" points="${ptsStr}" />`;
 
+        // Trend: 3-month moving average, on the same scale as the plotted values
+        let trendSvg = "";
+        if (s.pts.length >= 6) {
+          const byM = {};
+          s.pts.forEach(p => { byM[p.m] = p.plotVal; });
+          const maPts = s.pts.filter(p => byM[p.m - 1] !== undefined && byM[p.m - 2] !== undefined)
+            .map(p => `${getX(p.m).toFixed(1)},${getY((byM[p.m] + byM[p.m - 1] + byM[p.m - 2]) / 3).toFixed(1)}`);
+          if (maPts.length >= 2) {
+            trendSvg = `<polyline fill="none" stroke="${s.color.stroke}" stroke-opacity="0.55" stroke-width="2" stroke-dasharray="6,5" stroke-linecap="round" points="${maPts.join(' ')}"><title>Tendance : moyenne sur 3 mois</title></polyline>`;
+          }
+        }
+
         const dots = coords.map(c => {
           const valFormatted = formatProcessChartVal(c.pt.val, s.ind.unit, false);
           const showLabel = (seriesData.length === 1);
@@ -7358,6 +7407,7 @@
         curvesSvg += `
           <g class="series-group">
             ${areaSvg}
+            ${trendSvg}
             ${polyline}
             ${dots}
           </g>
@@ -7397,12 +7447,16 @@
         const last = nums.length > 0 ? nums[nums.length - 1] : null;
         const lastStr = last !== null ? formatProcessChartVal(last, s.ind.unit, false) : "---";
         const st = computeKpiStatus(s.ind);
+        const tr = kpiTrend(s.ind, getActiveMonthIdx(tool));
+        const trTxt = !tr ? '' : tr.dir === 'stable' ? 'stable'
+          : `en ${tr.dir === 'up' ? 'hausse' : 'baisse'} de ${Math.abs(Math.round(tr.pct))} %`;
         return `
-          <div class="flex items-center space-x-1.5 bg-white px-2 py-1 rounded border border-slate-200 shadow-2xs">
+          <div class="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 bg-white px-2 py-1 rounded border border-slate-200 shadow-2xs">
             <span class="w-2 h-2 rounded-full" style="background-color: ${s.color.stroke};"></span>
-            <span class="font-bold text-slate-800">${s.ind.name} :</span>
+            <span class="font-bold text-slate-800">${escapeHtml(s.ind.name)} :</span>
             <span class="font-mono font-black text-slate-900">${lastStr}</span>
             <span class="${st.cls} text-[11px] ml-1">${st.text}</span>
+            ${tr ? `<span class="text-[11px] ${tr.isGood === null ? 'text-slate-600' : tr.isGood ? 'text-emerald-700' : 'text-red-700'}" title="Moyenne des 3 derniers mois comparée à celle d'il y a 3 mois">· Tendance 3 mois : <strong>${trTxt}</strong>${tr.drifting ? ' · dérive lente' : ''}</span>` : ''}
           </div>
         `;
       }).join('');

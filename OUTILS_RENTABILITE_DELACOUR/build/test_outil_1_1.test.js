@@ -114,3 +114,26 @@ test('shared storage: confidential values go to the direction folder', () => {
   assert.equal(app.bucketOfKey('settings', tool), 'direction');
   assert.equal(app.bucketOfKey(`kpi|${conf.id}`, tool), 'equipe');
 });
+
+test('trend: 3-month moving average needs 3 consecutive months', () => {
+  const ma = app.kpiMovingAverage(kpi({ months: ['3', '6', '9', '', '12', '15', '18'] }));
+  assert.deepEqual(plain(ma), [null, null, 6, null, null, null, 15]);
+});
+
+test('trend: none before 6 entered months, direction judged against the goal', () => {
+  assert.equal(app.kpiTrend(kpi({ months: ['1', '2', '3', '4', '5'] }), 4), null);
+  const up = app.kpiTrend(kpi({ targetVal: 0.5, months: ['100', '100', '100', '110', '120', '130'] }), 5);
+  assert.equal(up.dir, 'up');
+  assert.equal(up.isGood, true);
+  const lower = app.kpiTrend(kpi({ goalDirection: 'lower', targetVal: 1000, months: ['100', '100', '100', '110', '120', '130'] }), 5);
+  assert.equal(lower.isGood, false);
+});
+
+test('slow drift: compliant KPI whose average worsens 3 months in a row', () => {
+  const ind = kpi({ targetVal: 30, months: ['35', '35', '34.5', '34', '33', '32', '31.5', '30.5'] });
+  assert.equal(app.kpiTrend(ind, 7).drifting, true);
+  // same slope but already below target: it is an alert, not a slow drift
+  assert.equal(app.kpiTrend({ ...ind, targetVal: 31 }, 7).drifting, false);
+  // a clear rebound lifts the 3-month average and breaks the chain
+  assert.equal(app.kpiTrend(kpi({ targetVal: 30, months: ['35', '35', '34.5', '34', '33', '36', '31.5', '30.5'] }), 7).drifting, false);
+});

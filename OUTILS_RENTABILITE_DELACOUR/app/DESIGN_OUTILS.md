@@ -24,6 +24,7 @@ Règles appliquées à l'outil 1.1 et à la fiche action (5 Pourquoi + 5M). Les 
 ## Mise en page
 
 - La **synthèse dirigeant** passe en premier, puis chaque processus : tableau, puis graphique d'évolution (affiché par défaut, masquable avec « Masquer le graphique »). Pas de mini-courbe dans les lignes du tableau.
+- **Tendance** : moyenne glissante sur 3 mois en pointillé fin, de la couleur de la courbe, seulement à partir de 6 mois saisis. Sa lecture (« Tendance 3 mois : en baisse de 7 % ») figure dans la légende, en vert ou rouge selon le sens de l'objectif.
 - Tableau : le nom du KPI reste visible (colonne figée à gauche). Les colonnes Bilan, Statut et Action sont figées à droite seulement à partir de 1280 px.
 - **Mobile (< 640 px)** : une carte par KPI pour le mois actif à la place du tableau. Aucun défilement horizontal de la page.
 - L'en-tête « Cabinet Delacour · Conseil de direction » (papier à en-tête) n'apparaît qu'à l'impression.

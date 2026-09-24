@@ -2,6 +2,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { Period, State } from '../domain/types';
 import { lastFilledPeriod, timelinePeriods } from '../domain/engine';
+import { normalize } from '../domain/migrate';
 import { clearLocal, loadLocal, pref, saveLocal } from './local';
 import {
   askPermission, folderSupported, forgetFolder, FolderSession, hasPermission, initDataFolder, isDataFolder,
@@ -182,7 +183,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     });
   }, [persist]);
 
-  const replace = useCallback((s: State | null) => {
+  const replace = useCallback((raw: State | null) => {
+    const s = raw && normalize(raw);
     setState(s);
     persist(s);
     if (s) { setPeriodPref(''); pref.set('period', ''); }

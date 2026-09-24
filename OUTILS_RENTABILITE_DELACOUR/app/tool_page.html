@@ -4450,6 +4450,7 @@
       const urlParams = new URLSearchParams(window.location.search);
       const toolParam = urlParams.get('tool');
       if (!toolParam || toolParam === '1.1') { window.location.replace(PILOTAGE_URL); return; }
+      if (toolParam === '1.2') { window.location.replace(PILOTAGE_URL + '#continuite'); return; }
 
       const select = document.getElementById('toolSelectHeader');
       select.innerHTML = '';
@@ -4480,6 +4481,7 @@
 
     function switchTool(newToolId) {
       if (newToolId === '1.1') { window.location.href = PILOTAGE_URL; return; }
+      if (newToolId === '1.2') { window.location.href = PILOTAGE_URL + '#continuite'; return; }
       if (!TOOLS_DATA[newToolId]) return;
       currentToolId = newToolId;
       window.history.pushState({}, '', `tool_page.html?tool=${newToolId}`);

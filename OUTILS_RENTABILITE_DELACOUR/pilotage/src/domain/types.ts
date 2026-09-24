@@ -45,8 +45,9 @@ export type ActionStatus = 'to_start' | 'in_progress' | 'done' | 'effective';
 
 export interface Action {
   id: string;
-  kpiId: string;
-  period: Period;         // month of the deviation
+  kpiId: string;          // origin: a KPI in deviation (tool 1.1)…
+  riskId?: string;        // …or a risk whose Plan B must be prepared (tool 1.2); then kpiId is ''
+  period: Period;         // month of the deviation (month of creation for a risk)
   createdAt: string;      // ISO date
   constat: string;
   whys: string[];         // up to 5, the last filled one is the root cause
@@ -78,6 +79,59 @@ export interface State {
   kpis: Record<string, Kpi>;
   values: Record<string, Record<Period, number>>; // kpiId -> period -> value
   actions: Record<string, Action>;
+  risks: Record<string, Risk>;
+}
+
+// ---- business continuity (tool 1.2)
+export type Scale = 1 | 2 | 3 | 4;
+export type ParadeFamily = 'relais' | 'stock' | 'doublure' | 'degrade';
+export type RiskState = 'uncovered' | 'preparing' | 'ready' | 'tested' | 'expired' | 'failed';
+
+export interface RiskTest {
+  date: string;           // ISO date
+  ok: boolean;            // success criterion met
+  note: string;
+  by: string;
+}
+
+// Money figures, stored in the "direction" folder (never shown in team view)
+export interface RiskCost {
+  perDay: number | null;      // margin lost + penalties per day of outage (€)
+  daysWithout: number | null; // outage duration without Plan B (days)
+  daysWith: number | null;    // outage duration with Plan B (days)
+  planBCost: number | null;   // one-off cost to set the Plan B up (€)
+}
+
+export interface Risk {
+  id: string;
+  processId: string;
+  createdAt: string;
+  // 1. what stops
+  title: string;          // "Casse broche CNC"
+  resource: string;       // vital resource: machine, person, supplier, software
+  signal: string;         // how we notice it
+  maxOutage: string;      // tolerable outage, as said by the manager ("4 h", "2 jours")
+  owner: string;          // responsible for the risk (mandatory)
+  // 2. why, how serious
+  whys: string[];
+  cause: string;          // root cause
+  gravity: Scale;
+  likelihood: Scale;
+  // 3. Plan B
+  family: ParadeFamily | '';
+  planB: string;
+  relay: string;          // who or what takes over
+  activation: string;     // activation delay ("sous 4 h")
+  // 4. lock and test (the reflex card)
+  firstHour: string;      // actions of the first hour, one per line
+  contacts: string;       // who to call, one per line
+  access: string;         // where keys, codes, documents are
+  sacrifice: string;      // what is dropped first
+  deputy: string;
+  testMethod: string;
+  testCriterion: string;
+  tests: RiskTest[];
+  cost?: RiskCost;
 }
 
 export type Level = 'ok' | 'warn' | 'alert' | 'pending';

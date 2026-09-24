@@ -1,10 +1,13 @@
-// Corrective action: 5 whys (root cause) + 5M action plan, main pilot, deadline, status, effectiveness.
+// Action of the shared register: corrective (KPI in deviation, tool 1.1) or preparation of a Plan B (risk, tool 1.2).
+// 5 whys (root cause) + 5M action plan, main pilot, deadline, status, effectiveness.
 import { useState } from 'react';
 import { Lightbulb, Plus, Trash2, X } from 'lucide-react';
 import type { Action, ActionStatus, Dim5M, PlanItem } from '../domain/types';
 import { effectiveness, statusAt, valueOf } from '../domain/engine';
+import { riskActionEffectiveness, riskState, STATE_INFO } from '../domain/risk';
+import { PREP_IDEAS } from '../domain/riskTemplates';
 import { formatValue } from '../domain/numbers';
-import { isoDate, periodLabel } from '../domain/periods';
+import { frDate, isoDate, periodLabel } from '../domain/periods';
 import { useStore } from '../store/StoreContext';
 import { Button, Field, inputCls, Modal, StatusBadge } from './common';
 
@@ -18,10 +21,11 @@ export const DIMS: { key: Dim5M; label: string; hint: string; ideas: string[] }[
 export const STATUS_LABEL: Record<ActionStatus, string> = { to_start: 'À lancer', in_progress: 'En cours', done: 'Réalisée', effective: 'Efficace' };
 export const dimLabel = (d: Dim5M) => DIMS.find(x => x.key === d)?.label || d;
 
-export function newAction(kpiId: string, period: string): Action {
+// kpiId for a corrective action; '' and riskId for the preparation of a Plan B
+export function newAction(kpiId: string, period: string, riskId?: string): Action {
   const d = new Date();
   return {
-    id: `act_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, kpiId, period, createdAt: isoDate(d),
+    id: `act_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, kpiId, ...(riskId ? { riskId } : {}), period, createdAt: isoDate(d),
     constat: '', whys: ['', '', '', '', ''], plan: [], pilot: '', deadline: isoDate(new Date(d.getFullYear(), d.getMonth(), d.getDate() + 7)),
     cost: null, status: 'to_start', closedAt: '',
   };
@@ -34,10 +38,13 @@ export function ActionSheet({ initial, onClose }: { initial: Action; onClose(): 
   const [error, setError] = useState('');
   if (!state) return null;
   const k = state.kpis[a.kpiId];
+  const r = a.riskId ? state.risks[a.riskId] : undefined;
   const isNew = !state.actions[a.id];
   const v = valueOf(state, a.kpiId, a.period);
   const st = k ? statusAt(state, k, a.period) : null;
   const eff = effectiveness(state, a);
+  const reff = riskActionEffectiveness(state, a);
+  const rst = r && STATE_INFO[riskState(state, r)];
   const set = (patch: Partial<Action>) => setA(x => ({ ...x, ...patch }));
   const setPlan = (plan: PlanItem[]) => set({ plan });
   const addDays = (n: number) => { const d = new Date(); d.setDate(d.getDate() + n); set({ deadline: isoDate(d) }); };
@@ -60,8 +67,8 @@ export function ActionSheet({ initial, onClose }: { initial: Action; onClose(): 
 
   return (
     <Modal wide onClose={onClose}
-      title={isNew ? 'Nouvelle action corrective' : 'Action corrective'}
-      subtitle={k && <span>{k.name} · {periodLabel(a.period)} : <strong className="font-mono">{formatValue(v, k.unit)}</strong> (cible {k.target}) {st && <StatusBadge level={st.level} text={st.text} />}</span>}
+      title={r ? (isNew ? 'Nouvelle action de préparation' : 'Action de préparation du Plan B') : isNew ? 'Nouvelle action corrective' : 'Action corrective'}
+      subtitle={r ? <span>Risque : {r.title || 'sans titre'} {rst && <StatusBadge level={rst.tone} text={rst.label} />}</span> : k && <span>{k.name} · {periodLabel(a.period)} : <strong className="font-mono">{formatValue(v, k.unit)}</strong> (cible {k.target}) {st && <StatusBadge level={st.level} text={st.text} />}</span>}
       footer={<>
         {!isNew && <Button kind="danger" onClick={remove} className="mr-auto"><Trash2 size={14} />Supprimer</Button>}
         {error && <span role="alert" className="mr-2 text-[11px] font-semibold text-red-700">{error}</span>}
@@ -70,12 +77,12 @@ export function ActionSheet({ initial, onClose }: { initial: Action; onClose(): 
       </>}>
       <div className="space-y-5">
         <section className="space-y-2">
-          <h3 className="text-xs font-bold text-slate-900">1. Constat et cause racine</h3>
-          <Field label="Constat factuel">
-            <input className={inputCls} value={a.constat} placeholder={k ? `${k.name} : ${formatValue(v, k.unit)} en ${periodLabel(a.period)} (cible ${k.target})` : ''}
+          <h3 className="text-xs font-bold text-slate-900">{r ? '1. Objectif' : '1. Constat et cause racine'}</h3>
+          <Field label={r ? 'Ce que cette action doit rendre possible' : 'Constat factuel'}>
+            <input className={inputCls} value={a.constat} placeholder={r ? `Plan B opérationnel : ${r.planB || 'à définir'}` : k ? `${k.name} : ${formatValue(v, k.unit)} en ${periodLabel(a.period)} (cible ${k.target})` : ''}
               onChange={e => set({ constat: e.target.value })} />
           </Field>
-          <details className="rounded-lg border border-slate-200 bg-slate-50 p-2.5" open={a.whys.some(w => w.trim())}>
+          {r ? <p className="text-[11px] text-slate-500">Cause racine du risque : {r.cause || 'à analyser dans la fiche du risque'}.</p> : <details className="rounded-lg border border-slate-200 bg-slate-50 p-2.5" open={a.whys.some(w => w.trim())}>
             <summary className="cursor-pointer text-[11px] font-semibold text-slate-700">Analyse des 5 pourquoi (facultative, recommandée pour une récidive)</summary>
             <div className="mt-2 grid gap-2 sm:grid-cols-2">
               {[0, 1, 2, 3, 4].map(i => (
@@ -84,7 +91,7 @@ export function ActionSheet({ initial, onClose }: { initial: Action; onClose(): 
                 </Field>
               ))}
             </div>
-          </details>
+          </details>}
         </section>
 
         <section className="space-y-2">
@@ -105,7 +112,7 @@ export function ActionSheet({ initial, onClose }: { initial: Action; onClose(): 
                 </div>
                 {ideas === d.key && (
                   <div className="grid gap-1.5 sm:grid-cols-2">
-                    {d.ideas.map(t => <button key={t} type="button" onClick={() => setPlan([...a.plan, { dim: d.key, text: t, pilot: '' }])}
+                    {(r ? PREP_IDEAS[d.key] : d.ideas).map(t => <button key={t} type="button" onClick={() => setPlan([...a.plan, { dim: d.key, text: t, pilot: '' }])}
                       className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-left text-[11px] text-slate-700 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-950">{t}</button>)}
                   </div>
                 )}
@@ -147,7 +154,10 @@ export function ActionSheet({ initial, onClose }: { initial: Action; onClose(): 
 
         <p className="rounded-lg bg-slate-50 px-3 py-2 text-[11px] text-slate-600">
           <strong>Efficacité :</strong>{' '}
-          {eff.state === 'pending' ? 'mesurée une fois l\'action réalisée, sur le mois qui suit la clôture.'
+          {r ? (reff.state === 'pending' ? 'démontrée par le premier test réussi du Plan B après la réalisation de l\'action.'
+            : reff.state === 'waiting' ? 'en attente du prochain test du Plan B.'
+            : `${reff.state === 'effective' ? 'démontrée par le test' : 'test raté'} du ${frDate(reff.date)}.`)
+          : eff.state === 'pending' ? 'mesurée une fois l\'action réalisée, sur le mois qui suit la clôture.'
             : eff.state === 'waiting' ? `à mesurer sur ${periodLabel(eff.period)} (valeur pas encore saisie).`
             : `${eff.state === 'effective' ? 'démontrée' : 'récidive'} en ${periodLabel(eff.period)} (${k ? formatValue(eff.value, k.unit) : eff.value}).`}
         </p>

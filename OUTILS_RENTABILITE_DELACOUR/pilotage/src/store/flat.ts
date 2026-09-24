@@ -1,6 +1,7 @@
 // State <-> flat map of independent keys, the unit of synchronisation between people.
 //   settings | timeline | process|<id> | kpi|<id> | value|<kpiId>|<YYYY-MM> | action|<id>
-import type { State } from '../domain/types';
+//   risk|<id> (without money) | riskcost|<id> (money figures of a risk, direction folder)
+import type { Risk, RiskCost, State } from '../domain/types';
 import { DEFAULT_SETTINGS } from '../domain/migrate';
 
 export type FlatMap = Record<string, unknown>;
@@ -11,6 +12,10 @@ export function flatten(s: State): FlatMap {
   Object.values(s.kpis).forEach(k => { m[`kpi|${k.id}`] = k; });
   Object.entries(s.values).forEach(([id, byP]) => Object.entries(byP).forEach(([p, v]) => { m[`value|${id}|${p}`] = v; }));
   Object.values(s.actions).forEach(a => { m[`action|${a.id}`] = a; });
+  Object.values(s.risks || {}).forEach(({ cost, ...r }) => {
+    m[`risk|${r.id}`] = r;
+    if (cost) m[`riskcost|${r.id}`] = cost;
+  });
   return m;
 }
 
@@ -18,8 +23,9 @@ export function unflatten(m: FlatMap): State {
   const s: State = {
     settings: { ...DEFAULT_SETTINGS, ...(m.settings as object || {}) },
     timeline: (m.timeline as State['timeline']) || { start: '2026-01', end: '2026-12' },
-    processes: [], kpis: {}, values: {}, actions: {},
+    processes: [], kpis: {}, values: {}, actions: {}, risks: {},
   };
+  const costs: Record<string, RiskCost> = {};
   for (const [k, v] of Object.entries(m)) {
     if (v === null || v === undefined) continue;
     const [kind, id, period] = k.split('|');
@@ -27,7 +33,10 @@ export function unflatten(m: FlatMap): State {
     else if (kind === 'kpi') s.kpis[id] = v as State['kpis'][string];
     else if (kind === 'value' && typeof v === 'number') (s.values[id] ||= {})[period] = v;
     else if (kind === 'action') s.actions[id] = v as State['actions'][string];
+    else if (kind === 'risk') s.risks[id] = { ...(v as Risk) };
+    else if (kind === 'riskcost') costs[id] = v as RiskCost;
   }
+  Object.entries(costs).forEach(([id, c]) => { if (s.risks[id]) s.risks[id].cost = c; });
   s.processes.sort((a, b) => a.order - b.order);
   s.processes.forEach(p => { p.kpiIds = p.kpiIds.filter(id => s.kpis[id]); });
   return s;
@@ -35,7 +44,7 @@ export function unflatten(m: FlatMap): State {
 
 // Confidential values and the financial settings live in the "direction" folder
 export function bucketOf(key: string, s: State): 'equipe' | 'direction' {
-  if (key === 'settings') return 'direction';
+  if (key === 'settings' || key.startsWith('riskcost|')) return 'direction';
   if (key.startsWith('value|')) return s.kpis[key.split('|')[1]]?.confidential ? 'direction' : 'equipe';
   return 'equipe';
 }

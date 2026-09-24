@@ -1,8 +1,9 @@
 // Conversion of the previous version (tool 1.1 of tool_page.html) into the new model.
 // Used for: JSON backups made with the old app, its localStorage, its shared-folder journals,
 // and to build the demo data and job templates from the same source.
-import type { Action, ActionStatus, Aggregation, Dim5M, Kpi, KpiRole, KpiType, PlanItem, Process, Settings, State } from './types';
+import type { Risk, Action, ActionStatus, Aggregation, Dim5M, Kpi, KpiRole, KpiType, PlanItem, Process, Settings, State } from './types';
 import { isoDate, parseDate, periodOf } from './periods';
+import { newRisk } from './risk';
 import { parseNumber } from './numbers';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -105,8 +106,25 @@ export function fromLegacyTool(tool: Legacy): State {
       avgQuoteValue: parseNumber(ps.valeurMoyenneDevis) ?? DEFAULT_SETTINGS.avgQuoteValue,
     },
     timeline: { start: periods[0], end: periods[periods.length - 1] },
-    processes, kpis, values, actions,
+    processes, kpis, values, actions, risks: {},
   };
+}
+
+// Data saved before tool 1.2 existed in this app: add the missing parts
+export function normalize(s: State): State {
+  return { ...s, risks: s.risks || {} };
+}
+
+// Old tool 1.2 (rows: process, problem, origin, solution(s), responsible) -> risks to complete
+export function legacyRisks(tool: Legacy): Risk[] {
+  return (tool?.rows || []).filter((r: any) => Array.isArray(r) && String(r[1] || '').trim()).map((row: any, i: number) => {
+    const r = newRisk(/^P[1-5]$/.test(String(row[0]).trim()) ? String(row[0]).trim() : 'P1');
+    const clean = (x: unknown) => String(x ?? '').replace(/[\u{1F300}-\u{1FAFF}\u2600-\u27BF]\uFE0F?/gu, '').trim();
+    return {
+      ...r, id: `${r.id}${i}`, title: clean(row[1]), cause: clean(row[2]), planB: clean(row[3]),
+      owner: clean(row[4]).replace(/\s*\(.*\)\s*$/, ''),
+    };
+  });
 }
 
 // Old shared-folder journals flatten keys ("value|kpi|2026-01", "kpi|id", "process|P1", "action|id"…) -> old tool object

@@ -1,6 +1,6 @@
 # Guide de déploiement : Pilotage Delacour dans votre OneDrive ou SharePoint
 
-Ce guide explique comment installer le tableau de pilotage mensuel (outil 1.1) dans le cloud Microsoft 365 de votre entreprise, pour que la direction et l'équipe travaillent sur les mêmes chiffres.
+Ce guide explique comment installer le tableau de pilotage mensuel (outil 1.1) et les Plans B (outil 1.2) dans le cloud Microsoft 365 de votre entreprise, pour que la direction et l'équipe travaillent sur les mêmes chiffres et le même plan d'actions.
 
 **Principe** : l'application est un simple fichier. Vos données restent dans votre propre OneDrive ou SharePoint. Aucun serveur du Cabinet Delacour ni d'un tiers ne les reçoit, et l'application ne fait aucun appel à internet.
 
@@ -10,9 +10,9 @@ Ce guide explique comment installer le tableau de pilotage mensuel (outil 1.1) d
 
 | Élément | Rôle |
 |---|---|
-| `pilotage.html` | **Le tableau de pilotage mensuel (outil 1.1)** : synthèse, saisie, plan d'actions |
+| `pilotage.html` | **Indicateurs (outil 1.1)** et **Plans B (outil 1.2)**, avec un plan d'actions commun |
 | `index.html` | Page d'accueil qui liste tous les outils |
-| `tool_page.html` | Les autres outils (1.2 à 5.3) |
+| `tool_page.html` | Les autres outils (2.1 à 5.3) |
 | `GUIDE_DEPLOIEMENT_ONEDRIVE_SHAREPOINT.md` | Ce guide |
 
 Le dossier `donnees` n'est pas livré : il est créé au premier lancement (étape 4).
@@ -46,7 +46,7 @@ Pilotage Delacour/
 ├─ index.html, tool_page.html
 └─ donnees/
    ├─ equipe/      fichiers lisibles par tous (indicateurs, valeurs non confidentielles, actions)
-   └─ direction/   fichiers réservés : CA, marge, trésorerie, hypothèses financières
+   └─ direction/   fichiers réservés : CA, marge, trésorerie, hypothèses financières, coût des arrêts
 ```
 
 ## 5. Protéger le dossier direction (recommandé)
@@ -69,7 +69,11 @@ Conseil : sur chaque poste, faites un clic droit sur le dossier `donnees`, puis 
 ## 7. Au quotidien
 
 - **À chaque ouverture**, le navigateur redemande l'accès au dossier : cliquez sur **Reconnecter le dossier** (en haut à droite). C'est une protection du navigateur.
-- **Trois écrans** : **Piloter** (synthèse, alertes, graphiques), **Saisir** (les chiffres du mois), **Agir** (plan d'actions et efficacité).
+- **Deux outils**, choisis sous le nom de l'entreprise :
+  - **Indicateurs** : **Piloter** (synthèse, alertes, graphiques), **Saisir** (les chiffres du mois), **Agir** (plan d'actions et efficacité) ;
+  - **Plans B** : **Cartographie** (risques par criticité, matrice), **Tests** (un Plan B se teste au moins tous les 6 mois), **Agir**, **Crise** (fiches réflexes).
+- **Un seul plan d'actions** : l'écran Agir réunit les actions correctives des indicateurs et les actions de préparation des Plans B. Filtrez par origine si besoin.
+- **Imprimez les fiches réflexes** (Plans B, écran Crise, **Imprimer toutes les fiches**) et rangez-les dans un classeur à l'accueil et près des postes concernés : le jour d'une panne informatique, l'application peut être inaccessible. Réimprimez-les après chaque test.
 - **Chacun saisit librement.** Chaque personne écrit dans son propre fichier (`pilotage-<nom>.json`) : deux personnes ne peuvent pas s'écraser mutuellement, et OneDrive ne crée pas de copies en conflit.
 - **Les chiffres des collègues arrivent** en quelques secondes à quelques minutes, selon la synchronisation OneDrive. L'application relit le dossier quand vous revenez sur la fenêtre ; **Réglages → Actualiser** force la relecture.
 - **Si deux personnes modifient la même valeur**, la modification la plus récente est conservée.
@@ -79,14 +83,15 @@ Conseil : sur chaque poste, faites un clic droit sur le dossier `donnees`, puis 
 - SharePoint conserve l'historique des versions de chaque fichier : en cas d'erreur, restaurez la version précédente depuis SharePoint.
 - **Réglages → Exporter une sauvegarde (.json)** produit une copie complète à archiver. Les sauvegardes de l'ancienne version de l'outil 1.1 peuvent être restaurées.
 
-## 9. Reprise de l'ancienne version de l'outil 1.1
+## 9. Reprise de l'ancienne version des outils 1.1 et 1.2
 
 - Données restées sur un poste : au premier lancement de `pilotage.html` dans le même navigateur, le bouton **Reprendre mes données** apparaît.
+- Risques de l'ancien outil 1.2 restés sur un poste : ouvrez **Plans B** dans le même navigateur ; la cartographie vide propose **Reprendre les risques de l'ancienne version**. Complétez ensuite chaque fiche (gravité, probabilité, fiche réflexe, test).
 - Dossier partagé déjà utilisé par l'ancienne version (fichiers `journal-*.json`) : ils sont lus et convertis automatiquement à la première connexion, puis republiés au nouveau format (`pilotage-*.json`). Les anciens fichiers ne sont ni modifiés ni supprimés.
 
 ## 10. Limites actuelles
 
-- Seul l'outil **1.1** partage ses données par le dossier. Les autres outils (1.2 à 5.3) enregistrent encore sur le poste de chaque utilisateur.
+- Seuls les outils **1.1 et 1.2** partagent leurs données par le dossier. Les autres outils (2.1 à 5.3) enregistrent encore sur le poste de chaque utilisateur.
 - Pas de saisie depuis un téléphone sur les données partagées : un navigateur mobile n'a pas accès au dossier synchronisé.
 - L'écriture dans le dossier nécessite Edge ou Chrome.
 

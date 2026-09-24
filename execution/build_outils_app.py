@@ -78,7 +78,7 @@ def main():
         sys.exit("pilotage/dist/index.html absent : lancer `npm run build` dans OUTILS_RENTABILITE_DELACOUR/pilotage")
     for dest in (APP / "pilotage.html", OUT / "pilotage.html"):
         dest.write_text(pilotage.read_text(encoding="utf-8"), encoding="utf-8")
-    print(f"pilotage.html: {pilotage.stat().st_size // 1024} Ko (outil 1.1)")
+    print(f"pilotage.html: {pilotage.stat().st_size // 1024} Ko (outils 1.1 et 1.2)")
     print(f"OK -> {OUT}")
 
 

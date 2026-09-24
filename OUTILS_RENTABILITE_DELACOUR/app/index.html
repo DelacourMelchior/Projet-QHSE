@@ -105,6 +105,9 @@
         <a href="pilotage.html" class="px-4 py-2 text-xs font-bold bg-delacour-primary hover:bg-delacour-dark text-white rounded-lg transition shadow-sm flex items-center space-x-1.5">
           <span>📊 Tableau des KPI (1.1)</span>
         </a>
+        <a href="pilotage.html#continuite" class="px-4 py-2 text-xs font-bold bg-white hover:bg-slate-50 text-delacour-dark border border-slate-300 rounded-lg transition shadow-sm flex items-center space-x-1.5">
+          <span>Plans B (1.2)</span>
+        </a>
         <div class="w-full md:w-64">
           <input id="searchToolsInput" type="text" oninput="filterProcessDashboard()" placeholder="Rechercher un outil..." class="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 bg-slate-50 focus:bg-white transition">
         </div>
@@ -127,7 +130,7 @@
         badge: "bg-emerald-600 text-white",
         tools: [
           { id: "1.1", code: "OUTIL 1.1", title: "Tableau de Suivi Mensuel des Indicateurs (KPI)", sopRef: "DELACOUR-SOP-P1-01", desc: "Suivi mois par mois avec source obligatoire, cumul annuel automatique et pilote nominatif sur alerte rouge." },
-          { id: "1.2", code: "OUTIL 1.2", title: "Plan de Continuité & Solutions de Repli (Plan B)", sopRef: "DELACOUR-SOP-P1-02", desc: "Numéros d'urgence 24/7, emplacement des clés/mots de passe, commande sacrifiée en priorité et test réel annuel." }
+          { id: "1.2", code: "OUTIL 1.2", title: "Plan de Continuité & Solutions de Repli (Plan B)", sopRef: "DELACOUR-SOP-P1-02", desc: "Numéros d'urgence 24/7, emplacement des clés/mots de passe, commande sacrifiée en priorité et test tous les 6 mois." }
         ]
       },
       {
@@ -225,7 +228,7 @@
         let toolsCardsHtml = proc.tools.map(t => {
           const stats = getToolRecordsStats(t.id);
           return `
-            <div onclick="window.location.href='${t.id === '1.1' ? 'pilotage.html' : 'tool_page.html?tool=' + t.id}'" class="p-5 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-white hover:border-delacour-gold hover:shadow-md transition cursor-pointer flex flex-col justify-between group">
+            <div onclick="window.location.href='${t.id === '1.1' ? 'pilotage.html' : t.id === '1.2' ? 'pilotage.html#continuite' : 'tool_page.html?tool=' + t.id}'" class="p-5 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-white hover:border-delacour-gold hover:shadow-md transition cursor-pointer flex flex-col justify-between group">
               <div>
                 <div class="flex items-center justify-between mb-2">
                   <span class="text-xs font-black px-2 py-0.5 rounded bg-delacour-primary text-white font-mono">${t.code}</span>

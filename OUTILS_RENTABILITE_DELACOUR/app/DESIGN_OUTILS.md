@@ -26,7 +26,7 @@ Règles appliquées à l'outil 1.1 et à la fiche action (5 Pourquoi + 5M). Les 
 - La **synthèse dirigeant** passe en premier, puis chaque processus : tableau, puis graphique d'évolution (affiché par défaut, masquable avec « Masquer le graphique »). Pas de mini-courbe dans les lignes du tableau.
 - **Graphiques** : un indicateur à la fois en grand (240 px de haut, 200 px sur mobile), ou « Tous les indicateurs » en grille de petits graphiques (3, 2 ou 1 par ligne selon la largeur), chacun avec sa propre échelle. Pas de vue « base 100 ».
   - Zone conforme teintée en vert pâle du côté conforme de la cible ; cible en pointillé or, rappelée dans l'en-tête du graphique.
-  - Points colorés selon le statut du mois (vert, orange, rouge) ; infobulle au survol sur chaque point.
+  - Points colorés selon le statut du mois (vert, orange, rouge) ; infobulle immédiate sur chaque point (survol, toucher ou clavier).
   - Étiquettes de valeur sur le dernier mois, le minimum et le maximum seulement ; mois actif surligné comme dans le tableau.
   - Axes en 11 px, polices système ; graduations arrondies ; taux entre 0 et 100 %.
   - KPI confidentiel en vue équipe : « Graphique réservé à la direction ».

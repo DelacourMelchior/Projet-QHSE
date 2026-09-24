@@ -7285,7 +7285,7 @@
         const c = KPI_STATUS_COLORS[st.cls] || color;
         const x = X(p.m), y = Y(p.v);
         const tip = `${getColumnLabel(tool, p.m)} : ${fmt(p.v)}${ind.target ? ' · cible ' + ind.target : ''} · ${st.text}`;
-        svg += `<g><title>${escapeHtml(tip)}</title><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="11" fill="transparent" />`
+        svg += `<g class="kpi-pt" tabindex="0" role="img" aria-label="${escapeHtml(tip)}" data-month="${escapeHtml(getColumnLabel(tool, p.m))}" data-value="${escapeHtml(fmt(p.v))}" data-target="${escapeHtml(ind.target || '')}" data-status="${escapeHtml(st.text)}" data-color="${c}" style="cursor:pointer;outline:none"><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="12" fill="transparent" />`
           + `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${compact ? 3.5 : 4.5}" fill="${c}" stroke="#ffffff" stroke-width="1.5" /></g>`;
         if (labelled.has(p.m)) {
           const txt = fmt(p.v);
@@ -7308,6 +7308,39 @@
 
       return `<svg class="block bg-white rounded-lg border border-slate-200 select-none" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-label="Évolution de ${escapeHtml(ind.name)}">${svg}</svg>`;
     }
+
+    // Instant tooltip for chart points (the native SVG title shows late and never on touch screens)
+    (function initKpiChartTooltip() {
+      let tipEl = null;
+      const show = g => {
+        if (!tipEl) {
+          tipEl = document.createElement('div');
+          tipEl.setAttribute('role', 'tooltip');
+          tipEl.className = 'fixed z-50 pointer-events-none bg-slate-900 text-white rounded-lg shadow-lg px-3 py-2 text-[12px] leading-snug';
+          document.body.appendChild(tipEl);
+        }
+        const d = g.dataset;
+        tipEl.innerHTML = `<div class="font-bold">${escapeHtml(d.month)}</div>
+          <div class="font-mono text-[13px] font-bold">${escapeHtml(d.value)}</div>
+          ${d.target ? `<div class="text-slate-300">Cible ${escapeHtml(d.target)}</div>` : ''}
+          <div class="flex items-center gap-1.5"><span class="inline-block w-2 h-2 rounded-full" style="background:${d.color}"></span>${escapeHtml(d.status)}</div>`;
+        tipEl.style.display = 'block';
+        const r = g.getBoundingClientRect(), t = tipEl.getBoundingClientRect();
+        let left = r.left + r.width / 2 - t.width / 2;
+        left = Math.max(8, Math.min(left, window.innerWidth - t.width - 8));
+        const top = r.top - t.height - 10 >= 8 ? r.top - t.height - 10 : r.bottom + 10;
+        tipEl.style.left = left + 'px';
+        tipEl.style.top = top + 'px';
+      };
+      const hide = () => { if (tipEl) tipEl.style.display = 'none'; };
+      const ptOf = e => e.target && e.target.closest ? e.target.closest('.kpi-pt') : null;
+      document.addEventListener('mouseover', e => { const g = ptOf(e); if (g) show(g); });
+      document.addEventListener('mouseout', e => { if (ptOf(e)) hide(); });
+      document.addEventListener('focusin', e => { const g = ptOf(e); if (g) show(g); });
+      document.addEventListener('focusout', e => { if (ptOf(e)) hide(); });
+      document.addEventListener('click', e => { const g = ptOf(e); g ? show(g) : hide(); });
+      window.addEventListener('scroll', hide, true);
+    })();
 
     // Short reading of a KPI for pills and chart headers
     function kpiChartSummary(ind, activeIdx) {
@@ -7401,7 +7434,7 @@
           <span class="flex items-center gap-1.5"><span class="inline-block w-4 border-t-2 border-dashed" style="border-color:#B8893F"></span>Cible</span>
           <span class="flex items-center gap-1.5"><span class="inline-block w-4 border-t-2 border-dashed border-slate-400"></span>Tendance 3 mois</span>
           <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full" style="background:#059669"></span>Conforme <span class="w-2 h-2 rounded-full ml-1" style="background:#D97706"></span>Dérive <span class="w-2 h-2 rounded-full ml-1" style="background:#DC2626"></span>Alerte</span>
-          <span>Survolez ou touchez un point pour le détail</span>
+          <span>Survolez ou touchez un point : mois, valeur, cible et statut</span>
         </div>
       `;
       procBox.appendChild(chartBox);

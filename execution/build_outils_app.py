@@ -10,6 +10,7 @@ Output   : OUTILS_RENTABILITE_DELACOUR/livrable/ — same pages with NO external
            - Content-Security-Policy meta that blocks any network request
 
 Prerequisite (once): cd OUTILS_RENTABILITE_DELACOUR/build && npm install
+                    cd OUTILS_RENTABILITE_DELACOUR/pilotage && npm install && npm run build   (tool 1.1)
 Usage             : python3 execution/build_outils_app.py
 """
 import re
@@ -70,6 +71,21 @@ def main():
         page = build_page((APP / name).read_text(encoding="utf-8"), css, xlsx_js if name == "tool_page.html" else "")
         (OUT / name).write_text(page, encoding="utf-8")
         print(f"{name}: {len(page) // 1024} Ko")
+    # Tool 1.1 rebuilt as its own app (OUTILS_RENTABILITE_DELACOUR/pilotage, React + TypeScript, built by Vite)
+    pilotage = ROOT / "pilotage" / "dist" / "index.html"
+    if pilotage.exists():
+        (OUT / "pilotage.html").write_text(pilotage.read_text(encoding="utf-8"), encoding="utf-8")
+        idx = OUT / "index.html"
+        html = idx.read_text(encoding="utf-8").replace("tool_page.html?tool=1.1", "pilotage.html")
+        # tool cards are built in JS: send tool 1.1 to the new app
+        html = html.replace("window.location.href='tool_page.html?tool=${t.id}'",
+                            "window.location.href=(t.id === '1.1' ? 'pilotage.html' : 'tool_page.html?tool=' + t.id)")
+        if "pilotage.html' : 'tool_page.html?tool='" not in html:
+            sys.exit("index.html: tool card link not found, tool 1.1 would open the old version")
+        idx.write_text(html, encoding="utf-8")
+        print(f"pilotage.html: {pilotage.stat().st_size // 1024} Ko (outil 1.1 reconstruit)")
+    else:
+        print("pilotage/dist absent : lancer `npm run build` dans OUTILS_RENTABILITE_DELACOUR/pilotage")
     print(f"OK -> {OUT}")
 
 

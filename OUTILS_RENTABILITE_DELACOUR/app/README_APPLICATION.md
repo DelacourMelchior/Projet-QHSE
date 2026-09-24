@@ -8,7 +8,8 @@ Application de 13 outils de pilotage pour PME (indicateurs, plans B, devis, réc
 |---|---|
 | `app/` | **Sources** : `index.html` (accueil) et `tool_page.html` (les 13 outils). Chargent Tailwind et SheetJS depuis un CDN, pour éditer vite. |
 | `livrable/` | **Version à remettre au client**, générée : zéro appel externe, fonctionne hors connexion. Contient aussi le guide de déploiement client. |
-| `build/` | Outils de construction (Tailwind, SheetJS) et tests des calculs de l'outil 1.1. |
+| `build/` | Outils de construction (Tailwind, SheetJS) et tests des calculs de l'ancien outil 1.1. |
+| `pilotage/` | **Outil 1.1 reconstruit** (React + TypeScript), livré en `livrable/pilotage.html`. Voir `pilotage/README.md`. |
 
 ## Construire le livrable
 
@@ -29,7 +30,7 @@ Les tests couvrent la lecture des nombres, les statuts (mois actif, cible à zé
 
 ## Stockage des données
 
-- **Outil 1.1** : dossier partagé du client (OneDrive, SharePoint, Google Drive, Nextcloud…), un journal par personne, dossier `direction` séparé pour les montants confidentiels. Voir `livrable/GUIDE_DEPLOIEMENT_ONEDRIVE_SHAREPOINT.md`. Sans dossier connecté, ou sous Safari et Firefox, les données restent dans le navigateur du poste.
+- **Outil 1.1** (`livrable/pilotage.html`) : dossier partagé du client (OneDrive, SharePoint, Google Drive, Nextcloud…), un journal par personne, dossier `direction` séparé pour les montants confidentiels. Voir `livrable/GUIDE_DEPLOIEMENT_ONEDRIVE_SHAREPOINT.md`. Sans dossier connecté, ou sous Safari et Firefox, les données restent dans le navigateur du poste.
 - **Outils 1.2 à 5.3** : navigateur du poste uniquement (`localStorage`), avec export et import `.json`.
 
 Aucune donnée n'est envoyée au Cabinet Delacour ni à un tiers.

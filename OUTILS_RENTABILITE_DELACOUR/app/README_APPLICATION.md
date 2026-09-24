@@ -1,6 +1,6 @@
 # Delacour Quality OS : guide développeur et consultant
 
-Application de 13 outils de pilotage pour PME (indicateurs, plans B, devis, réclamations, fournisseurs, compétences, non-qualité, 5 Pourquoi). Deux fichiers HTML, sans serveur.
+Application de 13 outils de pilotage pour PME (indicateurs, plans B, devis, réclamations, fournisseurs, compétences, non-qualité, 5 Pourquoi). Trois fichiers HTML (accueil, outil 1.1, outils 1.2 à 5.3), sans serveur.
 
 ## Structure
 

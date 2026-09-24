@@ -7038,7 +7038,7 @@
         container.appendChild(procBox);
       });
 
-      requestAnimationFrame(() => { kpiAutoScrolled = true; });
+      requestAnimationFrame(() => { kpiAutoScrolled = true; fitKpiCharts(); });
 
       // 3. PERMANENT CORRECTIVE ACTIONS REGISTRY DRAWER
       renderActionRegistryDrawer(container, tool);
@@ -7051,6 +7051,24 @@
     // ==========================================================
     // INLINE SVG SPARKLINE GENERATOR (NO DEPENDENCY)
     // ==========================================================
+    // Width of the chart boxes, measured after layout; charts are redrawn when it changes (window resize, sidebar…)
+    let kpiChartWidth = 0;
+    function fitKpiCharts() {
+      if (currentToolId !== "1.1") return;
+      const host = document.querySelector('#mainViewContainer .kpi-chart-host');
+      if (!host) return;
+      const w = Math.round(host.clientWidth);
+      if (w > 0 && Math.abs(w - kpiChartWidth) > 4) {
+        kpiChartWidth = w;
+        renderDocumentPreservingScroll(TOOLS_DATA["1.1"]);
+      }
+    }
+    let kpiChartResizeTimer = null;
+    window.addEventListener('resize', () => {
+      clearTimeout(kpiChartResizeTimer);
+      kpiChartResizeTimer = setTimeout(fitKpiCharts, 150);
+    });
+
     // Process charts are shown by default; the "Graphique" button hides or shows one
     const kpiChartsHidden = {};
     function toggleProcessChartPanel(procId) {
@@ -7176,9 +7194,9 @@
       const distinctUnits = [...new Set(selectedInds.map(i => i.unit || ''))];
       const useNormalized = (selectedInds.length > 1 && distinctUnits.length > 1);
 
-      // SVG Dimensions (dynamic width based on column count)
-      const chartW = Math.max(740, 120 + cols.length * 55);
-      const chartH = 150;
+      // SVG drawn at the real pixel width of its box (1 unit = 1 px), so it fills the available width
+      const chartW = Math.max(560, kpiChartWidth || ((document.getElementById('mainViewContainer')?.clientWidth || 900) - 64));
+      const chartH = 160;
       const padLeft = 68;
       const padRight = 30;
       const padTop = 22;
@@ -7413,8 +7431,8 @@
           </div>
         </div>
 
-        <div class="w-full overflow-x-auto">
-          <svg class="w-full min-w-[620px] h-40 bg-white rounded-lg border border-slate-200 p-1 select-none shadow-inner" viewBox="0 0 ${chartW} ${chartH}">
+        <div class="kpi-chart-host w-full overflow-x-auto">
+          <svg class="block w-full h-40 bg-white rounded-lg border border-slate-200 select-none shadow-inner" style="min-width: 560px" viewBox="0 0 ${chartW} ${chartH}" preserveAspectRatio="none">
             <defs>
               ${defsSvg}
             </defs>

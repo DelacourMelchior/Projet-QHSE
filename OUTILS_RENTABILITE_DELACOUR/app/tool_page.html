@@ -103,6 +103,10 @@
       background: #94A3B8;
     }
 
+    .badge-conforme::before, .badge-surveiller::before, .badge-alerte::before {
+      content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 9999px;
+      background: currentColor; margin-right: 5px; vertical-align: 1px;
+    }
     .badge-conforme {
       background-color: #ECFDF5;
       color: #065F46;
@@ -160,24 +164,24 @@
 
   <!-- TOP HEADER -->
   <header class="no-print bg-delacour-primary text-white sticky top-0 z-50 border-b border-delacour-gold/40 shadow-sm">
-    <div class="w-full px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
+    <div class="w-full px-3 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-3">
       
       <!-- Brand & Navigation -->
-      <div class="flex items-center space-x-3">
-        <a href="index.html" class="flex items-center space-x-1.5 text-slate-200 hover:text-white transition">
+      <div class="flex items-center gap-3 min-w-0">
+        <a href="index.html" class="flex items-center gap-2 text-slate-200 hover:text-white transition shrink-0" title="Retour aux outils">
           <div class="w-6 h-6 rounded bg-delacour-gold text-delacour-dark font-black flex items-center justify-center text-xs">D</div>
-          <span class="text-xs font-extrabold uppercase tracking-wider">CABINET DELACOUR</span>
+          <span class="hidden md:inline text-[13px] font-bold">Cabinet Delacour</span>
         </a>
-        <div class="h-4 w-px bg-white/20"></div>
+        <div class="hidden sm:block h-4 w-px bg-white/20 shrink-0"></div>
         
         <!-- Tool Dropdown Selector -->
-        <select id="toolSelectHeader" onchange="switchTool(this.value)" class="bg-delacour-dark text-white text-xs font-semibold border border-delacour-gold/40 rounded px-2.5 py-1 focus:ring-1 focus:ring-delacour-gold outline-none">
+        <select id="toolSelectHeader" onchange="switchTool(this.value)" class="hidden sm:block min-w-0 w-full max-w-[26rem] truncate bg-delacour-dark text-white text-xs font-semibold border border-delacour-gold/40 rounded px-2.5 py-1 focus:ring-1 focus:ring-delacour-gold outline-none">
           <!-- Injected JS -->
         </select>
       </div>
 
       <!-- Action Toolbar (Indispensables Uniquement) -->
-      <div class="flex items-center space-x-2">
+      <div class="flex items-center gap-2 shrink-0">
         
         <!-- Special Action: Method & Parades Helper for Tool 1.2 -->
         <button id="methodHelper12Btn" onclick="toggleMethodHelper12()" class="hidden bg-delacour-primary hover:bg-delacour-dark text-white text-xs px-2.5 py-1.5 rounded-lg transition border border-delacour-gold font-bold flex items-center space-x-1 shadow-sm">
@@ -199,38 +203,36 @@
           <span>🪄 Nouvelle Fiche de Poste</span>
         </button>
 
+        <!-- COMPANY SETTINGS (TOOL 1.1) -->
+        <button id="btnKpiSettings" onclick="openKpiSettingsModal()" class="hidden bg-slate-800 hover:bg-slate-700 text-white border border-slate-600 text-xs font-bold px-2.5 py-1.5 rounded-lg transition flex items-center space-x-1.5 shadow-sm shrink-0" title="Hypothèses de calcul propres à votre entreprise">
+          <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="21" y1="4" x2="14" y2="4"/><line x1="10" y1="4" x2="3" y2="4"/><line x1="21" y1="12" x2="12" y2="12"/><line x1="8" y1="12" x2="3" y2="12"/><line x1="21" y1="20" x2="16" y2="20"/><line x1="12" y1="20" x2="3" y2="20"/><line x1="14" y1="2" x2="14" y2="6"/><line x1="8" y1="10" x2="8" y2="14"/><line x1="16" y1="18" x2="16" y2="22"/></svg><span class="hidden lg:inline">Mon entreprise</span>
+        </button>
         <!-- CONFIDENTIALITY SWITCH (TOOL 1.1) -->
         <button id="btnConfidentiality" onclick="toggleConfidentiality()" class="hidden bg-slate-800 hover:bg-slate-700 text-delacour-gold border border-delacour-gold/40 text-xs font-bold px-2.5 py-1.5 rounded-lg transition flex items-center space-x-1.5 shadow-sm shrink-0" title="Basculer entre la vue direction complète et la vue équipe/atelier sans montants confidentiels">
-          <span id="confidentialityIcon">🔒</span>
-          <span id="confidentialityLabel">Vue Direction</span>
+          <span id="confidentialityIcon" class="flex"><svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></span>
+          <span id="confidentialityLabel" class="hidden lg:inline">Vue direction</span>
         </button>
 
         <!-- EXPORT MENU UNIFIÉ -->
         <div id="unifiedExportContainer" class="relative inline-block text-left">
           <button onclick="toggleExportMenu()" class="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs px-3 py-1.5 rounded-lg transition flex items-center space-x-1 shadow-sm shrink-0">
-            <span>📤 Exporter</span>
-            <span class="text-[9px] opacity-75">▼</span>
+            <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span class="hidden sm:inline">Exporter</span>
           </button>
           <div id="exportMenu" class="hidden absolute right-0 mt-1 w-64 bg-white rounded-xl shadow-2xl py-1 border border-slate-200 z-50 text-slate-800 text-xs font-medium">
             <div class="py-0.5">
               <a href="javascript:void(0)" onclick="exportToPdf(); closeAllNavDropdowns();" class="flex items-center px-3 py-2 hover:bg-rose-50 space-x-2.5 text-rose-950 font-bold transition">
-                <span class="text-rose-600 text-base">📄</span>
                 <span>Exporter en PDF</span>
               </a>
               <a href="javascript:void(0)" onclick="exportToExcel(); closeAllNavDropdowns();" class="flex items-center px-3 py-2 hover:bg-emerald-50 space-x-2.5 text-emerald-950 font-bold transition">
-                <span class="text-emerald-700 text-base">📊</span>
                 <span>Exporter en Excel</span>
               </a>
               <a href="javascript:void(0)" id="exportExecutiveOption" onclick="openExecutiveReportModal(); closeAllNavDropdowns();" class="flex items-center px-3 py-2 hover:bg-indigo-50 space-x-2.5 text-indigo-950 font-bold transition border-t border-slate-100">
-                <span class="text-indigo-700 text-base">📑</span>
                 <span>Dossier Exécutif de Continuité (PDF/A4)</span>
               </a>
               <a href="javascript:void(0)" id="exportReflexOption" onclick="openReflexCardModal(0); closeAllNavDropdowns();" class="flex items-center px-3 py-2 hover:bg-amber-50 space-x-2.5 text-amber-950 font-bold transition border-t border-slate-100">
-                <span class="text-amber-700 text-base">🖨️</span>
                 <span>Fiche Réflexe d'Urgence (A5)</span>
               </a>
               <a href="javascript:void(0)" id="exportFichePosteOption" onclick="openFichePostePrintModal(0); closeAllNavDropdowns();" class="hidden flex items-center px-3 py-2 hover:bg-purple-50 space-x-2.5 text-purple-950 font-bold transition border-t border-slate-100">
-                <span class="text-purple-700 text-base">👔</span>
                 <span>Fiche de Poste Opérationnelle (A4)</span>
               </a>
             </div>
@@ -240,19 +242,15 @@
         <!-- UNDO / REDO BUTTONS (CTRL+Z / CTRL+Y) -->
         <div class="flex items-center space-x-1">
           <button type="button" onclick="DelacourUndoManager.undo()" id="btnUndoGlobal" title="Annuler la dernière modification (Ctrl+Z / Cmd+Z)" class="bg-delacour-dark hover:bg-slate-800 text-slate-200 hover:text-white text-xs px-2.5 py-1.5 rounded-lg border border-delacour-gold/30 transition flex items-center space-x-1 shadow-sm">
-            <span>↩️</span>
-            <span class="hidden md:inline text-[11px] font-bold">Annuler</span>
-            <span class="text-[9px] opacity-60 font-mono hidden lg:inline">(Ctrl+Z)</span>
+<svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg><span class="sr-only">Annuler</span>
           </button>
           <button type="button" onclick="DelacourUndoManager.redo()" id="btnRedoGlobal" title="Rétablir la modification (Ctrl+Y / Cmd+Shift+Z)" class="bg-delacour-dark hover:bg-slate-800 text-slate-200 hover:text-white text-xs px-2.5 py-1.5 rounded-lg border border-delacour-gold/30 transition flex items-center space-x-1 shadow-sm">
-            <span>↪️</span>
-            <span class="hidden md:inline text-[11px] font-bold">Rétablir</span>
-            <span class="text-[9px] opacity-60 font-mono hidden lg:inline">(Ctrl+Y)</span>
+<svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 14 20 9 15 4"/><path d="M4 20v-7a4 4 0 0 1 4-4h12"/></svg><span class="sr-only">Rétablir</span>
           </button>
         </div>
 
         <!-- SAVE STATUS INDICATOR (AUTO-SAVE) -->
-        <span id="saveStatusBadge" class="hidden sm:inline-flex items-center space-x-1 text-[10px] font-semibold text-emerald-300 bg-emerald-950/60 border border-emerald-500/30 px-2.5 py-1 rounded-md">
+        <span id="saveStatusBadge" class="hidden xl:inline-flex items-center space-x-1 text-[11px] font-semibold text-emerald-300 bg-emerald-950/60 border border-emerald-500/30 px-2.5 py-1 rounded-md">
           <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
           <span id="saveStatusText">Enregistré</span>
         </span>
@@ -267,9 +265,9 @@
     <!-- STRICT A4 DOCUMENT SHEET -->
     <div id="printableDocument" class="a4-page">
       
-      <!-- TOP DOCUMENT HEADER -->
+      <!-- TOP DOCUMENT HEADER (letterhead: printed, not shown on screen) -->
       <div>
-        <div class="flex items-center justify-between pb-2.5 border-b-2 border-delacour-primary">
+        <div class="hidden print:flex items-center justify-between pb-2.5 border-b-2 border-delacour-primary">
           <div class="flex items-center space-x-3">
             <div class="w-9 h-9 rounded bg-delacour-primary text-white font-black text-lg flex items-center justify-center border border-delacour-gold">
               D
@@ -353,6 +351,62 @@
   </main>
 
   
+  <!-- MODAL: PARAMÈTRES ENTREPRISE (TOOL 1.1) -->
+  <div id="kpiSettingsModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-5 shadow-2xl border border-slate-200 space-y-3 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+        <div>
+          <h3 class="text-sm font-extrabold text-slate-900">Hypothèses de mon entreprise</h3>
+          <p class="text-[10px] text-slate-500">Utilisées dans les messages d'analyse. Aucun chiffre n'est imposé.</p>
+        </div>
+        <button onclick="closeKpiSettingsModal()" class="text-slate-400 hover:text-slate-700 text-lg font-bold">&times;</button>
+      </div>
+      <div class="space-y-2.5">
+        <label class="block">
+          <span class="text-[11px] font-bold text-slate-800">Objectif de chiffre d'affaires annuel</span>
+          <span class="flex items-center gap-2 mt-0.5"><input id="setAnnualBudget" type="number" min="0" step="any" class="w-40 px-2 py-1 text-xs font-mono font-bold text-right border border-slate-300 rounded focus:border-delacour-gold focus:ring-1 focus:ring-delacour-gold outline-none"><span class="text-[10px] font-bold text-slate-500">€ HT</span></span>
+          <span class="block text-[10px] text-slate-500">Sert à la projection de fin d'exercice.</span>
+        </label>
+        <label class="block">
+          <span class="text-[11px] font-bold text-slate-800">Marge nette habituelle</span>
+          <span class="flex items-center gap-2 mt-0.5"><input id="setMargeNette" type="number" min="0" step="any" class="w-40 px-2 py-1 text-xs font-mono font-bold text-right border border-slate-300 rounded focus:border-delacour-gold focus:ring-1 focus:ring-delacour-gold outline-none"><span class="text-[10px] font-bold text-slate-500">%</span></span>
+          <span class="block text-[10px] text-slate-500">Sert à calculer le CA à refaire pour compenser 1 € perdu (100 / marge).</span>
+        </label>
+        <label class="block">
+          <span class="text-[11px] font-bold text-slate-800">Montant moyen d'un devis</span>
+          <span class="flex items-center gap-2 mt-0.5"><input id="setValeurDevis" type="number" min="0" step="any" class="w-40 px-2 py-1 text-xs font-mono font-bold text-right border border-slate-300 rounded focus:border-delacour-gold focus:ring-1 focus:ring-delacour-gold outline-none"><span class="text-[10px] font-bold text-slate-500">€ HT</span></span>
+          <span class="block text-[10px] text-slate-500">Sert à chiffrer les devis en attente de relance.</span>
+        </label>
+      </div>
+      <div class="pt-2 border-t border-slate-100 space-y-1.5">
+        <div class="text-[10px] font-black text-slate-500">Sauvegarde</div>
+        <div class="flex flex-wrap gap-2">
+          <button onclick="exportKpiJsonBackup()" class="px-3 py-1.5 rounded text-[11px] font-bold border border-slate-300 text-slate-700 hover:bg-slate-100 transition">Exporter une sauvegarde (.json)</button>
+          <button onclick="closeKpiSettingsModal(); triggerImportKpiJson()" class="px-3 py-1.5 rounded text-[11px] font-bold border border-slate-300 text-slate-700 hover:bg-slate-100 transition">Restaurer une sauvegarde</button>
+          <input type="file" id="kpiJsonFileInput" accept=".json,application/json" class="hidden" onchange="handleKpiJsonFileSelected(event)">
+        </div>
+        <div class="text-[10px] font-black text-slate-500 pt-1">Liste de KPI par métier</div>
+        <div class="flex flex-wrap gap-2 items-center">
+          <select id="kpiProfileSelect" class="text-[11px] font-bold border border-slate-300 rounded px-2 py-1.5 bg-white">
+            <option value="industrie">Industrie, usinage & atelier</option>
+            <option value="btp">BTP, chantiers & second-œuvre</option>
+            <option value="services">Services, conseil & ingénierie</option>
+          </select>
+          <button onclick="closeKpiSettingsModal(); applyPmeProfile(document.getElementById('kpiProfileSelect').value)" class="px-3 py-1.5 rounded text-[11px] font-bold border border-slate-300 text-slate-700 hover:bg-slate-100 transition">Appliquer</button>
+        </div>
+        <div class="text-[10px] font-black text-slate-500 pt-1">Données du tableau</div>
+        <div class="flex flex-wrap gap-2">
+          <button onclick="clearKpiDataKeepStructure()" class="px-3 py-1.5 rounded text-[11px] font-bold border border-slate-300 text-slate-700 hover:bg-slate-100 transition">Vider toutes les valeurs</button>
+          <button onclick="loadKpiDemoExample()" class="px-3 py-1.5 rounded text-[11px] font-bold border border-slate-300 text-slate-700 hover:bg-slate-100 transition">Charger l'exemple de démonstration</button>
+        </div>
+      </div>
+      <div class="pt-3 border-t border-slate-100 flex items-center justify-between">
+        <button onclick="closeKpiSettingsModal()" class="px-3 py-1.5 rounded text-xs font-bold text-slate-600 hover:bg-slate-100 transition">Annuler</button>
+        <button onclick="saveKpiSettingsFromModal()" class="px-4 py-1.5 rounded text-xs font-bold bg-delacour-primary hover:bg-delacour-dark text-white shadow-md transition">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL: EXPRESS MONTHLY ENTRY (90s FLASH) -->
   <div id="expressEntryModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-xl w-full p-5 shadow-2xl border border-slate-200 space-y-3 max-h-[90vh] flex flex-col">
@@ -370,18 +424,6 @@
       <div class="flex items-center space-x-3 bg-amber-50 p-2.5 rounded-lg border border-amber-200">
         <label for="expressMonthSelect" class="text-xs font-bold text-amber-950">Mois à renseigner :</label>
         <select id="expressMonthSelect" onchange="onExpressMonthChange()" class="text-xs font-bold bg-white border border-amber-300 rounded px-2.5 py-1 focus:ring-1 focus:ring-delacour-gold outline-none">
-          <option value="0">Janvier</option>
-          <option value="1">Février</option>
-          <option value="2">Mars</option>
-          <option value="3">Avril</option>
-          <option value="4">Mai</option>
-          <option value="5">Juin</option>
-          <option value="6">Juillet</option>
-          <option value="7">Août</option>
-          <option value="8">Septembre</option>
-          <option value="9">Octobre</option>
-          <option value="10">Novembre</option>
-          <option value="11">Décembre</option>
         </select>
         <span class="text-[10px] text-amber-800 italic">Saisie rapide : Tab pour passer à la case suivante</span>
       </div>
@@ -2254,18 +2296,17 @@
       <!-- En-tête -->
       <div class="flex items-center justify-between pb-3 border-b border-slate-100 shrink-0">
         <div class="flex items-center space-x-3">
-          <span class="text-3xl">📋</span>
           <div>
             <div class="flex items-center space-x-2">
               <h2 class="text-base font-black text-slate-900">Plan d'Actions Global & Registre d'Amélioration (§10.2)</h2>
-              <span class="text-[9px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-200">ISO 9001 / Lean</span>
+              <span class="text-[11px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-200">ISO 9001 / Lean</span>
             </div>
             <p class="text-xs text-slate-500 mt-0.5">Vue consolidée de l'ensemble des actions correctives et préventives de l'entreprise</p>
           </div>
         </div>
         <div class="flex items-center space-x-2">
           <button onclick="printGlobalActionPlan()" class="no-print px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg border border-slate-300 transition flex items-center space-x-1.5">
-            <span>🖨️</span> <span>Imprimer / PDF CODIR</span>
+            <span></span> <span>Imprimer / PDF CODIR</span>
           </button>
           <button onclick="closeGlobalActionPlanModal()" class="text-slate-400 hover:text-slate-700 text-2xl font-bold p-1 leading-none">&times;</button>
         </div>
@@ -2279,17 +2320,17 @@
       <!-- Barre de Contrôle & Filtres -->
       <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200 flex flex-wrap items-center justify-between gap-2.5 shrink-0">
         <div class="flex flex-wrap items-center gap-1.5">
-          <span class="text-[10px] font-black uppercase text-slate-400 mr-1">Statut :</span>
+          <span class="text-[11px] font-black text-slate-400 mr-1">Statut :</span>
           <button onclick="setGlobalActionFilterStatus('all')" class="global-act-filter-status px-2.5 py-1 rounded-lg text-xs font-bold border transition bg-delacour-primary text-white border-delacour-primary" data-val="all">Toutes</button>
-          <button onclick="setGlobalActionFilterStatus('overdue')" class="global-act-filter-status px-2.5 py-1 rounded-lg text-xs font-bold border transition bg-white text-rose-700 border-slate-200 hover:bg-rose-50" data-val="overdue">🔴 En retard</button>
-          <button onclick="setGlobalActionFilterStatus('in_progress')" class="global-act-filter-status px-2.5 py-1 rounded-lg text-xs font-bold border transition bg-white text-amber-700 border-slate-200 hover:bg-amber-50" data-val="in_progress">🟡 En cours</button>
-          <button onclick="setGlobalActionFilterStatus('done')" class="global-act-filter-status px-2.5 py-1 rounded-lg text-xs font-bold border transition bg-white text-emerald-700 border-slate-200 hover:bg-emerald-50" data-val="done">🟢 Clôturées</button>
+          <button onclick="setGlobalActionFilterStatus('overdue')" class="global-act-filter-status px-2.5 py-1 rounded-lg text-xs font-bold border transition bg-white text-rose-700 border-slate-200 hover:bg-rose-50" data-val="overdue">En retard</button>
+          <button onclick="setGlobalActionFilterStatus('in_progress')" class="global-act-filter-status px-2.5 py-1 rounded-lg text-xs font-bold border transition bg-white text-amber-700 border-slate-200 hover:bg-amber-50" data-val="in_progress">En cours</button>
+          <button onclick="setGlobalActionFilterStatus('done')" class="global-act-filter-status px-2.5 py-1 rounded-lg text-xs font-bold border transition bg-white text-emerald-700 border-slate-200 hover:bg-emerald-50" data-val="done">Clôturées</button>
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
           <!-- Filter Process -->
           <select id="globalActionFilterProcSelect" onchange="renderGlobalActionPlanTable()" class="text-xs font-bold bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-slate-700 outline-none">
-            <option value="all">🏢 Tous les processus</option>
+            <option value="all">Tous les processus</option>
             <option value="P1">P1. Direction</option>
             <option value="P2">P2. Commercial</option>
             <option value="P3">P3. Atelier / Prestations</option>
@@ -2299,7 +2340,7 @@
 
           <!-- Filter Pilot -->
           <select id="globalActionFilterPilotSelect" onchange="renderGlobalActionPlanTable()" class="text-xs font-bold bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-slate-700 outline-none">
-            <option value="all">👤 Tous les pilotes</option>
+            <option value="all">Tous les pilotes</option>
           </select>
 
           <!-- Search Input -->
@@ -2310,7 +2351,7 @@
       <!-- Tableau dynamique des actions -->
       <div class="overflow-y-auto flex-1 border border-slate-200 rounded-xl">
         <table class="w-full text-left border-collapse" id="globalActionPlanTable">
-          <thead class="sticky top-0 bg-slate-100 z-10 text-[9.5px] uppercase font-black text-slate-600 border-b border-slate-200">
+          <thead class="sticky top-0 bg-slate-100 z-10 text-[11px] font-black text-slate-600 border-b border-slate-200">
             <tr>
               <th class="p-2.5 w-[110px]">Statut</th>
               <th class="p-2.5 w-[100px]">Échéance</th>
@@ -2338,13 +2379,12 @@
       <!-- En-tête -->
       <div class="flex flex-wrap items-center justify-between pb-3 border-b border-slate-200 gap-2 shrink-0">
         <div class="flex items-center space-x-3">
-          <span class="text-3xl">🎯</span>
           <div>
             <div class="flex items-center space-x-2">
-              <span class="px-2 py-0.5 rounded text-[9.5px] font-black uppercase text-white bg-delacour-primary">OUTIL 5.3</span>
+              <span class="px-2 py-0.5 rounded text-[11px] font-black text-white bg-delacour-primary">OUTIL 5.3</span>
               <h2 class="text-sm sm:text-base font-black text-slate-900" id="fiveWhysModalHeaderTitle">Trame d'Atelier 5 Pourquoi & Fiche Action</h2>
             </div>
-            <p class="text-[10.5px] text-slate-500 mt-0.5">Analyse causale approfondie & résolution définitive à la racine</p>
+            <p class="text-[11px] text-slate-500 mt-0.5">Analyse causale approfondie & résolution définitive à la racine</p>
           </div>
         </div>
 
@@ -2352,11 +2392,11 @@
           <!-- Onglets d'action si indicateur KPI -->
           <div id="workshopTabsContainer" class="hidden flex items-center space-x-2 border-b border-slate-200 text-xs font-bold mr-2">
             <button id="workshopTabActionBtn" type="button" onclick="switchWorkshopViewTab('action')" class="pb-1.5 border-b-2 border-delacour-primary text-delacour-primary flex items-center space-x-1">
-              <span>🎯 Atelier & Action</span>
+              <span>Atelier & Action</span>
             </button>
             <button id="workshopTabHistoryBtn" type="button" onclick="switchWorkshopViewTab('history')" class="pb-1.5 border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center space-x-1">
-              <span>📜 Historique KPI</span>
-              <span id="workshopHistoryBadge" class="bg-slate-200 text-slate-700 text-[9px] px-1.5 py-0.2 rounded-full font-black">0</span>
+              <span>Historique KPI</span>
+              <span id="workshopHistoryBadge" class="bg-slate-200 text-slate-700 text-[11px] px-1.5 py-0.2 rounded-full font-black">0</span>
             </button>
           </div>
 
@@ -2375,29 +2415,29 @@
         <!-- Méta de l'atelier -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 bg-slate-50 p-3 rounded-xl border border-slate-200">
           <div class="sm:col-span-2">
-            <label class="block text-[10.5px] font-bold text-slate-700 mb-0.5">Problème Analysé / Titre de l'Écart :</label>
+            <label class="block text-[11px] font-bold text-slate-700 mb-0.5">Problème Analysé / Titre de l'Écart :</label>
             <input type="text" id="workshopProblemTitle" class="w-full text-xs font-bold bg-white border border-slate-300 rounded-lg p-2 text-slate-900 outline-none focus:border-delacour-gold" placeholder="Ex: Inversion des connecteurs sur faisceau électrique N°44">
           </div>
           <div>
-            <label class="block text-[10.5px] font-bold text-slate-700 mb-0.5">Réf NC / Code Action :</label>
+            <label class="block text-[11px] font-bold text-slate-700 mb-0.5">Réf NC / Code Action :</label>
             <input type="text" id="workshopNcRef" class="w-full text-xs font-mono font-bold bg-white border border-slate-300 rounded-lg p-2 text-slate-900 outline-none focus:border-delacour-gold" placeholder="Ex: NC-2026-08">
           </div>
 
           <div>
-            <label class="block text-[10.5px] font-bold text-slate-700 mb-0.5">Date de la séance / Détection :</label>
+            <label class="block text-[11px] font-bold text-slate-700 mb-0.5">Date de la séance / Détection :</label>
             <input type="date" id="workshopDate" class="w-full text-xs font-bold bg-white border border-slate-300 rounded-lg p-2 text-slate-800 outline-none focus:border-delacour-gold">
           </div>
           <div>
-            <label class="block text-[10.5px] font-bold text-slate-700 mb-0.5">Origine de la Détection :</label>
+            <label class="block text-[11px] font-bold text-slate-700 mb-0.5">Origine de la Détection :</label>
             <select id="workshopSourceType" onchange="onWorkshopSourceTypeChange(this.value)" class="w-full text-xs font-bold bg-white border border-slate-300 rounded-lg p-2 text-slate-800 outline-none focus:border-delacour-gold">
-              <option value="kpi">📊 Dérive Indicateur KPI (Outil 1.1)</option>
-              <option value="bac_rouge">📦 Quarantaine Bac Rouge (Outil 5.1)</option>
-              <option value="reclamation">🤝 Réclamation Client (Outil 2.3)</option>
-              <option value="terrain">⚙️ Incident Atelier / Autocontrôle</option>
+              <option value="kpi">Dérive Indicateur KPI (Outil 1.1)</option>
+              <option value="bac_rouge">Quarantaine Bac Rouge (Outil 5.1)</option>
+              <option value="reclamation">Réclamation Client (Outil 2.3)</option>
+              <option value="terrain">Incident Atelier / Autocontrôle</option>
             </select>
           </div>
           <div>
-            <label class="block text-[10.5px] font-bold text-slate-700 mb-0.5">Participants (Équipe terrain) :</label>
+            <label class="block text-[11px] font-bold text-slate-700 mb-0.5">Participants (Équipe terrain) :</label>
             <input type="text" id="workshopParticipants" class="w-full text-xs bg-white border border-slate-300 rounded-lg p-2 text-slate-800 outline-none focus:border-delacour-gold" placeholder="Ex: Opérateur, Chef atelier, Méthodes">
           </div>
         </div>
@@ -2406,41 +2446,41 @@
         <div class="space-y-2.5 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
           <div class="flex items-center justify-between border-b border-slate-200 pb-1.5">
             <span class="text-xs font-black text-slate-900 flex items-center space-x-1.5">
-              <span>🔍</span>
-              <span>1. L'ENCHAÎNEMENT CAUSAL DES 5 POURQUOI (ANALYSE SYSTÉMIQUE)</span>
+              <span></span>
+              <span>1. Enchaînement causal des 5 pourquoi (analyse systémique)</span>
             </span>
-            <span class="text-[9.5px] text-slate-500 italic">Question factuelle & réponse vérifiée sur place</span>
+            <span class="text-[11px] text-slate-500 italic">Question factuelle & réponse vérifiée sur place</span>
           </div>
 
           <div class="space-y-2">
             <div>
-              <label class="block text-[10.5px] font-bold text-slate-800 mb-0.5">CONSTAT FACTUEL DE DÉPART :</label>
+              <label class="block text-[11px] font-bold text-slate-800 mb-0.5">Constat factuel de départ :</label>
               <input type="text" id="workshopConstat" oninput="updateWorkshopReverseTest()" class="w-full text-xs font-medium bg-white border border-slate-300 rounded-lg p-2 text-slate-900 outline-none focus:border-delacour-gold" placeholder="Description factuelle du symptôme (ex: Le faisceau électrique a été monté à l'envers sur le châssis)">
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               <div>
-                <label class="block text-[10px] font-bold text-slate-700 mb-0.5">1. Pourquoi ? (Cause immédiate) :</label>
+                <label class="block text-[11px] font-bold text-slate-700 mb-0.5">1. Pourquoi ? (Cause immédiate) :</label>
                 <input type="text" id="workshopWhy1" oninput="updateWorkshopReverseTest()" class="w-full text-xs bg-white border border-slate-300 rounded-lg p-2 text-slate-800 outline-none focus:border-delacour-gold" placeholder="Pourquoi ce geste / cet événement direct a eu lieu ?">
               </div>
               <div>
-                <label class="block text-[10px] font-bold text-slate-700 mb-0.5">2. Pourquoi ? :</label>
+                <label class="block text-[11px] font-bold text-slate-700 mb-0.5">2. Pourquoi ? :</label>
                 <input type="text" id="workshopWhy2" oninput="updateWorkshopReverseTest()" class="w-full text-xs bg-white border border-slate-300 rounded-lg p-2 text-slate-800 outline-none focus:border-delacour-gold" placeholder="Pourquoi cela a-t-il été possible ?">
               </div>
               <div>
-                <label class="block text-[10px] font-bold text-slate-700 mb-0.5">3. Pourquoi ? :</label>
+                <label class="block text-[11px] font-bold text-slate-700 mb-0.5">3. Pourquoi ? :</label>
                 <input type="text" id="workshopWhy3" oninput="updateWorkshopReverseTest()" class="w-full text-xs bg-white border border-slate-300 rounded-lg p-2 text-slate-800 outline-none focus:border-delacour-gold" placeholder="Pourquoi le standard n'a pas empêché cela ?">
               </div>
               <div>
-                <label class="block text-[10px] font-bold text-slate-700 mb-0.5">4. Pourquoi ? :</label>
+                <label class="block text-[11px] font-bold text-slate-700 mb-0.5">4. Pourquoi ? :</label>
                 <input type="text" id="workshopWhy4" oninput="updateWorkshopReverseTest()" class="w-full text-xs bg-white border border-slate-300 rounded-lg p-2 text-slate-800 outline-none focus:border-delacour-gold" placeholder="Quelle décision d'achat, de conception ou de méthode ?">
               </div>
             </div>
 
             <div class="pt-1">
-              <label class="block text-xs font-black text-amber-900 uppercase tracking-wide mb-0.5 flex items-center space-x-1.5">
-                <span>🎯</span>
-                <span>5. CAUSE RACINE SYSTÉMIQUE (ÉLIMINATION DÉFINITIVE) :</span>
+              <label class="block text-xs font-black text-amber-900 mb-0.5 flex items-center space-x-1.5">
+                <span></span>
+                <span>5. Cause racine systémique (élimination définitive) :</span>
               </label>
               <textarea id="workshopWhy5" oninput="updateWorkshopReverseTest()" rows="2" class="w-full text-xs font-bold bg-amber-50 border-2 border-amber-400 rounded-lg p-2.5 text-amber-950 outline-none focus:ring-1 focus:ring-delacour-gold" placeholder="La faille de fond dans le processus qui a rendu l'erreur possible (ex: Absence de détrompeur physique rendant l'inversion mécaniquement impossible au montage)..."></textarea>
             </div>
@@ -2450,15 +2490,15 @@
           <div class="p-3 bg-white rounded-xl border border-slate-200 space-y-1.5 shadow-2xs">
             <div class="flex items-center justify-between">
               <span class="text-xs font-black text-delacour-primary flex items-center space-x-1.5">
-                <span>🔄</span>
-                <span>TEST DE COHÉRENCE À REBOURS (« TEST DU DONC »)</span>
+                <span></span>
+                <span>Test de cohérence à rebours (« test du donc »)</span>
               </span>
-              <span id="workshopLogicBadge" class="text-[9.5px] font-black uppercase px-2 py-0.5 rounded bg-slate-100 text-slate-600">En cours de saisie</span>
+              <span id="workshopLogicBadge" class="text-[11px] font-black px-2 py-0.5 rounded bg-slate-100 text-slate-600">En cours de saisie</span>
             </div>
-            <p class="text-[10px] text-slate-500 leading-tight">
+            <p class="text-[11px] text-slate-500 leading-tight">
               Relisez de bas en haut : <em>« Puisque [Cause 5], DONC [Cause 4]... DONC le constat initial »</em>. Si ce lien tient, votre racine est incontestable !
             </p>
-            <div id="workshopReverseTestChain" class="p-2.5 bg-slate-50 rounded-lg border border-slate-200 font-mono text-[10.5px] text-slate-800 space-y-1">
+            <div id="workshopReverseTestChain" class="p-2.5 bg-slate-50 rounded-lg border border-slate-200 font-mono text-[11px] text-slate-800 space-y-1">
               <span class="italic text-slate-400">Renseignez le constat et les causes pour visualiser le fil causal...</span>
             </div>
           </div>
@@ -2468,59 +2508,125 @@
         <div class="space-y-2.5 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
           <div class="flex items-center justify-between border-b border-slate-200 pb-1.5">
             <span class="text-xs font-black text-slate-900 flex items-center space-x-1.5">
-              <span>🛠️</span>
-              <span>2. PLAN D'ACTION DÉFINITIF À LA RACINE (SOUS 7 JOURS)</span>
+              <span></span>
+              <span>2. Plan d'action définitif à la racine (sous 7 jours)</span>
             </span>
-            <span class="text-[9.5px] font-bold text-amber-900 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded">Règle des 7 jours</span>
+            <span class="text-[11px] font-bold text-amber-900 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded">Règle des 7 jours</span>
           </div>
 
           <div class="space-y-2">
-            <div>
-              <label class="block text-[10.5px] font-bold text-slate-800 mb-0.5">Action Physique ou Organisationnelle Validée :</label>
-              <textarea id="workshopActionText" rows="2" class="w-full text-xs font-medium bg-white border border-slate-300 rounded-lg p-2.5 text-slate-900 outline-none focus:border-delacour-gold" placeholder="Description précise de l'action (ex: Ajout d'un ergot asymétrique plastique / butée indéréglable / mise à jour instruction visuelle SOP 3.2)..."></textarea>
+            <!-- Plan d'action par dimension 5M (même principe que l'assistant de l'outil 1.2) -->
+            <div class="space-y-2">
+              <p class="text-[11px] text-slate-600">Ajoutez une ou plusieurs actions dans les dimensions concernées. Le pilote d'une action est facultatif : sans nom, c'est le pilote principal.</p>
+              <div class="rounded-lg border border-slate-200 bg-white p-2.5 space-y-2">
+                <div class="flex items-center justify-between gap-2">
+                  <div class="flex items-baseline gap-2 min-w-0">
+                    <span class="w-5 h-5 rounded-md bg-slate-100 text-slate-700 flex items-center justify-center text-[11px] font-bold shrink-0">1</span>
+                    <span class="text-xs font-bold text-slate-900">Main-d'œuvre</span>
+                    <span class="hidden sm:inline text-[11px] text-slate-500 truncate">compétences, charge, relais</span>
+                  </div>
+                  <div class="flex items-center gap-1.5 shrink-0">
+                    <button type="button" onclick="document.getElementById('ws5m_ideas_main_oeuvre').classList.toggle('hidden')" class="text-[11px] font-semibold text-slate-600 bg-slate-50 hover:bg-amber-50 border border-slate-200 rounded-md px-2 py-1 transition">Idées</button>
+                    <button type="button" onclick="add5MWorkshopAction('main_oeuvre', '')" class="text-[11px] font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-md px-2 py-1 transition">+ Action</button>
+                  </div>
+                </div>
+                <div id="ws5m_ideas_main_oeuvre" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-1.5"><button type="button" onclick="add5MWorkshopAction('main_oeuvre', this.textContent.trim())" class="text-left px-2.5 py-1.5 rounded-lg bg-white hover:bg-amber-50 border border-slate-200 hover:border-amber-300 text-[11px] font-medium text-slate-700 transition">Former la personne concernée (tutorat de 2 h)</button><button type="button" onclick="add5MWorkshopAction('main_oeuvre', this.textContent.trim())" class="text-left px-2.5 py-1.5 rounded-lg bg-white hover:bg-amber-50 border border-slate-200 hover:border-amber-300 text-[11px] font-medium text-slate-700 transition">Nommer un binôme de relais sur le poste</button><button type="button" onclick="add5MWorkshopAction('main_oeuvre', this.textContent.trim())" class="text-left px-2.5 py-1.5 rounded-lg bg-white hover:bg-amber-50 border border-slate-200 hover:border-amber-300 text-[11px] font-medium text-slate-700 transition">Rééquilibrer la charge de l&#x27;équipe sur 2 semaines</button><button type="button" onclick="add5MWorkshopAction('main_oeuvre', this.textContent.trim())" class="text-left px-2.5 py-1.5 rounded-lg bg-white hover:bg-amber-50 border border-slate-200 hover:border-amber-300 text-[11px] font-medium text-slate-700 transition">Point hebdo de 10 min avec le pilote</button></div>
+                <div id="ws5m_rows_main_oeuvre" class="space-y-1.5"></div>
+              </div>
+              <div class="rounded-lg border border-slate-200 bg-white p-2.5 space-y-2">
+                <div class="flex items-center justify-between gap-2">
+                  <div class="flex items-baseline gap-2 min-w-0">
+                    <span class="w-5 h-5 rounded-md bg-slate-100 text-slate-700 flex items-center justify-center text-[11px] font-bold shrink-0">2</span>
+                    <span class="text-xs font-bold text-slate-900">Méthode</span>
+                    <span class="hidden sm:inline text-[11px] text-slate-500 truncate">standard, contrôle, règle</span>
+                  </div>
+                  <div class="flex items-center gap-1.5 shrink-0">
+                    <button type="button" onclick="document.getElementById('ws5m_ideas_methode').classList.toggle('hidden')" class="text-[11px] font-semibold text-slate-600 bg-slate-50 hover:bg-amber-50 border border-slate-200 rounded-md px-2 py-1 transition">Idées</button>
+                    <button type="button" onclick="add5MWorkshopAction('methode', '')" class="text-[11px] font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-md px-2 py-1 transition">+ Action</button>
+                  </div>
+                </div>
+                <div id="ws5m_ideas_methode" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-1.5"><button type="button" onclick="add5MWorkshopAction('methode', this.textContent.trim())" class="text-left px-2.5 py-1.5 rounded-lg bg-white hover:bg-amber-50 border border-slate-200 hover:border-amber-300 text-[11px] font-medium text-slate-700 transition">Écrire le standard ou la checklist du poste</button><button type="button" onclick="add5MWorkshopAction('methode', this.textContent.trim())" class="text-left px-2.5 py-1.5 rounded-lg bg-white hover:bg-amber-50 border border-slate-200 hover:border-amber-300 text-[11px] font-medium text-slate-700 transition">Ajouter un contrôle avant envoi ou livraison</button><button type="button" onclick="add5MWorkshopAction('methode', this.textContent.trim())" class="text-left px-2.5 py-1.5 rounded-lg bg-white hover:bg-amber-50 border border-slate-200 hover:border-amber-300 text-[11px] font-medium text-slate-700 transition">Revoir la règle de relance ou de validation</button><button type="button" onclick="add5MWorkshopAction('methode', this.textContent.trim())" class="text-left px-2.5 py-1.5 rounded-lg bg-white hover:bg-amber-50 border border-slate-200 hover:border-amber-300 text-[11px] font-medium text-slate-700 transition">Afficher le suivi du KPI chaque semaine</button></div>
+                <div id="ws5m_rows_methode" class="space-y-1.5"></div>
+              </div>
+              <div class="rounded-lg border border-slate-200 bg-white p-2.5 space-y-2">
+                <div class="flex items-center justify-between gap-2">
+                  <div class="flex items-baseline gap-2 min-w-0">
+                    <span class="w-5 h-5 rounded-md bg-slate-100 text-slate-700 flex items-center justify-center text-[11px] font-bold shrink-0">3</span>
+                    <span class="text-xs font-bold text-slate-900">Matériel</span>
+                    <span class="hidden sm:inline text-[11px] text-slate-500 truncate">machine, outil, logiciel</span>
+                  </div>
+                  <div class="flex items-center gap-1.5 shrink-0">
+                    <button type="button" onclick="document.getElementById('ws5m_ideas_materiel').classList.toggle('hidden')" class="text-[11px] font-semibold text-slate-600 bg-slate-50 hover:bg-amber-50 border border-slate-200 rounded-md px-2 py-1 transition">Idées</button>
+                    <button type="button" onclick="add5MWorkshopAction('materiel', '')" class="text-[11px] font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-md px-2 py-1 transition">+ Action</button>
+                  </div>
+                </div>
+                <div id="ws5m_ideas_materiel" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-1.5"><button type="button" onclick="add5MWorkshopAction('materiel', this.textContent.trim())" class="text-left px-2.5 py-1.5 rounded-lg bg-white hover:bg-amber-50 border border-slate-200 hover:border-amber-300 text-[11px] font-medium text-slate-700 transition">Maintenance préventive de l&#x27;équipement en cause</button><button type="button" onclick="add5MWorkshopAction('materiel', this.textContent.trim())" class="text-left px-2.5 py-1.5 rounded-lg bg-white hover:bg-amber-50 border border-slate-200 hover:border-amber-300 text-[11px] font-medium text-slate-700 transition">Paramétrer une alerte dans le logiciel (ERP, CRM)</button><button type="button" onclick="add5MWorkshopAction('materiel', this.textContent.trim())" class="text-left px-2.5 py-1.5 rounded-lg bg-white hover:bg-amber-50 border border-slate-200 hover:border-amber-300 text-[11px] font-medium text-slate-700 transition">Doubler ou remplacer l&#x27;outillage critique</button><button type="button" onclick="add5MWorkshopAction('materiel', this.textContent.trim())" class="text-left px-2.5 py-1.5 rounded-lg bg-white hover:bg-amber-50 border border-slate-200 hover:border-amber-300 text-[11px] font-medium text-slate-700 transition">Détrompeur ou gabarit sur le poste</button></div>
+                <div id="ws5m_rows_materiel" class="space-y-1.5"></div>
+              </div>
+              <div class="rounded-lg border border-slate-200 bg-white p-2.5 space-y-2">
+                <div class="flex items-center justify-between gap-2">
+                  <div class="flex items-baseline gap-2 min-w-0">
+                    <span class="w-5 h-5 rounded-md bg-slate-100 text-slate-700 flex items-center justify-center text-[11px] font-bold shrink-0">4</span>
+                    <span class="text-xs font-bold text-slate-900">Matière</span>
+                    <span class="hidden sm:inline text-[11px] text-slate-500 truncate">achats, fournisseurs, stocks</span>
+                  </div>
+                  <div class="flex items-center gap-1.5 shrink-0">
+                    <button type="button" onclick="document.getElementById('ws5m_ideas_matiere').classList.toggle('hidden')" class="text-[11px] font-semibold text-slate-600 bg-slate-50 hover:bg-amber-50 border border-slate-200 rounded-md px-2 py-1 transition">Idées</button>
+                    <button type="button" onclick="add5MWorkshopAction('matiere', '')" class="text-[11px] font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-md px-2 py-1 transition">+ Action</button>
+                  </div>
+                </div>
+                <div id="ws5m_ideas_matiere" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-1.5"><button type="button" onclick="add5MWorkshopAction('matiere', this.textContent.trim())" class="text-left px-2.5 py-1.5 rounded-lg bg-white hover:bg-amber-50 border border-slate-200 hover:border-amber-300 text-[11px] font-medium text-slate-700 transition">Contrôle à réception des lots fournisseur</button><button type="button" onclick="add5MWorkshopAction('matiere', this.textContent.trim())" class="text-left px-2.5 py-1.5 rounded-lg bg-white hover:bg-amber-50 border border-slate-200 hover:border-amber-300 text-[11px] font-medium text-slate-700 transition">Réclamation ou fiche débit au fournisseur (Outil 3.1)</button><button type="button" onclick="add5MWorkshopAction('matiere', this.textContent.trim())" class="text-left px-2.5 py-1.5 rounded-lg bg-white hover:bg-amber-50 border border-slate-200 hover:border-amber-300 text-[11px] font-medium text-slate-700 transition">Référencer un second fournisseur</button><button type="button" onclick="add5MWorkshopAction('matiere', this.textContent.trim())" class="text-left px-2.5 py-1.5 rounded-lg bg-white hover:bg-amber-50 border border-slate-200 hover:border-amber-300 text-[11px] font-medium text-slate-700 transition">Ajuster le stock de sécurité</button></div>
+                <div id="ws5m_rows_matiere" class="space-y-1.5"></div>
+              </div>
+              <div class="rounded-lg border border-slate-200 bg-white p-2.5 space-y-2">
+                <div class="flex items-center justify-between gap-2">
+                  <div class="flex items-baseline gap-2 min-w-0">
+                    <span class="w-5 h-5 rounded-md bg-slate-100 text-slate-700 flex items-center justify-center text-[11px] font-bold shrink-0">5</span>
+                    <span class="text-xs font-bold text-slate-900">Milieu</span>
+                    <span class="hidden sm:inline text-[11px] text-slate-500 truncate">organisation, clients, planning</span>
+                  </div>
+                  <div class="flex items-center gap-1.5 shrink-0">
+                    <button type="button" onclick="document.getElementById('ws5m_ideas_milieu').classList.toggle('hidden')" class="text-[11px] font-semibold text-slate-600 bg-slate-50 hover:bg-amber-50 border border-slate-200 rounded-md px-2 py-1 transition">Idées</button>
+                    <button type="button" onclick="add5MWorkshopAction('milieu', '')" class="text-[11px] font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-md px-2 py-1 transition">+ Action</button>
+                  </div>
+                </div>
+                <div id="ws5m_ideas_milieu" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-1.5"><button type="button" onclick="add5MWorkshopAction('milieu', this.textContent.trim())" class="text-left px-2.5 py-1.5 rounded-lg bg-white hover:bg-amber-50 border border-slate-200 hover:border-amber-300 text-[11px] font-medium text-slate-700 transition">Revoir le planning et les congés de l&#x27;équipe</button><button type="button" onclick="add5MWorkshopAction('milieu', this.textContent.trim())" class="text-left px-2.5 py-1.5 rounded-lg bg-white hover:bg-amber-50 border border-slate-200 hover:border-amber-300 text-[11px] font-medium text-slate-700 transition">Clarifier les délais avec le client dès le devis</button><button type="button" onclick="add5MWorkshopAction('milieu', this.textContent.trim())" class="text-left px-2.5 py-1.5 rounded-lg bg-white hover:bg-amber-50 border border-slate-200 hover:border-amber-300 text-[11px] font-medium text-slate-700 transition">Ranger et organiser le poste (5S)</button><button type="button" onclick="add5MWorkshopAction('milieu', this.textContent.trim())" class="text-left px-2.5 py-1.5 rounded-lg bg-white hover:bg-amber-50 border border-slate-200 hover:border-amber-300 text-[11px] font-medium text-slate-700 transition">Sous-traiter le pic de charge</button></div>
+                <div id="ws5m_rows_milieu" class="space-y-1.5"></div>
+              </div>
+              <input type="hidden" id="workshopActionText" value="">
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
-              <div>
-                <label class="block text-[10px] font-bold text-slate-700 mb-0.5">Type de Contre-Mesure :</label>
-                <select id="workshopActionType" class="w-full text-xs font-bold bg-white border border-slate-300 rounded-lg p-2 text-slate-800 outline-none focus:border-delacour-gold">
-                  <option value="poka_yoke">🛡️ Poka-Yoke physique (Détrompeur)</option>
-                  <option value="visual_standard">📋 Standard visuel SOP (Outil 3.2)</option>
-                  <option value="autocontrol">🔍 Barrière autocontrôle (95/5)</option>
-                  <option value="tooling">⚙️ Modification outillage / gabarit</option>
-                  <option value="training">👥 Tutorat / Habilitation (Outil 4.3)</option>
-                  <option value="purchasing">📦 Cahier des charges achats</option>
-                </select>
-              </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <input type="hidden" id="workshopActionType" value="">
 
               <div>
-                <label class="block text-[10px] font-bold text-slate-700 mb-0.5">Pilote Responsable :</label>
+                <label class="block text-[11px] font-bold text-slate-700 mb-0.5">Pilote principal (obligatoire) :</label>
                 <input type="text" id="workshopPilot" list="pilotsDatalist" class="w-full text-xs font-bold bg-white border border-slate-300 rounded-lg p-2 text-slate-800 outline-none focus:border-delacour-gold" placeholder="Ex: Resp. Méthodes">
               </div>
 
               <div>
                 <div class="flex items-center justify-between mb-0.5">
-                  <label class="text-[10px] font-bold text-slate-700">Échéance Fixe :</label>
-                  <button type="button" onclick="setWorkshopDeadlinePlus7Days()" class="text-[9px] font-black text-delacour-primary hover:underline">+7 jours</button>
+                  <label class="text-[11px] font-bold text-slate-700">Échéance Fixe :</label>
+                  <button type="button" onclick="setWorkshopDeadlinePlus7Days()" class="text-[11px] font-black text-delacour-primary hover:underline">+7 jours</button>
                 </div>
                 <input type="date" id="workshopDeadline" class="w-full text-xs font-mono font-bold bg-white border border-slate-300 rounded-lg p-2 text-slate-800 outline-none focus:border-delacour-gold">
               </div>
 
               <div>
-                <label class="block text-[10px] font-bold text-slate-700 mb-0.5">Coût Estimé (€ HT) :</label>
+                <label class="block text-[11px] font-bold text-slate-700 mb-0.5">Coût Estimé (€ HT) :</label>
                 <input type="number" id="workshopCost" class="w-full text-xs font-mono bg-white border border-slate-300 rounded-lg p-2 text-slate-800 outline-none focus:border-delacour-gold" placeholder="Ex: 150">
               </div>
             </div>
 
             <!-- Statut de la séance 5P -->
             <div class="pt-1.5 flex flex-wrap items-center justify-between gap-2">
-              <div class="flex items-center space-x-2">
-                <span class="text-[10.5px] font-black text-slate-700">Statut de la démarche :</span>
-                <select id="workshopStatus" class="text-xs font-black rounded-lg px-2.5 py-1 bg-white border border-slate-300 text-slate-800 outline-none shadow-2xs">
-                  <option value="to_start">🔴 À lancer</option>
-                  <option value="in_progress">🟡 En cours de réalisation</option>
-                  <option value="done">🟢 Réalisée (Sous 7j)</option>
-                  <option value="effective">⭐ Efficace (Confirmée PDCA J+30)</option>
+              <div class="flex flex-wrap items-center gap-2 min-w-0">
+                <span class="text-[11px] font-black text-slate-700">Statut de la démarche :</span>
+                <select id="workshopStatus" class="max-w-full text-xs font-black rounded-lg px-2.5 py-1 bg-white border border-slate-300 text-slate-800 outline-none shadow-2xs">
+                  <option value="to_start">À lancer</option>
+                  <option value="in_progress">En cours de réalisation</option>
+                  <option value="done">Réalisée (Sous 7j)</option>
+                  <option value="effective">Efficace (Confirmée PDCA J+30)</option>
                 </select>
               </div>
 
@@ -2539,7 +2645,7 @@
         <div class="flex items-center justify-between pb-1 border-b border-slate-200">
           <span class="text-xs font-black text-slate-800">Historique chronologique des actions menées sur cet indicateur :</span>
           <button type="button" onclick="createNewKpiFiveWhysAction()" class="text-xs font-bold text-delacour-primary hover:text-delacour-dark transition flex items-center space-x-1">
-            <span>➕</span> <span>Nouvelle action sur ce KPI</span>
+            <span></span> <span>Nouvelle action sur ce KPI</span>
           </button>
         </div>
         <div id="workshopHistoryList" class="space-y-2 max-h-[480px] overflow-y-auto p-1">
@@ -2551,10 +2657,10 @@
       <div class="pt-3 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2 shrink-0">
         <div class="flex items-center space-x-2">
           <button type="button" id="workshopDeleteBtn" onclick="deleteCurrentFiveWhysSession()" class="px-3 py-1.5 text-xs font-bold text-red-600 hover:bg-red-50 rounded-lg transition border border-transparent hover:border-red-200">
-            🗑️ Supprimer la Séance
+            Supprimer la Séance
           </button>
           <button type="button" onclick="previewCurrentFiveWhysPrintSheet()" class="px-3 py-1.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition flex items-center space-x-1 border border-slate-300">
-            <span>🖨️</span>
+            <span></span>
             <span>Fiche Affichage Atelier (A4/A3)</span>
           </button>
         </div>
@@ -2562,7 +2668,7 @@
         <div class="flex items-center space-x-2">
           <button type="button" onclick="closeFiveWhysWorkshopModal()" class="px-4 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-100 transition">Fermer</button>
           <button type="button" onclick="saveFiveWhysSessionFromModal()" class="px-5 py-2 rounded-lg text-xs font-black bg-delacour-primary hover:bg-delacour-dark text-white shadow-md transition flex items-center space-x-1.5">
-            <span>💾</span>
+            <span></span>
             <span>Enregistrer la Séance 5P</span>
           </button>
         </div>
@@ -2757,7 +2863,7 @@
                 goalDirection: "higher",
                 targetVal: 50000,
                 target: "50 000 € / m",
-                months: ["52 400 €", "48 900 €", "54 100 €", "", "", "", "", "", "", "", "", ""],
+                months: ["52 400 €", "48 900 €", "54 100 €", "51 800 €", "55 600 €", "53 200 €", "58 900 €", "38 000 €", "56 300 €", "61 400 €", "59 800 €", "47 900 €"],
                 isConfidential: true,
                 actionPilot: "",
                 actionDeadline: "",
@@ -2774,7 +2880,7 @@
                 goalDirection: "higher",
                 targetVal: 35.0,
                 target: "≥ 35,0 %",
-                months: ["36,2 %", "34,8 %", "35,5 %", "", "", "", "", "", "", "", "", ""],
+                months: ["36,2 %", "34,8 %", "35,5 %", "35,9 %", "36,4 %", "33,6 %", "35,2 %", "34,6 %", "35,8 %", "36,3 %", "36,9 %", "35,4 %"],
                 isConfidential: true,
                 actionPilot: "",
                 actionDeadline: "",
@@ -2791,7 +2897,7 @@
                 goalDirection: "higher",
                 targetVal: 30000,
                 target: "> 30 000 €",
-                months: ["42 000 €", "38 500 €", "45 000 €", "", "", "", "", "", "", "", "", ""],
+                months: ["42 000 €", "38 500 €", "45 000 €", "47 200 €", "44 800 €", "39 500 €", "33 900 €", "27 500 €", "31 200 €", "36 800 €", "41 500 €", "38 900 €"],
                 isConfidential: true,
                 actionPilot: "",
                 actionDeadline: "",
@@ -2815,7 +2921,7 @@
                 goalDirection: "higher",
                 targetVal: 80000,
                 target: "80 000 € / m",
-                months: ["95 000 €", "82 000 €", "88 000 €", "", "", "", "", "", "", "", "", ""],
+                months: ["95 000 €", "82 000 €", "88 000 €", "91 500 €", "86 000 €", "79 000 €", "72 500 €", "83 000 €", "97 000 €", "102 500 €", "89 000 €", "64 000 €"],
                 isConfidential: false,
                 actionPilot: "",
                 actionDeadline: "",
@@ -2832,7 +2938,7 @@
                 goalDirection: "higher",
                 targetVal: 55000,
                 target: "55 000 €",
-                months: ["52 000 €", "58 000 €", "49 500 €", "", "", "", "", "", "", "", "", ""],
+                months: ["52 000 €", "58 000 €", "49 500 €", "56 800 €", "61 200 €", "54 300 €", "57 900 €", "41 000 €", "58 400 €", "63 100 €", "57 200 €", "46 500 €"],
                 isConfidential: false,
                 actionPilot: "Marc D.",
                 actionDeadline: "vendredi 17h",
@@ -2849,7 +2955,7 @@
                 goalDirection: "lower",
                 targetVal: 5,
                 target: "< 5 devis",
-                months: ["3", "8", "4", "", "", "", "", "", "", "", "", ""],
+                months: ["3", "8", "4", "2", "5", "7", "4", "6", "4", "3", "5", "6"],
                 isConfidential: false,
                 actionPilot: "Franck C.",
                 actionDeadline: "Vendredi 17h",
@@ -2866,7 +2972,7 @@
                 goalDirection: "higher",
                 targetVal: 30.0,
                 target: "≥ 30,0 %",
-                months: ["34,5 %", "29,0 %", "32,0 %", "", "", "", "", "", "", "", "", ""],
+                months: ["34,5 %", "29,0 %", "32,0 %", "33,5 %", "35,0 %", "31,5 %", "30,5 %", "31,0 %", "33,0 %", "34,5 %", "32,5 %", "30,5 %"],
                 isConfidential: false,
                 actionPilot: "",
                 actionDeadline: "",
@@ -2890,7 +2996,7 @@
                 goalDirection: "higher",
                 targetVal: 98.0,
                 target: "≥ 98,0 %",
-                months: ["97,5 %", "96,0 %", "98,2 %", "", "", "", "", "", "", "", "", ""],
+                months: ["97,5 %", "96,0 %", "98,2 %", "98,6 %", "98,9 %", "97,2 %", "95,4 %", "98,1 %", "98,4 %", "98,7 %", "97,6 %", "98,3 %"],
                 isConfidential: false,
                 actionPilot: "",
                 actionDeadline: "",
@@ -2907,7 +3013,7 @@
                 goalDirection: "lower",
                 targetVal: 5.0,
                 target: "< 5,0 h / m",
-                months: ["2,5 h", "8,5 h", "3,0 h", "", "", "", "", "", "", "", "", ""],
+                months: ["2,5 h", "8,5 h", "3,0 h", "4,0 h", "6,5 h", "3,5 h", "2,0 h", "1,5 h", "3,5 h", "2,5 h", "5,5 h", "2,0 h"],
                 isConfidential: false,
                 actionPilot: "Sylvain P.",
                 actionDeadline: "21/01",
@@ -2924,7 +3030,7 @@
                 goalDirection: "lower",
                 targetVal: 1.5,
                 target: "< 1,5 j",
-                months: ["0,5 j", "1,8 j", "0,8 j", "", "", "", "", "", "", "", "", ""],
+                months: ["0,5 j", "1,8 j", "0,8 j", "0,6 j", "1,2 j", "0,9 j", "2,1 j", "0,7 j", "0,6 j", "0,4 j", "1,3 j", "0,9 j"],
                 isConfidential: false,
                 actionPilot: "",
                 actionDeadline: "",
@@ -2948,12 +3054,12 @@
                 goalDirection: "higher",
                 targetVal: 100,
                 target: "100 %",
-                months: ["88 %", "88 %", "100 %", "", "", "", "", "", "", "", "", ""],
+                months: ["88 %", "88 %", "100 %", "100 %", "100 %", "92 %", "92 %", "100 %", "100 %", "100 %", "100 %", "100 %"],
                 isConfidential: false,
-                actionPilot: "Bernard (DG)",
-                actionDeadline: "15/02",
-                actionText: "Immersion pratique doublure laser selon Matrice 4.1",
-                actionDone: true
+                actionPilot: "",
+                actionDeadline: "",
+                actionText: "",
+                actionDone: false
               },
               {
                 id: "kpi_absenteisme",
@@ -2965,7 +3071,7 @@
                 goalDirection: "lower",
                 targetVal: 3.0,
                 target: "< 3,0 %",
-                months: ["1,8 %", "2,4 %", "1,5 %", "", "", "", "", "", "", "", "", ""],
+                months: ["1,8 %", "2,4 %", "1,5 %", "1,2 %", "2,0 %", "2,6 %", "3,1 %", "3,4 %", "2,6 %", "2,2 %", "2,9 %", "3,2 %"],
                 isConfidential: false,
                 actionPilot: "",
                 actionDeadline: "",
@@ -2989,7 +3095,7 @@
                 goalDirection: "lower",
                 targetVal: 500,
                 target: "< 500 € / m",
-                months: ["320 €", "680 €", "250 €", "", "", "", "", "", "", "", "", ""],
+                months: ["320 €", "680 €", "250 €", "410 €", "1 150 €", "380 €", "290 €", "210 €", "260 €", "190 €", "720 €", "280 €"],
                 isConfidential: false,
                 actionPilot: "Karim (Qualité)",
                 actionDeadline: "28/02",
@@ -3006,7 +3112,7 @@
                 goalDirection: "lower",
                 targetVal: 0,
                 target: "0 litige",
-                months: ["0", "1", "0", "", "", "", "", "", "", "", "", ""],
+                months: ["0", "1", "0", "0", "2", "1", "0", "0", "0", "0", "1", "0"],
                 isConfidential: false,
                 actionPilot: "Franck C.",
                 actionDeadline: "16/01",
@@ -3023,7 +3129,7 @@
                 goalDirection: "higher",
                 targetVal: 90.0,
                 target: "≥ 90,0 %",
-                months: ["92 %", "85 %", "95 %", "", "", "", "", "", "", "", "", ""],
+                months: ["92 %", "85 %", "95 %", "94 %", "88 %", "96 %", "91 %", "93 %", "95 %", "97 %", "90 %", "94 %"],
                 isConfidential: false,
                 actionPilot: "",
                 actionDeadline: "",
@@ -3035,40 +3141,290 @@
         ],
         actionRegistry: [
           {
-            date: "14/01/2026",
-            kpiId: "kpi_retouches",
-            kpiName: "Heures Retouche Atelier",
-            pilot: "Sylvain P.",
-            deadline: "21/01/2026",
-            action: "Contrôle usure outillage plieuse & formation opérateur",
-            status: "✅ Clôturé le 20/01"
+            "id": "act_demo_13",
+            "date": "03/02/2026",
+            "monthIdx": 0,
+            "monthLabel": "Janv 2026",
+            "kpiId": "kpi_suppleance",
+            "kpiName": "Postes Clés avec Doublure Opérationnelle",
+            "processId": "P4",
+            "pIdx": 3,
+            "iIdx": 0,
+            "deviation": "Écart constaté sur la cible",
+            "causeCategory": "manpower",
+            "causeCategoryLabel": "Main d'œuvre / RH",
+            "causeText": "",
+            "action": "Immersion pratique doublure laser selon Matrice 4.1",
+            "pilot": "Bernard (DG)",
+            "deadline": "15/03/2026",
+            "cost": "",
+            "status": "effective",
+            "createdAt": "03/02/2026",
+            "closedAt": "10/03/2026"
           },
           {
-            date: "18/01/2026",
-            kpiId: "kpi_reclamations",
-            kpiName: "Réclamations Clients",
-            pilot: "Franck C.",
-            deadline: "19/01/2026",
-            action: "Avoir émis sous 24h & refabrication express",
-            status: "✅ Clôturé le 19/01"
+            "id": "act_demo_12",
+            "date": "06/01/2027",
+            "monthIdx": 11,
+            "monthLabel": "Déc 2026",
+            "kpiId": "kpi_absenteisme",
+            "kpiName": "Taux d'Absentéisme Imprévu",
+            "processId": "P4",
+            "pIdx": 3,
+            "iIdx": 1,
+            "deviation": "Écart constaté sur la cible",
+            "causeCategory": "manpower",
+            "causeCategoryLabel": "Main d'œuvre / RH",
+            "causeText": "",
+            "action": "Entretiens de retour et revue de la charge atelier",
+            "pilot": "Bernard (DG)",
+            "deadline": "15/02/2027",
+            "cost": "",
+            "status": "to_start",
+            "createdAt": "06/01/2027",
+            "closedAt": ""
           },
           {
-            date: "05/02/2026",
-            kpiId: "kpi_cnq",
-            kpiName: "Coût Total de Non-Qualité",
-            pilot: "Karim (Qualité)",
-            deadline: "28/02/2026",
-            action: "Émission fiche débit Fournisseur Alpha selon Outil 3.1",
-            status: "✅ Clôturé le 25/02"
+            "id": "act_demo_11",
+            "date": "06/01/2027",
+            "monthIdx": 11,
+            "monthLabel": "Déc 2026",
+            "kpiId": "kpi_commandes",
+            "kpiName": "Prise de Commandes / Signatures",
+            "processId": "P2",
+            "pIdx": 1,
+            "iIdx": 1,
+            "deviation": "Écart constaté sur la cible",
+            "causeCategory": "commercial",
+            "causeCategoryLabel": "Commercial / Client",
+            "causeText": "",
+            "action": "Relance des devis de décembre + offre de début d'année",
+            "pilot": "Marc D.",
+            "deadline": "31/01/2027",
+            "cost": "",
+            "status": "in_progress",
+            "createdAt": "06/01/2027",
+            "closedAt": ""
           },
           {
-            date: "08/02/2026",
-            kpiId: "kpi_devis_attente",
-            kpiName: "Devis en Attente > 7j",
-            pilot: "Franck C.",
-            deadline: "15/02/2026",
-            action: "Relance téléphonique systématique des devis en souffrance",
-            status: "✅ Clôturé le 14/02"
+            "id": "act_demo_10",
+            "date": "04/12/2026",
+            "monthIdx": 10,
+            "monthLabel": "Nov 2026",
+            "kpiId": "kpi_cnq",
+            "kpiName": "Coût Total de Non-Qualité",
+            "processId": "P5",
+            "pIdx": 4,
+            "iIdx": 0,
+            "deviation": "Écart constaté sur la cible",
+            "causeCategory": "material",
+            "causeCategoryLabel": "Matière / Fournisseur",
+            "causeText": "",
+            "action": "Analyse 5 Pourquoi sur le lot de tôles rebuté en novembre",
+            "pilot": "Karim (Qualité)",
+            "deadline": "18/12/2026",
+            "cost": "",
+            "status": "done",
+            "createdAt": "04/12/2026",
+            "closedAt": "16/12/2026"
+          },
+          {
+            "id": "act_demo_9",
+            "date": "03/09/2026",
+            "monthIdx": 7,
+            "monthLabel": "Août 2026",
+            "kpiId": "kpi_commandes",
+            "kpiName": "Prise de Commandes / Signatures",
+            "processId": "P2",
+            "pIdx": 1,
+            "iIdx": 1,
+            "deviation": "Écart constaté sur la cible",
+            "causeCategory": "commercial",
+            "causeCategoryLabel": "Commercial / Client",
+            "causeText": "",
+            "action": "Campagne de relance des clients dormants pour la rentrée",
+            "pilot": "Marc D.",
+            "deadline": "15/09/2026",
+            "cost": "",
+            "status": "effective",
+            "createdAt": "03/09/2026",
+            "closedAt": "29/09/2026"
+          },
+          {
+            "id": "act_demo_8",
+            "date": "03/09/2026",
+            "monthIdx": 7,
+            "monthLabel": "Août 2026",
+            "kpiId": "kpi_treso",
+            "kpiName": "Trésorerie Nette Disponible",
+            "processId": "P1",
+            "pIdx": 0,
+            "iIdx": 2,
+            "deviation": "Écart constaté sur la cible",
+            "causeCategory": "other",
+            "causeCategoryLabel": "Autre cause opérationnelle",
+            "causeText": "",
+            "action": "Relance des créances > 45 j et échéancier fournisseur acier",
+            "pilot": "Bernard (DG)",
+            "deadline": "30/09/2026",
+            "cost": "",
+            "status": "effective",
+            "createdAt": "03/09/2026",
+            "closedAt": "22/10/2026"
+          },
+          {
+            "id": "act_demo_7",
+            "date": "04/08/2026",
+            "monthIdx": 6,
+            "monthLabel": "Juil 2026",
+            "kpiId": "kpi_otif",
+            "kpiName": "Taux de Service Délais / OTIF",
+            "processId": "P3",
+            "pIdx": 2,
+            "iIdx": 0,
+            "deviation": "Écart constaté sur la cible",
+            "causeCategory": "environment",
+            "causeCategoryLabel": "Organisation / Charge",
+            "causeText": "",
+            "action": "Planning congés atelier validé en juin + sous-traitance du pic de juillet",
+            "pilot": "Sylvain P.",
+            "deadline": "31/08/2026",
+            "cost": "",
+            "status": "done",
+            "createdAt": "04/08/2026",
+            "closedAt": "28/08/2026"
+          },
+          {
+            "id": "act_demo_6",
+            "date": "06/07/2026",
+            "monthIdx": 5,
+            "monthLabel": "Juin 2026",
+            "kpiId": "kpi_marge",
+            "kpiName": "Taux de Marge Brute Globale",
+            "processId": "P1",
+            "pIdx": 0,
+            "iIdx": 1,
+            "deviation": "Écart constaté sur la cible",
+            "causeCategory": "commercial",
+            "causeCategoryLabel": "Commercial / Client",
+            "causeText": "",
+            "action": "Révision grille tarifaire 2.1 : +3 % sur les petites séries",
+            "pilot": "Bernard (DG)",
+            "deadline": "31/07/2026",
+            "cost": "",
+            "status": "effective",
+            "createdAt": "06/07/2026",
+            "closedAt": "24/07/2026"
+          },
+          {
+            "id": "act_demo_5",
+            "date": "02/06/2026",
+            "monthIdx": 4,
+            "monthLabel": "Mai 2026",
+            "kpiId": "kpi_cnq",
+            "kpiName": "Coût Total de Non-Qualité",
+            "processId": "P5",
+            "pIdx": 4,
+            "iIdx": 0,
+            "deviation": "Écart constaté sur la cible",
+            "causeCategory": "material",
+            "causeCategoryLabel": "Matière / Fournisseur",
+            "causeText": "",
+            "action": "Contrôle à réception des tôles Fournisseur Alpha (1 lot sur 5)",
+            "pilot": "Karim (Qualité)",
+            "deadline": "30/06/2026",
+            "cost": "",
+            "status": "done",
+            "createdAt": "02/06/2026",
+            "closedAt": "26/06/2026"
+          },
+          {
+            "id": "act_demo_4",
+            "date": "08/02/2026",
+            "monthIdx": 1,
+            "monthLabel": "Févr 2026",
+            "kpiId": "kpi_devis_attente",
+            "kpiName": "Devis en Attente > 7j",
+            "processId": "P2",
+            "pIdx": 1,
+            "iIdx": 2,
+            "deviation": "Écart constaté sur la cible",
+            "causeCategory": "commercial",
+            "causeCategoryLabel": "Commercial / Client",
+            "causeText": "",
+            "action": "Relance téléphonique systématique des devis en souffrance",
+            "pilot": "Franck C.",
+            "deadline": "15/02/2026",
+            "cost": "",
+            "status": "effective",
+            "createdAt": "08/02/2026",
+            "closedAt": "14/02/2026"
+          },
+          {
+            "id": "act_demo_3",
+            "date": "05/02/2026",
+            "monthIdx": 1,
+            "monthLabel": "Févr 2026",
+            "kpiId": "kpi_cnq",
+            "kpiName": "Coût Total de Non-Qualité",
+            "processId": "P5",
+            "pIdx": 4,
+            "iIdx": 0,
+            "deviation": "Écart constaté sur la cible",
+            "causeCategory": "material",
+            "causeCategoryLabel": "Matière / Fournisseur",
+            "causeText": "",
+            "action": "Émission fiche débit Fournisseur Alpha selon Outil 3.1",
+            "pilot": "Karim (Qualité)",
+            "deadline": "28/02/2026",
+            "cost": "",
+            "status": "effective",
+            "createdAt": "05/02/2026",
+            "closedAt": "25/02/2026"
+          },
+          {
+            "id": "act_demo_2",
+            "date": "18/01/2026",
+            "monthIdx": 0,
+            "monthLabel": "Janv 2026",
+            "kpiId": "kpi_reclamations",
+            "kpiName": "Réclamations Clients",
+            "processId": "P5",
+            "pIdx": 4,
+            "iIdx": 1,
+            "deviation": "Écart constaté sur la cible",
+            "causeCategory": "commercial",
+            "causeCategoryLabel": "Commercial / Client",
+            "causeText": "",
+            "action": "Avoir émis sous 24h & refabrication express",
+            "pilot": "Franck C.",
+            "deadline": "19/01/2026",
+            "cost": "",
+            "status": "effective",
+            "createdAt": "18/01/2026",
+            "closedAt": "19/01/2026"
+          },
+          {
+            "id": "act_demo_1",
+            "date": "14/01/2026",
+            "monthIdx": 0,
+            "monthLabel": "Janv 2026",
+            "kpiId": "kpi_retouches",
+            "kpiName": "Heures Retouche Atelier",
+            "processId": "P3",
+            "pIdx": 2,
+            "iIdx": 1,
+            "deviation": "Écart constaté sur la cible",
+            "causeCategory": "machine",
+            "causeCategoryLabel": "Matériel / Machine",
+            "causeText": "",
+            "action": "Contrôle usure outillage plieuse & formation opérateur",
+            "pilot": "Sylvain P.",
+            "deadline": "21/01/2026",
+            "cost": "",
+            "status": "effective",
+            "createdAt": "14/01/2026",
+            "closedAt": "20/01/2026"
           }
         ],
         guide: {
@@ -3685,10 +4041,31 @@
       return num.toString();
     }
 
+    // Column widths of the KPI table. Right columns are sticky from md (768px) only, so phones can scroll them.
+    const KPI_COL = {
+      left: 'min-w-[170px] w-[170px] max-w-[170px] sm:min-w-[250px] sm:w-[250px] sm:max-w-[250px]',
+      summary: 'min-w-[85px] w-[85px] max-w-[85px] xl:sticky xl:right-[330px]',
+      status: 'min-w-[110px] w-[110px] max-w-[110px] xl:sticky xl:right-[220px]',
+      action: 'min-w-[220px] w-[220px] max-w-[220px] xl:sticky xl:right-0',
+      rightWidth: 415,
+      fixedWidth: 250 + 415
+    };
+    let kpiAutoScrolled = false;
+
+    // Stock indicators (balance at month end) are summarised by their last value, not a sum or an average
+    function getKpiSummaryMode(ind) {
+      if (ind.calcType === 'last' || ['kpi_treso', 'kpi_devis_attente', 'kpi_creances_echues'].includes(ind.id)) return 'last';
+      return ind.calcType === 'sum' ? 'sum' : 'avg';
+    }
+
     function computeKpiAnnualSummary(ind) {
       const nums = ind.months.map(m => parseKpiNumber(m)).filter(n => n !== null);
       if (nums.length === 0) return "---";
 
+      if (getKpiSummaryMode(ind) === 'last') {
+        const lastRaw = [...ind.months].reverse().find(m => parseKpiNumber(m) !== null);
+        return formatKpiInput(lastRaw, ind.unit);
+      }
       if (ind.calcType === "sum") {
         const sum = nums.reduce((a, b) => a + b, 0);
         if (ind.unit === "€") return Math.round(sum).toLocaleString('fr-FR') + " €";
@@ -3719,7 +4096,7 @@
       });
 
       if (validMonths.length === 0) {
-        return { text: "⏳ En attente", cls: "badge-surveiller", isAlert: false, currentVal: null, trend: null };
+        return { text: "En attente", cls: "badge-surveiller", isAlert: false, currentVal: null, trend: null };
       }
 
       const lastItem = validMonths[validMonths.length - 1];
@@ -3759,30 +4136,30 @@
       }
 
       if (effectiveTarget === undefined || effectiveTarget === null) {
-        return { text: "🟢 Conforme", cls: "badge-conforme", isAlert: false, currentVal: current, trend };
+        return { text: "Conforme", cls: "badge-conforme", isAlert: false, currentVal: current, trend };
       }
 
       if (ind.goalDirection === "higher") {
         if (current >= effectiveTarget) {
-          return { text: "🟢 Conforme", cls: "badge-conforme", isAlert: false, currentVal: current, trend };
+          return { text: "Conforme", cls: "badge-conforme", isAlert: false, currentVal: current, trend };
         } else {
           const diffPct = effectiveTarget > 0 ? Math.round(((current - effectiveTarget) / effectiveTarget) * 100) : -10;
           if (diffPct >= -10) {
-            return { text: `🟠 Dérive (${diffPct}%)`, cls: "badge-surveiller", isAlert: true, currentVal: current, trend };
+            return { text: `Dérive (${diffPct} %)`, cls: "badge-surveiller", isAlert: true, currentVal: current, trend };
           } else {
-            return { text: `🔴 Alerte (${diffPct}%)`, cls: "badge-alerte", isAlert: true, currentVal: current, trend };
+            return { text: `Alerte (${diffPct} %)`, cls: "badge-alerte", isAlert: true, currentVal: current, trend };
           }
         }
       } else {
         // lower is better
         if (current <= effectiveTarget) {
-          return { text: "🟢 Conforme", cls: "badge-conforme", isAlert: false, currentVal: current, trend };
+          return { text: "Conforme", cls: "badge-conforme", isAlert: false, currentVal: current, trend };
         } else {
           const diffPct = effectiveTarget > 0 ? Math.round(((current - effectiveTarget) / effectiveTarget) * 100) : 100;
           if (diffPct <= 20) {
-            return { text: `🟠 Dérive (+${diffPct}%)`, cls: "badge-surveiller", isAlert: true, currentVal: current, trend };
+            return { text: `Dérive (+${diffPct} %)`, cls: "badge-surveiller", isAlert: true, currentVal: current, trend };
           } else {
-            return { text: `🔴 Alerte (+${diffPct}%)`, cls: "badge-alerte", isAlert: true, currentVal: current, trend };
+            return { text: `Alerte (+${diffPct} %)`, cls: "badge-alerte", isAlert: true, currentVal: current, trend };
           }
         }
       }
@@ -3798,12 +4175,12 @@
       const btn = document.getElementById('btnConfidentiality');
 
       if (isConfidentialMode) {
-        icon.textContent = "👥";
-        label.textContent = "Vue Équipe (Masquée)";
+        icon.innerHTML = '<svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 19c-6.5 0-10-7-10-7a18.5 18.5 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c6.5 0 10 7 10 7a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+        label.textContent = "Vue équipe";
         btn.className = "bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-2.5 py-1 rounded transition flex items-center space-x-1 shadow-sm";
       } else {
-        icon.textContent = "🔒";
-        label.textContent = "Vue Direction (Totale)";
+        icon.innerHTML = '<svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+        label.textContent = "Vue direction";
         btn.className = "bg-slate-800 hover:bg-slate-700 text-delacour-gold border border-delacour-gold/40 text-xs font-bold px-2.5 py-1 rounded transition flex items-center space-x-1 shadow-sm";
       }
 
@@ -3949,18 +4326,10 @@
       const modal = document.getElementById('expressEntryModal');
       const sel = document.getElementById('expressMonthSelect');
       
-      // Default to active month or current calendar month
-      let activeMonth = 0;
+      // Options = real timeline columns (index-aligned with ind.months)
       const tool = TOOLS_DATA["1.1"];
-      for (let m = 11; m >= 0; m--) {
-        let hasVal = false;
-        tool.processes.forEach(p => {
-          p.indicators.forEach(ind => {
-            if (parseKpiNumber(ind.months[m]) !== null) hasVal = true;
-          });
-        });
-        if (hasVal) { activeMonth = m; break; }
-      }
+      sel.innerHTML = getToolColumns(tool).map((col, i) => `<option value="${i}">${getColumnLabel(tool, i)}</option>`).join('');
+      const activeMonth = getActiveMonthIdx(tool);
 
       sel.value = activeMonth;
       renderExpressInputs(activeMonth);
@@ -4082,6 +4451,8 @@
       reader.onload = function(e) {
         try {
           const parsed = JSON.parse(e.target.result);
+          if (!parsed.tool_1_1 || !Array.isArray(parsed.tool_1_1.processes)) throw new Error('not a Delacour KPI backup');
+          if (!confirm("Restaurer cette sauvegarde ?\n\nLes données actuelles du tableau seront remplacées.")) return;
           if (parsed.tool_1_1) {
             TOOLS_DATA['1.1'] = parsed.tool_1_1;
             localStorage.setItem('DELACOUR_DATA_1.1', JSON.stringify(parsed.tool_1_1));
@@ -4121,7 +4492,7 @@
       if (!prof) return;
       toggleProfileDropdown();
 
-      if (!confirm(`Basculer vers le profil métier [${prof.name}] ? Les indicateurs pré-remplis seront adaptés à ce secteur.`)) {
+      if (!confirm(`Basculer vers le profil métier [${prof.name}] ?\n\nATTENTION : tous vos indicateurs, valeurs saisies et actions seront remplacés par la liste type de ce secteur (vide). Exportez une sauvegarde avant si besoin.`)) {
         return;
       }
 
@@ -4130,6 +4501,7 @@
       } else {
         TOOLS_DATA["1.1"].processes = JSON.parse(JSON.stringify(prof.processes));
       }
+      blankKpiTool(TOOLS_DATA["1.1"]);
 
       localStorage.setItem('DELACOUR_PME_PROFILE', profKey);
       const profIcon = document.getElementById('profileIcon');
@@ -4189,48 +4561,11 @@
       renderDocument(TOOLS_DATA[currentToolId]);
     }
 
-    function clean2027Columns(tool) {
-      if (!tool) tool = TOOLS_DATA["1.1"];
-      if (!tool || !Array.isArray(tool.columns)) return false;
-      let removed = false;
-      for (let i = tool.columns.length - 1; i >= 0; i--) {
-        const col = tool.columns[i];
-        if (col && (col.year === 2027 || col.year >= 2027 || (col.label && col.label.includes('2027')))) {
-          tool.columns.splice(i, 1);
-          if (tool.processes) {
-            tool.processes.forEach(p => {
-              if (Array.isArray(p.indicators)) {
-                p.indicators.forEach(ind => {
-                  if (Array.isArray(ind.months) && ind.months.length > i) {
-                    ind.months.splice(i, 1);
-                  }
-                });
-              }
-            });
-          }
-          removed = true;
-        }
-      }
-      if (removed) {
-        if (tool.manualActiveMonth !== undefined && tool.manualActiveMonth !== null && tool.manualActiveMonth !== "auto") {
-          const m = parseInt(tool.manualActiveMonth, 10);
-          if (!isNaN(m) && m >= tool.columns.length) {
-            tool.manualActiveMonth = Math.max(0, tool.columns.length - 1).toString();
-          }
-        }
-        try {
-          localStorage.setItem('DELACOUR_DATA_1.1', JSON.stringify(tool));
-        } catch(e) {}
-      }
-      return removed;
-    }
-
     // ==========================================================
     // DYNAMIC ENDLESS COLUMNS & MONTHS TIMELINE ENGINE
     // ==========================================================
     function getToolColumns(tool) {
       if (!tool) tool = TOOLS_DATA["1.1"];
-      clean2027Columns(tool);
       if (!tool.columns || !Array.isArray(tool.columns) || tool.columns.length === 0) {
         const startM = (tool.startMonth !== undefined) ? tool.startMonth : 0;
         const startY = tool.startYear || 2026;
@@ -4824,7 +5159,7 @@
       // 1. TOOL 5.2 : COÛT NON-QUALITÉ (CNQ)
       if (src === "5.2_cnq") {
         try {
-          const raw52 = localStorage.getItem('DELACOUR_DATA_5.2') || JSON.stringify(INITIAL_TOOLS_DATA["5.2"]);
+          const raw52 = localStorage.getItem('DELACOUR_DATA_5.2');
           if (raw52) {
             const data52 = JSON.parse(raw52);
             if (data52 && data52.rows) {
@@ -4856,7 +5191,7 @@
       // 2. TOOL 2.1 : MARGE BRUTE DEVIS (%)
       else if (src === "2.1_marge") {
         try {
-          const raw21 = localStorage.getItem('DELACOUR_DATA_2.1') || JSON.stringify(INITIAL_TOOLS_DATA["2.1"]);
+          const raw21 = localStorage.getItem('DELACOUR_DATA_2.1');
           if (raw21) {
             const data21 = JSON.parse(raw21);
             if (data21 && data21.rows) {
@@ -4877,7 +5212,7 @@
       // 3. TOOL 2.1 : MONTANT DEVIS EN ATTENTE (€)
       else if (src === "2.1_devis_attente") {
         try {
-          const raw21 = localStorage.getItem('DELACOUR_DATA_2.1') || JSON.stringify(INITIAL_TOOLS_DATA["2.1"]);
+          const raw21 = localStorage.getItem('DELACOUR_DATA_2.1');
           if (raw21) {
             const data21 = JSON.parse(raw21);
             if (data21 && data21.rows) {
@@ -4898,7 +5233,7 @@
       // 4. TOOL 2.2 : MONTANT AVENANTS TRAVAUX SUPPLÉMENTAIRES (€)
       else if (src === "2.2_avenants") {
         try {
-          const raw22 = localStorage.getItem('DELACOUR_DATA_2.2') || JSON.stringify(INITIAL_TOOLS_DATA["2.2"]);
+          const raw22 = localStorage.getItem('DELACOUR_DATA_2.2');
           if (raw22) {
             const data22 = JSON.parse(raw22);
             if (data22 && data22.rows) {
@@ -4918,7 +5253,7 @@
       // 5. TOOL 2.3 : NOMBRE DE RÉCLAMATIONS CLIENTS (LITIGES)
       else if (src === "2.3_reclamations") {
         try {
-          const raw23 = localStorage.getItem('DELACOUR_DATA_2.3') || JSON.stringify(INITIAL_TOOLS_DATA["2.3"]);
+          const raw23 = localStorage.getItem('DELACOUR_DATA_2.3');
           if (raw23) {
             const data23 = JSON.parse(raw23);
             if (data23 && data23.rows) {
@@ -4935,7 +5270,7 @@
       // 6. TOOL 2.3 : COÛT DIRECT DES LITIGES (€)
       else if (src === "2.3_cout_litiges") {
         try {
-          const raw23 = localStorage.getItem('DELACOUR_DATA_2.3') || JSON.stringify(INITIAL_TOOLS_DATA["2.3"]);
+          const raw23 = localStorage.getItem('DELACOUR_DATA_2.3');
           if (raw23) {
             const data23 = JSON.parse(raw23);
             if (data23 && data23.rows) {
@@ -4955,7 +5290,7 @@
       // 7. TOOL 3.1 : HEURES DE RETOUCHES LITIGES (H)
       else if (src === "3.1_retouches") {
         try {
-          const raw31 = localStorage.getItem('DELACOUR_DATA_3.1') || JSON.stringify(INITIAL_TOOLS_DATA["3.1"]);
+          const raw31 = localStorage.getItem('DELACOUR_DATA_3.1');
           if (raw31) {
             const data31 = JSON.parse(raw31);
             if (data31 && data31.rows) {
@@ -4976,7 +5311,7 @@
       // 8. TOOL 3.1 : NOTES DE DÉBIT FOURNISSEURS (€)
       else if (src === "3.1_debits") {
         try {
-          const raw31 = localStorage.getItem('DELACOUR_DATA_3.1') || JSON.stringify(INITIAL_TOOLS_DATA["3.1"]);
+          const raw31 = localStorage.getItem('DELACOUR_DATA_3.1');
           if (raw31) {
             const data31 = JSON.parse(raw31);
             if (data31 && data31.rows) {
@@ -4997,7 +5332,7 @@
       // 9. TOOL 4.1 : TAUX DE SUPPLÉANCE POSTES CRITIQUES (%)
       else if (src === "4.1_suppleance") {
         try {
-          const raw41 = localStorage.getItem('DELACOUR_DATA_4.1') || JSON.stringify(INITIAL_TOOLS_DATA["4.1"]);
+          const raw41 = localStorage.getItem('DELACOUR_DATA_4.1');
           if (raw41) {
             const data41 = JSON.parse(raw41);
             if (data41 && data41.rows) {
@@ -5018,7 +5353,7 @@
       // 10. TOOL 4.2 : SCORE MOYEN POLYVALENCE ATELIER (/4)
       else if (src === "4.2_polyvalence") {
         try {
-          const raw42 = localStorage.getItem('DELACOUR_DATA_4.2') || JSON.stringify(INITIAL_TOOLS_DATA["4.2"]);
+          const raw42 = localStorage.getItem('DELACOUR_DATA_4.2');
           if (raw42) {
             const data42 = JSON.parse(raw42);
             if (data42 && data42.skills) {
@@ -5046,7 +5381,7 @@
       // 11. TOOL 5.1 : NOMBRE DE REBUTS BAC ROUGE
       else if (src === "5.1_rebuts_nb") {
         try {
-          const raw51 = localStorage.getItem('DELACOUR_DATA_5.1') || JSON.stringify(INITIAL_TOOLS_DATA["5.1"]);
+          const raw51 = localStorage.getItem('DELACOUR_DATA_5.1');
           if (raw51) {
             const data51 = JSON.parse(raw51);
             if (data51 && data51.rows) {
@@ -5062,7 +5397,7 @@
       // 12. TOOL 5.1 : COÛT DES PIÈCES REBUTÉES (€)
       else if (src === "5.1_rebuts_cout") {
         try {
-          const raw51 = localStorage.getItem('DELACOUR_DATA_5.1') || JSON.stringify(INITIAL_TOOLS_DATA["5.1"]);
+          const raw51 = localStorage.getItem('DELACOUR_DATA_5.1');
           if (raw51) {
             const data51 = JSON.parse(raw51);
             if (data51 && data51.rows) {
@@ -5253,7 +5588,6 @@
                   isKpiMatrix: true,
                   processes: parsed.processes
                 };
-                clean2027Columns(TOOLS_DATA[currentToolId]);
                 // Ensure all indicators have months array matching columns length and targetVal
                 const toolCols = getToolColumns(TOOLS_DATA[currentToolId]);
                 TOOLS_DATA[currentToolId].processes.forEach(p => {
@@ -5313,6 +5647,7 @@
         // Fallback default
         TOOLS_DATA[currentToolId] = JSON.parse(JSON.stringify(initial));
         if (TOOLS_DATA[currentToolId].isKpiMatrix) {
+          if (!KPI_START_WITH_DEMO) blankKpiTool(TOOLS_DATA[currentToolId]);
           ensureActionRegistryMigrated(TOOLS_DATA[currentToolId]);
         }
         if (TOOLS_DATA[currentToolId].isFiveWhys) {
@@ -5322,6 +5657,7 @@
         console.error("[Delacour] Erreur de chargement des données locales :", e);
         TOOLS_DATA[currentToolId] = JSON.parse(JSON.stringify(INITIAL_TOOLS_DATA[currentToolId] || INITIAL_TOOLS_DATA["1.1"]));
         if (TOOLS_DATA[currentToolId].isKpiMatrix) {
+          if (!KPI_START_WITH_DEMO) blankKpiTool(TOOLS_DATA[currentToolId]);
           ensureActionRegistryMigrated(TOOLS_DATA[currentToolId]);
         }
         if (TOOLS_DATA[currentToolId].isFiveWhys) {
@@ -5618,6 +5954,7 @@
     function restoreDefaults() {
       if (confirm(`Réinitialiser les données de ${TOOLS_DATA[currentToolId].code} aux valeurs d'origine ?`)) {
         TOOLS_DATA[currentToolId] = JSON.parse(JSON.stringify(INITIAL_TOOLS_DATA[currentToolId]));
+        if (TOOLS_DATA[currentToolId].isKpiMatrix) blankKpiTool(TOOLS_DATA[currentToolId]);
         localStorage.removeItem(`DELACOUR_DATA_${currentToolId}`);
         renderCurrentTool();
         saveLiveState();
@@ -5640,9 +5977,11 @@
 
       if (tool.isKpiMatrix) {
         if (btnConf) btnConf.classList.remove('hidden');
+        document.getElementById('btnKpiSettings')?.classList.remove('hidden');
         if (isoReviewOption) isoReviewOption.classList.remove('hidden');
       } else {
         if (btnConf) btnConf.classList.add('hidden');
+        document.getElementById('btnKpiSettings')?.classList.add('hidden');
         if (isoReviewOption) isoReviewOption.classList.add('hidden');
       }
 
@@ -5846,6 +6185,7 @@
 
     function setKpiActiveMonth(val) {
       const tool = TOOLS_DATA["1.1"];
+      kpiAutoScrolled = false;
       tool.manualActiveMonth = val;
       saveLiveState();
       renderDocument(tool);
@@ -5913,7 +6253,8 @@
         margeMoy = (totalMargeEuroSum / totalCaSum) * 100;
       }
 
-      const caCompensatoire = totalCnq * 20;
+      const pmeSettings = getPmeSettings(tool);
+      const caCompensatoire = Math.round(totalCnq * getCaCompensatoireRatio(pmeSettings));
 
       // COMPLETION RATE CHECK (Active Month)
       let totalKpisCount = 0;
@@ -5940,52 +6281,125 @@
 
       // Check for orphan unassigned alerts
       let orphanAlerts = [];
-      tool.processes.forEach(p => {
-        p.indicators.forEach(ind => {
-          const st = computeKpiStatus(ind);
-          if (st.isAlert && (!ind.actionPilot || ind.actionPilot.trim() === '' || ind.actionPilot === 'Pilote')) {
+      tool.processes.forEach((p, pIdx) => {
+        p.indicators.forEach((ind, iIdx) => {
+          if (computeKpiStatus(ind).isAlert && !getOpenKpiAction(tool, pIdx, iIdx)) {
             orphanAlerts.push(ind.name);
           }
         });
       });
       if (orphanAlerts.length > 0) {
-        insights.unshift(`🚨 <strong>Verrou Managériel :</strong> ${orphanAlerts.length} indicateur(s) en dérive sans pilote désigné (${orphanAlerts.join(', ')}). Exigez un responsable nominatif avant vendredi.`);
+        insights.unshift(`<strong>Verrou managérial :</strong> ${orphanAlerts.length} indicateur(s) en dérive sans pilote désigné (${orphanAlerts.map(escapeHtml).join(', ')}). Exigez un responsable nominatif avant vendredi.`);
       }
       let retouchesInd = findKpiById(tool, 'kpi_retouches');
       let otifInd = findKpiById(tool, 'kpi_otif');
       let lastRetouches = retouchesInd ? parseKpiNumber(retouchesInd.months[activeMonthIdx]) : null;
       let lastOtif = otifInd ? parseKpiNumber(otifInd.months[activeMonthIdx]) : null;
 
-      if (lastOtif !== null && lastOtif < 95 && lastRetouches !== null && lastRetouches > 15) {
-        insights.push(`⚙️ <strong>Goulet Atelier Détecté :</strong> Les ${lastRetouches} h de retouche pénalisent directement le respect des délais clients (${lastOtif} % vs cible 98 %). Priorité : fiabiliser les réglages et l'autocontrôle.`);
+      // Thresholds = the company's own KPI targets
+      const otifTarget = otifInd?.targetVal ?? 95;
+      const retouchesTarget = retouchesInd?.targetVal ?? 15;
+      if (lastOtif !== null && lastOtif < otifTarget && lastRetouches !== null && lastRetouches > retouchesTarget) {
+        insights.push(`<strong>Goulet Atelier Détecté :</strong> Les ${lastRetouches} h de retouche (cible ${retouchesTarget} h) pénalisent directement le respect des délais clients (${lastOtif} % vs cible ${otifTarget} %). Priorité : fiabiliser les réglages et l'autocontrôle.`);
       }
 
-      if (totalCnq > 1500) {
-        insights.push(`💰 <strong>Hémorragie Non-Qualité :</strong> ${totalCnq.toLocaleString('fr-FR')} € de pertes directes cumulées (${caCompensatoire.toLocaleString('fr-FR')} € de chiffre d'affaires de remplacement requis pour compenser).`);
+      const cnqInd = findKpiById(tool, 'kpi_cnq');
+      const cnqMonth = cnqInd ? parseKpiNumber(cnqInd.months[activeMonthIdx]) : null;
+      const cnqLimit = cnqInd?.targetVal ?? pmeSettings.seuilAlerteCnq;
+      if (cnqMonth !== null && cnqMonth > cnqLimit) {
+        insights.push(`<strong>Non-qualité au-dessus de la cible :</strong> ${cnqMonth.toLocaleString('fr-FR')} € en ${getColumnLabel(tool, activeMonthIdx)} (cible ${cnqLimit.toLocaleString('fr-FR')} €). Sur l'année : ${totalCnq.toLocaleString('fr-FR')} € de pertes, soit ${caCompensatoire.toLocaleString('fr-FR')} € de CA à refaire avec une marge nette de ${pmeSettings.margeNettePct} %.`);
       }
 
       let devisInd = findKpiById(tool, 'kpi_devis_attente');
       let lastDevis = devisInd ? parseKpiNumber(devisInd.months[activeMonthIdx]) : null;
       if (lastDevis !== null && lastDevis > 4) {
-        insights.push(`🤝 <strong>Risque Commercial :</strong> ${lastDevis} devis non relancés depuis plus de 7 jours (~${(lastDevis * 4500).toLocaleString('fr-FR')} € d'affaires potentielles en sommeil).`);
+        insights.push(`<strong>Risque Commercial :</strong> ${lastDevis} devis non relancés depuis plus de 7 jours (~${(lastDevis * pmeSettings.valeurMoyenneDevis).toLocaleString('fr-FR')} € d'affaires potentielles en sommeil, base ${pmeSettings.valeurMoyenneDevis.toLocaleString('fr-FR')} € / devis).`);
       }
 
       // Run-Rate Annual Diagnostic (Dynamique PME)
-      const pmeSettings = getPmeSettings(tool);
       if (activeMonthIdx >= 1) {
         const elapsed = activeMonthIdx + 1;
         const projectedCa = Math.round((caCumul / elapsed) * 12);
         const annualTarget = pmeSettings.annualBudget || 600000;
         const diffPrj = projectedCa - annualTarget;
         if (diffPrj < -15000) {
-          insights.push(`📉 <strong>Atterrissage Annuel en Retard :</strong> Au rythme actuel, l'exercice bouclera à ${projectedCa.toLocaleString('fr-FR')} € (${Math.abs(diffPrj).toLocaleString('fr-FR')} € de retard sur l'objectif annuel de ${Math.round(annualTarget / 1000)} k€).`);
+          insights.push(`<strong>Atterrissage Annuel en Retard :</strong> Au rythme actuel, l'exercice bouclera à ${projectedCa.toLocaleString('fr-FR')} € (${Math.abs(diffPrj).toLocaleString('fr-FR')} € de retard sur l'objectif annuel de ${Math.round(annualTarget / 1000)} k€).`);
         } else if (diffPrj > 20000) {
-          insights.push(`🚀 <strong>Atterrissage Annuel Favorable :</strong> Au rythme actuel, projection à ${projectedCa.toLocaleString('fr-FR')} € (+${diffPrj.toLocaleString('fr-FR')} € d'avance sur le budget annuel de ${Math.round(annualTarget / 1000)} k€).`);
+          insights.push(`<strong>Atterrissage Annuel Favorable :</strong> Au rythme actuel, projection à ${projectedCa.toLocaleString('fr-FR')} € (+${diffPrj.toLocaleString('fr-FR')} € d'avance sur le budget annuel de ${Math.round(annualTarget / 1000)} k€).`);
         }
       }
 
       if (insights.length === 0) {
-        insights.push(`🟢 <strong>Maîtrise Opérationnelle :</strong> L'ensemble des indicateurs est sous contrôle ce mois-ci, aligné avec les objectifs de marge et de délais.`);
+        insights.push(`<strong>Maîtrise Opérationnelle :</strong> L'ensemble des indicateurs est sous contrôle ce mois-ci, aligné avec les objectifs de marge et de délais.`);
+      }
+
+      // 0.4 SYNTHÈSE DIRIGEANT (vue "Tous" uniquement) : 4 chiffres + messages d'analyse
+      if (currentProcessFilter === "all") {
+        const monthLabel = getColumnLabel(tool, activeMonthIdx);
+        const card = (title, ind, value, sub, tone) => {
+          const masked = isConfidentialMode && ind && ind.isConfidential;
+          const toneCls = { ok: 'border-emerald-200 bg-emerald-50/60', warn: 'border-amber-300 bg-amber-50/70', bad: 'border-red-300 bg-red-50/70', none: 'border-slate-200 bg-white' }[tone];
+          const dot = { ok: 'bg-emerald-500', warn: 'bg-amber-500', bad: 'bg-red-500', none: 'bg-slate-300' }[tone];
+          return `
+            <div class="rounded-xl border ${toneCls} p-3 flex flex-col gap-1 min-w-0">
+              <div class="flex items-center gap-1.5 text-[11px] font-black text-slate-500"><span class="w-1.5 h-1.5 rounded-full ${dot}"></span>${title}</div>
+              <div class="font-mono text-xl sm:text-2xl font-black text-slate-900 leading-tight truncate">${masked ? '' : value}</div>
+              <div class="text-[11px] text-slate-600 leading-snug">${masked ? 'Confidentiel' : sub}</div>
+            </div>`;
+        };
+        const toneOf = (ind) => {
+          if (!ind || parseKpiNumber(ind.months[activeMonthIdx]) === null) return 'none';
+          const st = computeKpiStatus(ind);
+          return st.cls === 'badge-conforme' ? 'ok' : (st.cls === 'badge-alerte' ? 'bad' : 'warn');
+        };
+        const fmtEur = n => Math.round(n).toLocaleString('fr-FR') + ' €';
+
+        // CA : cumul jusqu'au mois actif, comparé à l'objectif annuel au prorata
+        let caHtml;
+        if (caInd) {
+          let caToDate = 0;
+          for (let m = 0; m <= activeMonthIdx; m++) caToDate += parseKpiNumber(caInd.months[m]) || 0;
+          const budgetToDate = (pmeSettings.annualBudget || 0) * (activeMonthIdx + 1) / 12;
+          const gapPct = budgetToDate > 0 ? Math.round((caToDate / budgetToDate - 1) * 100) : null;
+          const tone = gapPct === null ? 'none' : (gapPct >= 0 ? 'ok' : (gapPct >= -10 ? 'warn' : 'bad'));
+          const sub = gapPct === null ? `Objectif annuel non défini` : `${gapPct >= 0 ? '+' : ''}${gapPct} % vs objectif à date (${fmtEur(budgetToDate)})`;
+          caHtml = card(`CA cumulé à ${monthLabel}`, caInd, fmtEur(caToDate), sub, tone);
+        } else {
+          caHtml = card('CA cumulé', null, '—', 'Aucun KPI chiffre d\'affaires', 'none');
+        }
+
+        const monthCard = (title, ind) => {
+          if (!ind) return card(title, null, '—', 'KPI absent du tableau', 'none');
+          const val = ind.months[activeMonthIdx];
+          return card(title, ind, isKpiCellFilled(val) ? val : '—', `${monthLabel} · cible ${escapeHtml(ind.target)}`, toneOf(ind));
+        };
+
+        const alertInds = [];
+        tool.processes.forEach(p => p.indicators.forEach(ind => { if (computeKpiStatus(ind).isAlert) alertInds.push(ind); }));
+        const alertTone = alertInds.length === 0 ? 'ok' : (orphanAlerts.length > 0 ? 'bad' : 'warn');
+        const alertSub = alertInds.length === 0
+          ? `Saisie du mois : ${filledKpisCount}/${totalKpisCount} KPI`
+          : `${alertInds.slice(0, 2).map(i => escapeHtml(i.name.replace(/\s*\(.*\)\s*$/, ''))).join(', ')}${alertInds.length > 2 ? '…' : ''}${orphanAlerts.length > 0 ? ' · ' + orphanAlerts.length + ' sans pilote' : ''}`;
+        const alertCard = card('KPI en alerte', null, `${alertInds.length} / ${totalKpisCount}`, alertSub, alertTone);
+
+        const synth = document.createElement('div');
+        synth.className = "mb-4 rounded-xl border border-slate-200 bg-slate-50/60 p-3 sm:p-4 space-y-3";
+        synth.innerHTML = `
+          <div class="flex items-baseline justify-between gap-2 flex-wrap">
+            <h3 class="text-xs font-black text-delacour-primary">Synthèse dirigeant · ${monthLabel}</h3>
+            <button onclick="openExpressEntryModal()" class="no-print px-3 py-1.5 rounded-lg text-[11px] font-bold bg-delacour-primary hover:bg-delacour-dark text-white shadow-sm transition">Saisir les chiffres d'un mois</button>
+          </div>
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+            ${caHtml}
+            ${monthCard('Marge brute', margeInd)}
+            ${monthCard('Trésorerie', findKpiById(tool, 'kpi_treso'))}
+            ${alertCard}
+          </div>
+          <ul class="space-y-1.5">
+            ${insights.filter(t => !(isConfidentialMode && t.includes('€'))).slice(0, 4).map(t => `<li class="text-[11.5px] text-slate-700 leading-snug bg-white border border-slate-200 rounded-lg px-3 py-2">${t}</li>`).join('')}
+          </ul>
+        `;
+        container.appendChild(synth);
       }
 
       // 0.5 BANDEAU FOCUS ATELIER DÉDIÉ (SI FILTRE P3 ATELIER ACTIF)
@@ -6001,11 +6415,11 @@
 
         focusAtelier.innerHTML = `
           <div class="flex items-center space-x-3">
-            <span class="text-3xl">⚙️</span>
+            <span class="text-3xl"></span>
             <div>
-              <div class="text-[9.5px] font-black uppercase tracking-wider text-purple-300">ESPACE OPÉRATIONNEL TERRAIN • P3 ATELIER</div>
+              <div class="text-[11px] font-black text-purple-300">ESPACE OPÉRATIONNEL TERRAIN • P3 ATELIER</div>
               <h2 class="text-sm font-black text-white">Pilotage Direct Fabrication — Mois de ${getColumnLabel(tool, activeMonthIdx).toUpperCase()}</h2>
-              <div class="text-[10px] text-slate-300 mt-0.5">
+              <div class="text-[11px] text-slate-300 mt-0.5">
                 OTIF : <strong class="text-emerald-400 font-mono">${otifVal}</strong> | 
                 Retouches : <strong class="text-amber-300 font-mono">${retVal}</strong>
               </div>
@@ -6013,13 +6427,13 @@
           </div>
           <div class="flex flex-wrap items-center gap-2">
             <button onclick="openBorneAtelierModal()" class="px-3.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-black rounded-lg shadow-sm transition flex items-center space-x-1.5">
-              <span>📱</span> <span>Borne Tactile (5s)</span>
+              <span></span> <span>Borne Tactile (5s)</span>
             </button>
             <a href="tool_page.html?tool=5.1" class="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-lg shadow-sm transition flex items-center space-x-1">
-              <span>🔴</span> <span>Bac Rouge 5.1</span>
+              <span></span> <span>Bac Rouge 5.1</span>
             </a>
             <button onclick="setProcessFilter('all')" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-lg border border-slate-700 transition" title="Afficher la vue complète Direction">
-              👁️ Vue Globale
+              Vue Globale
             </button>
           </div>
         `;
@@ -6051,10 +6465,10 @@
         const isCurrent = (currentProcessFilter === pId);
         return `
           <button onclick="setProcessFilterAndScroll('${pId}')" 
-            class="px-2.5 py-1 rounded-lg font-bold text-[10.5px] transition flex items-center space-x-1.5 shrink-0 border ${isCurrent ? 'bg-delacour-primary text-white border-delacour-primary shadow-xs' : 'bg-slate-100/90 text-slate-700 hover:bg-slate-200/90 border-slate-200'}">
+            class="px-2.5 py-1 rounded-lg font-bold text-[11px] transition flex items-center space-x-1.5 shrink-0 border ${isCurrent ? 'bg-delacour-primary text-white border-delacour-primary shadow-xs' : 'bg-slate-100/90 text-slate-700 hover:bg-slate-200/90 border-slate-200'}">
             <span class="w-2 h-2 rounded-full ${p.badge || 'bg-delacour-primary'}"></span>
             <span>${p.name.split(':')[0]}</span>
-            ${alertCount > 0 ? `<span class="bg-red-500 text-white text-[8px] px-1 rounded-full font-black">${alertCount} 🔴</span>` : '<span class="text-emerald-600 text-[8.5px] font-black">✓</span>'}
+            ${alertCount > 0 ? `<span class="bg-red-500 text-white text-[11px] px-1 rounded-full font-black">${alertCount} </span>` : '<span class="text-emerald-600 text-[11px] font-black"></span>'}
           </button>
         `;
       }).join('');
@@ -6065,20 +6479,20 @@
       const overdueActs = tool.actionRegistry ? tool.actionRegistry.filter(a => isActionOverdue(a)).length : 0;
 
       unifiedNavBar.innerHTML = `
-        <span class="text-[9.5px] font-black uppercase tracking-wider text-slate-400 mr-1 shrink-0">Vue :</span>
-        <button onclick="setProcessFilter('all')" class="px-2.5 py-1 rounded-lg font-bold text-[10.5px] transition shrink-0 border ${currentProcessFilter === 'all' ? 'bg-delacour-primary text-white border-delacour-primary shadow-xs' : 'bg-slate-100/90 text-slate-700 hover:bg-slate-200/90 border-slate-200'}">
-          🏢 Tous (${allProcsCount}) ${allProcsAlerts > 0 ? `<span class="bg-red-500 text-white text-[8px] px-1 rounded-full font-black ml-1">${allProcsAlerts} 🔴</span>` : ''}
+        <span class="text-[11px] font-black text-slate-400 mr-1 shrink-0">Vue :</span>
+        <button onclick="setProcessFilter('all')" class="px-2.5 py-1 rounded-lg font-bold text-[11px] transition shrink-0 border ${currentProcessFilter === 'all' ? 'bg-delacour-primary text-white border-delacour-primary shadow-xs' : 'bg-slate-100/90 text-slate-700 hover:bg-slate-200/90 border-slate-200'}">
+          Tous (${allProcsCount}) ${allProcsAlerts > 0 ? `<span class="bg-red-500 text-white text-[11px] px-1 rounded-full font-black ml-1">${allProcsAlerts} </span>` : ''}
         </button>
         ${procButtons}
         <div class="ml-auto pl-2 shrink-0 no-print flex items-center space-x-1.5">
-          <button onclick="openGlobalActionPlanModal()" class="px-3 py-1 rounded-lg font-black text-[10.5px] transition shrink-0 border bg-amber-50 hover:bg-amber-100 text-amber-950 border-amber-300 shadow-2xs flex items-center space-x-1.5" title="Ouvrir le Plan d'Actions Global consolidé">
-            <span>📋</span>
+          <button onclick="openGlobalActionPlanModal()" class="px-3 py-1 rounded-lg font-black text-[11px] transition shrink-0 border bg-amber-50 hover:bg-amber-100 text-amber-950 border-amber-300 shadow-2xs flex items-center space-x-1.5" title="Ouvrir le Plan d'Actions Global consolidé">
+            <span></span>
             <span>Plan d'Actions Global</span>
-            <span class="bg-amber-600 text-white text-[8.5px] px-1.5 py-0.2 rounded-full font-black">${totalActs}</span>
-            ${overdueActs > 0 ? `<span class="bg-red-600 text-white text-[8px] px-1.5 py-0.2 rounded-full font-black animate-pulse">${overdueActs} ⚠️</span>` : ''}
+            <span class="bg-amber-600 text-white text-[11px] px-1.5 py-0.2 rounded-full font-black">${totalActs}</span>
+            ${overdueActs > 0 ? `<span class="bg-red-600 text-white text-[11px] px-1.5 py-0.2 rounded-full font-black animate-pulse">${overdueActs} </span>` : ''}
           </button>
-          <button onclick="switchTool('5.3')" class="px-3 py-1 rounded-lg font-black text-[10.5px] transition shrink-0 border bg-delacour-primary/10 hover:bg-delacour-primary/20 text-delacour-primary border-delacour-primary/30 shadow-2xs flex items-center space-x-1.5" title="Accéder au Registre Complet des Ateliers 5 Pourquoi (Outil 5.3)">
-            <span>🔍</span>
+          <button onclick="switchTool('5.3')" class="px-3 py-1 rounded-lg font-black text-[11px] transition shrink-0 border bg-delacour-primary/10 hover:bg-delacour-primary/20 text-delacour-primary border-delacour-primary/30 shadow-2xs flex items-center space-x-1.5" title="Accéder au Registre Complet des Ateliers 5 Pourquoi (Outil 5.3)">
+            <span></span>
             <span>Registre 5 Pourquoi (5.3)</span>
           </button>
         </div>
@@ -6100,18 +6514,11 @@
         procHead.innerHTML = `
           <div class="flex items-center space-x-2.5">
             <span class="w-3 h-3 rounded-full ${proc.badge || 'bg-delacour-primary'} shadow-2xs"></span>
-            <h3 class="text-xs font-black text-slate-900 uppercase tracking-wide">${proc.name}</h3>
-            <span class="text-[9px] font-semibold text-slate-400 bg-slate-50 border border-slate-200/80 px-2 py-0.5 rounded-full flex items-center space-x-1 no-print">
-              <span>🕒</span>
-              <span>Màj : ${proc.lastUpdated || "Ce mois-ci"}</span>
-            </span>
+            <h3 class="text-sm font-bold text-slate-900">${proc.name}</h3>
+            ${proc.lastUpdated ? `<span class="hidden sm:inline text-[11px] text-slate-500 no-print">Mis à jour le ${proc.lastUpdated}</span>` : ''}
           </div>
           <div class="flex items-center space-x-2 no-print">
-            <span class="text-[9px] text-slate-400 font-medium flex items-center space-x-1 bg-slate-50 border border-slate-200/60 px-2 py-0.5 rounded" title="Défilement horizontal disponible si nécessaire">
-              <span>↔️</span>
-              <span class="hidden sm:inline">Défilement latéral</span>
-            </span>
-            <button onclick="openAddKpiModal(${pIdx})" class="text-[10px] bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-slate-900 px-2.5 py-1 rounded-md font-bold border border-slate-200 transition flex items-center space-x-1">
+            <button onclick="openAddKpiModal(${pIdx})" class="text-[11px] bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-slate-900 px-2.5 py-1 rounded-md font-bold border border-slate-200 transition flex items-center space-x-1">
               <span>+</span> <span>Ajouter un KPI</span>
             </button>
           </div>
@@ -6123,26 +6530,26 @@
 
         const tableEl = document.createElement('table');
         tableEl.className = "w-full text-left border-separate border-spacing-0";
-        tableEl.style.minWidth = Math.max(1280, 485 + 420 + 72 + cols.length * 90) + 'px';
+        tableEl.style.minWidth = (KPI_COL.fixedWidth + 72 + cols.length * 90) + 'px';
 
         let monthHeadersHtml = cols.map((col, colIdx) => {
           const isActive = (colIdx === activeMonthIdx);
           return `
-            <th class="py-2 px-2 text-center font-bold text-[10px] tracking-wider min-w-[90px] w-[90px] relative group/col border-b ${isActive ? 'bg-amber-50/90 border-b-2 border-delacour-gold text-amber-950 font-black' : 'text-slate-600 bg-slate-50/70 border-slate-200'}">
+            <th class="py-2 px-2 text-center font-bold text-[11px] min-w-[90px] w-[90px] relative group/col border-b ${isActive ? 'bg-amber-50/90 border-b-2 border-delacour-gold text-amber-950 font-black' : 'text-slate-600 bg-slate-50/70 border-slate-200'}">
               <div class="flex items-center justify-center space-x-1">
-                <span class="font-bold text-[10.5px]">${col.label}</span>
-                <button onclick="openColumnSettingsModal(${colIdx})" title="Configurer ce mois ou recalculer la séquence" class="no-print opacity-0 group-hover/col:opacity-100 hover:text-delacour-primary transition text-[11px] p-0.5 rounded hover:bg-slate-200/70">
-                  ⚙️
+                <span class="font-bold text-[11px]">${col.label}</span>
+                <button onclick="openColumnSettingsModal(${colIdx})" title="Configurer ce mois ou recalculer la séquence" aria-label="Configurer ce mois" class="no-print opacity-0 group-hover/col:opacity-100 focus:opacity-100 hover:text-delacour-primary transition p-0.5 rounded hover:bg-slate-200/70">
+                  <svg class="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="21" y1="4" x2="14" y2="4"/><line x1="10" y1="4" x2="3" y2="4"/><line x1="21" y1="12" x2="12" y2="12"/><line x1="8" y1="12" x2="3" y2="12"/><line x1="21" y1="20" x2="16" y2="20"/><line x1="12" y1="20" x2="3" y2="20"/><line x1="14" y1="2" x2="14" y2="6"/><line x1="8" y1="10" x2="8" y2="14"/><line x1="16" y1="18" x2="16" y2="22"/></svg>
                 </button>
               </div>
-              ${isActive ? '<span class="inline-block text-[7.5px] font-black uppercase tracking-widest text-amber-800 bg-amber-200/80 px-1 rounded mt-0.5">Actif</span>' : ''}
+              ${isActive ? '<span class="inline-block text-[11px] font-black text-amber-800 bg-amber-200/80 px-1 rounded mt-0.5">Actif</span>' : ''}
             </th>
           `;
         }).join('');
 
         const addPriorColHeaderTh = `
           <th class="py-2 px-1 text-center min-w-[36px] w-[36px] max-w-[36px] bg-slate-50/90 border-b border-slate-200 no-print" title="Insérer un mois antérieur (avant ${cols[0]?.label || ''})">
-            <button onclick="addPriorToolMonthColumn()" class="w-6 h-6 rounded-md bg-slate-100 hover:bg-delacour-primary hover:text-white text-slate-600 font-bold text-[10px] transition inline-flex items-center justify-center border border-slate-200 shadow-2xs" title="Insérer un mois antérieur au début">
+            <button onclick="addPriorToolMonthColumn()" class="w-6 h-6 rounded-md bg-slate-100 hover:bg-delacour-primary hover:text-white text-slate-600 font-bold text-[11px] transition inline-flex items-center justify-center border border-slate-200 shadow-2xs" title="Insérer un mois antérieur au début">
               ◀+
             </button>
           </th>
@@ -6150,7 +6557,7 @@
 
         const addNextColHeaderTh = `
           <th class="py-2 px-1 text-center min-w-[36px] w-[36px] max-w-[36px] bg-slate-50/90 border-b border-slate-200 no-print" title="Ajouter un mois suivant (+ 1 mois)">
-            <button onclick="addToolMonthColumn()" class="w-6 h-6 rounded-md bg-slate-100 hover:bg-delacour-primary hover:text-white text-slate-600 font-bold text-[10px] transition inline-flex items-center justify-center border border-slate-200 shadow-2xs" title="Ajouter un mois suivant (+ 1 mois)">
+            <button onclick="addToolMonthColumn()" class="w-6 h-6 rounded-md bg-slate-100 hover:bg-delacour-primary hover:text-white text-slate-600 font-bold text-[11px] transition inline-flex items-center justify-center border border-slate-200 shadow-2xs" title="Ajouter un mois suivant (+ 1 mois)">
               +▶
             </button>
           </th>
@@ -6158,17 +6565,14 @@
 
         let thead = `
           <thead>
-            <tr class="bg-slate-50/95 text-slate-500 text-[9.5px] font-black uppercase tracking-wider">
-              <th class="py-2.5 px-3 min-w-[210px] w-[210px] max-w-[210px] sticky left-0 bg-slate-50 z-20 border-b border-r border-slate-200">Indicateur Clé (KPI)</th>
-              <th class="py-2.5 px-2 min-w-[130px] w-[130px] max-w-[130px] sticky left-[210px] bg-slate-50 z-20 border-b border-r border-slate-200">Source</th>
-              <th class="py-2.5 px-1.5 min-w-[65px] w-[65px] max-w-[65px] sticky left-[340px] bg-slate-50 z-20 border-b border-r border-slate-200 text-center">Type</th>
-              <th class="py-2.5 px-2 min-w-[80px] w-[80px] max-w-[80px] sticky left-[405px] bg-slate-50 z-20 border-b border-r border-slate-200 text-right shadow-[3px_0_6px_-2px_rgba(0,0,0,0.06)]">Cible</th>
+            <tr class="bg-slate-50/95 text-slate-500 text-[11px] font-black">
+              <th class="py-2.5 px-3 ${KPI_COL.left} sticky left-0 bg-slate-50 z-20 border-b border-r border-slate-200 shadow-[3px_0_6px_-2px_rgba(0,0,0,0.06)]">Indicateur · Cible</th>
               ${addPriorColHeaderTh}
               ${monthHeadersHtml}
               ${addNextColHeaderTh}
-              <th class="py-2.5 px-2 text-center min-w-[95px] w-[95px] max-w-[95px] sticky right-[345px] bg-emerald-50/95 z-20 border-b border-l border-slate-200 text-slate-700 shadow-[-3px_0_6px_-2px_rgba(0,0,0,0.06)]">Cumul / Moy.</th>
-              <th class="py-2.5 px-2 text-center min-w-[125px] w-[125px] max-w-[125px] sticky right-[220px] bg-slate-50 z-20 border-b border-r border-slate-200">Statut Auto</th>
-              <th class="py-2.5 px-3 min-w-[220px] w-[220px] max-w-[220px] sticky right-0 bg-slate-50 z-20 border-b border-slate-200">Action Corrective</th>
+              <th class="py-2.5 px-2 text-center ${KPI_COL.summary} bg-emerald-50 z-20 border-b border-l border-slate-200 text-slate-700 xl:shadow-[-3px_0_6px_-2px_rgba(0,0,0,0.06)]">Bilan année</th>
+              <th class="py-2.5 px-2 text-center ${KPI_COL.status} bg-slate-50 z-20 border-b border-r border-slate-200">Statut</th>
+              <th class="py-2.5 px-3 ${KPI_COL.action} bg-slate-50 z-20 border-b border-slate-200">Action Corrective</th>
             </tr>
           </thead>
         `;
@@ -6180,11 +6584,11 @@
           // CONFIDENTIALITY FILTER
           const isMasked = isConfidentialMode && ind.isConfidential;
           const autoSummary = isMasked ? "[Confidentiel]" : computeKpiAnnualSummary(ind);
-          const autoStatus = isMasked ? { text: "🔒 Privé", cls: "bg-slate-100 text-slate-500", isAlert: false } : computeKpiStatus(ind);
+          const autoStatus = isMasked ? { text: "Privé", cls: "bg-slate-100 text-slate-500", isAlert: false } : computeKpiStatus(ind);
 
           let monthTds = cols.map((col, colIdx) => {
             let val = ind.months[colIdx] || "";
-            if (isMasked && val) val = "🔒";
+            if (isMasked && val) val = "";
 
             const isColActive = (colIdx === activeMonthIdx);
             const isPastLocked = tool.lockPastMonths && (colIdx < activeMonthIdx);
@@ -6195,8 +6599,8 @@
                 <span ${canEdit ? 'contenteditable="true"' : 'contenteditable="false"'} 
                   data-kpi-cell="${pIdx}_${iIdx}_${colIdx}"
                   ${canEdit ? `onfocus="handleKpiCellFocus(this)" onkeydown="handleKpiCellKeyDown(event, ${pIdx}, ${iIdx}, ${colIdx})" onblur="updateKpiMonth(${pIdx}, ${iIdx}, ${colIdx}, this.innerText)"` : `title="Mois clôturé — Données sanctuarisées (Lecture seule)"`}
-                  class="outline-none ${canEdit ? 'focus:ring-2 focus:ring-delacour-gold focus:bg-white cursor-text' : 'cursor-not-allowed opacity-80'} rounded-md px-1.5 py-0.5 transition block font-mono ${isMasked ? 'text-slate-400 italic text-[10px]' : (isColActive ? 'text-slate-950 text-[11.5px] font-black' : (isPastLocked ? 'text-slate-500 text-[11px]' : 'text-slate-700 text-[11px] font-semibold'))}">
-                  ${val || '-'} ${isPastLocked && val ? '<span class="text-[7.5px] opacity-50 ml-0.5 no-print">🔒</span>' : ''}
+                  class="outline-none ${canEdit ? 'focus:ring-2 focus:ring-delacour-gold focus:bg-white cursor-text' : 'cursor-not-allowed opacity-80'} rounded-md px-1.5 py-0.5 transition block font-mono ${isMasked ? 'text-slate-400 italic text-[11px]' : (isColActive ? 'text-slate-950 text-[11.5px] font-black' : (isPastLocked ? 'text-slate-500 text-[11px]' : 'text-slate-700 text-[11px] font-semibold'))}">
+                  ${val || '-'} ${isPastLocked && val ? '<span class="text-[11px] opacity-50 ml-0.5 no-print"></span>' : ''}
                 </span>
               </td>
             `;
@@ -6212,33 +6616,33 @@
             sourcesPillsHtml = sources.map((s, sIdx) => {
               if (s.isRadar) {
                 return `
-                  <button onclick="openRadarRelancesModal()" class="no-print text-[8px] font-black bg-delacour-gold hover:bg-amber-500 text-slate-950 px-1.5 py-0.5 rounded shadow-2xs transition" title="Radar Relances">
+                  <button onclick="openRadarRelancesModal()" class="no-print text-[11px] font-black bg-delacour-gold hover:bg-amber-500 text-slate-950 px-1.5 py-0.5 rounded shadow-2xs transition" title="Radar Relances">
                     Relances
                   </button>
                 `;
               } else if (s.isConnected) {
                 return `
-                  <span class="inline-flex items-center gap-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border border-indigo-200 px-1.5 py-0.5 rounded text-[8.5px] font-bold shadow-2xs transition" title="${s.name}">
-                    ${s.url ? `<a href="${s.url}" class="hover:underline flex items-center gap-0.5"><span>🔗</span><span class="truncate max-w-[80px]">${s.name}</span></a>` : `<span class="truncate max-w-[80px]">${s.name}</span>`}
-                    <button onclick="syncSingleIndicatorSource(${pIdx}, ${iIdx}, ${sIdx})" title="Rapatrier maintenant" class="no-print hover:scale-110 text-[9px] text-indigo-700 hover:text-indigo-950 transition">🔄</button>
+                  <span class="inline-flex items-center gap-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border border-indigo-200 px-1.5 py-0.5 rounded text-[11px] font-bold shadow-2xs transition" title="${s.name}">
+                    ${s.url ? `<a href="${s.url}" class="hover:underline flex items-center gap-0.5"><span></span><span class="truncate max-w-[80px]">${s.name}</span></a>` : `<span class="truncate max-w-[80px]">${s.name}</span>`}
+                    <button onclick="syncSingleIndicatorSource(${pIdx}, ${iIdx}, ${sIdx})" title="Rapatrier maintenant" class="no-print hover:scale-110 text-[11px] text-indigo-700 hover:text-indigo-950 transition"></button>
                   </span>
                 `;
               } else {
                 return `
-                  <span class="inline-flex items-center bg-slate-100 text-slate-700 border border-slate-200 px-1.5 py-0.5 rounded text-[8.5px] font-medium truncate max-w-[85px]" title="${s.name}">
+                  <span class="inline-flex items-center bg-slate-100 text-slate-700 border border-slate-200 px-1.5 py-0.5 rounded text-[11px] font-medium truncate max-w-[85px]" title="${s.name}">
                     ${s.name}
                   </span>
                 `;
               }
             }).join('');
           } else {
-            sourcesPillsHtml = `<span class="text-slate-400 italic text-[9px]">Aucune</span>`;
+            sourcesPillsHtml = `<span class="text-slate-400 italic text-[11px]">Aucune</span>`;
           }
 
           const sourceCellContent = `
             <div class="flex flex-wrap items-center gap-1">
               ${sourcesPillsHtml}
-              <button onclick="openManageSourcesModal(${pIdx}, ${iIdx})" title="Gérer ou ajouter des sources" class="no-print text-[8px] font-bold bg-slate-100 hover:bg-delacour-primary hover:text-white text-slate-600 px-1.5 py-0.5 rounded border border-slate-200 transition shrink-0">
+              <button onclick="openManageSourcesModal(${pIdx}, ${iIdx})" title="Gérer ou ajouter des sources" class="no-print text-[11px] font-bold bg-slate-100 hover:bg-delacour-primary hover:text-white text-slate-600 px-1.5 py-0.5 rounded border border-slate-200 transition shrink-0">
                 + Source
               </button>
             </div>
@@ -6246,24 +6650,17 @@
 
           return `
             <tr class="group hover:bg-slate-50/60 transition-colors">
-              <!-- KPI Name (Pinned Left, column 1 - titre épuré SANS bouton de source) -->
-              <td class="py-2.5 px-3 min-w-[210px] w-[210px] max-w-[210px] sticky left-0 bg-white group-hover:bg-slate-50 transition-colors z-10 border-b border-r border-slate-100 font-bold text-slate-900 text-[11.5px]">
-                <div class="flex items-center justify-between gap-1.5">
-                  <span contenteditable="true" onblur="updateKpiField(${pIdx}, ${iIdx}, 'name', this.innerText)" class="outline-none focus:ring-1 focus:ring-delacour-gold px-1 rounded block truncate hover:text-delacour-primary transition cursor-text flex-1 min-w-0">${ind.name}</span>
-                  <button onclick="deleteKpiIndicator(${pIdx}, ${iIdx})" title="Supprimer cet indicateur" class="no-print opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-600 transition text-[11px] p-0.5 shrink-0">🗑️</button>
+              <!-- KPI identity (Pinned Left): name on 2 lines + type, target and sources underneath -->
+              <td class="py-2 px-3 ${KPI_COL.left} sticky left-0 bg-white group-hover:bg-slate-50 transition-colors z-10 border-b border-r border-slate-100 shadow-[3px_0_6px_-2px_rgba(0,0,0,0.06)] align-top">
+                <div class="flex items-start justify-between gap-1.5">
+                  <span contenteditable="true" onblur="updateKpiField(${pIdx}, ${iIdx}, 'name', this.innerText)" title="${escapeHtml(ind.name)}" class="outline-none focus:ring-1 focus:ring-delacour-gold px-1 rounded line-clamp-2 hover:text-delacour-primary transition cursor-text flex-1 min-w-0 font-bold text-slate-900 text-[11.5px] leading-snug">${ind.name}</span>
+                  <button onclick="deleteKpiIndicator(${pIdx}, ${iIdx})" title="Supprimer cet indicateur" aria-label="Supprimer cet indicateur" class="no-print opacity-0 group-hover:opacity-100 focus:opacity-100 text-slate-400 hover:text-red-600 transition p-0.5 shrink-0"><svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
                 </div>
-              </td>
-              <!-- Data Source (Pinned Left, column 2 - avec multi-sources et outils connectés) -->
-              <td class="py-2 px-2 min-w-[130px] w-[130px] max-w-[130px] sticky left-[210px] bg-white group-hover:bg-slate-50 transition-colors z-10 border-b border-r border-slate-100 text-slate-500 text-[10px]">
-                ${sourceCellContent}
-              </td>
-              <!-- Type Badge (Pinned Left, column 3) -->
-              <td class="py-2.5 px-1.5 min-w-[65px] w-[65px] max-w-[65px] sticky left-[340px] bg-white group-hover:bg-slate-50 transition-colors z-10 border-b border-r border-slate-100 text-center">
-                <span class="${badgeTypeClass} px-1.5 py-0.5 rounded-full text-[9px] font-bold border">${ind.type}</span>
-              </td>
-              <!-- Target (Pinned Left, column 4 avec ombre droite) -->
-              <td class="py-2.5 px-2 min-w-[80px] w-[80px] max-w-[80px] sticky left-[405px] bg-white group-hover:bg-slate-50 transition-colors z-10 border-b border-r border-slate-100 text-right font-mono text-[11px] font-bold text-slate-600 shadow-[3px_0_6px_-2px_rgba(0,0,0,0.06)]">
-                <span contenteditable="true" onblur="updateKpiField(${pIdx}, ${iIdx}, 'target', this.innerText)" class="outline-none focus:ring-1 focus:ring-delacour-gold px-1 rounded block cursor-text">${isMasked ? '---' : ind.target}</span>
+                <div class="mt-1 px-1 flex flex-wrap items-center gap-1 text-[11px] text-slate-500">
+                  <span class="${badgeTypeClass} px-1.5 py-px rounded-full text-[11px] font-bold border">${ind.type}</span>
+                  <span class="whitespace-nowrap">Cible <span contenteditable="true" onblur="updateKpiField(${pIdx}, ${iIdx}, 'target', this.innerText)" class="outline-none focus:ring-1 focus:ring-delacour-gold rounded cursor-text font-mono font-bold text-slate-700">${isMasked ? '---' : ind.target}</span></span>
+                </div>
+                <div class="mt-1 px-1">${sourceCellContent}</div>
               </td>
               <!-- Spacer under ◀+ button -->
               <td class="py-2 px-1 border-b border-slate-100 text-center bg-slate-50/10 min-w-[36px] w-[36px] max-w-[36px] no-print"></td>
@@ -6272,17 +6669,18 @@
               <!-- Spacer under +▶ button -->
               <td class="py-2 px-1 border-b border-slate-100 text-center bg-slate-50/10 min-w-[36px] w-[36px] max-w-[36px] no-print"></td>
               <!-- Annual Summary (Pinned Right, column 1 avec ombre gauche) -->
-              <td class="py-2.5 px-2 text-center font-mono text-[11px] font-black text-slate-900 sticky right-[345px] bg-slate-50 group-hover:bg-slate-100/90 transition-colors z-10 border-b border-l border-slate-200 shadow-[-3px_0_6px_-2px_rgba(0,0,0,0.06)] min-w-[95px] w-[95px] max-w-[95px]">
+              <td class="py-2.5 px-2 text-center font-mono text-[11px] font-black text-slate-900 ${KPI_COL.summary} bg-slate-50 group-hover:bg-slate-100 transition-colors z-10 border-b border-l border-slate-200 xl:shadow-[-3px_0_6px_-2px_rgba(0,0,0,0.06)]">
                 ${autoSummary}
+                ${isMasked ? '' : `<div class="font-sans text-[11px] font-bold text-slate-400 mt-0.5">${{ sum: 'Cumul', avg: 'Moyenne', last: 'Dernier' }[getKpiSummaryMode(ind)]}</div>`}
               </td>
               <!-- Auto Status (Pinned Right, column 2) -->
-              <td class="py-2.5 px-2 text-center min-w-[125px] w-[125px] max-w-[125px] sticky right-[220px] bg-white group-hover:bg-slate-50 transition-colors z-10 border-b border-r border-slate-100">
-                <div class="inline-flex items-center justify-center px-2.5 py-1 rounded-full text-[10px] font-bold ${autoStatus.cls} shadow-2xs whitespace-nowrap">
+              <td class="py-2.5 px-2 text-center ${KPI_COL.status} bg-white group-hover:bg-slate-50 transition-colors z-10 border-b border-r border-slate-100">
+                <div class="inline-flex items-center justify-center px-2.5 py-1 rounded-full text-[11px] font-bold ${autoStatus.cls} shadow-2xs whitespace-nowrap">
                   <span>${autoStatus.text}</span>
                 </div>
               </td>
               <!-- Action Ticket (Pinned Right, column 3) -->
-              <td class="py-2.5 px-3 min-w-[220px] w-[220px] max-w-[220px] sticky right-0 bg-white group-hover:bg-slate-50 transition-colors z-10 border-b border-slate-100">
+              <td class="py-2.5 px-3 ${KPI_COL.action} bg-white group-hover:bg-slate-50 transition-colors z-10 border-b border-slate-100">
                 ${actionCellHtml}
               </td>
             </tr>
@@ -6291,13 +6689,58 @@
 
         tableEl.innerHTML = thead + `<tbody>${trs}</tbody>`;
         tableScrollWrapper.appendChild(tableEl);
+        // Phones (< 640px): one card per KPI for the active month; the full table stays for sm and up
+        tableScrollWrapper.classList.add('hidden', 'sm:block');
+        const cardList = document.createElement('div');
+        cardList.className = "sm:hidden space-y-2 no-print";
+        cardList.innerHTML = displayedIndicators.map(ind => {
+          const iIdx = proc.indicators.indexOf(ind);
+          const isMasked = isConfidentialMode && ind.isConfidential;
+          const st = isMasked ? { text: "Privé", cls: "bg-slate-100 text-slate-500" } : computeKpiStatus(ind);
+          const val = ind.months[activeMonthIdx] || '';
+          const prev = activeMonthIdx > 0 ? ind.months[activeMonthIdx - 1] : '';
+          const canEdit = !isMasked; // the active month is never a locked past month
+          return `
+            <div class="rounded-xl border border-slate-200 bg-white p-3 space-y-2">
+              <div class="flex items-start justify-between gap-2">
+                <div class="text-[12.5px] font-bold text-slate-900 leading-snug">${escapeHtml(ind.name)}</div>
+                <span class="shrink-0 px-2 py-0.5 rounded-full text-[11px] font-bold ${st.cls}">${st.text}</span>
+              </div>
+              <div class="flex items-end justify-between gap-2">
+                <div>
+                  <div class="text-[11px] font-black text-slate-400">${getColumnLabel(tool, activeMonthIdx)}</div>
+                  ${canEdit
+                    ? `<span contenteditable="true" onfocus="handleKpiCellFocus(this)" onblur="updateKpiMonth(${pIdx}, ${iIdx}, ${activeMonthIdx}, this.innerText)" class="block font-mono text-xl font-black text-slate-950 outline-none focus:ring-2 focus:ring-delacour-gold rounded px-1 -mx-1 min-w-[3rem]">${escapeHtml(val) || '-'}</span>`
+                    : `<span class="block font-mono text-xl font-black text-slate-400">${isMasked ? '' : (escapeHtml(val) || '-')}</span>`}
+                </div>
+                <div class="text-right text-[11px] text-slate-500 leading-snug">
+                  <div>Cible <strong class="font-mono text-slate-700">${isMasked ? '---' : escapeHtml(ind.target)}</strong></div>
+                  <div>Mois préc. <span class="font-mono">${isMasked ? '---' : (escapeHtml(prev) || '-')}</span></div>
+                </div>
+              </div>
+              <div>${renderKpiActionCell(tool, pIdx, iIdx, ind, st, isMasked, activeMonthIdx)}</div>
+            </div>`;
+        }).join('');
+        procBox.appendChild(cardList);
         procBox.appendChild(tableScrollWrapper);
+        if (!kpiAutoScrolled) {
+          requestAnimationFrame(() => {
+            const th = tableEl.querySelectorAll('thead th')[2 + activeMonthIdx]; // [identity, ◀+, months...]
+            if (!th) return;
+            // desktop: active month = last visible column before the sticky right block; phone: first column after the KPI name
+            tableScrollWrapper.scrollLeft = window.innerWidth >= 1280
+              ? th.offsetLeft + th.offsetWidth + 36 - (tableScrollWrapper.clientWidth - KPI_COL.rightWidth)
+              : th.offsetLeft - tableEl.querySelector('thead th').offsetWidth;
+          });
+        }
         
         // RENDER DYNAMIC PROCESS CHART UNDER TABLE
         renderProcessChart(procBox, proc, pIdx);
 
         container.appendChild(procBox);
       });
+
+      requestAnimationFrame(() => { kpiAutoScrolled = true; });
 
       // 3. PERMANENT CORRECTIVE ACTIONS REGISTRY DRAWER
       renderActionRegistryDrawer(container, tool);
@@ -6486,6 +6929,17 @@
         minVal *= 0.85;
         maxVal = maxVal !== 0 ? maxVal * 1.15 : 100;
       }
+      // A rate never exceeds 100 % nor drops below 0
+      const isPctAxis = !useNormalized && selectedInds.length > 0 && selectedInds.every(i => i.unit === '%');
+      if (isPctAxis) { maxVal = Math.min(maxVal, 100); minVal = Math.max(minVal, 0); }
+      if (!useNormalized && minVal < 0 && allPlotVals.every(v => v >= 0)) minVal = 0;
+      // Round the axis to 1 / 2 / 2.5 / 5 × 10^n steps so gridlines read 30 k€, 40 k€… not 27,5 k€
+      const rawStep = (maxVal - minVal) / 3 || 1;
+      const pow10 = Math.pow(10, Math.floor(Math.log10(rawStep)));
+      const axisStep = pow10 * ([1, 2, 2.5, 5, 10].find(f => f >= rawStep / pow10) || 10);
+      minVal = Math.floor(minVal / axisStep) * axisStep;
+      maxVal = Math.ceil(maxVal / axisStep) * axisStep;
+      if (isPctAxis) maxVal = Math.min(maxVal, 100);
       const range = (maxVal - minVal) || 1;
 
       // Determine active month scope based on current dynamic columns
@@ -6500,11 +6954,8 @@
       const getY = v => padTop + innerH - ((v - minVal) / range) * innerH;
 
       // Grid Lines & Labels
-      const gridLevels = [
-        { val: maxVal, y: getY(maxVal) },
-        { val: (minVal + maxVal) / 2, y: getY((minVal + maxVal) / 2) },
-        { val: minVal, y: getY(minVal) }
-      ];
+      const gridLevels = [];
+      for (let v = minVal; v <= maxVal + axisStep / 1000; v += axisStep) gridLevels.push({ val: v, y: getY(v) });
 
       let gridSvg = gridLevels.map(g => `
         <line x1="${padLeft}" y1="${g.y.toFixed(1)}" x2="${chartW - padRight}" y2="${g.y.toFixed(1)}" stroke="#E2E8F0" stroke-width="1" stroke-dasharray="3,3" />
@@ -6521,7 +6972,7 @@
           targetSvg = `
             <line x1="${padLeft}" y1="${targetY.toFixed(1)}" x2="${chartW - padRight}" y2="${targetY.toFixed(1)}" stroke="#C5A065" stroke-width="2" stroke-dasharray="6,4" />
             <rect x="${chartW - padRight - 90}" y="${(targetY - 9).toFixed(1)}" width="86" height="14" rx="3" fill="#FEF3C7" stroke="#F59E0B" stroke-width="0.8" />
-            <text x="${chartW - padRight - 47}" y="${(targetY + 2).toFixed(1)}" text-anchor="middle" fill="#92400E" font-size="8.5" font-weight="bold">⚖️ SANTÉ 100% (Cible)</text>
+            <text x="${chartW - padRight - 47}" y="${(targetY + 2).toFixed(1)}" text-anchor="middle" fill="#92400E" font-size="8.5" font-weight="bold">SANTÉ 100% (Cible)</text>
           `;
         }
       } else if (selectedInds.length === 1 && selectedInds[0].targetVal) {
@@ -6531,7 +6982,7 @@
           targetSvg = `
             <line x1="${padLeft}" y1="${targetY.toFixed(1)}" x2="${chartW - padRight}" y2="${targetY.toFixed(1)}" stroke="#C5A065" stroke-width="1.8" stroke-dasharray="5,4" />
             <rect x="${chartW - padRight - 105}" y="${(targetY - 9).toFixed(1)}" width="102" height="14" rx="3" fill="#FEF3C7" stroke="#F59E0B" stroke-width="0.8" />
-            <text x="${chartW - padRight - 54}" y="${(targetY + 2).toFixed(1)}" text-anchor="middle" fill="#92400E" font-size="8" font-weight="bold">🎯 Cible : ${selectedInds[0].target}</text>
+            <text x="${chartW - padRight - 54}" y="${(targetY + 2).toFixed(1)}" text-anchor="middle" fill="#92400E" font-size="8" font-weight="bold">Cible : ${selectedInds[0].target}</text>
           `;
         }
       }
@@ -6606,13 +7057,13 @@
         const col = PROCESS_CHART_COLORS[iIdx % PROCESS_CHART_COLORS.length];
         return `
           <button onclick="toggleProcessChartKpi(${pIdx}, ${iIdx})" 
-            class="px-2.5 py-1 rounded-full text-[10.5px] font-bold transition flex items-center space-x-1.5 shadow-2xs border ${isSelected ? 'bg-white shadow-xs text-slate-900' : 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200'}"
+            class="px-2.5 py-1 rounded-full text-[11px] font-bold transition flex items-center space-x-1.5 shadow-2xs border ${isSelected ? 'bg-white shadow-xs text-slate-900' : 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200'}"
             style="${isSelected ? `border-color: ${col.stroke}; border-width: 2px;` : ''}"
             title="Cliquer pour afficher / masquer cette courbe sur le graphique">
             <span class="w-2.5 h-2.5 rounded-full inline-block" style="background-color: ${col.stroke};"></span>
             <span>${ind.name}</span>
-            <span class="text-[9px] opacity-75 font-mono">(${ind.unit || 'nb'})</span>
-            ${isSelected ? '<span class="text-xs font-black text-slate-800">✓</span>' : ''}
+            <span class="text-[11px] opacity-75 font-mono">(${ind.unit || 'nb'})</span>
+            ${isSelected ? '<span class="text-xs font-black text-slate-800"></span>' : ''}
           </button>
         `;
       }).join('');
@@ -6628,7 +7079,7 @@
             <span class="w-2 h-2 rounded-full" style="background-color: ${s.color.stroke};"></span>
             <span class="font-bold text-slate-800">${s.ind.name} :</span>
             <span class="font-mono font-black text-slate-900">${lastStr}</span>
-            <span class="${st.cls} text-[8px] ml-1">${st.text}</span>
+            <span class="${st.cls} text-[11px] ml-1">${st.text}</span>
           </div>
         `;
       }).join('');
@@ -6639,11 +7090,11 @@
       chartBox.innerHTML = `
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div class="flex items-center space-x-2">
-            <span class="text-sm">📈</span>
-            <span class="text-xs font-black uppercase text-slate-800 tracking-wide">Graphique Évolutif — ${proc.name}</span>
+            <span class="text-sm"></span>
+            <span class="text-xs font-black text-slate-800">Graphique Évolutif — ${proc.name}</span>
             ${useNormalized ? `
-              <span class="text-[9px] font-bold text-amber-900 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-full shadow-2xs" title="Indice de Santé Normalisé : Toute courbe AU-DESSUS de la ligne dorée 100% est une victoire. Toute courbe EN-DESSOUS est une alerte (les dérives de retouches ou rebuts sont automatiquement inversées pour que monter soit toujours positif !)">
-                ⚖️ Vue Comparée Base 100 (% Cible)
+              <span class="text-[11px] font-bold text-amber-900 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-full shadow-2xs" title="Indice de Santé Normalisé : Toute courbe AU-DESSUS de la ligne dorée 100% est une victoire. Toute courbe EN-DESSOUS est une alerte (les dérives de retouches ou rebuts sont automatiquement inversées pour que monter soit toujours positif !)">
+                Vue Comparée Base 100 (% Cible)
               </span>
             ` : ''}
           </div>
@@ -6651,8 +7102,8 @@
           <div class="flex flex-wrap items-center gap-1.5">
             ${pillsHtml}
             <button onclick="toggleProcessChartAll(${pIdx}, ${proc.indicators.length})" 
-              class="px-2.5 py-1 rounded-full text-[10.5px] font-black transition border ${isAll ? 'bg-delacour-primary text-white border-delacour-primary shadow-xs' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'}">
-              <span>⚡ ${isAll ? 'Une seule courbe' : 'Toutes les courbes'}</span>
+              class="px-2.5 py-1 rounded-full text-[11px] font-black transition border ${isAll ? 'bg-delacour-primary text-white border-delacour-primary shadow-xs' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'}">
+              <span>${isAll ? 'Une seule courbe' : 'Toutes les courbes'}</span>
             </button>
           </div>
         </div>
@@ -6674,7 +7125,7 @@
         </div>
 
         <!-- Legend and Summary Footer -->
-        <div class="flex flex-wrap items-center gap-2 pt-0.5 text-[10px]">
+        <div class="flex flex-wrap items-center gap-2 pt-0.5 text-[11px]">
           ${legendHtml}
         </div>
       `;
@@ -6708,57 +7159,57 @@
           const isOverdue = isActionOverdue(act);
 
           return `
-            <tr class="text-[9.5px] border-b border-slate-200/70 hover:bg-amber-50/40 cursor-pointer transition" onclick="editGlobalAction('${act.id}', ${act.pIdx !== undefined ? act.pIdx : 0}, ${act.iIdx !== undefined ? act.iIdx : 0})" title="Cliquer pour ouvrir la fiche détaillée">
+            <tr class="text-[11px] border-b border-slate-200/70 hover:bg-amber-50/40 cursor-pointer transition" onclick="editGlobalAction('${act.id}', ${act.pIdx !== undefined ? act.pIdx : 0}, ${act.iIdx !== undefined ? act.iIdx : 0})" title="Cliquer pour ouvrir la fiche détaillée">
               <td class="p-1.5 font-mono text-slate-500">${act.monthLabel || act.date}</td>
               <td class="p-1.5 font-bold text-slate-900">${act.kpiName}</td>
-              <td class="p-1.5 font-extrabold text-delacour-primary">👤 ${act.pilot || '---'}</td>
-              <td class="p-1.5 font-mono ${isOverdue ? 'text-red-700 font-black' : 'text-slate-600 font-bold'}">${isOverdue ? '⚠️ ' : ''}${act.deadline || '---'}</td>
+              <td class="p-1.5 font-extrabold text-delacour-primary">${act.pilot || '---'}</td>
+              <td class="p-1.5 font-mono ${isOverdue ? 'text-red-700 font-black' : 'text-slate-600 font-bold'}">${isOverdue ? '' : ''}${act.deadline || '---'}</td>
               <td class="p-1.5 text-slate-800 font-medium">
                 <div>${act.action}</div>
-                ${act.causeText ? `<span class="text-[8px] text-slate-400 italic">${causeCfg.icon} ${act.causeText}</span>` : ''}
+                ${act.causeText ? `<span class="text-[11px] text-slate-400 italic">${causeCfg.icon} ${act.causeText}</span>` : ''}
               </td>
               <td class="p-1.5">
-                <span class="text-[8px] font-black uppercase px-1.5 py-0.2 rounded ${statusCfg.pillCls}">
+                <span class="text-[11px] font-black px-1.5 py-0.2 rounded ${statusCfg.pillCls}">
                   ${statusCfg.icon} ${statusCfg.label}
                 </span>
               </td>
               <td class="p-1.5">
-                <span class="px-2 py-0.5 rounded text-[8px] border inline-block ${eff.cls}">${eff.label}</span>
+                <span class="px-2 py-0.5 rounded text-[11px] border inline-block ${eff.cls}">${eff.label}</span>
               </td>
             </tr>
           `;
         }).join('');
       } else {
-        rowsHtml = `<tr><td colspan="7" class="p-3 text-center text-[9.5px] text-slate-400 italic">Aucune action corrective enregistrée pour ce filtre.</td></tr>`;
+        rowsHtml = `<tr><td colspan="7" class="p-3 text-center text-[11px] text-slate-400 italic">Aucune action corrective enregistrée pour ce filtre.</td></tr>`;
       }
 
       const pilotPills = allPilots.map(p => `
-        <button onclick="setActionPilotFilter('${p}')" class="px-2 py-0.5 rounded-full text-[9px] font-bold border transition ${selectedPilotFilter === p ? 'bg-delacour-primary text-white border-delacour-primary shadow-2xs' : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'}">
-          👤 ${p}
+        <button onclick="setActionPilotFilter('${p}')" class="px-2 py-0.5 rounded-full text-[11px] font-bold border transition ${selectedPilotFilter === p ? 'bg-delacour-primary text-white border-delacour-primary shadow-2xs' : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'}">
+          ${p}
         </button>
       `).join('');
 
       drawer.innerHTML = `
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-1.5 border-b border-slate-200">
           <div class="flex items-center space-x-2">
-            <span class="text-sm">📋</span>
+            <span class="text-sm"></span>
             <div>
-              <span class="text-[10.5px] font-black uppercase tracking-wide text-slate-900">Registre Permanent des Actions Correctives & Preuves d'Efficacité (§10.2)</span>
-              <span class="block text-[8.5px] text-slate-500 font-medium">Boucle PDCA complète exigée en audit de certification ISO 9001</span>
+              <span class="text-[11px] font-black text-slate-900">Registre Permanent des Actions Correctives & Preuves d'Efficacité (§10.2)</span>
+              <span class="block text-[11px] text-slate-500 font-medium">Boucle PDCA complète exigée en audit de certification ISO 9001</span>
             </div>
           </div>
           
           <div class="flex flex-wrap items-center gap-2 no-print">
             <!-- Pilot Filter Pills -->
             <div class="flex flex-wrap items-center gap-1">
-              <span class="text-[8.5px] font-bold uppercase text-slate-400 mr-0.5">Pilote :</span>
-              <button onclick="setActionPilotFilter('all')" class="px-2 py-0.5 rounded-full text-[9px] font-bold border transition ${selectedPilotFilter === 'all' ? 'bg-delacour-primary text-white border-delacour-primary shadow-2xs' : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'}">
+              <span class="text-[11px] font-bold text-slate-400 mr-0.5">Pilote :</span>
+              <button onclick="setActionPilotFilter('all')" class="px-2 py-0.5 rounded-full text-[11px] font-bold border transition ${selectedPilotFilter === 'all' ? 'bg-delacour-primary text-white border-delacour-primary shadow-2xs' : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'}">
                 Tous (${tool.actionRegistry ? tool.actionRegistry.length : 0})
               </button>
               ${pilotPills}
             </div>
-            <button onclick="openGlobalActionPlanModal()" class="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-950 text-[10px] font-black rounded-lg border border-amber-300 shadow-2xs transition flex items-center space-x-1">
-              <span>🔍</span> <span>Vue Globale / CODIR</span>
+            <button onclick="openGlobalActionPlanModal()" class="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-950 text-[11px] font-black rounded-lg border border-amber-300 shadow-2xs transition flex items-center space-x-1">
+              <span></span> <span>Vue Globale / CODIR</span>
             </button>
           </div>
         </div>
@@ -6766,7 +7217,7 @@
         <div class="overflow-x-auto">
           <table class="w-full text-left border-collapse">
             <thead>
-              <tr class="text-[8.5px] uppercase font-bold text-slate-600 bg-slate-100 border-b border-slate-200">
+              <tr class="text-[11px] font-bold text-slate-600 bg-slate-100 border-b border-slate-200">
                 <th class="p-1.5 w-[9%]">Mois</th>
                 <th class="p-1.5 w-[18%]">Indicateur</th>
                 <th class="p-1.5 w-[13%]">Pilote Assigné</th>
@@ -7174,7 +7625,9 @@
           if (dead < now) isOverdue = true;
         }
 
-        const actionTypeBadge = s.actionType === 'poka_yoke' ? 
+        const actionTypeBadge = s.plan5M?.length ?
+          `<span class="text-[11px] font-bold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded">5M : ${[...new Set(s.plan5M.map(a => WORKSHOP_5M_DIMS[a.dim]))].join(', ')}</span>` :
+          s.actionType === 'poka_yoke' ?
           `<span class="text-[9px] font-black uppercase text-delacour-primary bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded">🛡️ Poka-Yoke</span>` :
           `<span class="text-[9px] font-bold text-slate-600 bg-slate-100 px-1.5 py-0.2 rounded">Standard SOP</span>`;
 
@@ -7310,10 +7763,10 @@
       }
 
       const STATUS_CFG = {
-        'to_start': { badge: 'bg-rose-100 text-rose-800 border-rose-200', text: '🔴 À lancer' },
-        'in_progress': { badge: 'bg-amber-100 text-amber-900 border-amber-200', text: '🟡 En cours' },
-        'done': { badge: 'bg-emerald-100 text-emerald-900 border-emerald-200', text: '🟢 Réalisée (7j)' },
-        'effective': { badge: 'bg-indigo-100 text-indigo-900 border-indigo-200', text: '⭐ Efficace (J+30)' }
+        'to_start': { badge: 'bg-rose-100 text-rose-800 border-rose-200', text: 'À lancer' },
+        'in_progress': { badge: 'bg-amber-100 text-amber-900 border-amber-200', text: 'En cours' },
+        'done': { badge: 'bg-emerald-100 text-emerald-900 border-emerald-200', text: 'Réalisée (7j)' },
+        'effective': { badge: 'bg-indigo-100 text-indigo-900 border-indigo-200', text: 'Efficace (J+30)' }
       };
 
       const tool11 = TOOLS_DATA["1.1"] || INITIAL_TOOLS_DATA["1.1"];
@@ -7329,29 +7782,29 @@
             <div class="flex items-center justify-between">
               <div class="flex items-center space-x-2">
                 <span class="font-mono font-bold text-slate-700">${mLabel || act.date || ''}</span>
-                <span class="text-[9.5px] font-black px-2 py-0.5 rounded-full border ${st.badge}">${st.text}</span>
-                ${act.actionType === 'poka_yoke' ? '<span class="text-[9px] font-black text-delacour-primary bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded">🛡️ Poka-Yoke</span>' : ''}
+                <span class="text-[11px] font-black px-2 py-0.5 rounded-full border ${st.badge}">${st.text}</span>
+                ${act.actionType === 'poka_yoke' ? '<span class="text-[11px] font-black text-delacour-primary bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded">Poka-Yoke</span>' : ''}
               </div>
               <button type="button" onclick="openFiveWhysWorkshopForKpi(${pIdx}, ${iIdx}, '${act.id}')" class="px-2.5 py-1 text-[11px] font-bold text-delacour-primary hover:bg-delacour-primary/10 rounded-lg border border-delacour-primary/30 transition">
-                ✏️ Charger dans l'Atelier
+                Charger dans l'Atelier
               </button>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
               <div class="bg-amber-50/60 p-2 rounded-lg border border-amber-200/60">
-                <span class="text-[9px] font-black uppercase text-amber-800 block">Cause Racine (P5) :</span>
+                <span class="text-[11px] font-black text-amber-800 block">Cause Racine (P5) :</span>
                 <span class="font-medium text-amber-950">${causeRoot}</span>
               </div>
               <div class="bg-slate-50 p-2 rounded-lg border border-slate-200">
-                <span class="text-[9px] font-black uppercase text-slate-600 block">Contre-Mesure Validée :</span>
+                <span class="text-[11px] font-black text-slate-600 block">Contre-Mesure Validée :</span>
                 <span class="font-medium text-slate-900">${actionDesc}</span>
               </div>
             </div>
 
-            <div class="flex items-center justify-between text-[10px] text-slate-500 pt-1 border-t border-slate-100">
-              <div>👤 Pilote : <strong class="text-slate-700">${act.pilot || 'N/A'}</strong></div>
-              <div>📅 Échéance : <strong class="text-slate-700">${act.deadline || 'Sous 7j'}</strong></div>
-              ${act.cost ? `<div>💰 Coût : <strong class="text-slate-700">${act.cost} € HT</strong></div>` : ''}
+            <div class="flex items-center justify-between text-[11px] text-slate-500 pt-1 border-t border-slate-100">
+              <div>Pilote : <strong class="text-slate-700">${act.pilot || 'N/A'}</strong></div>
+              <div>Échéance : <strong class="text-slate-700">${act.deadline || 'Sous 7j'}</strong></div>
+              ${act.cost ? `<div>Coût : <strong class="text-slate-700">${act.cost} € HT</strong></div>` : ''}
             </div>
           </div>
         `;
@@ -7401,7 +7854,7 @@
       document.getElementById('workshopKpiIdx').value = iIdx;
       const tabsContainer = document.getElementById('workshopTabsContainer');
       if (tabsContainer) tabsContainer.classList.remove('hidden');
-      document.getElementById('fiveWhysModalHeaderTitle').textContent = `Trame d'Atelier 5 Pourquoi • ${proc.name} ➔ ${ind.name}`;
+      document.getElementById('fiveWhysModalHeaderTitle').textContent = `Trame d'Atelier 5 Pourquoi · ${proc.name} › ${ind.name}`;
       document.getElementById('workshopSourceType').value = 'kpi';
 
       const kLink = {
@@ -7427,6 +7880,7 @@
         document.getElementById('workshopWhy4').value = matchedSession?.why4 || targetAction.why4 || '';
         document.getElementById('workshopWhy5').value = matchedSession?.why5 || targetAction.why5 || targetAction.causeText || '';
         document.getElementById('workshopActionText').value = matchedSession?.countermeasure || targetAction.action || targetAction.actionText || '';
+        load5MWorkshopPlan(matchedSession?.plan5M || targetAction.plan5M, document.getElementById('workshopActionText').value);
         document.getElementById('workshopActionType').value = matchedSession?.actionType || targetAction.actionType || 'poka_yoke';
         document.getElementById('workshopPilot').value = targetAction.pilot || matchedSession?.pilot || ind.actionPilot || '';
         document.getElementById('workshopDeadline').value = targetAction.deadline || matchedSession?.deadline || deadStr;
@@ -7447,6 +7901,7 @@
         document.getElementById('workshopWhy4').value = '';
         document.getElementById('workshopWhy5').value = '';
         document.getElementById('workshopActionText').value = '';
+        load5MWorkshopPlan(null, '');
         document.getElementById('workshopActionType').value = 'poka_yoke';
         document.getElementById('workshopPilot').value = ind.actionPilot || '';
         document.getElementById('workshopDeadline').value = deadStr;
@@ -7509,6 +7964,7 @@
         document.getElementById('workshopWhy4').value = s.why4 || '';
         document.getElementById('workshopWhy5').value = s.why5 || s.rootCause || '';
         document.getElementById('workshopActionText').value = s.countermeasure || '';
+        load5MWorkshopPlan(s.plan5M, document.getElementById('workshopActionText').value);
         document.getElementById('workshopActionType').value = s.actionType || 'poka_yoke';
         document.getElementById('workshopPilot').value = s.pilot || '';
         document.getElementById('workshopDeadline').value = s.deadline || deadStr;
@@ -7534,6 +7990,7 @@
         document.getElementById('workshopWhy4').value = '';
         document.getElementById('workshopWhy5').value = '';
         document.getElementById('workshopActionText').value = '';
+        load5MWorkshopPlan(null, '');
         document.getElementById('workshopActionType').value = 'poka_yoke';
         document.getElementById('workshopPilot').value = '';
         document.getElementById('workshopDeadline').value = deadStr;
@@ -7567,32 +8024,84 @@
       if (!constat && !p5) {
         chainEl.innerHTML = `<span class="italic text-slate-400">Renseignez le constat et les causes pour visualiser le fil causal...</span>`;
         badgeEl.textContent = "En cours de saisie";
-        badgeEl.className = "text-[9.5px] font-black uppercase px-2 py-0.5 rounded bg-slate-100 text-slate-600";
+        badgeEl.className = "text-[11px] font-black px-2 py-0.5 rounded bg-slate-100 text-slate-600";
         return;
       }
 
       let steps = [];
       if (p5) steps.push(`<strong class="text-amber-900 bg-amber-100 px-1.5 py-0.5 rounded border border-amber-300">Puisque : ${p5}</strong>`);
-      if (p4) steps.push(`➔ <span class="text-slate-800">DONC : ${p4}</span>`);
-      if (p3) steps.push(`➔ <span class="text-slate-800">DONC : ${p3}</span>`);
-      if (p2) steps.push(`➔ <span class="text-slate-800">DONC : ${p2}</span>`);
-      if (p1) steps.push(`➔ <span class="text-slate-800">DONC : ${p1}</span>`);
-      if (constat) steps.push(`➔ <strong class="text-delacour-primary">DONC (Constat) : ${constat}</strong>`);
+      if (p4) steps.push(`→ <span class="text-slate-800">DONC : ${p4}</span>`);
+      if (p3) steps.push(`→ <span class="text-slate-800">DONC : ${p3}</span>`);
+      if (p2) steps.push(`→ <span class="text-slate-800">DONC : ${p2}</span>`);
+      if (p1) steps.push(`→ <span class="text-slate-800">DONC : ${p1}</span>`);
+      if (constat) steps.push(`→ <strong class="text-delacour-primary">DONC (Constat) : ${constat}</strong>`);
 
       chainEl.innerHTML = `<div class="space-y-1 leading-relaxed">${steps.join('<br>')}</div>`;
 
       if (p5 && constat) {
-        badgeEl.textContent = "🟢 Chaîne Causale Solide";
-        badgeEl.className = "text-[9.5px] font-black uppercase px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 border border-emerald-300";
+        badgeEl.textContent = "Chaîne Causale Solide";
+        badgeEl.className = "text-[11px] font-black px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 border border-emerald-300";
       } else {
-        badgeEl.textContent = "🟡 Analyse Partielle";
-        badgeEl.className = "text-[9.5px] font-black uppercase px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300";
+        badgeEl.textContent = "Analyse Partielle";
+        badgeEl.className = "text-[11px] font-black px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300";
       }
     }
 
     function setWorkshopDeadlinePlus7Days() {
       const d = new Date(Date.now() + 7 * 86400000);
       document.getElementById('workshopDeadline').value = d.toISOString().split('T')[0];
+    }
+
+    // 5M action plan of the workshop: [{ dim, text, pilot }]
+    const WORKSHOP_5M_DIMS = {main_oeuvre: "Main-d'œuvre",methode: "Méthode",materiel: "Matériel",matiere: "Matière",milieu: "Milieu"};
+    const WORKSHOP_5M_TO_CAUSE = { main_oeuvre: 'manpower', methode: 'method', materiel: 'machine', matiere: 'material', milieu: 'environment' };
+    let workshop5MPlan = [];
+
+    function load5MWorkshopPlan(plan, legacyText) {
+      workshop5MPlan = Array.isArray(plan) ? plan.map(a => ({ ...a })) : (legacyText ? [{ dim: 'methode', text: legacyText, pilot: '' }] : []);
+      Object.keys(WORKSHOP_5M_DIMS).forEach(d => document.getElementById('ws5m_ideas_' + d)?.classList.add('hidden'));
+      render5MWorkshopPlan();
+    }
+
+    function add5MWorkshopAction(dim, text) {
+      workshop5MPlan.push({ dim, text, pilot: '' });
+      render5MWorkshopPlan();
+      if (!text) {
+        const inputs = document.querySelectorAll(`#ws5m_rows_${dim} input[data-field="text"]`);
+        inputs[inputs.length - 1]?.focus();
+      }
+    }
+
+    function update5MWorkshopAction(idx, field, value) {
+      workshop5MPlan[idx][field] = value;
+      sync5MWorkshopSummary();
+    }
+
+    function remove5MWorkshopAction(idx) {
+      workshop5MPlan.splice(idx, 1);
+      render5MWorkshopPlan();
+    }
+
+    function render5MWorkshopPlan() {
+      Object.keys(WORKSHOP_5M_DIMS).forEach(dim => {
+        const box = document.getElementById('ws5m_rows_' + dim);
+        if (!box) return;
+        box.innerHTML = workshop5MPlan.map((a, idx) => a.dim !== dim ? '' : `
+          <div class="flex flex-wrap sm:flex-nowrap items-center gap-1.5">
+            <input type="text" data-field="text" value="${escapeHtml(a.text)}" oninput="update5MWorkshopAction(${idx}, 'text', this.value)" placeholder="Action concrète…" class="basis-full sm:basis-auto flex-1 min-w-0 text-xs bg-white border border-slate-300 rounded-md px-2 py-1.5 text-slate-900 outline-none focus:border-delacour-gold">
+            <input type="text" value="${escapeHtml(a.pilot)}" list="pilotsDatalist" oninput="update5MWorkshopAction(${idx}, 'pilot', this.value)" placeholder="Pilote (facultatif)" class="flex-1 sm:flex-none sm:w-36 min-w-0 text-xs bg-white border border-slate-300 rounded-md px-2 py-1.5 text-slate-800 outline-none focus:border-delacour-gold">
+            <button type="button" onclick="remove5MWorkshopAction(${idx})" aria-label="Retirer cette action" title="Retirer" class="text-slate-400 hover:text-red-600 px-1.5 text-sm leading-none">&times;</button>
+          </div>`).join('');
+      });
+      sync5MWorkshopSummary();
+    }
+
+    // Keeps the legacy one-line fields (registry, history, print sheet, tool 5.3) filled from the 5M plan
+    function sync5MWorkshopSummary() {
+      const filled = workshop5MPlan.filter(a => a.text && a.text.trim());
+      document.getElementById('workshopActionText').value = filled
+        .map(a => `${WORKSHOP_5M_DIMS[a.dim]} : ${a.text.trim()}${a.pilot && a.pilot.trim() ? ' (' + a.pilot.trim() + ')' : ''}`).join(' · ');
+      document.getElementById('workshopActionType').value = filled[0]?.dim || '';
     }
 
     function saveFiveWhysSessionFromModal() {
@@ -7614,6 +8123,14 @@
         try { kpiLink = JSON.parse(rawLink); } catch(e){}
       }
 
+      sync5MWorkshopSummary();
+      const plan5M = workshop5MPlan.filter(a => a.text && a.text.trim()).map(a => ({ dim: a.dim, text: a.text.trim(), pilot: (a.pilot || '').trim() }));
+      if (plan5M.length > 0 && !document.getElementById('workshopPilot').value.trim()) {
+        alert("Désignez un pilote principal : chaque plan d'action doit avoir un responsable nommé.");
+        document.getElementById('workshopPilot').focus();
+        return;
+      }
+
       const sessionObj = {
         id: id,
         problem: prob || constat,
@@ -7629,6 +8146,7 @@
         why5: document.getElementById('workshopWhy5').value.trim(),
         countermeasure: document.getElementById('workshopActionText').value.trim(),
         actionType: document.getElementById('workshopActionType').value,
+        plan5M: plan5M,
         pilot: document.getElementById('workshopPilot').value.trim(),
         deadline: document.getElementById('workshopDeadline').value,
         cost: parseKpiNumber(document.getElementById('workshopCost').value),
@@ -7654,9 +8172,9 @@
       saveLiveState();
       closeFiveWhysWorkshopModal();
 
-      if (activeToolId === "5.3") {
+      if (currentToolId === "5.3") {
         renderDocument(tool53);
-      } else if (activeToolId === "1.1") {
+      } else if (currentToolId === "1.1") {
         renderDocument(TOOLS_DATA["1.1"]);
       }
     }
@@ -7704,9 +8222,9 @@
 
         saveLiveState();
         closeFiveWhysWorkshopModal();
-        if (activeToolId === "5.3") {
+        if (currentToolId === "5.3") {
           renderDocument(tool53);
-        } else if (activeToolId === "1.1") {
+        } else if (currentToolId === "1.1") {
           renderDocument(tool11);
         }
       }
@@ -7822,7 +8340,7 @@
                 <span class="text-sm font-black text-slate-900">${s.countermeasure || '<span class="italic text-slate-400">À définir</span>'}</span>
               </div>
               <div class="grid grid-cols-4 gap-2 pt-2 border-t border-slate-200 text-[11px]">
-                <div><strong>Type :</strong> ${s.actionType === 'poka_yoke' ? '🛡️ Poka-Yoke Physique' : '📋 Standard Visuel SOP'}</div>
+                <div><strong>Type :</strong> ${s.plan5M?.length ? 'Plan 5M (' + [...new Set(s.plan5M.map(a => WORKSHOP_5M_DIMS[a.dim]))].join(', ') + ')' : (s.actionType === 'poka_yoke' ? '🛡️ Poka-Yoke Physique' : '📋 Standard Visuel SOP')}</div>
                 <div><strong>Pilote Désigné :</strong> ${s.pilot || 'À désigner'}</div>
                 <div><strong>Échéance Fixe :</strong> ${s.deadline || 'Sous 7 jours'}</div>
                 <div><strong>Coût Estimé :</strong> ${s.cost ? s.cost + ' € HT' : '0 €'}</div>
@@ -7978,7 +8496,8 @@
       }
 
       if (targetAct) {
-        targetAct.causeCategory = "method";
+        targetAct.causeCategory = WORKSHOP_5M_TO_CAUSE[session.plan5M?.[0]?.dim] || targetAct.causeCategory || "method";
+        targetAct.plan5M = session.plan5M || targetAct.plan5M;
         targetAct.causeText = session.why5 || session.constat || targetAct.causeText;
         targetAct.action = session.countermeasure || targetAct.action;
         targetAct.actionText = session.countermeasure || targetAct.actionText;
@@ -8003,7 +8522,8 @@
           procName: proc ? proc.name : '',
           kpiName: kLink.kpiName || session.problem,
           monthIdx: kLink.monthIdx !== undefined ? kLink.monthIdx : getActiveMonthIdx(tool11),
-          causeCategory: 'method',
+          causeCategory: WORKSHOP_5M_TO_CAUSE[session.plan5M?.[0]?.dim] || 'method',
+          plan5M: session.plan5M || [],
           causeText: session.why5 || session.constat || '',
           action: session.countermeasure || '',
           actionText: session.countermeasure || '',
@@ -8741,6 +9261,9 @@
     }
 
     function checkActionEffectiveness(tool, act) {
+      if (act.status === 'to_start' || act.status === 'in_progress') {
+        return { label: "À mesurer après réalisation", cls: "bg-slate-100 text-slate-600 border-slate-200" };
+      }
       if (!act.kpiId) return { label: "Information", cls: "bg-slate-100 text-slate-700 border-slate-200" };
       const ind = findKpiById(tool, act.kpiId);
       if (!ind) return { label: "Non lié", cls: "bg-slate-100 text-slate-500 border-slate-200" };
@@ -8759,12 +9282,12 @@
       const isGood = (ind.goalDirection === "higher") ? (lastVal >= target) : (lastVal <= target);
       if (isGood) {
         return { 
-          label: `🟢 Efficacité Démontrée (Dernier constat : ${formatProcessChartVal(lastVal, ind.unit, false)})`, 
+          label: `Efficacité démontrée (dernier constat : ${formatProcessChartVal(lastVal, ind.unit, false)})`, 
           cls: "bg-emerald-100 text-emerald-900 border-emerald-300 font-bold" 
         };
       } else {
         return { 
-          label: `🔴 Récidive Partielle (${formatProcessChartVal(lastVal, ind.unit, false)} vs ${ind.target})`, 
+          label: `Récidive partielle (${formatProcessChartVal(lastVal, ind.unit, false)} vs ${ind.target})`, 
           cls: "bg-red-100 text-red-900 border-red-300 font-bold" 
         };
       }
@@ -8789,15 +9312,89 @@
         annualBudget: 600000,
         targetMarge: 35.0,
         tauxHoraireAtelier: 45,
-        valeurMoyenneDevis: 4500
+        valeurMoyenneDevis: 4500,
+        margeNettePct: 5,
+        seuilAlerteCnq: 1500
       };
 
-      if (!tool.pmeSettings) {
-        tool.pmeSettings = Object.assign({}, defaults, saved || {});
-      } else if (saved) {
-        tool.pmeSettings = Object.assign({}, tool.pmeSettings, saved);
-      }
+      // defaults first: settings saved before a field existed still get a value
+      tool.pmeSettings = Object.assign({}, defaults, tool.pmeSettings || {}, saved || {});
       return tool.pmeSettings;
+    }
+
+    // CA to re-earn to offset 1 € of loss = 100 / net margin %
+    function getCaCompensatoireRatio(settings) {
+      const pct = parseFloat(settings.margeNettePct);
+      return pct > 0 ? 100 / pct : 20;
+    }
+
+    const KPI_SETTINGS_FIELDS = { setAnnualBudget: 'annualBudget', setMargeNette: 'margeNettePct', setValeurDevis: 'valeurMoyenneDevis' };
+
+    function openKpiSettingsModal() {
+      const st = getPmeSettings(TOOLS_DATA["1.1"]);
+      for (const [elId, key] of Object.entries(KPI_SETTINGS_FIELDS)) {
+        document.getElementById(elId).value = st[key];
+      }
+      document.getElementById('kpiProfileSelect').value = localStorage.getItem('DELACOUR_PME_PROFILE') || 'industrie';
+      document.getElementById('kpiSettingsModal').classList.remove('hidden');
+    }
+
+    function closeKpiSettingsModal() {
+      document.getElementById('kpiSettingsModal').classList.add('hidden');
+    }
+
+    function saveKpiSettingsFromModal() {
+      const tool = TOOLS_DATA["1.1"];
+      const st = getPmeSettings(tool);
+      for (const [elId, key] of Object.entries(KPI_SETTINGS_FIELDS)) {
+        const v = parseFloat(document.getElementById(elId).value);
+        if (isNaN(v) || v < 0 || (key === 'margeNettePct' && (v === 0 || v > 100))) {
+          alert("Valeur invalide : " + document.querySelector(`label:has(#${elId}) span`).textContent);
+          return;
+        }
+        st[key] = v;
+      }
+      try { localStorage.setItem('DELACOUR_PME_SETTINGS', JSON.stringify(st)); } catch(e) {}
+      saveLiveState();
+      closeKpiSettingsModal();
+      renderDocument(tool);
+    }
+
+    // TEMPORARY: true = first launch shows the demo figures (for design review). Set to false before client delivery.
+    const KPI_START_WITH_DEMO = true;
+
+    // Empties values and actions, keeps processes / KPI definitions / targets
+    function blankKpiTool(tool) {
+      tool.processes.forEach(p => {
+        delete p.lastUpdated;
+        p.indicators.forEach(ind => {
+          ind.months = (ind.months || []).map(() => "");
+          ind.actionPilot = "";
+          ind.actionDeadline = "";
+          ind.actionText = "";
+          ind.actionDone = false;
+        });
+      });
+      tool.actionRegistry = [];
+      tool.manualActiveMonth = "auto";
+      return tool;
+    }
+
+    function clearKpiDataKeepStructure() {
+      if (!confirm("Effacer toutes les valeurs saisies et toutes les actions ?\n\nLes indicateurs et leurs cibles sont conservés. Pensez à exporter une sauvegarde avant.")) return;
+      const tool = blankKpiTool(TOOLS_DATA["1.1"]);
+      saveLiveState();
+      closeKpiSettingsModal();
+      renderDocument(tool);
+    }
+
+    function loadKpiDemoExample() {
+      if (!confirm("Charger l'exemple de démonstration ?\n\nVos valeurs et actions actuelles seront REMPLACÉES par des données fictives.")) return;
+      TOOLS_DATA["1.1"] = JSON.parse(JSON.stringify(INITIAL_TOOLS_DATA["1.1"]));
+      ensureActionRegistryMigrated(TOOLS_DATA["1.1"]);
+      saveLiveState();
+      closeKpiSettingsModal();
+      renderDocument(TOOLS_DATA["1.1"]);
     }
 
 
@@ -8943,8 +9540,8 @@
       let totalCnq = 0;
       let openTickets = [];
 
-      tool.processes.forEach(p => {
-        p.indicators.forEach(ind => {
+      tool.processes.forEach((p, pIdx) => {
+        p.indicators.forEach((ind, iIdx) => {
           const nums = ind.months.map(m => parseKpiNumber(m)).filter(n => n !== null);
           const sum = nums.reduce((a, b) => a + b, 0);
           const avg = nums.length > 0 ? sum / nums.length : 0;
@@ -8955,20 +9552,22 @@
 
           const st = computeKpiStatus(ind);
           if (st.isAlert) {
+            const act = getOpenKpiAction(tool, pIdx, iIdx);
             openTickets.push({
               proc: p.name,
               kpi: ind.name,
               target: ind.target,
               current: ind.months[activeMonth] || '---',
-              pilot: ind.actionPilot || 'Non désigné (Arbitrage Requis)',
-              deadline: ind.actionDeadline || 'Immédiate',
-              action: ind.actionText || 'En attente de plan d action'
+              pilot: act ? act.pilot : 'Non désigné (Arbitrage Requis)',
+              deadline: act ? act.deadline : 'Immédiate',
+              action: act ? act.action : 'En attente de plan d action'
             });
           }
         });
       });
 
-      const caCompensatoire = totalCnq * 20;
+      const pmeSettings = getPmeSettings(tool);
+      const caCompensatoire = Math.round(totalCnq * getCaCompensatoireRatio(pmeSettings));
 
       let actionsTable = openTickets.map(t => `
         <tr class="border-b border-slate-200 text-xs">
@@ -9021,7 +9620,7 @@
               </div>
             </div>
             <p class="text-[11px] text-slate-600 italic">
-              Équivalence financière : Le gâchis cumulé de ${totalCnq.toLocaleString('fr-FR')} € mobilise ${caCompensatoire.toLocaleString('fr-FR')} € de chiffre d'affaires de compensation à marge nette de 5%.
+              Équivalence financière : Le gâchis cumulé de ${totalCnq.toLocaleString('fr-FR')} € mobilise ${caCompensatoire.toLocaleString('fr-FR')} € de chiffre d'affaires de compensation à marge nette de ${pmeSettings.margeNettePct} %.
             </p>
           </div>
 
@@ -9213,7 +9812,7 @@
       const targetFocusKey = window.pendingKpiCellFocus;
       window.pendingKpiCellFocus = null;
 
-      renderDocument(tool);
+      renderDocumentPreservingScroll(tool);
 
       if (targetFocusKey) {
         setTimeout(() => {
@@ -9273,20 +9872,20 @@
     // ACTIONS CORRECTIVES EXPERT QHSE (FORMULE 2)
     // ==========================================================
     const CAUSE_5M_LABELS = {
-      "method": { label: "Méthode / Procédé", icon: "⚙️", cls: "bg-blue-100 text-blue-800 border-blue-200" },
-      "material": { label: "Matière / Fournisseur", icon: "📦", cls: "bg-amber-100 text-amber-800 border-amber-200" },
-      "machine": { label: "Matériel / Machine", icon: "🛠️", cls: "bg-purple-100 text-purple-800 border-purple-200" },
-      "manpower": { label: "Main d'œuvre / RH", icon: "👥", cls: "bg-indigo-100 text-indigo-800 border-indigo-200" },
-      "environment": { label: "Organisation / Charge", icon: "🏢", cls: "bg-cyan-100 text-cyan-800 border-cyan-200" },
-      "commercial": { label: "Commercial / Client", icon: "🤝", cls: "bg-emerald-100 text-emerald-800 border-emerald-200" },
-      "other": { label: "Autre cause opérationnelle", icon: "❓", cls: "bg-slate-100 text-slate-700 border-slate-200" }
+      "method": { label: "Méthode / Procédé", icon: "", cls: "bg-blue-100 text-blue-800 border-blue-200" },
+      "material": { label: "Matière / Fournisseur", icon: "", cls: "bg-amber-100 text-amber-800 border-amber-200" },
+      "machine": { label: "Matériel / Machine", icon: "", cls: "bg-purple-100 text-purple-800 border-purple-200" },
+      "manpower": { label: "Main d'œuvre / RH", icon: "", cls: "bg-indigo-100 text-indigo-800 border-indigo-200" },
+      "environment": { label: "Organisation / Charge", icon: "", cls: "bg-cyan-100 text-cyan-800 border-cyan-200" },
+      "commercial": { label: "Commercial / Client", icon: "", cls: "bg-emerald-100 text-emerald-800 border-emerald-200" },
+      "other": { label: "Autre cause opérationnelle", icon: "", cls: "bg-slate-100 text-slate-700 border-slate-200" }
     };
 
     const ACTION_STATUS_CFG = {
-      "to_start": { label: "À lancer", icon: "🔴", pillCls: "bg-rose-100 text-rose-800 border-rose-200 font-bold" },
-      "in_progress": { label: "En cours", icon: "🟡", pillCls: "bg-amber-100 text-amber-800 border-amber-200 font-bold" },
-      "done": { label: "Réalisée", icon: "🟢", pillCls: "bg-emerald-100 text-emerald-800 border-emerald-200 font-bold" },
-      "effective": { label: "Efficace", icon: "⭐", pillCls: "bg-blue-100 text-blue-900 border-blue-200 font-black" }
+      "to_start": { label: "À lancer", icon: "●", pillCls: "bg-rose-100 text-rose-800 border-rose-200 font-bold" },
+      "in_progress": { label: "En cours", icon: "●", pillCls: "bg-amber-100 text-amber-800 border-amber-200 font-bold" },
+      "done": { label: "Réalisée", icon: "●", pillCls: "bg-emerald-100 text-emerald-800 border-emerald-200 font-bold" },
+      "effective": { label: "Efficace", icon: "●", pillCls: "bg-blue-100 text-blue-900 border-blue-200 font-black" }
     };
 
     function parseDeadlineToDate(str) {
@@ -9385,9 +9984,15 @@
       });
     }
 
+    // Open = to start or in progress, with a named pilot
+    function getOpenKpiAction(tool, pIdx, iIdx) {
+      return getKpiActions(tool, pIdx, iIdx).find(a =>
+        (a.status === 'in_progress' || a.status === 'to_start') && a.pilot && a.pilot.trim() !== '' && a.pilot !== 'Pilote');
+    }
+
     function renderKpiActionCell(tool, pIdx, iIdx, ind, autoStatus, isMasked, activeMonthIdx) {
       if (isMasked) {
-        return `<span class="text-slate-400 italic text-[9.5px]">Réservé direction</span>`;
+        return `<span class="text-slate-400 italic text-[11px]">Réservé direction</span>`;
       }
 
       const actions = getKpiActions(tool, pIdx, iIdx);
@@ -9403,9 +10008,9 @@
             class="w-full text-left p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100/90 border border-rose-300 text-rose-950 transition flex items-center justify-between group/act shadow-2xs">
             <div class="flex items-center space-x-1.5 min-w-0">
               <span class="w-2 h-2 rounded-full bg-rose-600 shrink-0 animate-pulse"></span>
-              <span class="text-[9.5px] font-black uppercase text-rose-800 truncate">🔴 Action requise</span>
+              <span class="text-[11px] font-black text-rose-800 truncate">Action requise</span>
             </div>
-            <span class="text-[8px] text-rose-700 font-bold bg-white px-1.5 py-0.5 rounded border border-rose-200 shrink-0 group-hover/act:bg-rose-600 group-hover/act:text-white transition">+ Ouvrir</span>
+            <span class="text-[11px] text-rose-700 font-bold bg-white px-1.5 py-0.5 rounded border border-rose-200 shrink-0 group-hover/act:bg-rose-600 group-hover/act:text-white transition">+ Ouvrir</span>
           </button>
         `;
       }
@@ -9421,20 +10026,20 @@
             class="w-full p-1.5 rounded-lg ${isOverdue ? 'bg-rose-50/90 border-rose-300' : 'bg-amber-50/90 border-amber-300'} hover:shadow-xs border transition cursor-pointer shadow-2xs space-y-0.5 group/act" 
             title="${escapeAttr(activeAction.action)}">
             <div class="flex items-center justify-between">
-              <span class="text-[8px] font-black uppercase px-1.5 py-0.2 rounded ${statusCfg.pillCls} flex items-center space-x-1">
+              <span class="text-[11px] font-black px-1.5 py-0.2 rounded ${statusCfg.pillCls} flex items-center space-x-1">
                 <span>${statusCfg.icon}</span>
                 <span>${statusCfg.label}</span>
               </span>
-              <span class="text-[8px] font-mono font-bold ${isOverdue ? 'text-red-700 font-black' : 'text-slate-500'}">
-                ${isOverdue ? '⚠️ ' : ''}${formatDeadlineShort(activeAction.deadline)}
+              <span class="text-[11px] font-mono font-bold ${isOverdue ? 'text-red-700 font-black' : 'text-slate-500'}">
+                ${isOverdue ? '' : ''}${formatDeadlineShort(activeAction.deadline)}
               </span>
             </div>
-            <div class="text-[9px] font-bold text-slate-800 truncate">
-              👤 ${activeAction.pilot || 'Pilote'} : <span class="font-normal text-slate-600">${activeAction.action || 'Action définie'}</span>
+            <div class="text-[11px] font-bold text-slate-800 truncate">
+              ${activeAction.pilot || 'Pilote'} : <span class="font-normal text-slate-600">${activeAction.action || 'Action définie'}</span>
             </div>
-            <div class="flex items-center justify-between text-[7.5px] text-slate-400">
+            <div class="flex items-center justify-between text-[11px] text-slate-400">
               <span>${causeCfg.icon} ${causeCfg.label.split('/')[0]}</span>
-              ${actions.length > 1 ? `<span class="font-bold text-slate-500 underline">📜 ${actions.length} actions</span>` : ''}
+              ${actions.length > 1 ? `<span class="font-bold text-slate-500 underline">${actions.length} actions</span>` : ''}
             </div>
           </div>
         `;
@@ -9449,13 +10054,13 @@
             title="${escapeAttr(latestAction.action)}">
             <div class="truncate min-w-0 pr-1 space-y-0.5">
               <div class="flex items-center space-x-1">
-                <span class="text-[8.5px] font-bold text-emerald-900">${statusCfg.icon} ${statusCfg.label}</span>
-                <span class="text-[8px] text-slate-400 font-mono">(${formatDeadlineShort(latestAction.closedAt || latestAction.date)})</span>
+                <span class="text-[11px] font-bold text-emerald-900">${statusCfg.icon} ${statusCfg.label}</span>
+                <span class="text-[11px] text-slate-400 font-mono">(${formatDeadlineShort(latestAction.closedAt || latestAction.date)})</span>
               </div>
-              <span class="text-[8.5px] text-slate-600 block truncate font-medium">👤 ${latestAction.pilot || 'Pilote'} : ${latestAction.action}</span>
+              <span class="text-[11px] text-slate-600 block truncate font-medium">${latestAction.pilot || 'Pilote'} : ${latestAction.action}</span>
             </div>
             <button onclick="event.stopPropagation(); openKpiActionModal(${pIdx}, ${iIdx}, null, true)" 
-              class="text-[8px] font-bold text-slate-500 hover:text-delacour-primary bg-white hover:bg-slate-50 px-1.5 py-0.5 rounded border border-slate-200 transition shrink-0" 
+              class="text-[11px] font-bold text-slate-500 hover:text-delacour-primary bg-white hover:bg-slate-50 px-1.5 py-0.5 rounded border border-slate-200 transition shrink-0" 
               title="Ajouter une nouvelle action">+ Autre</button>
           </div>
         `;
@@ -9463,12 +10068,12 @@
 
       // Case 4: Compliant and no actions
       return `
-        <div class="flex items-center justify-between text-[9px] px-1 text-slate-500">
+        <div class="flex items-center justify-between text-[11px] px-1 text-slate-500">
           <span class="text-emerald-700 font-bold flex items-center space-x-1">
-            <span>✓</span> <span>Objectif tenu</span>
+            <span></span> <span>Objectif tenu</span>
           </span>
           <button onclick="openKpiActionModal(${pIdx}, ${iIdx}, null, true)" 
-            class="text-[8px] font-bold text-slate-400 hover:text-delacour-primary hover:bg-slate-100 px-1.5 py-0.5 rounded border border-transparent hover:border-slate-200 transition" 
+            class="text-[11px] font-bold text-slate-400 hover:text-delacour-primary hover:bg-slate-100 px-1.5 py-0.5 rounded border border-transparent hover:border-slate-200 transition" 
             title="Ajouter une action préventive ou d'amélioration continue">
             + Action
           </button>
@@ -9716,7 +10321,7 @@
         tool.actionRegistry.forEach(a => { if (a.pilot) pilots.add(a.pilot); });
       }
       if (pilotSel) {
-        pilotSel.innerHTML = `<option value="all">👤 Tous les pilotes</option>` + 
+        pilotSel.innerHTML = `<option value="all">Tous les pilotes</option>` + 
           Array.from(pilots).map(p => `<option value="${p}">${p}</option>`).join('');
       }
 
@@ -9759,30 +10364,26 @@
       if (summaryCards) {
         summaryCards.innerHTML = `
           <div class="p-2.5 rounded-xl border border-slate-200 bg-slate-50 shadow-2xs flex items-center space-x-2.5">
-            <span class="text-xl">📋</span>
             <div>
-              <div class="text-[9.5px] uppercase font-bold text-slate-400">Total Actions</div>
+              <div class="text-[11px] font-bold text-slate-400">Total Actions</div>
               <div class="text-sm font-black text-slate-900 font-mono">${totalActs}</div>
             </div>
           </div>
-          <div class="p-2.5 rounded-xl border border-rose-200 bg-rose-50/80 shadow-2xs flex items-center space-x-2.5">
-            <span class="text-xl">🔴</span>
+          <div class="p-2.5 rounded-xl border ${overdueActs > 0 ? 'border-rose-200 bg-rose-50/80' : 'border-slate-200 bg-white'} shadow-2xs flex items-center space-x-2.5">
             <div>
-              <div class="text-[9.5px] uppercase font-bold text-rose-700">En retard</div>
-              <div class="text-sm font-black text-rose-900 font-mono">${overdueActs} action(s)</div>
+              <div class="text-[11px] font-bold ${overdueActs > 0 ? 'text-rose-700' : 'text-slate-500'}">En retard</div>
+              <div class="text-sm font-black ${overdueActs > 0 ? 'text-rose-900' : 'text-slate-700'} font-mono">${overdueActs} action(s)</div>
             </div>
           </div>
           <div class="p-2.5 rounded-xl border border-amber-200 bg-amber-50/80 shadow-2xs flex items-center space-x-2.5">
-            <span class="text-xl">🟡</span>
             <div>
-              <div class="text-[9.5px] uppercase font-bold text-amber-700">En cours</div>
+              <div class="text-[11px] font-bold text-amber-700">En cours</div>
               <div class="text-sm font-black text-amber-900 font-mono">${inProgressActs} action(s)</div>
             </div>
           </div>
           <div class="p-2.5 rounded-xl border border-emerald-200 bg-emerald-50/80 shadow-2xs flex items-center space-x-2.5">
-            <span class="text-xl">🟢</span>
             <div>
-              <div class="text-[9.5px] uppercase font-bold text-emerald-700">Soldées / Efficaces</div>
+              <div class="text-[11px] font-bold text-emerald-700">Soldées / Efficaces</div>
               <div class="text-sm font-black text-emerald-900 font-mono">${doneActs} action(s)</div>
             </div>
           </div>
@@ -9824,54 +10425,54 @@
           <tr class="text-xs border-b border-slate-100 hover:bg-slate-50/80 transition">
             <!-- Statut -->
             <td class="p-2.5">
-              <span class="text-[8.5px] font-black uppercase px-2 py-0.5 rounded ${statusCfg.pillCls} inline-flex items-center space-x-1">
+              <span class="text-[11px] font-black px-2 py-0.5 rounded ${statusCfg.pillCls} inline-flex items-center space-x-1">
                 <span>${statusCfg.icon}</span>
                 <span>${statusCfg.label}</span>
               </span>
             </td>
             <!-- Échéance -->
             <td class="p-2.5 font-mono text-[11px] ${isOverdue ? 'text-red-700 font-black' : 'text-slate-700 font-bold'}">
-              ${isOverdue ? '<span class="text-[9px] bg-red-100 text-red-800 px-1 py-0.2 rounded mr-1">Retard</span>' : ''}
+              ${isOverdue ? '<span class="text-[11px] bg-red-100 text-red-800 px-1 py-0.2 rounded mr-1">Retard</span>' : ''}
               ${act.deadline || '---'}
             </td>
             <!-- Processus & KPI -->
             <td class="p-2.5">
               <div class="font-bold text-slate-900 text-[11px]">${act.kpiName}</div>
-              <div class="text-[9px] text-slate-500 font-semibold">${act.processId || ''} • Mois : ${act.monthLabel || act.date}</div>
+              <div class="text-[11px] text-slate-500 font-semibold">${act.processId || ''} • Mois : ${act.monthLabel || act.date}</div>
             </td>
             <!-- Cause Racine (5M) -->
             <td class="p-2.5">
-              <div class="text-[9.5px] font-bold text-slate-800 flex items-center space-x-1">
+              <div class="text-[11px] font-bold text-slate-800 flex items-center space-x-1">
                 <span>${causeCfg.icon}</span>
                 <span>${causeCfg.label.split('/')[0]}</span>
               </div>
-              ${act.causeText ? `<div class="text-[8.5px] text-slate-500 truncate max-w-[140px] italic">${act.causeText}</div>` : ''}
+              ${act.causeText ? `<div class="text-[11px] text-slate-500 truncate max-w-[140px] italic">${act.causeText}</div>` : ''}
             </td>
             <!-- Action Concrète -->
             <td class="p-2.5 font-medium text-slate-800 text-[11px]">
               <div>${act.action}</div>
-              ${act.cost ? `<span class="text-[9px] text-slate-500 font-mono">Investissement : ${act.cost} € HT</span>` : ''}
+              ${act.cost ? `<span class="text-[11px] text-slate-500 font-mono">Investissement : ${act.cost} € HT</span>` : ''}
             </td>
             <!-- Pilote -->
-            <td class="p-2.5 font-extrabold text-delacour-primary text-[10.5px]">
-              👤 ${act.pilot || '---'}
+            <td class="p-2.5 font-extrabold text-delacour-primary text-[11px]">
+              ${act.pilot || '---'}
             </td>
             <!-- Preuve d'Efficacité -->
             <td class="p-2.5">
-              <span class="px-2 py-0.5 rounded text-[8.5px] border inline-block ${eff.cls}">${eff.label}</span>
+              <span class="px-2 py-0.5 rounded text-[11px] border inline-block ${eff.cls}">${eff.label}</span>
             </td>
             <!-- Actions -->
             <td class="p-2.5 text-right no-print space-x-1 whitespace-nowrap">
               ${(act.status !== 'done' && act.status !== 'effective') ? `
-                <button onclick="quickCloseGlobalAction('${act.id}')" title="Marquer comme réalisée" class="px-1.5 py-0.5 rounded bg-emerald-100 hover:bg-emerald-200 text-emerald-900 text-[10px] font-black transition">
-                  ✓ Fait
+                <button onclick="quickCloseGlobalAction('${act.id}')" title="Marquer comme réalisée" class="px-1.5 py-0.5 rounded bg-emerald-100 hover:bg-emerald-200 text-emerald-900 text-[11px] font-black transition">
+                  Fait
                 </button>
               ` : ''}
-              <button onclick="editGlobalAction('${act.id}', ${act.pIdx}, ${act.iIdx})" title="Modifier" class="px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold transition">
-                ✏️
+              <button onclick="editGlobalAction('${act.id}', ${act.pIdx}, ${act.iIdx})" title="Modifier" class="px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition">
+                
               </button>
-              <button onclick="deleteGlobalAction('${act.id}')" title="Supprimer" class="px-1 py-0.5 rounded text-slate-300 hover:text-red-600 text-[10px] transition">
-                🗑️
+              <button onclick="deleteGlobalAction('${act.id}')" title="Supprimer" class="px-1 py-0.5 rounded text-slate-300 hover:text-red-600 text-[11px] transition">
+                
               </button>
             </td>
           </tr>
@@ -15940,7 +16541,7 @@
           proc.indicators.forEach((ind, iIdx) => {
             const isMasked = isConfidentialMode && ind.isConfidential;
             const autoSummary = isMasked ? "[Confidentiel]" : computeKpiAnnualSummary(ind);
-            const autoStatus = isMasked ? { text: "🔒 Privé", cls: "bg-slate-100 text-slate-500", isAlert: false } : computeKpiStatus(ind);
+            const autoStatus = isMasked ? { text: "Privé", cls: "bg-slate-100 text-slate-500", isAlert: false } : computeKpiStatus(ind);
 
             let typeColor = ind.type === "Moteur" ? "background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe;" : (ind.type === "Vital" ? "background: #fef2f2; color: #991b1b; border: 1px solid #fca5a5;" : "background: #f5f3ff; color: #5b21b6; border: 1px solid #ddd6fe;");
 

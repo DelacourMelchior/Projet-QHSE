@@ -249,6 +249,9 @@
           </button>
         </div>
 
+        <!-- SHARED FOLDER STATUS (TOOL 1.1) -->
+        <button id="sharedStatusChip" type="button" onclick="SharedStore.state === 'needs-permission' ? reconnectSharedFolder() : openKpiSettingsModal()" class="hidden"></button>
+
         <!-- SAVE STATUS INDICATOR (AUTO-SAVE) -->
         <span id="saveStatusBadge" class="hidden xl:inline-flex items-center space-x-1 text-[11px] font-semibold text-emerald-300 bg-emerald-950/60 border border-emerald-500/30 px-2.5 py-1 rounded-md">
           <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
@@ -379,7 +382,9 @@
         </label>
       </div>
       <div class="pt-2 border-t border-slate-100 space-y-1.5">
-        <div class="text-[10px] font-black text-slate-500">Sauvegarde</div>
+        <div class="text-[11px] font-bold text-slate-500">Partage des données (OneDrive, SharePoint…)</div>
+        <div id="sharedStorePanel" class="space-y-2"></div>
+        <div class="text-[11px] font-bold text-slate-500 pt-1">Sauvegarde</div>
         <div class="flex flex-wrap gap-2">
           <button onclick="exportKpiJsonBackup()" class="px-3 py-1.5 rounded text-[11px] font-bold border border-slate-300 text-slate-700 hover:bg-slate-100 transition">Exporter une sauvegarde (.json)</button>
           <button onclick="closeKpiSettingsModal(); triggerImportKpiJson()" class="px-3 py-1.5 rounded text-[11px] font-bold border border-slate-300 text-slate-700 hover:bg-slate-100 transition">Restaurer une sauvegarde</button>
@@ -4456,6 +4461,7 @@
           if (parsed.tool_1_1) {
             TOOLS_DATA['1.1'] = parsed.tool_1_1;
             localStorage.setItem('DELACOUR_DATA_1.1', JSON.stringify(parsed.tool_1_1));
+            scheduleSharedSave();
           }
           if (parsed.clientName) {
             localStorage.setItem('DELACOUR_CLIENT_NAME', parsed.clientName);
@@ -4544,6 +4550,7 @@
       loadSavedToolData();
       loadHistoryRecords();
       renderCurrentTool();
+      initSharedStore();
     }
 
     function switchTool(newToolId) {
@@ -4553,6 +4560,7 @@
       loadSavedToolData();
       loadHistoryRecords();
       renderCurrentTool();
+      renderSharedStatus();
     }
 
     
@@ -5647,7 +5655,7 @@
         // Fallback default
         TOOLS_DATA[currentToolId] = JSON.parse(JSON.stringify(initial));
         if (TOOLS_DATA[currentToolId].isKpiMatrix) {
-          if (!KPI_START_WITH_DEMO) blankKpiTool(TOOLS_DATA[currentToolId]);
+          blankKpiTool(TOOLS_DATA[currentToolId]);
           ensureActionRegistryMigrated(TOOLS_DATA[currentToolId]);
         }
         if (TOOLS_DATA[currentToolId].isFiveWhys) {
@@ -5657,7 +5665,7 @@
         console.error("[Delacour] Erreur de chargement des données locales :", e);
         TOOLS_DATA[currentToolId] = JSON.parse(JSON.stringify(INITIAL_TOOLS_DATA[currentToolId] || INITIAL_TOOLS_DATA["1.1"]));
         if (TOOLS_DATA[currentToolId].isKpiMatrix) {
-          if (!KPI_START_WITH_DEMO) blankKpiTool(TOOLS_DATA[currentToolId]);
+          blankKpiTool(TOOLS_DATA[currentToolId]);
           ensureActionRegistryMigrated(TOOLS_DATA[currentToolId]);
         }
         if (TOOLS_DATA[currentToolId].isFiveWhys) {
@@ -5937,9 +5945,324 @@
       }
     }, true);
 
+    // ==========================================================
+    // SHARED FOLDER STORAGE (TOOL 1.1)
+    // The client's synced cloud folder (OneDrive, SharePoint, Drive…) holds the data:
+    //   <dossier>/equipe/journal-<auteur>.json     readable by everyone
+    //   <dossier>/direction/journal-<auteur>.json  confidential KPI values + settings (folder rights = real confidentiality)
+    // Each person only ever writes their own journal, so the sync client never creates conflict copies.
+    // A journal is { author, updatedAt, entries: { key: { ts, v } } }; on load every journal is merged, newest ts wins.
+    // Keys are period-based ("value|kpi_ca|2026-12"), never column indexes.
+    // ==========================================================
+    const SharedStore = {
+      dir: null,              // FileSystemDirectoryHandle of the data folder
+      state: 'local',         // local | needs-permission | connected | error
+      hasDirection: false,
+      own: { equipe: {}, direction: {} },   // my own entries per bucket
+      baseline: null,         // flattened state last read/written
+      contributors: [],
+      lastSync: null,
+      saveTimer: null,
+      supported: typeof window.showDirectoryPicker === 'function'
+    };
+
+    function sharedAuthor() {
+      try { return (localStorage.getItem('DELACOUR_AUTHOR') || '').trim(); } catch (e) { return ''; }
+    }
+    function authorSlug(name) {
+      return name.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'anonyme';
+    }
+    const periodOfCol = c => `${c.year}-${String(c.month + 1).padStart(2, '0')}`;
+
+    // ---- IndexedDB: remember the folder handle between sessions
+    function idbHandle(mode, value) {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open('delacour-shared', 1);
+        req.onupgradeneeded = () => req.result.createObjectStore('kv');
+        req.onerror = () => reject(req.error);
+        req.onsuccess = () => {
+          const tx = req.result.transaction('kv', mode === 'get' ? 'readonly' : 'readwrite');
+          const store = tx.objectStore('kv');
+          const r = mode === 'get' ? store.get('dir') : (value ? store.put(value, 'dir') : store.delete('dir'));
+          r.onsuccess = () => resolve(r.result);
+          r.onerror = () => reject(r.error);
+        };
+      });
+    }
+
+    // ---- state <-> flat map
+    function flattenKpiTool(tool) {
+      const map = {};
+      getToolColumns(tool);
+      map['timeline'] = tool.columns.map(periodOfCol);
+      tool.processes.forEach((p, order) => {
+        p.indicators.forEach(ind => { if (!ind.id) ind.id = 'kpi_custom_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); });
+        map[`process|${p.id || 'P' + (order + 1)}`] = { name: p.name, badge: p.badge, order, kpis: p.indicators.map(i => i.id) };
+        p.indicators.forEach(ind => {
+          const { months, actionPilot, actionDeadline, actionText, actionDone, ...def } = ind;
+          map[`kpi|${ind.id}`] = def;
+          (ind.months || []).forEach((v, i) => {
+            if (tool.columns[i] && isKpiCellFilled(v)) map[`value|${ind.id}|${periodOfCol(tool.columns[i])}`] = v;
+          });
+        });
+      });
+      (tool.actionRegistry || []).forEach(a => { if (!a.id) a.id = 'act_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); map[`action|${a.id}`] = a; });
+      map['registryOrder'] = (tool.actionRegistry || []).map(a => a.id);
+      if (tool.pmeSettings) map['settings'] = tool.pmeSettings;
+      return map;
+    }
+
+    function unflattenKpiTool(map) {
+      const tool = JSON.parse(JSON.stringify(INITIAL_TOOLS_DATA["1.1"]));
+      const periods = map['timeline'] || [];
+      tool.columns = periods.map((per, i) => {
+        const [y, m] = per.split('-').map(Number);
+        return { id: `col_${i}_${per}`, month: m - 1, year: y, label: `${ALL_MONTH_NAMES[m - 1]} ${y}` };
+      });
+      tool.processes = Object.keys(map).filter(k => k.startsWith('process|') && map[k])
+        .map(k => ({ id: k.slice(8), ...map[k] }))
+        .sort((a, b) => a.order - b.order)
+        .map(p => ({
+          id: p.id, name: p.name, badge: p.badge,
+          indicators: (p.kpis || []).filter(id => map[`kpi|${id}`]).map(id => ({
+            ...map[`kpi|${id}`],
+            months: periods.map(per => map[`value|${id}|${per}`] || ""),
+            actionPilot: "", actionDeadline: "", actionText: "", actionDone: false
+          }))
+        }));
+      const order = map['registryOrder'] || [];
+      const acts = Object.keys(map).filter(k => k.startsWith('action|') && map[k]).map(k => map[k]);
+      tool.actionRegistry = acts.sort((a, b) => (order.indexOf(a.id) + 1 || 1e9) - (order.indexOf(b.id) + 1 || 1e9));
+      if (map['settings']) tool.pmeSettings = map['settings'];
+      return tool;
+    }
+
+    function bucketOfKey(key, tool) {
+      if (key === 'settings') return 'direction';
+      if (key.startsWith('value|')) {
+        const id = key.split('|')[1];
+        const ind = tool.processes.flatMap(p => p.indicators).find(i => i.id === id);
+        if (ind && ind.isConfidential) return 'direction';
+      }
+      return 'equipe';
+    }
+
+    // ---- file IO
+    async function readJournals(dirHandle) {
+      const out = [];
+      for await (const [name, h] of dirHandle.entries()) {
+        if (h.kind !== 'file' || !/^journal-.+\.json$/.test(name)) continue;
+        try {
+          const j = JSON.parse(await (await h.getFile()).text());
+          if (j && j.entries) out.push({ name, ...j });
+        } catch (e) { console.warn('[Delacour] Journal illisible ignoré :', name); }
+      }
+      return out;
+    }
+
+    async function writeOwnJournal(bucket) {
+      const sub = await SharedStore.dir.getDirectoryHandle(bucket, { create: false });
+      const fh = await sub.getFileHandle(`journal-${authorSlug(sharedAuthor())}.json`, { create: true });
+      const w = await fh.createWritable();
+      await w.write(JSON.stringify({ author: sharedAuthor(), updatedAt: new Date().toISOString(), entries: SharedStore.own[bucket] }));
+      await w.close();
+    }
+
+    async function subDirOrNull(name, create = false) {
+      try { return await SharedStore.dir.getDirectoryHandle(name, { create }); } catch (e) { return null; }
+    }
+
+    // ---- load: merge every journal, newest timestamp wins per key
+    async function loadFromSharedFolder() {
+      const equipe = await subDirOrNull('equipe');
+      if (!equipe) throw new Error("Le dossier choisi ne contient pas de sous-dossier « equipe ». Choisissez le dossier « donnees » ou initialisez-le.");
+      const direction = await subDirOrNull('direction');
+      SharedStore.hasDirection = !!direction;
+      const journals = [...(await readJournals(equipe)).map(j => ({ ...j, bucket: 'equipe' })),
+                        ...(direction ? (await readJournals(direction)).map(j => ({ ...j, bucket: 'direction' })) : [])];
+      const merged = {};
+      const mine = `journal-${authorSlug(sharedAuthor())}.json`;
+      SharedStore.own = { equipe: {}, direction: {} };
+      journals.forEach(j => {
+        if (j.name === mine) SharedStore.own[j.bucket] = j.entries;
+        Object.entries(j.entries).forEach(([k, e]) => { if (!merged[k] || e.ts > merged[k].ts) merged[k] = e; });
+      });
+      SharedStore.contributors = [...new Set(journals.map(j => j.author).filter(Boolean))];
+      const map = {};
+      Object.entries(merged).forEach(([k, e]) => { if (e.v !== null) map[k] = e.v; });
+      return map;
+    }
+
+    async function syncFromSharedFolder(silent = true) {
+      if (SharedStore.state !== 'connected') return;
+      try {
+        await flushSharedSave();
+        const map = await loadFromSharedFolder();
+        if (Object.keys(map).length === 0) {
+          // empty shared folder: publish what this computer has
+          SharedStore.baseline = {};
+          await saveToSharedFolder();
+        } else {
+          const local = TOOLS_DATA["1.1"] || {};
+          const tool = unflattenKpiTool(map);
+          tool.manualActiveMonth = local.manualActiveMonth;   // view preferences stay per computer
+          tool.lockPastMonths = local.lockPastMonths;
+          TOOLS_DATA["1.1"] = tool;
+          SharedStore.baseline = flattenKpiTool(tool);
+          localStorage.setItem('DELACOUR_DATA_1.1', JSON.stringify(tool));
+          if (!SharedStore.hasDirection && !isConfidentialMode) toggleConfidentiality();
+          if (currentToolId === "1.1") renderDocumentPreservingScroll(tool);
+        }
+        SharedStore.lastSync = new Date();
+      } catch (e) {
+        SharedStore.state = 'error';
+        SharedStore.error = e.message;
+        if (!silent) alert("Synchronisation impossible : " + e.message);
+      }
+      renderSharedStatus();
+    }
+
+    // ---- save: diff against baseline, stamp changed keys in my journal
+    function scheduleSharedSave() {
+      if (SharedStore.state !== 'connected') return;
+      clearTimeout(SharedStore.saveTimer);
+      SharedStore.saveTimer = setTimeout(saveToSharedFolder, 800);
+    }
+
+    async function flushSharedSave() {
+      if (SharedStore.saveTimer) { clearTimeout(SharedStore.saveTimer); SharedStore.saveTimer = null; await saveToSharedFolder(); }
+    }
+
+    async function saveToSharedFolder() {
+      SharedStore.saveTimer = null;
+      const tool = TOOLS_DATA["1.1"];
+      if (SharedStore.state !== 'connected' || !tool || !tool.processes) return;
+      const cur = flattenKpiTool(tool);
+      const base = SharedStore.baseline || {};
+      const ts = new Date().toISOString();
+      const touched = new Set();
+      new Set([...Object.keys(cur), ...Object.keys(base)]).forEach(k => {
+        const a = JSON.stringify(cur[k] ?? null), b = JSON.stringify(base[k] ?? null);
+        if (a === b) return;
+        const bucket = bucketOfKey(k, tool);
+        if (bucket === 'direction' && !SharedStore.hasDirection) return;   // no rights: never leak into the team folder
+        SharedStore.own[bucket][k] = { ts, v: cur[k] ?? null };
+        touched.add(bucket);
+      });
+      try {
+        for (const b of touched) await writeOwnJournal(b);
+        SharedStore.baseline = cur;
+        SharedStore.lastSync = new Date();
+      } catch (e) {
+        SharedStore.state = 'error';
+        SharedStore.error = "Écriture impossible dans le dossier : " + e.message;
+      }
+      renderSharedStatus();
+    }
+
+    // ---- connect / reconnect / initialise
+    async function connectSharedFolder() {
+      if (!SharedStore.supported) {
+        alert("Ce navigateur ne permet pas d'enregistrer dans un dossier partagé. Utilisez Microsoft Edge ou Google Chrome. En attendant, vos données restent sur ce poste (sauvegarde .json possible).");
+        return;
+      }
+      const nameInput = document.getElementById('sharedAuthorInput');
+      const name = (nameInput?.value || sharedAuthor()).trim();
+      if (!name) { alert("Indiquez d'abord votre nom : il signe vos saisies."); nameInput?.focus(); return; }
+      localStorage.setItem('DELACOUR_AUTHOR', name);
+      let dir;
+      try { dir = await window.showDirectoryPicker({ id: 'delacour-donnees', mode: 'readwrite' }); } catch (e) { return; }   // cancelled
+      SharedStore.dir = dir;
+      if (!(await subDirOrNull('equipe'))) {
+        const empty = !(await dir.entries().next()).value;
+        if (!confirm(`Le dossier « ${dir.name} » n'est pas encore un dossier de données Delacour.\n\n${empty ? '' : 'Il contient déjà des fichiers. '}Créer les sous-dossiers « equipe » et « direction » et y publier les données de ce poste ?`)) return;
+        await dir.getDirectoryHandle('equipe', { create: true });
+        await dir.getDirectoryHandle('direction', { create: true });
+      }
+      await idbHandle('put', dir);
+      SharedStore.state = 'connected';
+      await syncFromSharedFolder(false);
+    }
+
+    async function reconnectSharedFolder() {
+      if (!SharedStore.dir) return connectSharedFolder();
+      if (await SharedStore.dir.requestPermission({ mode: 'readwrite' }) === 'granted') {
+        SharedStore.state = 'connected';
+        await syncFromSharedFolder(false);
+      }
+    }
+
+    async function disconnectSharedFolder() {
+      if (!confirm("Déconnecter le dossier partagé ? Les données restent dans le dossier ; ce poste repasse en stockage local.")) return;
+      await flushSharedSave();
+      await idbHandle('delete');
+      Object.assign(SharedStore, { dir: null, state: 'local', baseline: null, own: { equipe: {}, direction: {} } });
+      renderSharedStatus();
+    }
+
+    async function initSharedStore() {
+      if (!SharedStore.supported) { renderSharedStatus(); return; }
+      try {
+        const dir = await idbHandle('get');
+        if (dir && sharedAuthor()) {
+          SharedStore.dir = dir;
+          if (await dir.queryPermission({ mode: 'readwrite' }) === 'granted') {
+            SharedStore.state = 'connected';
+            await syncFromSharedFolder();
+          } else {
+            SharedStore.state = 'needs-permission';   // the browser asks again each session: one click
+          }
+        }
+      } catch (e) { console.warn('[Delacour] Dossier partagé indisponible :', e); }
+      renderSharedStatus();
+      window.addEventListener('focus', () => syncFromSharedFolder());
+    }
+
+    function renderSharedStatus() {
+      const chip = document.getElementById('sharedStatusChip');
+      const box = document.getElementById('sharedStorePanel');
+      const time = SharedStore.lastSync ? SharedStore.lastSync.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '';
+      const n = SharedStore.contributors.length;
+      const label = {
+        local: 'Données sur ce poste',
+        'needs-permission': 'Reconnecter le dossier',
+        connected: `Dossier partagé · ${time}`,
+        error: 'Dossier : erreur'
+      }[SharedStore.state];
+      if (chip) {
+        chip.textContent = label;
+        chip.title = SharedStore.state === 'connected' ? `${SharedStore.dir?.name} · ${n} contributeur(s)${SharedStore.hasDirection ? '' : ' · sans accès direction'}` : (SharedStore.error || 'Stockage des données');
+        chip.className = 'hidden sm:inline-flex items-center text-[11px] font-semibold px-2.5 py-1 rounded-md border transition ' +
+          (SharedStore.state === 'connected' ? 'text-emerald-200 bg-emerald-950/60 border-emerald-500/30'
+            : SharedStore.state === 'local' ? 'text-slate-300 bg-white/5 border-white/15'
+            : 'text-amber-200 bg-amber-900/40 border-amber-400/40');
+        chip.classList.toggle('hidden', currentToolId !== "1.1");
+      }
+      if (box) {
+        const author = escapeHtml(sharedAuthor());
+        box.innerHTML = !SharedStore.supported ? `
+          <p class="text-[11px] text-slate-600">Ce navigateur ne peut pas écrire dans un dossier. Ouvrez l'application dans <strong>Microsoft Edge</strong> ou <strong>Google Chrome</strong> pour partager les données via OneDrive ou SharePoint.</p>`
+        : SharedStore.state === 'local' ? `
+          <p class="text-[11px] text-slate-600">Les données sont enregistrées dans ce navigateur uniquement. Choisissez le dossier « donnees » placé dans le OneDrive ou le SharePoint de l'entreprise pour les partager avec l'équipe.</p>
+          <div class="flex flex-wrap items-center gap-2">
+            <input id="sharedAuthorInput" type="text" value="${author}" placeholder="Votre nom (signe vos saisies)" class="flex-1 min-w-[10rem] text-xs border border-slate-300 rounded px-2 py-1.5 outline-none focus:border-delacour-gold">
+            <button onclick="connectSharedFolder()" class="px-3 py-1.5 rounded text-[11px] font-bold bg-delacour-primary hover:bg-delacour-dark text-white transition">Choisir le dossier de données</button>
+          </div>`
+        : `
+          <p class="text-[11px] text-slate-700"><strong>${escapeHtml(SharedStore.dir?.name || '')}</strong> · vous êtes <strong>${author}</strong> · ${n} contributeur(s)${SharedStore.hasDirection ? '' : ' · <span class="text-amber-700">pas d\'accès au dossier direction : montants masqués</span>'}${SharedStore.state === 'error' ? `<br><span class="text-red-700">${escapeHtml(SharedStore.error || '')}</span>` : ''}</p>
+          <div class="flex flex-wrap gap-2">
+            ${SharedStore.state === 'connected'
+              ? `<button onclick="syncFromSharedFolder(false)" class="px-3 py-1.5 rounded text-[11px] font-bold border border-slate-300 text-slate-700 hover:bg-slate-100 transition">Actualiser${time ? ' (à jour ' + time + ')' : ''}</button>`
+              : `<button onclick="reconnectSharedFolder()" class="px-3 py-1.5 rounded text-[11px] font-bold bg-delacour-primary hover:bg-delacour-dark text-white transition">Reconnecter le dossier</button>`}
+            <button onclick="disconnectSharedFolder()" class="px-3 py-1.5 rounded text-[11px] font-bold border border-slate-300 text-slate-700 hover:bg-slate-100 transition">Déconnecter</button>
+          </div>`;
+      }
+    }
+
     function saveLiveState(alertUser = false) {
       const tool = TOOLS_DATA[currentToolId];
       localStorage.setItem(`DELACOUR_DATA_${currentToolId}`, JSON.stringify(tool));
+      if (currentToolId === "1.1") scheduleSharedSave();
       updateCurrentHistoryRecord();
       const saveText = document.getElementById('saveStatusText');
       if (saveText) {
@@ -6382,8 +6705,20 @@
           : `${alertInds.slice(0, 2).map(i => escapeHtml(i.name.replace(/\s*\(.*\)\s*$/, ''))).join(', ')}${alertInds.length > 2 ? '…' : ''}${orphanAlerts.length > 0 ? ' · ' + orphanAlerts.length + ' sans pilote' : ''}`;
         const alertCard = card('KPI en alerte', null, `${alertInds.length} / ${totalKpisCount}`, alertSub, alertTone);
 
+        const isEmpty = !tool.processes.some(p => p.indicators.some(i => i.months.some(isKpiCellFilled)));
         const synth = document.createElement('div');
         synth.className = "mb-4 rounded-xl border border-slate-200 bg-slate-50/60 p-3 sm:p-4 space-y-3";
+        if (isEmpty) {
+          synth.innerHTML = `
+            <h3 class="text-sm font-bold text-delacour-primary">Bienvenue dans votre tableau de pilotage</h3>
+            <p class="text-xs text-slate-600 max-w-2xl">Aucun chiffre n'est encore saisi. Commencez par les chiffres du dernier mois clôturé : la synthèse, les alertes et les graphiques se remplissent aussitôt. Vous pouvez aussi parcourir un exemple d'entreprise fictive.</p>
+            <div class="flex flex-wrap gap-2">
+              <button onclick="openExpressEntryModal()" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-delacour-primary hover:bg-delacour-dark text-white shadow-sm transition">Saisir les chiffres d'un mois</button>
+              <button onclick="loadKpiDemoExample()" class="px-3 py-1.5 rounded-lg text-xs font-bold border border-slate-300 text-slate-700 hover:bg-white transition">Voir un exemple</button>
+              <button onclick="openKpiSettingsModal()" class="px-3 py-1.5 rounded-lg text-xs font-bold border border-slate-300 text-slate-700 hover:bg-white transition">Régler mon entreprise</button>
+            </div>`;
+          container.appendChild(synth);
+        } else {
         synth.innerHTML = `
           <div class="flex items-baseline justify-between gap-2 flex-wrap">
             <h3 class="text-xs font-black text-delacour-primary">Synthèse dirigeant · ${monthLabel}</h3>
@@ -6400,6 +6735,7 @@
           </ul>
         `;
         container.appendChild(synth);
+        }
       }
 
       // 0.5 BANDEAU FOCUS ATELIER DÉDIÉ (SI FILTRE P3 ATELIER ACTIF)
@@ -8218,6 +8554,7 @@
             }
           }
           localStorage.setItem('DELACOUR_DATA_1.1', JSON.stringify(tool11));
+          scheduleSharedSave();
         }
 
         saveLiveState();
@@ -8559,6 +8896,7 @@
       }
 
       localStorage.setItem('DELACOUR_DATA_1.1', JSON.stringify(tool11));
+      scheduleSharedSave();
     }
 
     function cleanPilotWithoutPhone(str) {
@@ -9336,6 +9674,7 @@
         document.getElementById(elId).value = st[key];
       }
       document.getElementById('kpiProfileSelect').value = localStorage.getItem('DELACOUR_PME_PROFILE') || 'industrie';
+      renderSharedStatus();
       document.getElementById('kpiSettingsModal').classList.remove('hidden');
     }
 
@@ -9359,9 +9698,6 @@
       closeKpiSettingsModal();
       renderDocument(tool);
     }
-
-    // TEMPORARY: true = first launch shows the demo figures (for design review). Set to false before client delivery.
-    const KPI_START_WITH_DEMO = true;
 
     // Empties values and actions, keeps processes / KPI definitions / targets
     function blankKpiTool(tool) {

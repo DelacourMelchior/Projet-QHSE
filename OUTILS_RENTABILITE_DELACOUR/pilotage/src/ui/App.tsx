@@ -1,6 +1,6 @@
 // Shell: header (company, month, team/management view, storage, settings) + 3 screens.
 import { useState } from 'react';
-import { ChevronLeft, ChevronRight, Eye, EyeOff, FolderSync, LayoutDashboard, ListChecks, PenLine, SlidersHorizontal } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, Eye, EyeOff, FolderSync, LayoutDashboard, ListChecks, PenLine, SlidersHorizontal } from 'lucide-react';
 import type { Action } from '../domain/types';
 import { isOverdue, synthesis, timelinePeriods } from '../domain/engine';
 import { addMonths, periodLong } from '../domain/periods';
@@ -43,7 +43,11 @@ export function App() {
       <header className="sticky top-0 z-40 bg-delacour-primary text-white shadow-sm print:static print:bg-white print:text-slate-900 print:shadow-none">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2 sm:px-6">
           <div className="flex min-w-0 items-center gap-2">
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded bg-delacour-gold text-sm font-black text-delacour-dark">D</span>
+            <a href="index.html" title="Retour à la liste des outils" className="flex shrink-0 items-center gap-1 rounded-md py-1 pr-1.5 text-emerald-100 hover:bg-white/10 hover:text-white print:hidden">
+              <ArrowLeft size={15} />
+              <span className="flex h-7 w-7 items-center justify-center rounded bg-delacour-gold text-sm font-black text-delacour-dark">D</span>
+              <span className="hidden text-[11px] font-semibold sm:inline">Outils</span>
+            </a>
             <div className="min-w-0 leading-tight">
               <div className="truncate text-[13px] font-bold">{state.settings.companyName || 'Mon entreprise'}</div>
               <div className="text-[11px] text-emerald-100 print:text-slate-500">Tableau de pilotage mensuel</div>

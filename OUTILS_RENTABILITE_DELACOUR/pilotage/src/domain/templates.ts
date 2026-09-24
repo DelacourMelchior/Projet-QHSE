@@ -12,12 +12,13 @@ export const PROFILES = {
 } as const;
 export type ProfileKey = keyof typeof PROFILES;
 
-// Fictitious company, full year 2026 with 13 actions, and 7 risks with their Plan B (tool 1.2)
+// Fictitious company, full year 2026 with 13 actions, and 9 risks with their Plan B (tool 1.2)
 export function demoState(today = new Date()): State {
   const s = fromLegacyTool(JSON.parse(JSON.stringify(legacy.demo)));
   s.settings = { ...DEFAULT_SETTINGS, companyName: 'Entreprise exemple (fictive)', profile: 'industrie' };
   const d = demoRisks(today);
   s.risks = d.risks;
+  s.contacts = d.contacts;
   Object.assign(s.actions, d.actions);
   return s;
 }
@@ -28,5 +29,5 @@ export function blankState(profile: ProfileKey, today = new Date()): State {
   const s = fromLegacyTool(JSON.parse(JSON.stringify({ processes: tpl.processes })));
   const start = `${today.getFullYear()}-01`;
   const end = addMonths(start, 11) < periodOfDate(today) ? periodOfDate(today) : addMonths(start, 11);
-  return { ...s, settings: { ...DEFAULT_SETTINGS, profile }, timeline: { start, end }, values: {}, actions: {}, risks: {} };
+  return { ...s, settings: { ...DEFAULT_SETTINGS, profile }, timeline: { start, end }, values: {}, actions: {}, risks: {}, contacts: {} };
 }

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { DEFAULT_SCALE } from './risk';
 import type { Kpi, State } from './types';
 import { parseNumber, formatValue, formatCompact } from './numbers';
 import { addMonths, periodsBetween, parseDate } from './periods';
@@ -18,7 +19,7 @@ const stateWith = (k: Kpi, vals: (number | null)[], start = '2026-01'): State =>
     settings: { companyName: '', profile: 'industrie', annualBudget: 1200, netMarginPct: 5, avgQuoteValue: 100 },
     timeline: { start: ps[0], end: ps[ps.length - 1] },
     processes: [{ id: 'P1', name: 'P1', color: '#000', order: 0, kpiIds: [k.id] }],
-    kpis: { [k.id]: k }, values: { [k.id]: values }, actions: {}, risks: {},
+    kpis: { [k.id]: k }, values: { [k.id]: values }, actions: {}, risks: {}, contacts: {}, scale: DEFAULT_SCALE,
   };
 };
 

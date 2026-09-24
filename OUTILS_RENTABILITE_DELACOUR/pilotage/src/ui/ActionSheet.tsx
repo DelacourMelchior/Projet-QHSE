@@ -50,6 +50,7 @@ export function ActionSheet({ initial, onClose }: { initial: Action; onClose(): 
   const addDays = (n: number) => { const d = new Date(); d.setDate(d.getDate() + n); set({ deadline: isoDate(d) }); };
   const endOfMonth = () => { const d = new Date(); set({ deadline: isoDate(new Date(d.getFullYear(), d.getMonth() + 1, 0)) }); };
 
+  const close = () => { if (JSON.stringify(a) === JSON.stringify(initial) || window.confirm('Fermer sans enregistrer ? Vos modifications seront perdues.')) onClose(); };
   const save = () => {
     const plan = a.plan.filter(p => p.text.trim());
     if (!plan.length) return setError('Ajoutez au moins une action dans le plan 5M.');
@@ -66,13 +67,13 @@ export function ActionSheet({ initial, onClose }: { initial: Action; onClose(): 
   };
 
   return (
-    <Modal wide onClose={onClose}
+    <Modal wide onClose={close}
       title={r ? (isNew ? 'Nouvelle action de préparation' : 'Action de préparation du Plan B') : isNew ? 'Nouvelle action corrective' : 'Action corrective'}
       subtitle={r ? <span>Risque : {r.title || 'sans titre'} {rst && <StatusBadge level={rst.tone} text={rst.label} />}</span> : k && <span>{k.name} · {periodLabel(a.period)} : <strong className="font-mono">{formatValue(v, k.unit)}</strong> (cible {k.target}) {st && <StatusBadge level={st.level} text={st.text} />}</span>}
       footer={<>
         {!isNew && <Button kind="danger" onClick={remove} className="mr-auto"><Trash2 size={14} />Supprimer</Button>}
         {error && <span role="alert" className="mr-2 text-[11px] font-semibold text-red-700">{error}</span>}
-        <Button onClick={onClose}>Annuler</Button>
+        <Button onClick={close}>Annuler</Button>
         <Button kind="primary" onClick={save}>Enregistrer</Button>
       </>}>
       <div className="space-y-5">

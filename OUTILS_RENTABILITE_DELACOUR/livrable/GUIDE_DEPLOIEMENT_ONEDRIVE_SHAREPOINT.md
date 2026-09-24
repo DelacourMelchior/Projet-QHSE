@@ -45,7 +45,8 @@ Pilotage Delacour/
 ├─ pilotage.html
 ├─ index.html, tool_page.html
 └─ donnees/
-   ├─ equipe/      fichiers lisibles par tous (indicateurs, valeurs non confidentielles, actions)
+   ├─ Classeur-de-crise.pdf   fiches réflexes et numéros d'urgence (créé par le bouton Classeur de crise)
+   ├─ equipe/      fichiers lisibles par tous (indicateurs, valeurs non confidentielles, actions, risques, annuaire de crise)
    └─ direction/   fichiers réservés : CA, marge, trésorerie, hypothèses financières, coût des arrêts
 ```
 
@@ -71,9 +72,11 @@ Conseil : sur chaque poste, faites un clic droit sur le dossier `donnees`, puis 
 - **À chaque ouverture**, le navigateur redemande l'accès au dossier : cliquez sur **Reconnecter le dossier** (en haut à droite). C'est une protection du navigateur.
 - **Deux outils**, choisis sous le nom de l'entreprise :
   - **Indicateurs** : **Piloter** (synthèse, alertes, graphiques), **Saisir** (les chiffres du mois), **Agir** (plan d'actions et efficacité) ;
-  - **Plans B** : **Cartographie** (risques par criticité, matrice), **Tests** (un Plan B se teste au moins tous les 6 mois), **Agir**, **Crise** (fiches réflexes).
+  - **Plans B** : **Cartographie** (matrice de criticité, risques à coter, annuaire et classeur de crise), **Tests** (tous les 6 mois en zone rouge, chaque année en zone orange), **Agir**.
 - **Un seul plan d'actions** : l'écran Agir réunit les actions correctives des indicateurs et les actions de préparation des Plans B. Filtrez par origine si besoin.
-- **Imprimez les fiches réflexes** (Plans B, écran Crise, **Imprimer toutes les fiches**) et rangez-les dans un classeur à l'accueil et près des postes concernés : le jour d'une panne informatique, l'application peut être inaccessible. Réimprimez-les après chaque test.
+- **Cotez les risques ensemble** : Plans B, **Coter les risques**, puis gravité et probabilité de chaque risque (les définitions sont affichées ; montants et textes réglables dans Réglages). Les risques proposés par l'outil arrivent sans cotation.
+- **Classeur de crise** : Plans B, **Classeur de crise**, **Enregistrer dans le dossier partagé**. Le PDF (fiches réflexes, numéros d'urgence, sommaire) est déposé dans `donnees`. Sur chaque téléphone concerné, dans l'application OneDrive, ouvrez-le et choisissez **Rendre disponible hors connexion**. Imprimez-le aussi et rangez-le à l'accueil et près des postes : le jour d'une panne informatique, l'application peut être inaccessible. La cartographie signale quand il faut le refaire (fiche ou numéro modifié).
+- **Annuaire de crise** : chaque numéro n'est saisi qu'une fois et sert à toutes les fiches. Préférez les numéros professionnels et prévenez les personnes concernées (RGPD). Cochez **Contacts vérifiés** lors d'un test : la date de vérification se met à jour.
 - **Chacun saisit librement.** Chaque personne écrit dans son propre fichier (`pilotage-<nom>.json`) : deux personnes ne peuvent pas s'écraser mutuellement, et OneDrive ne crée pas de copies en conflit.
 - **Les chiffres des collègues arrivent** en quelques secondes à quelques minutes, selon la synchronisation OneDrive. L'application relit le dossier quand vous revenez sur la fenêtre ; **Réglages → Actualiser** force la relecture.
 - **Si deux personnes modifient la même valeur**, la modification la plus récente est conservée.

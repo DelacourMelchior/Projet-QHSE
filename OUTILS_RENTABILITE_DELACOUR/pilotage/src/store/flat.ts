@@ -1,7 +1,8 @@
 // State <-> flat map of independent keys, the unit of synchronisation between people.
 //   settings | timeline | process|<id> | kpi|<id> | value|<kpiId>|<YYYY-MM> | action|<id>
-//   risk|<id> (without money) | riskcost|<id> (money figures of a risk, direction folder)
-import type { Risk, RiskCost, State } from '../domain/types';
+//   risk|<id> (without money) | riskcost|<id> (money figures of a risk, direction folder) | contact|<id> | scale | binder
+import type { Contact, Risk, RiskCost, State } from '../domain/types';
+import { DEFAULT_SCALE } from '../domain/risk';
 import { DEFAULT_SETTINGS } from '../domain/migrate';
 
 export type FlatMap = Record<string, unknown>;
@@ -16,6 +17,9 @@ export function flatten(s: State): FlatMap {
     m[`risk|${r.id}`] = r;
     if (cost) m[`riskcost|${r.id}`] = cost;
   });
+  Object.values(s.contacts || {}).forEach(c => { m[`contact|${c.id}`] = c; });
+  if (s.scale) m.scale = s.scale;
+  if (s.binder) m.binder = s.binder;
   return m;
 }
 
@@ -23,7 +27,9 @@ export function unflatten(m: FlatMap): State {
   const s: State = {
     settings: { ...DEFAULT_SETTINGS, ...(m.settings as object || {}) },
     timeline: (m.timeline as State['timeline']) || { start: '2026-01', end: '2026-12' },
-    processes: [], kpis: {}, values: {}, actions: {}, risks: {},
+    processes: [], kpis: {}, values: {}, actions: {}, risks: {}, contacts: {},
+    scale: (m.scale as State['scale']) || DEFAULT_SCALE,
+    ...(m.binder ? { binder: m.binder as State['binder'] } : {}),
   };
   const costs: Record<string, RiskCost> = {};
   for (const [k, v] of Object.entries(m)) {
@@ -35,6 +41,7 @@ export function unflatten(m: FlatMap): State {
     else if (kind === 'action') s.actions[id] = v as State['actions'][string];
     else if (kind === 'risk') s.risks[id] = { ...(v as Risk) };
     else if (kind === 'riskcost') costs[id] = v as RiskCost;
+    else if (kind === 'contact') s.contacts[id] = v as Contact;
   }
   Object.entries(costs).forEach(([id, c]) => { if (s.risks[id]) s.risks[id].cost = c; });
   s.processes.sort((a, b) => a.order - b.order);

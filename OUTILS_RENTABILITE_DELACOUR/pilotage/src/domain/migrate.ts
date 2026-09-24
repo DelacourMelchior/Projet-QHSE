@@ -1,9 +1,11 @@
 // Conversion of the previous version (tool 1.1 of tool_page.html) into the new model.
 // Used for: JSON backups made with the old app, its localStorage, its shared-folder journals,
 // and to build the demo data and job templates from the same source.
-import type { Risk, Action, ActionStatus, Aggregation, Dim5M, Kpi, KpiRole, KpiType, PlanItem, Process, Settings, State } from './types';
+import type { Contact, Risk, Action, ActionStatus, Aggregation, Dim5M, Kpi, KpiRole, KpiType, PlanItem, Process, Settings, State } from './types';
 import { isoDate, parseDate, periodOf } from './periods';
-import { newRisk } from './risk';
+import { DEFAULT_SCALE, newRisk } from './risk';
+import { parseDuration } from './duration';
+import { fnv } from './binder';
 import { parseNumber } from './numbers';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -106,13 +108,34 @@ export function fromLegacyTool(tool: Legacy): State {
       avgQuoteValue: parseNumber(ps.valeurMoyenneDevis) ?? DEFAULT_SETTINGS.avgQuoteValue,
     },
     timeline: { start: periods[0], end: periods[periods.length - 1] },
-    processes, kpis, values, actions, risks: {},
+    processes, kpis, values, actions, risks: {}, contacts: {}, scale: DEFAULT_SCALE,
   };
 }
 
-// Data saved before tool 1.2 existed in this app: add the missing parts
+// Data saved by an earlier build of this app: add the missing parts, convert the old free-text fields
 export function normalize(s: State): State {
-  return { ...s, risks: s.risks || {} };
+  const contacts: Record<string, Contact> = { ...(s.contacts || {}) };
+  const risks = Object.fromEntries(Object.entries(s.risks || {}).map(([id, r0]) => {
+    const r = { ...r0 } as any;
+    if (typeof r.maxOutage === 'string') r.maxOutage = parseDuration(r.maxOutage);
+    if (typeof r.activation === 'string') r.activation = parseDuration(r.activation);
+    if (typeof r.contacts === 'string') { r.contactIds = contactsFromText(r.contacts, contacts); delete r.contacts; }
+    r.maxOutage ??= null; r.activation ??= null; r.contactIds ||= []; r.notifyIds ||= []; r.tests ||= [];
+    return [id, r as Risk];
+  }));
+  return { ...s, risks, contacts, scale: s.scale || DEFAULT_SCALE };
+}
+
+// "Nom, rôle : 06 00 00 00 00" lines -> crisis directory entries (same line = same id, whoever converts it)
+export function contactsFromText(text: string, into: Record<string, Contact>): string[] {
+  return text.split('\n').map(l => l.trim()).filter(Boolean).map(line => {
+    const m = line.match(/(\+?\d[\d .]{7,}\d)/);
+    const phone = m ? m[0].trim() : '';
+    const [name, ...rest] = line.replace(phone, '').replace(/[\s:–-]+$/, '').split(',');
+    const id = `ct_${fnv(line)}`;
+    into[id] ||= { id, name: name.trim() || line, role: rest.join(',').trim(), company: '', phone, always: false, verifiedAt: '' };
+    return id;
+  });
 }
 
 // Old tool 1.2 (rows: process, problem, origin, solution(s), responsible) -> risks to complete

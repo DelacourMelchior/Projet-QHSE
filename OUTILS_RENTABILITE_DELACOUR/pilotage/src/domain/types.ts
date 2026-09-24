@@ -65,6 +65,7 @@ export interface Settings {
   annualBudget: number;   // yearly revenue objective (€ HT)
   netMarginPct: number;   // to compute the revenue needed to offset a loss
   avgQuoteValue: number;  // to value pending quotes
+  gravityThresholds?: [number, number, number] | null; // risk gravity bounds in € (null = from annualBudget)
 }
 
 export interface Timeline {
@@ -80,19 +81,41 @@ export interface State {
   values: Record<string, Record<Period, number>>; // kpiId -> period -> value
   actions: Record<string, Action>;
   risks: Record<string, Risk>;
+  contacts: Record<string, Contact>;  // crisis directory, shared by the reflex cards
+  scale: RiskScale;                   // wording of the gravity and likelihood levels
+  binder?: BinderMeta;                // last export of the crisis binder (PDF)
 }
 
 // ---- business continuity (tool 1.2)
 export type Scale = 1 | 2 | 3 | 4;
 export type ParadeFamily = 'relais' | 'stock' | 'doublure' | 'degrade';
-export type RiskState = 'uncovered' | 'preparing' | 'ready' | 'tested' | 'expired' | 'failed';
+export type RiskState = 'unrated' | 'accepted' | 'uncovered' | 'preparing' | 'ready' | 'tested' | 'expired' | 'failed';
+
+export type DurationUnit = 'h' | 'j' | 'sem' | 'mois';
+export interface Duration { value: number; unit: DurationUnit }
 
 export interface RiskTest {
   date: string;           // ISO date
   ok: boolean;            // success criterion met
   note: string;
   by: string;
+  delay?: Duration | null;      // activation delay measured during the test
+  contactsChecked?: boolean;    // the numbers of the card were called during the test
 }
+
+export interface Contact {
+  id: string;
+  name: string;
+  role: string;           // function
+  company: string;
+  phone: string;
+  always: boolean;        // reachable 24 h a day
+  verifiedAt: string;     // ISO date of the last check of the number
+}
+
+export interface RiskScale { gravity: string[]; likelihood: string[] }  // 4 texts each
+
+export interface BinderMeta { hash: string; at: string; by: string }
 
 // Money figures, stored in the "direction" folder (never shown in team view)
 export interface RiskCost {
@@ -110,21 +133,24 @@ export interface Risk {
   title: string;          // "Casse broche CNC"
   resource: string;       // vital resource: machine, person, supplier, software
   signal: string;         // how we notice it
-  maxOutage: string;      // tolerable outage, as said by the manager ("4 h", "2 jours")
+  maxOutage: Duration | null;  // tolerable outage
   owner: string;          // responsible for the risk (mandatory)
-  // 2. why, how serious
+  // 2. why, how serious (null = not rated yet)
   whys: string[];
   cause: string;          // root cause
-  gravity: Scale;
-  likelihood: Scale;
+  gravity: Scale | null;
+  likelihood: Scale | null;
+  ratedBy?: string;
+  ratedAt?: string;
   // 3. Plan B
   family: ParadeFamily | '';
   planB: string;
   relay: string;          // who or what takes over
-  activation: string;     // activation delay ("sous 4 h")
+  activation: Duration | null;  // time to get the Plan B working
   // 4. lock and test (the reflex card)
   firstHour: string;      // actions of the first hour, one per line
-  contacts: string;       // who to call, one per line
+  contactIds: string[];   // who to call (crisis directory)
+  notifyIds: string[];    // who to inform: customers, insurer…
   access: string;         // where keys, codes, documents are
   sacrifice: string;      // what is dropped first
   deputy: string;

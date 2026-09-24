@@ -1,8 +1,8 @@
 // Shell: header (company, tool 1.1 or 1.2, month, team/management view, storage, settings) + screens.
-// Tool 1.1 "Indicateurs": Piloter, Saisir, Agir. Tool 1.2 "Plans B" (#continuite): Cartographie, Tests, Crise, Agir.
+// Tool 1.1 "Indicateurs": Piloter, Saisir, Agir. Tool 1.2 "Plans B" (#continuite): Cartographie, Tests, Agir.
 // Agir is the single action register of both tools.
 import { useEffect, useState } from 'react';
-import { ArrowLeft, CalendarCheck, ChevronLeft, ChevronRight, Eye, EyeOff, FolderSync, Grid3x3, LayoutDashboard, ListChecks, PenLine, Siren, SlidersHorizontal } from 'lucide-react';
+import { ArrowLeft, CalendarCheck, ChevronLeft, ChevronRight, Eye, EyeOff, FolderSync, Grid3x3, LayoutDashboard, ListChecks, PenLine, SlidersHorizontal } from 'lucide-react';
 import type { Action, Risk } from '../domain/types';
 import { newRisk, riskSummary } from '../domain/risk';
 import { isoDate } from '../domain/periods';
@@ -18,10 +18,9 @@ import { KpiDetail } from './KpiDetail';
 import { Settings } from './Settings';
 import { Risques } from './Risques';
 import { Tests } from './Tests';
-import { Crise } from './Crise';
 import { RiskSheet } from './RiskSheet';
 
-type Screen = 'piloter' | 'saisir' | 'agir' | 'risques' | 'tests' | 'crise';
+type Screen = 'piloter' | 'saisir' | 'agir' | 'risques' | 'tests';
 type Tool = 'kpi' | 'risk';
 const toolOfHash = (): Tool => (window.location.hash === '#continuite' ? 'risk' : 'kpi');
 
@@ -64,7 +63,6 @@ export function App() {
     { id: 'risques', label: 'Cartographie', icon: Grid3x3, badge: rsum.byState.uncovered || undefined, badgeTone: 'bg-red-600' },
     { id: 'tests', label: 'Tests', icon: CalendarCheck, badge: rsum.toTest || undefined, badgeTone: 'bg-amber-600' },
     agir,
-    { id: 'crise', label: 'Crise', icon: Siren },
   ];
 
   return (
@@ -121,8 +119,8 @@ export function App() {
         <nav className="mx-auto flex max-w-7xl gap-0.5 overflow-x-auto px-3 sm:gap-1 sm:px-6 print:hidden" aria-label="Écrans">
           {TABS.map(t => (
             <button key={t.id} type="button" onClick={() => setScreen(t.id)} aria-current={screen === t.id ? 'page' : undefined}
-              className={`flex shrink-0 items-center gap-1.5 rounded-t-lg px-2 py-2 text-xs font-semibold transition sm:px-3 ${screen === t.id ? (t.id === 'crise' ? 'bg-slate-100 text-red-700' : 'bg-slate-100 text-delacour-primary') : t.id === 'crise' ? 'text-red-100 hover:bg-red-600/40' : 'text-emerald-50 hover:bg-white/10'}`}>
-              <t.icon size={15} className={t.id === 'crise' ? '' : 'hidden sm:block'} />{t.label}
+              className={`flex shrink-0 items-center gap-1.5 rounded-t-lg px-2 py-2 text-xs font-semibold transition sm:px-3 ${screen === t.id ? 'bg-slate-100 text-delacour-primary' : 'text-emerald-50 hover:bg-white/10'}`}>
+              <t.icon size={15} className="hidden sm:block" />{t.label}
               {t.badge ? <span className={`rounded-full px-1.5 text-[11px] font-bold text-white ${t.badgeTone}`}>{t.badge}</span> : null}
             </button>
           ))}
@@ -136,7 +134,6 @@ export function App() {
         {screen === 'agir' && <Agir onOpenAction={openAction} onNewAction={startAction} />}
         {screen === 'risques' && <Risques onOpenRisk={openRisk} onNewRisk={() => setRisk({ r: newRisk(state.processes[0]?.id || 'P1'), step: 0 })} />}
         {screen === 'tests' && <Tests onOpenRisk={openRisk} />}
-        {screen === 'crise' && <Crise />}
       </main>
 
       {kpiOpen && <KpiDetail kpiId={kpiOpen} onClose={() => setKpiOpen(null)} onOpenAction={openAction} onNewAction={startAction} />}

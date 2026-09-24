@@ -1,21 +1,39 @@
-// Company settings, KPI list, shared folder, backups, demo.
+// Company settings, KPI list, risk rating scale, shared folder, backups, demo.
 import { useRef, useState } from 'react';
 import { Download, FolderSync, Plus, Upload } from 'lucide-react';
 import type { Kpi, State } from '../domain/types';
 import { fromLegacyTool } from '../domain/migrate';
 import { parseNumber } from '../domain/numbers';
 import { demoState } from '../domain/templates';
+import { autoThresholds, DEFAULT_SCALE } from '../domain/risk';
+import { formatValue } from '../domain/numbers';
 import { useStore } from '../store/StoreContext';
 import { Button, Field, inputCls, Modal } from './common';
 
 export function Settings({ onClose }: { onClose(): void }) {
-  const { state, update, replace, folder, author, setAuthor, connectFolder, reconnectFolder, disconnectFolder, refresh } = useStore();
+  const { state, update, replace, folder, author, setAuthor, connectFolder, reconnectFolder, disconnectFolder, refresh, teamView } = useStore();
   const [s, setS] = useState(state!.settings);
+  const [scale, setScale] = useState(state!.scale);
+  const [th, setTh] = useState<string[]>(() => (state!.settings.gravityThresholds || ['', '', '']).map(String));
   const [msg, setMsg] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
   if (!state) return null;
 
-  const saveSettings = () => { update(d => { d.settings = s; }); setMsg('Hypothèses enregistrées.'); };
+  const saveSettings = () => { update(d => { d.settings = { ...s, gravityThresholds: d.settings.gravityThresholds }; }); setMsg('Hypothèses enregistrées.'); };
+
+  // Rating scale of the risks: bounds in € (direction) and wording of the levels (everyone)
+  const auto = autoThresholds(s);
+  const saveScale = () => {
+    const nums = th.map(v => (v.trim() === '' ? null : parseNumber(v)));
+    const custom = nums.every(v => v === null) ? null : nums.map((v, i) => v ?? auto[i]) as [number, number, number];
+    if (custom && !(custom[0] < custom[1] && custom[1] < custom[2])) return setMsg('Les seuils de gravité doivent être croissants.');
+    update(d => {
+      if (!teamView) d.settings.gravityThresholds = custom;
+      d.scale = { gravity: scale.gravity.map((t, i) => t.trim() || DEFAULT_SCALE.gravity[i]), likelihood: scale.likelihood.map((t, i) => t.trim() || DEFAULT_SCALE.likelihood[i]) };
+    });
+    setMsg('Échelle de cotation enregistrée.');
+  };
+  const setText = (k: 'gravity' | 'likelihood', i: number, v: string) => setScale({ ...scale, [k]: scale[k].map((t, j) => (j === i ? v : t)) });
 
   const exportJson = () => {
     const blob = new Blob([JSON.stringify({ app: 'delacour-pilotage', version: 2, exportedAt: new Date().toISOString(), state }, null, 1)], { type: 'application/json' });
@@ -74,6 +92,35 @@ export function Settings({ onClose }: { onClose(): void }) {
             </Field>
           </div>
           <Button kind="primary" onClick={saveSettings}>Enregistrer les hypothèses</Button>
+        </section>
+
+        <section className="space-y-3">
+          <h3 className="text-xs font-bold text-slate-900">Cotation des risques (Plans B)</h3>
+          {!teamView && (
+            <div className="space-y-1.5">
+              <span className="block text-[11px] font-semibold text-slate-700">Seuils de gravité (€ par incident)</span>
+              <div className="grid gap-2 sm:grid-cols-3">
+                {['Mineure : moins de', 'Sérieuse : moins de', 'Grave : moins de'].map((l, i) => (
+                  <Field key={l} label={l}><input inputMode="decimal" className={inputCls} value={th[i]} placeholder={formatValue(auto[i], '€')} onChange={e => setTh(th.map((x, j) => (j === i ? e.target.value : x)))} /></Field>
+                ))}
+              </div>
+              <p className="text-[11px] text-slate-500">Au-delà du dernier seuil : critique. Vide = calcul automatique d'après l'objectif de CA (0,2 %, 2 % et 8 %).</p>
+            </div>
+          )}
+          <div className="grid gap-3 sm:grid-cols-2">
+            {(['gravity', 'likelihood'] as const).map(k => (
+              <div key={k} className="space-y-1.5">
+                <span className="block text-[11px] font-semibold text-slate-700">{k === 'gravity' ? 'Gravité : conséquences de chaque niveau' : 'Probabilité : fréquence de chaque niveau'}</span>
+                {scale[k].map((t, i) => (
+                  <input key={i} className={inputCls} value={t} aria-label={`${k === 'gravity' ? 'Gravité' : 'Probabilité'} ${i + 1}`} onChange={e => setText(k, i, e.target.value)} />
+                ))}
+              </div>
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button kind="primary" onClick={saveScale}>Enregistrer l'échelle</Button>
+            <Button kind="ghost" onClick={() => { setScale(DEFAULT_SCALE); setTh(['', '', '']); }}>Revenir à l'échelle d'origine</Button>
+          </div>
         </section>
 
         <section className="space-y-2">

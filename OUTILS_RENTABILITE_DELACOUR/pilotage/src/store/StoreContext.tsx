@@ -35,6 +35,7 @@ interface Store {
   reconnectFolder(): Promise<void>;
   disconnectFolder(): Promise<void>;
   refresh(): Promise<void>;
+  writeFolderFile(name: string, text: string): Promise<boolean>;
 }
 
 const Ctx = createContext<Store | null>(null);
@@ -100,11 +101,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (!s) return;
     try {
       await flush();
-      const loaded = await s.load();
+      const raw = await s.load();
+      const loaded = raw && normalize(raw);
       if (loaded) {
         setState(loaded);
         saveLocal(loaded);
-        if (!Object.keys(s.baseline).length) await s.save(loaded);   // migrated from the previous version: publish
+        await s.save(loaded);   // publishes only what changed: migration from an earlier version, converted fields
       } else if (stateRef.current) {
         await s.save(stateRef.current);                              // empty folder: publish this computer's data
       }
@@ -144,6 +146,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [flush]);
 
   const refresh = useCallback(async () => { if (session.current) await loadFromFolder(); }, [loadFromFolder]);
+
+  const writeFolderFile = useCallback(async (name: string, text: string) => {
+    const s = session.current;
+    if (!s || folderRef.current.status !== 'connected') return false;
+    try { await s.writeFile(name, text); return true; } catch { return false; }
+  }, []);
 
   // boot: reopen the remembered folder when the browser still grants access (otherwise one click to reconnect)
   useEffect(() => {
@@ -192,7 +200,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const value: Store = {
     state, period, setPeriod, teamView, setTeamView, update, replace, author, setAuthor,
-    folder, connectFolder, reconnectFolder, disconnectFolder, refresh,
+    folder, connectFolder, reconnectFolder, disconnectFolder, refresh, writeFolderFile,
   };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

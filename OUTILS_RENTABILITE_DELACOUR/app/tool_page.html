@@ -6183,11 +6183,10 @@
       if (chip) {
         chip.textContent = label;
         chip.title = SharedStore.state === 'connected' ? `${SharedStore.dir?.name} · ${n} contributeur(s)${SharedStore.hasDirection ? '' : ' · sans accès direction'}` : (SharedStore.error || 'Stockage des données');
-        chip.className = 'hidden sm:inline-flex items-center text-[11px] font-semibold px-2.5 py-1 rounded-md border transition ' +
+        chip.className = (currentToolId === "1.1" ? 'hidden sm:inline-flex' : 'hidden') + ' items-center text-[11px] font-semibold px-2.5 py-1 rounded-md border transition ' +
           (SharedStore.state === 'connected' ? 'text-emerald-200 bg-emerald-950/60 border-emerald-500/30'
             : SharedStore.state === 'local' ? 'text-slate-300 bg-white/5 border-white/15'
             : 'text-amber-200 bg-amber-900/40 border-amber-400/40');
-        chip.classList.toggle('hidden', currentToolId !== "1.1");
       }
       if (box) {
         const author = escapeHtml(sharedAuthor());
@@ -7171,31 +7170,16 @@
       { stroke: "#0891B2", fill: "rgba(8, 145, 178, 0.12)", name: "Cyan" }
     ];
 
+    // Chart selection per process: [iIdx] = one large chart, several indexes = grid of small charts
     function toggleProcessChartKpi(pIdx, iIdx) {
-      if (!processChartSelections[pIdx]) processChartSelections[pIdx] = [0];
-      const list = processChartSelections[pIdx];
-      const pos = list.indexOf(iIdx);
-      if (pos !== -1) {
-        if (list.length > 1) {
-          list.splice(pos, 1);
-        }
-      } else {
-        list.push(iIdx);
-      }
-      renderDocument(TOOLS_DATA[currentToolId]);
+      processChartSelections[pIdx] = [iIdx];
+      renderDocumentPreservingScroll(TOOLS_DATA[currentToolId]);
     }
 
     function toggleProcessChartAll(pIdx, totalCount) {
-      if (!processChartSelections[pIdx]) processChartSelections[pIdx] = [0];
-      const list = processChartSelections[pIdx];
-      if (list.length === totalCount) {
-        processChartSelections[pIdx] = [0];
-      } else {
-        const all = [];
-        for (let i = 0; i < totalCount; i++) all.push(i);
-        processChartSelections[pIdx] = all;
-      }
-      renderDocument(TOOLS_DATA[currentToolId]);
+      const list = processChartSelections[pIdx] || [0];
+      processChartSelections[pIdx] = list.length === totalCount ? [0] : Array.from({ length: totalCount }, (_, i) => i);
+      renderDocumentPreservingScroll(TOOLS_DATA[currentToolId]);
     }
 
     function formatProcessChartVal(val, unit, isNormalized) {
@@ -7207,306 +7191,219 @@
       }
       if (unit === "%") return (Number.isInteger(val) ? String(val) : val.toFixed(1).replace('.', ',')) + " %";
       if (unit === "h") return val.toFixed(1).replace('.', ',') + " h";
+      if (Number.isInteger(val)) return String(val) + (unit ? " " + unit : "");
       return val.toFixed(1).replace('.', ',') + (unit ? " " + unit : "");
+    }
+
+    const KPI_STATUS_COLORS = { 'badge-conforme': '#059669', 'badge-surveiller': '#D97706', 'badge-alerte': '#DC2626' };
+
+    // One KPI line chart drawn at its real pixel size (width x height).
+    // Conforming zone tinted, active month highlighted, points coloured by monthly status,
+    // labels on last / min / max only, native tooltip on every point, dashed 3-month trend.
+    function buildKpiChartSvg(ind, color, width, height, activeIdx, compact) {
+      const tool = TOOLS_DATA["1.1"];
+      const cols = getToolColumns(tool);
+      const n = cols.length;
+      const pts = [];
+      ind.months.forEach((raw, m) => { const v = parseKpiNumber(raw); if (v !== null && m < n) pts.push({ m, v }); });
+      const target = ind.targetVal ?? parseKpiNumber(ind.target);
+
+      const padL = compact ? 52 : 64, padR = 18, padT = compact ? 16 : 22, padB = 26;
+      const innerW = width - padL - padR, innerH = height - padT - padB;
+
+      // Y range: values + target, 8 % margin, rounded ticks; rates stay within 0-100
+      const vals = pts.map(p => p.v).concat(target !== null && target !== undefined ? [target] : []);
+      let lo = vals.length ? Math.min(...vals) : 0, hi = vals.length ? Math.max(...vals) : 100;
+      if (lo === hi) { lo -= Math.abs(lo) * 0.1 || 1; hi += Math.abs(hi) * 0.1 || 1; }
+      const margin = (hi - lo) * 0.08;
+      lo -= margin; hi += margin;
+      if (ind.unit === '%') { lo = Math.max(lo, 0); hi = Math.min(hi, 100); }
+      if (lo < 0 && vals.every(v => v >= 0)) lo = 0;
+      const rawStep = (hi - lo) / (compact ? 3 : 4);
+      const p10 = Math.pow(10, Math.floor(Math.log10(rawStep)));
+      const step = p10 * ([1, 2, 2.5, 5, 10].find(f => f >= rawStep / p10) || 10);
+      lo = Math.floor(lo / step) * step;
+      hi = Math.ceil(hi / step) * step;
+      if (ind.unit === '%') hi = Math.min(hi, 100);
+      const range = (hi - lo) || 1;
+
+      const xStep = innerW / Math.max(1, n - 1);
+      const X = m => padL + m * xStep;
+      const Y = v => padT + innerH - ((v - lo) / range) * innerH;
+      const fmt = v => formatProcessChartVal(v, ind.unit, false);
+      const font = 'font-family="system-ui, -apple-system, Segoe UI, sans-serif"';
+      let svg = '';
+
+      // active month band
+      if (activeIdx >= 0 && activeIdx < n) {
+        const x0 = Math.max(padL, X(activeIdx) - xStep / 2), x1 = Math.min(padL + innerW, X(activeIdx) + xStep / 2);
+        svg += `<rect x="${x0.toFixed(1)}" y="${padT}" width="${(x1 - x0).toFixed(1)}" height="${innerH}" fill="#F59E0B" fill-opacity="0.10" />`;
+      }
+      // conforming zone: from the target line towards the "good" side
+      if (target !== null && target !== undefined && target >= lo && target <= hi) {
+        const yT = Y(target);
+        const [zy, zh] = ind.goalDirection === 'lower' ? [yT, padT + innerH - yT] : [padT, yT - padT];
+        svg += `<rect x="${padL}" y="${zy.toFixed(1)}" width="${innerW}" height="${Math.max(0, zh).toFixed(1)}" fill="#10B981" fill-opacity="0.07" />`;
+      }
+      // horizontal grid + y labels
+      for (let v = lo; v <= hi + step / 1000; v += step) {
+        const y = Y(v).toFixed(1);
+        svg += `<line x1="${padL}" y1="${y}" x2="${padL + innerW}" y2="${y}" stroke="#E2E8F0" stroke-width="1" />`;
+        svg += `<text x="${padL - 8}" y="${(+y + 4).toFixed(1)}" text-anchor="end" fill="#64748B" font-size="11" ${font}>${fmt(v)}</text>`;
+      }
+      // target line, labelled on the left
+      if (target !== null && target !== undefined && target >= lo && target <= hi) {
+        const yT = Y(target).toFixed(1);
+        svg += `<line x1="${padL}" y1="${yT}" x2="${padL + innerW}" y2="${yT}" stroke="#B8893F" stroke-width="1.5" stroke-dasharray="6,4" />`;
+      }
+      // area + line + trend
+      if (pts.length >= 2) {
+        const line = pts.map(p => `${X(p.m).toFixed(1)},${Y(p.v).toFixed(1)}`).join(' ');
+        if (!compact) {
+          const gid = `kpigrad_${String(ind.id).replace(/[^a-z0-9_]/gi, '')}`;
+          svg += `<defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${color}" stop-opacity="0.16"/><stop offset="100%" stop-color="${color}" stop-opacity="0"/></linearGradient></defs>`;
+          svg += `<path d="M ${X(pts[0].m).toFixed(1)},${padT + innerH} L ${line.replace(/ /g, ' L ')} L ${X(pts[pts.length - 1].m).toFixed(1)},${padT + innerH} Z" fill="url(#${gid})" />`;
+        }
+        if (pts.length >= 6) {
+          const ma = kpiMovingAverage(ind);
+          const maPts = ma.map((v, m) => (v === null || m >= n) ? null : `${X(m).toFixed(1)},${Y(v).toFixed(1)}`).filter(Boolean);
+          if (maPts.length >= 2) svg += `<polyline fill="none" stroke="${color}" stroke-opacity="0.55" stroke-width="2" stroke-dasharray="6,5" stroke-linecap="round" points="${maPts.join(' ')}"><title>Tendance : moyenne sur 3 mois</title></polyline>`;
+        }
+        svg += `<polyline fill="none" stroke="${color}" stroke-width="${compact ? 2.2 : 2.8}" stroke-linecap="round" stroke-linejoin="round" points="${line}" />`;
+      }
+      // points: status colour + tooltip; value labels on last, min and max
+      const labelled = new Set();
+      if (pts.length) {
+        labelled.add(pts[pts.length - 1].m);
+        if (!compact) {
+          labelled.add(pts.reduce((a, b) => (b.v < a.v ? b : a)).m);
+          labelled.add(pts.reduce((a, b) => (b.v > a.v ? b : a)).m);
+        }
+      }
+      pts.forEach(p => {
+        const st = computeKpiStatus(ind, p.m);
+        const c = KPI_STATUS_COLORS[st.cls] || color;
+        const x = X(p.m), y = Y(p.v);
+        const tip = `${getColumnLabel(tool, p.m)} : ${fmt(p.v)}${ind.target ? ' · cible ' + ind.target : ''} · ${st.text}`;
+        svg += `<g><title>${escapeHtml(tip)}</title><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="11" fill="transparent" />`
+          + `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${compact ? 3.5 : 4.5}" fill="${c}" stroke="#ffffff" stroke-width="1.5" /></g>`;
+        if (labelled.has(p.m)) {
+          const txt = fmt(p.v);
+          const w = txt.length * 6.6 + 10;
+          const above = y - padT > 24;
+          const ly = above ? y - 22 : y + 9;
+          const lx = Math.min(Math.max(x - w / 2, padL), padL + innerW - w);
+          svg += `<rect x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" width="${w.toFixed(1)}" height="16" rx="3" fill="#0F172A" fill-opacity="0.82" />`
+            + `<text x="${(lx + w / 2).toFixed(1)}" y="${(ly + 12).toFixed(1)}" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600" ${font}>${txt}</text>`;
+        }
+      });
+      // x axis: thin out labels when months are close, always keep the active month
+      const every = xStep >= 52 ? 1 : xStep >= 28 ? 2 : 3;
+      cols.forEach((col, m) => {
+        const keep = m === activeIdx || (m % every === 0 && Math.abs(m - activeIdx) >= every);
+        if (!keep) return;
+        const lbl = (col.label || '').replace(' 20', ' ');
+        svg += `<text x="${X(m).toFixed(1)}" y="${height - 8}" text-anchor="middle" fill="${m === activeIdx ? '#92400E' : '#64748B'}" font-size="11" font-weight="${m === activeIdx ? 700 : 500}" ${font}>${escapeHtml(lbl)}</text>`;
+      });
+
+      return `<svg class="block bg-white rounded-lg border border-slate-200 select-none" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-label="Évolution de ${escapeHtml(ind.name)}">${svg}</svg>`;
+    }
+
+    // Short reading of a KPI for pills and chart headers
+    function kpiChartSummary(ind, activeIdx) {
+      const nums = ind.months.slice(0, activeIdx + 1).map(m => parseKpiNumber(m)).filter(v => v !== null);
+      const last = nums.length ? formatProcessChartVal(nums[nums.length - 1], ind.unit, false) : '—';
+      const st = computeKpiStatus(ind, activeIdx);
+      const tr = kpiTrend(ind, activeIdx);
+      const trTxt = !tr ? '' : tr.dir === 'stable' ? 'stable' : `${tr.dir === 'up' ? 'en hausse' : 'en baisse'} de ${Math.abs(Math.round(tr.pct))} %`;
+      const trCls = !tr || tr.isGood === null ? 'text-slate-600' : tr.isGood ? 'text-emerald-700' : 'text-red-700';
+      return { last, st, tr, trTxt, trCls };
     }
 
     function renderProcessChart(procBox, proc, pIdx) {
       if (!proc.indicators || proc.indicators.length === 0) return;
-
       const tool = TOOLS_DATA["1.1"];
-      const cols = getToolColumns(tool);
+      const activeIdx = getActiveMonthIdx(tool);
 
-      // Ensure valid selection
-      if (!processChartSelections[pIdx] || processChartSelections[pIdx].length === 0) {
-        processChartSelections[pIdx] = [0];
-      }
-      // Filter out invalid indices if KPIs were deleted
-      processChartSelections[pIdx] = processChartSelections[pIdx].filter(i => i < proc.indicators.length);
-      if (processChartSelections[pIdx].length === 0) processChartSelections[pIdx] = [0];
+      let sel = (processChartSelections[pIdx] || [0]).filter(i => i < proc.indicators.length);
+      if (sel.length === 0) sel = [0];
+      processChartSelections[pIdx] = sel;
+      const isGrid = sel.length > 1;
 
-      const selectedIndices = processChartSelections[pIdx];
-      const selectedInds = selectedIndices.map(i => proc.indicators[i]).filter(Boolean);
+      const hostW = Math.max(240, kpiChartWidth || ((document.getElementById('mainViewContainer')?.clientWidth || 900) - 64));
+      const colorOf = i => PROCESS_CHART_COLORS[i % PROCESS_CHART_COLORS.length].stroke;
+      const masked = ind => isConfidentialMode && ind.isConfidential;
+      const lockedBox = (w, h) => `<div class="flex items-center justify-center bg-white rounded-lg border border-slate-200 text-[11px] text-slate-500" style="width:${w}px;height:${h}px">Graphique réservé à la direction</div>`;
 
-      // Check if multi-curve with heterogeneous units -> normalize to Base 100 (% Cible)
-      const distinctUnits = [...new Set(selectedInds.map(i => i.unit || ''))];
-      const useNormalized = (selectedInds.length > 1 && distinctUnits.length > 1);
-
-      // SVG drawn at the real pixel width of its box (1 unit = 1 px), so it fills the available width
-      const chartW = Math.max(560, kpiChartWidth || ((document.getElementById('mainViewContainer')?.clientWidth || 900) - 64));
-      const chartH = 160;
-      const padLeft = 68;
-      const padRight = 30;
-      const padTop = 22;
-      const padBottom = 26;
-
-      const innerW = chartW - padLeft - padRight;
-      const innerH = chartH - padTop - padBottom;
-
-      // Extract Series Points
-      let allPlotVals = [];
-      const seriesData = selectedInds.map((ind, sOrder) => {
-        const origIdx = selectedIndices[sOrder];
-        const color = PROCESS_CHART_COLORS[origIdx % PROCESS_CHART_COLORS.length];
-        const pts = [];
-
-        let monthsToInspect = cols.map((_, idx) => idx);
-        for (const m of monthsToInspect) {
-          const raw = ind.months[m];
-          const num = parseKpiNumber(raw);
-          if (num !== null) {
-            let plotVal = num;
-            if (useNormalized) {
-              const target = ind.targetVal || parseKpiNumber(ind.target) || 1;
-              if (ind.goalDirection === "lower") {
-                // Inverted Health Index: less than target = BETTER (> 100%), more than target = WORSE (< 100%)
-                // Everything ABOVE 100% is always a victory!
-                plotVal = target > 0 ? Math.max(10, Math.min(200, (2 - (num / target)) * 100)) : 100;
-              } else {
-                plotVal = target > 0 ? (num / target) * 100 : 100;
-              }
-            }
-            allPlotVals.push(plotVal);
-            pts.push({ m, val: num, plotVal, raw });
-          }
-        }
-        return { ind, pts, color, origIdx };
-      });
-
-      // Min and Max calculation
-      let minVal = allPlotVals.length > 0 ? Math.min(...allPlotVals) : 0;
-      let maxVal = allPlotVals.length > 0 ? Math.max(...allPlotVals) : 100;
-
-      if (useNormalized) {
-        minVal = Math.min(minVal, 75);
-        maxVal = Math.max(maxVal, 125);
-      } else if (selectedInds.length === 1 && selectedInds[0].targetVal) {
-        const tv = selectedInds[0].targetVal;
-        minVal = Math.min(minVal, tv * 0.75);
-        maxVal = Math.max(maxVal, tv * 1.25);
-      }
-
-      if (minVal === maxVal) {
-        minVal *= 0.85;
-        maxVal = maxVal !== 0 ? maxVal * 1.15 : 100;
-      }
-      // A rate never exceeds 100 % nor drops below 0
-      const isPctAxis = !useNormalized && selectedInds.length > 0 && selectedInds.every(i => i.unit === '%');
-      if (isPctAxis) { maxVal = Math.min(maxVal, 100); minVal = Math.max(minVal, 0); }
-      if (!useNormalized && minVal < 0 && allPlotVals.every(v => v >= 0)) minVal = 0;
-      // Round the axis to 1 / 2 / 2.5 / 5 × 10^n steps so gridlines read 30 k€, 40 k€… not 27,5 k€
-      const rawStep = (maxVal - minVal) / 3 || 1;
-      const pow10 = Math.pow(10, Math.floor(Math.log10(rawStep)));
-      const axisStep = pow10 * ([1, 2, 2.5, 5, 10].find(f => f >= rawStep / pow10) || 10);
-      minVal = Math.floor(minVal / axisStep) * axisStep;
-      maxVal = Math.ceil(maxVal / axisStep) * axisStep;
-      if (isPctAxis) maxVal = Math.min(maxVal, 100);
-      const range = (maxVal - minVal) || 1;
-
-      // Determine active month scope based on current dynamic columns
-      let activeMonthsList = cols.map((_, idx) => idx);
-
-      // Coordinate converter helper
-      const getX = m => {
-        const idxInScope = activeMonthsList.indexOf(m);
-        const pos = idxInScope !== -1 ? idxInScope : 0;
-        return padLeft + (pos / Math.max(1, activeMonthsList.length - 1)) * innerW;
-      };
-      const getY = v => padTop + innerH - ((v - minVal) / range) * innerH;
-
-      // Grid Lines & Labels
-      const gridLevels = [];
-      for (let v = minVal; v <= maxVal + axisStep / 1000; v += axisStep) gridLevels.push({ val: v, y: getY(v) });
-
-      let gridSvg = gridLevels.map(g => `
-        <line x1="${padLeft}" y1="${g.y.toFixed(1)}" x2="${chartW - padRight}" y2="${g.y.toFixed(1)}" stroke="#E2E8F0" stroke-width="1" stroke-dasharray="3,3" />
-        <text x="${padLeft - 6}" y="${(g.y + 3.5).toFixed(1)}" text-anchor="end" fill="#64748B" font-size="9" font-family="monospace" font-weight="600">
-          ${formatProcessChartVal(g.val, selectedInds[0].unit, useNormalized)}
-        </text>
-      `).join('');
-
-      // Target Line
-      let targetSvg = "";
-      if (useNormalized) {
-        const targetY = getY(100);
-        if (targetY >= padTop && targetY <= chartH - padBottom) {
-          targetSvg = `
-            <line x1="${padLeft}" y1="${targetY.toFixed(1)}" x2="${chartW - padRight}" y2="${targetY.toFixed(1)}" stroke="#C5A065" stroke-width="2" stroke-dasharray="6,4" />
-            <rect x="${chartW - padRight - 90}" y="${(targetY - 9).toFixed(1)}" width="86" height="14" rx="3" fill="#FEF3C7" stroke="#F59E0B" stroke-width="0.8" />
-            <text x="${chartW - padRight - 47}" y="${(targetY + 2).toFixed(1)}" text-anchor="middle" fill="#92400E" font-size="8.5" font-weight="bold">SANTÉ 100% (Cible)</text>
-          `;
-        }
-      } else if (selectedInds.length === 1 && selectedInds[0].targetVal) {
-        const tv = selectedInds[0].targetVal;
-        const targetY = getY(tv);
-        if (targetY >= padTop && targetY <= chartH - padBottom) {
-          targetSvg = `
-            <line x1="${padLeft}" y1="${targetY.toFixed(1)}" x2="${chartW - padRight}" y2="${targetY.toFixed(1)}" stroke="#C5A065" stroke-width="1.8" stroke-dasharray="5,4" />
-            <rect x="${chartW - padRight - 105}" y="${(targetY - 9).toFixed(1)}" width="102" height="14" rx="3" fill="#FEF3C7" stroke="#F59E0B" stroke-width="0.8" />
-            <text x="${chartW - padRight - 54}" y="${(targetY + 2).toFixed(1)}" text-anchor="middle" fill="#92400E" font-size="8" font-weight="bold">Cible : ${selectedInds[0].target}</text>
-          `;
-        }
-      }
-
-      // Curves and points
-      let curvesSvg = "";
-      let defsSvg = "";
-
-      seriesData.forEach((s, sIdx) => {
-        if (s.pts.length === 0) return;
-
-        const coords = s.pts.map(p => ({
-          x: getX(p.m),
-          y: getY(p.plotVal),
-          pt: p
-        }));
-
-        const ptsStr = coords.map(c => `${c.x.toFixed(1)},${c.y.toFixed(1)}`).join(' ');
-
-        // If single series active: draw soft gradient area fill
-        let areaSvg = "";
-        if (seriesData.length === 1 && coords.length >= 2) {
-          const firstX = coords[0].x.toFixed(1);
-          const lastX = coords[coords.length - 1].x.toFixed(1);
-          const bottomY = (chartH - padBottom).toFixed(1);
-          const areaPath = `M ${firstX},${bottomY} L ${ptsStr.replace(/ /g, ' L ')} L ${lastX},${bottomY} Z`;
-          defsSvg += `
-            <linearGradient id="grad_p_${pIdx}_${s.origIdx}" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="${s.color.stroke}" stop-opacity="0.22" />
-              <stop offset="100%" stop-color="${s.color.stroke}" stop-opacity="0.01" />
-            </linearGradient>
-          `;
-          areaSvg = `<path d="${areaPath}" fill="url(#grad_p_${pIdx}_${s.origIdx})" />`;
-        }
-
-        const polyline = `<polyline fill="none" stroke="${s.color.stroke}" stroke-width="${seriesData.length > 1 ? '2.5' : '3'}" stroke-linecap="round" stroke-linejoin="round" points="${ptsStr}" />`;
-
-        // Trend: 3-month moving average, on the same scale as the plotted values
-        let trendSvg = "";
-        if (s.pts.length >= 6) {
-          const byM = {};
-          s.pts.forEach(p => { byM[p.m] = p.plotVal; });
-          const maPts = s.pts.filter(p => byM[p.m - 1] !== undefined && byM[p.m - 2] !== undefined)
-            .map(p => `${getX(p.m).toFixed(1)},${getY((byM[p.m] + byM[p.m - 1] + byM[p.m - 2]) / 3).toFixed(1)}`);
-          if (maPts.length >= 2) {
-            trendSvg = `<polyline fill="none" stroke="${s.color.stroke}" stroke-opacity="0.55" stroke-width="2" stroke-dasharray="6,5" stroke-linecap="round" points="${maPts.join(' ')}"><title>Tendance : moyenne sur 3 mois</title></polyline>`;
-          }
-        }
-
-        const dots = coords.map(c => {
-          const valFormatted = formatProcessChartVal(c.pt.val, s.ind.unit, false);
-          const showLabel = (seriesData.length === 1);
-          return `
-            <circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="${seriesData.length > 1 ? '3.5' : '4'}" fill="#ffffff" stroke="${s.color.stroke}" stroke-width="2.2" />
-            ${showLabel ? `
-              <rect x="${(c.x - 22).toFixed(1)}" y="${(c.y - 18).toFixed(1)}" width="44" height="12" rx="2" fill="rgba(15, 23, 42, 0.75)" />
-              <text x="${c.x.toFixed(1)}" y="${(c.y - 9).toFixed(1)}" text-anchor="middle" fill="#ffffff" font-size="8" font-family="monospace" font-weight="bold">${valFormatted}</text>
-            ` : ''}
-          `;
-        }).join('');
-
-        curvesSvg += `
-          <g class="series-group">
-            ${areaSvg}
-            ${trendSvg}
-            ${polyline}
-            ${dots}
-          </g>
-        `;
-      });
-
-      // X-Axis Months (Dynamic columns with year)
-      let xAxisSvg = activeMonthsList.map(m => {
-        const col = cols[m] || { label: ALL_MONTH_NAMES[m % 12] };
-        const shortLabel = col.label ? col.label.replace(' 20', ' ') : ALL_MONTH_NAMES[m % 12];
-        const x = getX(m);
-        const y = chartH - padBottom + 16;
-        return `<text x="${x.toFixed(1)}" y="${y}" text-anchor="middle" fill="#64748B" font-size="9" font-weight="bold">${shortLabel}</text>`;
-      }).join('');
-
-      // Pills selector HTML
-      const isAll = (selectedIndices.length === proc.indicators.length);
+      // pills: one per KPI (click = show it alone) + "Tous les KPI" (grid)
       const pillsHtml = proc.indicators.map((ind, iIdx) => {
-        const isSelected = selectedIndices.includes(iIdx);
-        const col = PROCESS_CHART_COLORS[iIdx % PROCESS_CHART_COLORS.length];
+        const on = !isGrid && sel[0] === iIdx;
+        const sm = kpiChartSummary(ind, activeIdx);
+        const dot = KPI_STATUS_COLORS[sm.st.cls] || '#94A3B8';
         return `
-          <button onclick="toggleProcessChartKpi(${pIdx}, ${iIdx})" 
-            class="px-2.5 py-1 rounded-full text-[11px] font-bold transition flex items-center space-x-1.5 shadow-2xs border ${isSelected ? 'bg-white shadow-xs text-slate-900' : 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200'}"
-            style="${isSelected ? `border-color: ${col.stroke}; border-width: 2px;` : ''}"
-            title="Cliquer pour afficher / masquer cette courbe sur le graphique">
-            <span class="w-2.5 h-2.5 rounded-full inline-block" style="background-color: ${col.stroke};"></span>
-            <span>${ind.name}</span>
-            <span class="text-[11px] opacity-75 font-mono">(${ind.unit || 'nb'})</span>
-            ${isSelected ? '<span class="text-xs font-black text-slate-800"></span>' : ''}
-          </button>
-        `;
+          <button onclick="toggleProcessChartKpi(${pIdx}, ${iIdx})" aria-pressed="${on}"
+            class="px-2.5 py-1 rounded-full text-[11px] font-semibold transition flex items-center gap-1.5 border ${on ? 'bg-white text-slate-900 shadow-xs' : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-white'}"
+            style="${on ? `border-color:${colorOf(iIdx)};border-width:2px;` : ''}" title="Afficher cet indicateur">
+            <span class="w-2 h-2 rounded-full" style="background:${colorOf(iIdx)}"></span>
+            <span>${escapeHtml(ind.name.replace(/\s*\(.*\)\s*$/, ''))}</span>
+            <span class="font-mono text-slate-800">${masked(ind) ? '···' : sm.last}</span>
+            ${masked(ind) ? '' : `<span class="w-1.5 h-1.5 rounded-full" style="background:${dot}" title="${escapeHtml(sm.st.text)}"></span>`}
+          </button>`;
       }).join('');
+      const allOn = sel.length === proc.indicators.length;
 
-      // Legend & Mini Summary HTML
-      const legendHtml = seriesData.map(s => {
-        const nums = s.pts.map(p => p.val);
-        const last = nums.length > 0 ? nums[nums.length - 1] : null;
-        const lastStr = last !== null ? formatProcessChartVal(last, s.ind.unit, false) : "---";
-        const st = computeKpiStatus(s.ind);
-        const tr = kpiTrend(s.ind, getActiveMonthIdx(tool));
-        const trTxt = !tr ? '' : tr.dir === 'stable' ? 'stable'
-          : `en ${tr.dir === 'up' ? 'hausse' : 'baisse'} de ${Math.abs(Math.round(tr.pct))} %`;
-        return `
-          <div class="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 bg-white px-2 py-1 rounded border border-slate-200 shadow-2xs">
-            <span class="w-2 h-2 rounded-full" style="background-color: ${s.color.stroke};"></span>
-            <span class="font-bold text-slate-800">${escapeHtml(s.ind.name)} :</span>
-            <span class="font-mono font-black text-slate-900">${lastStr}</span>
-            <span class="${st.cls} text-[11px] ml-1">${st.text}</span>
-            ${tr ? `<span class="text-[11px] ${tr.isGood === null ? 'text-slate-600' : tr.isGood ? 'text-emerald-700' : 'text-red-700'}" title="Moyenne des 3 derniers mois comparée à celle d'il y a 3 mois">· Tendance 3 mois : <strong>${trTxt}</strong>${tr.drifting ? ' · dérive lente' : ''}</span>` : ''}
+      let body;
+      if (!isGrid) {
+        const ind = proc.indicators[sel[0]];
+        const h = hostW < 640 ? 200 : 240;
+        const sm = kpiChartSummary(ind, activeIdx);
+        body = `
+          <div class="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 text-[11px] text-slate-600 px-0.5">
+            <span class="text-xs font-bold text-slate-900">${escapeHtml(ind.name)}</span>
+            ${masked(ind) ? '' : `<span>${getColumnLabel(tool, activeIdx)} : <strong class="font-mono text-slate-900">${sm.last}</strong></span>
+            <span class="${sm.st.cls} text-[11px]">${sm.st.text}</span>
+            ${ind.target ? `<span>Cible <strong class="font-mono" style="color:#8A6424">${escapeHtml(ind.target)}</strong></span>` : ''}
+            ${sm.tr ? `<span class="${sm.trCls}" title="Moyenne des 3 derniers mois comparée à celle d'il y a 3 mois">Tendance 3 mois : <strong>${sm.trTxt}</strong>${sm.tr.drifting ? ' · dérive lente' : ''}</span>` : ''}`}
           </div>
-        `;
-      }).join('');
+          ${masked(ind) ? lockedBox(hostW, h) : buildKpiChartSvg(ind, colorOf(sel[0]), hostW, h, activeIdx, false)}`;
+      } else {
+        const perRow = hostW >= 1100 ? 3 : hostW >= 700 ? 2 : 1;
+        const gap = 12;
+        const cellW = Math.floor((hostW - gap * (perRow - 1)) / perRow);
+        body = `<div class="grid gap-3" style="grid-template-columns: repeat(${perRow}, minmax(0, 1fr))">` + sel.map(iIdx => {
+          const ind = proc.indicators[iIdx];
+          const sm = kpiChartSummary(ind, activeIdx);
+          return `
+            <div class="space-y-1 min-w-0">
+              <div class="flex flex-wrap items-baseline gap-x-2 text-[11px] text-slate-600">
+                <button onclick="toggleProcessChartKpi(${pIdx}, ${iIdx})" class="text-xs font-bold text-slate-900 hover:text-delacour-primary text-left" title="Agrandir">${escapeHtml(ind.name.replace(/\s*\(.*\)\s*$/, ''))}</button>
+                ${masked(ind) ? '' : `<strong class="font-mono text-slate-900">${sm.last}</strong><span class="${sm.st.cls} text-[11px]">${sm.st.text}</span>${ind.target ? `<span>cible <span class="font-mono" style="color:#8A6424">${escapeHtml(ind.target)}</span></span>` : ''}
+                ${sm.tr ? `<span class="${sm.trCls}">${sm.trTxt}${sm.tr.drifting ? ' · dérive lente' : ''}</span>` : ''}`}
+              </div>
+              ${masked(ind) ? lockedBox(cellW, 170) : buildKpiChartSvg(ind, colorOf(iIdx), cellW, 170, activeIdx, true)}
+            </div>`;
+        }).join('') + `</div>`;
+      }
 
-      // Final Component Container
       const chartBox = document.createElement('div');
-      chartBox.className = "mt-3 pt-2.5 border-t border-slate-200 bg-slate-50/70 p-3 rounded-lg border border-slate-200 space-y-2 no-print";
+      chartBox.className = "mt-3 bg-slate-50/70 p-3 rounded-lg border border-slate-200 space-y-2.5 no-print";
       chartBox.innerHTML = `
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div class="flex items-center space-x-2">
-            <span class="text-sm"></span>
-            <span class="text-xs font-black text-slate-800">Graphique Évolutif — ${proc.name}</span>
-            ${useNormalized ? `
-              <span class="text-[11px] font-bold text-amber-900 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-full shadow-2xs" title="Indice de Santé Normalisé : Toute courbe AU-DESSUS de la ligne dorée 100% est une victoire. Toute courbe EN-DESSOUS est une alerte (les dérives de retouches ou rebuts sont automatiquement inversées pour que monter soit toujours positif !)">
-                Vue Comparée Base 100 (% Cible)
-              </span>
-            ` : ''}
-          </div>
-
-          <div class="flex flex-wrap items-center gap-1.5">
-            ${pillsHtml}
-            <button onclick="toggleProcessChartAll(${pIdx}, ${proc.indicators.length})" 
-              class="px-2.5 py-1 rounded-full text-[11px] font-black transition border ${isAll ? 'bg-delacour-primary text-white border-delacour-primary shadow-xs' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'}">
-              <span>${isAll ? 'Une seule courbe' : 'Toutes les courbes'}</span>
-            </button>
-          </div>
+        <div class="flex flex-wrap items-center gap-1.5">
+          ${pillsHtml}
+          <button onclick="toggleProcessChartAll(${pIdx}, ${proc.indicators.length})" aria-pressed="${allOn}"
+            class="px-2.5 py-1 rounded-full text-[11px] font-bold transition border ${allOn ? 'bg-delacour-primary text-white border-delacour-primary' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'}">
+            ${allOn ? 'Un seul indicateur' : 'Tous les indicateurs'}
+          </button>
         </div>
-
-        <div class="kpi-chart-host w-full overflow-x-auto">
-          <svg class="block w-full h-40 bg-white rounded-lg border border-slate-200 select-none shadow-inner" style="min-width: 560px" viewBox="0 0 ${chartW} ${chartH}" preserveAspectRatio="none">
-            <defs>
-              ${defsSvg}
-            </defs>
-            <!-- Background Grid -->
-            ${gridSvg}
-            <!-- Target Reference Line -->
-            ${targetSvg}
-            <!-- Curves & Data Points -->
-            ${curvesSvg}
-            <!-- Months X Axis -->
-            ${xAxisSvg}
-          </svg>
-        </div>
-
-        <!-- Legend and Summary Footer -->
-        <div class="flex flex-wrap items-center gap-2 pt-0.5 text-[11px]">
-          ${legendHtml}
+        <div class="kpi-chart-host w-full overflow-x-auto space-y-1.5">${body}</div>
+        <div class="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-500 px-0.5">
+          <span class="flex items-center gap-1.5"><span class="inline-block w-3 h-2.5 rounded-sm" style="background:#10B981;opacity:.25"></span>Zone conforme</span>
+          <span class="flex items-center gap-1.5"><span class="inline-block w-4 border-t-2 border-dashed" style="border-color:#B8893F"></span>Cible</span>
+          <span class="flex items-center gap-1.5"><span class="inline-block w-4 border-t-2 border-dashed border-slate-400"></span>Tendance 3 mois</span>
+          <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full" style="background:#059669"></span>Conforme <span class="w-2 h-2 rounded-full ml-1" style="background:#D97706"></span>Dérive <span class="w-2 h-2 rounded-full ml-1" style="background:#DC2626"></span>Alerte</span>
+          <span>Survolez ou touchez un point pour le détail</span>
         </div>
       `;
-
       procBox.appendChild(chartBox);
     }
 

@@ -4028,7 +4028,10 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       } else if (/[0-9][\s]*(m|m€|meur)$/i.test(trimmed)) {
         multiplier = 1000000;
       }
-      const clean = trimmed.replace(/[^0-9,.-]/g, '').replace(',', '.');
+      let clean = trimmed.replace(/[^0-9,.-]/g, '');
+      // "1.234,56" or "1.234.567": dots are thousands separators
+      if (clean.includes(',') || /^-?\d{1,3}(\.\d{3}){2,}$/.test(clean)) clean = clean.replace(/\./g, '');
+      clean = clean.replace(',', '.');
       const num = parseFloat(clean);
       return isNaN(num) ? null : (num * multiplier);
     }
@@ -4089,23 +4092,24 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       }
     }
 
-    function computeKpiStatus(ind) {
+    // Status of a KPI for the month shown as active (defaults to the tool's active month)
+    function computeKpiStatus(ind, monthIdx = getActiveMonthIdx(TOOLS_DATA["1.1"])) {
       // Auto-sync targetVal from ind.target if not defined
       if ((ind.targetVal === undefined || ind.targetVal === null) && ind.target) {
         ind.targetVal = parseKpiNumber(ind.target);
       }
 
-      // Collect entered numeric months with indices
+      // Entered numeric months up to the active month
       const validMonths = [];
       ind.months.forEach((m, idx) => {
         const num = parseKpiNumber(m);
-        if (num !== null) {
+        if (num !== null && idx <= monthIdx) {
           validMonths.push({ idx, val: num, raw: m });
         }
       });
 
-      if (validMonths.length === 0) {
-        return { text: "En attente", cls: "badge-surveiller", isAlert: false, currentVal: null, trend: null };
+      if (validMonths.length === 0 || validMonths[validMonths.length - 1].idx !== monthIdx) {
+        return { text: "À saisir", cls: "badge-surveiller", isAlert: false, isPending: true, currentVal: null, trend: null };
       }
 
       const lastItem = validMonths[validMonths.length - 1];
@@ -4146,6 +4150,14 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 
       if (effectiveTarget === undefined || effectiveTarget === null) {
         return { text: "Conforme", cls: "badge-conforme", isAlert: false, currentVal: current, trend };
+      }
+
+      // Zero target ("0 litige", "0 accident"): a percentage gap is meaningless, show the absolute value
+      if (effectiveTarget === 0) {
+        const ok = ind.goalDirection === "higher" ? current >= 0 : current <= 0;
+        return ok
+          ? { text: "Conforme", cls: "badge-conforme", isAlert: false, currentVal: current, trend }
+          : { text: `Alerte (${current.toLocaleString('fr-FR')} pour 0)`, cls: "badge-alerte", isAlert: true, currentVal: current, trend };
       }
 
       if (ind.goalDirection === "higher") {
@@ -4199,97 +4211,6 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     // ==========================================================
     // CROSS-TOOL AUTO-SYNC GATEWAY
     // ==========================================================
-    function syncFromOtherPackTools() {
-      const tool = TOOLS_DATA["1.1"];
-      const activeMonth = getActiveMonthIdx(tool);
-      const monthName = getColumnLabel(tool, activeMonth);
-      let syncedCount = 0;
-
-      // 1. Sync Coût Non-Qualité from Tool 5.2
-      try {
-        const raw52 = localStorage.getItem('DELACOUR_DATA_5.2');
-        if (raw52) {
-          const parsed52 = JSON.parse(raw52);
-          if (parsed52 && parsed52.rows) {
-            const cnqInd = findKpiById(tool, 'kpi_cnq');
-            if (cnqInd) {
-              let totalMonthCnq = 0;
-              parsed52.rows.forEach(r => {
-                if (r && r[4]) {
-                  const val = parseKpiNumber(r[4]);
-                  if (val !== null) totalMonthCnq += val;
-                }
-              });
-              if (totalMonthCnq > 0) {
-                cnqInd.months[activeMonth] = formatKpiInput(totalMonthCnq.toString(), '€');
-                syncedCount++;
-              }
-            }
-          }
-        }
-      } catch(e) {}
-
-      // 2. Sync Réclamations from Tool 2.3
-      try {
-        const raw23 = localStorage.getItem('DELACOUR_DATA_2.3');
-        if (raw23) {
-          const parsed23 = JSON.parse(raw23);
-          if (parsed23 && parsed23.rows) {
-            const recInd = findKpiById(tool, 'kpi_reclamations');
-            if (recInd) {
-              const activeLitiges = parsed23.rows.filter(r => r && r[0] && !r[0].includes('Exigence')).length;
-              recInd.months[activeMonth] = activeLitiges.toString();
-              syncedCount++;
-            }
-          }
-        }
-      } catch(e) {}
-
-      // 3. Sync Marge Brute from Tool 2.1
-      try {
-        const raw21 = localStorage.getItem('DELACOUR_DATA_2.1');
-        if (raw21) {
-          const parsed21 = JSON.parse(raw21);
-          if (parsed21 && parsed21.rows) {
-            const margeInd = findKpiById(tool, 'kpi_marge');
-            if (margeInd) {
-              const validRows = parsed21.rows.filter(r => r && r[6] && !r[0].includes('Seuil'));
-              const marges = validRows.map(r => parseKpiNumber(r[6])).filter(n => n !== null);
-              if (marges.length > 0) {
-                const avgMarge = (marges.reduce((a,b)=>a+b,0) / marges.length).toFixed(1).replace('.', ',') + " %";
-                margeInd.months[activeMonth] = avgMarge;
-                syncedCount++;
-              }
-            }
-          }
-        }
-      } catch(e) {}
-
-      // 4. Sync Heures Retouche from Tool 3.1
-      try {
-        const raw31 = localStorage.getItem('DELACOUR_DATA_3.1');
-        if (raw31) {
-          const parsed31 = JSON.parse(raw31);
-          if (parsed31 && parsed31.rows) {
-            const retInd = findKpiById(tool, 'kpi_retouches');
-            if (retInd) {
-              const validRet = parsed31.rows.filter(r => r && r[3] && !r[0].includes('Exigence'));
-              const heures = validRet.map(r => parseKpiNumber(r[3])).filter(n => n !== null);
-              if (heures.length > 0) {
-                const totH = heures.reduce((a,b)=>a+b,0).toFixed(1).replace('.', ',') + " h";
-                retInd.months[activeMonth] = totH;
-                syncedCount++;
-              }
-            }
-          }
-        }
-      } catch(e) {}
-
-      saveLiveState();
-      renderCurrentTool();
-      alert(`✅ Synchronisation réussie pour le mois actif (${monthName}) ! ${syncedCount} indicateur(s) mis à jour automatiquement depuis les outils du Pack (2.1, 2.3, 3.1, 5.2). Zéro double saisie !`);
-    }
-
     function findKpiById(tool, id) {
       if (!tool || !tool.processes) return null;
       for (const p of tool.processes) {
@@ -4371,9 +4292,9 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
           html += `
             <div class="flex items-center justify-between py-1.5 border-b border-slate-100 hover:bg-slate-50 px-2 rounded">
               <div class="w-1/2 pr-2">
-                <div class="text-[11px] font-bold text-slate-800">${ind.name}</div>
+                <div class="text-[11px] font-bold text-slate-800">${escapeHtml(ind.name)}</div>
                 <div class="text-[8.5px] text-slate-500 flex items-center space-x-2">
-                  <span>Cible : <strong class="font-mono text-slate-700">${ind.target}</strong></span>
+                  <span>Cible : <strong class="font-mono text-slate-700">${escapeHtml(ind.target)}</strong></span>
                   <span>•</span>
                   <span>Mois M-1 : <span class="font-mono">${prevVal}</span></span>
                 </div>
@@ -4383,7 +4304,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
                   id="express_in_${pIdx}_${iIdx}" 
                   data-pidx="${pIdx}" 
                   data-iidx="${iIdx}" 
-                  value="${currentVal}" 
+                  value="${escapeHtml(currentVal)}" 
                   placeholder="ex: 45000" 
                   inputmode="decimal" 
                   class="w-32 px-2 py-1 text-xs font-mono font-bold text-right border border-slate-300 rounded focus:border-delacour-gold focus:ring-1 focus:ring-delacour-gold outline-none"
@@ -4474,7 +4395,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
           }
           if (parsed.otherTools) {
             for (let k in parsed.otherTools) {
-              if (parsed.otherTools[k]) {
+              if (/^\d\.\d$/.test(k) && typeof parsed.otherTools[k] === 'string' && (() => { try { return typeof JSON.parse(parsed.otherTools[k]) === 'object'; } catch (e) { return false; } })()) {
                 localStorage.setItem(`DELACOUR_DATA_${k}`, parsed.otherTools[k]);
               }
             }
@@ -4810,6 +4731,9 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 
       if (confirm(`Supprimer la colonne "${cols[colIdx].label}" et toutes ses données saisies ?`)) {
         cols.splice(colIdx, 1);
+        if (tool.manualActiveMonth !== undefined && tool.manualActiveMonth !== null && tool.manualActiveMonth !== "auto" && colIdx < parseInt(tool.manualActiveMonth, 10)) {
+          tool.manualActiveMonth = String(parseInt(tool.manualActiveMonth, 10) - 1);
+        }
         tool.processes.forEach(p => {
           p.indicators.forEach(ind => {
             if (Array.isArray(ind.months) && ind.months.length > colIdx) {
@@ -5161,6 +5085,28 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       }
     }
 
+    // "14/01/2026" or "2026-01-14" -> "2026-01" (null if the cell holds no date)
+    function rowPeriod(str) {
+      const t = String(str || '').trim();
+      let m = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+      if (m) return `${m[3]}-${m[2].padStart(2, '0')}`;
+      m = t.match(/^(\d{4})-(\d{2})-\d{2}/);
+      return m ? `${m[1]}-${m[2]}` : null;
+    }
+
+    // Tool 2.3 rows grouped by month: { "2026-01": { count, cost } }
+    function claimsByPeriod(rows) {
+      const out = {};
+      (rows || []).forEach(r => {
+        const per = r && rowPeriod(r[0]);
+        if (!per) return;
+        out[per] = out[per] || { count: 0, cost: 0 };
+        out[per].count++;
+        out[per].cost += parseKpiNumber(r[4]) || 0;
+      });
+      return out;
+    }
+
     function syncIndicatorFromKey(ind, src, tool, forceOverwrite = false) {
       if (!ind || !src || src === "manual") return { updated: 0, protected: 0 };
       if (!tool) tool = TOOLS_DATA["1.1"];
@@ -5269,11 +5215,14 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
           if (raw23) {
             const data23 = JSON.parse(raw23);
             if (data23 && data23.rows) {
-              const litigesCount = data23.rows.filter(r => r && r[0] && !r[0].includes('Exigence')).length;
-              const activeM = getActiveMonthIdx(tool);
-              const res = setKpiMonthValueSafe(ind, activeM, litigesCount.toString(), tool, forceOverwrite);
-              if (res.updated) updatedColsCount++;
-              if (res.protected) protectedColsCount++;
+              const byPer = claimsByPeriod(data23.rows);
+              cols.forEach((col, cIdx) => {
+                const hit = byPer[periodOfCol(col)];
+                if (!hit) return;
+                const res = setKpiMonthValueSafe(ind, cIdx, String(hit.count), tool, forceOverwrite);
+                if (res.updated) updatedColsCount++;
+                if (res.protected) protectedColsCount++;
+              });
             }
           }
         } catch(e) {}
@@ -5286,14 +5235,14 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
           if (raw23) {
             const data23 = JSON.parse(raw23);
             if (data23 && data23.rows) {
-              const totalCost = data23.rows.reduce((sum, r) => {
-                const n = parseKpiNumber(r[4]);
-                return n !== null ? sum + n : sum;
-              }, 0);
-              const activeM = getActiveMonthIdx(tool);
-              const res = setKpiMonthValueSafe(ind, activeM, formatKpiInput(totalCost.toString(), '€'), tool, forceOverwrite);
-              if (res.updated) updatedColsCount++;
-              if (res.protected) protectedColsCount++;
+              const byPer = claimsByPeriod(data23.rows);
+              cols.forEach((col, cIdx) => {
+                const hit = byPer[periodOfCol(col)];
+                if (!hit) return;
+                const res = setKpiMonthValueSafe(ind, cIdx, formatKpiInput(String(hit.cost), '€'), tool, forceOverwrite);
+                if (res.updated) updatedColsCount++;
+                if (res.protected) protectedColsCount++;
+              });
             }
           }
         } catch(e) {}
@@ -5493,10 +5442,12 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
           const p23 = JSON.parse(raw23);
           const recInd = findKpiById(tool, 'kpi_reclamations');
           if (recInd && p23 && p23.rows) {
-            const lit = p23.rows.filter(r => r && r[0] && !r[0].includes('Exigence')).length;
-            const res = setKpiMonthValueSafe(recInd, activeMonth, lit.toString(), tool, forceOverwrite);
-            if (res.updated) updatedCount++;
-            if (res.protected) protectedCount++;
+            const hit = claimsByPeriod(p23.rows)[periodOfCol(getToolColumns(tool)[activeMonth])];
+            if (hit) {
+              const res = setKpiMonthValueSafe(recInd, activeMonth, String(hit.count), tool, forceOverwrite);
+              if (res.updated) updatedCount++;
+              if (res.protected) protectedCount++;
+            }
           }
         }
       } catch(e) {}
@@ -6487,6 +6438,19 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     // ==========================================================
     // PILIERS DE FIABILISATION PME : GESTION DU MOIS D'ANALYSE & CADENAS
     // ==========================================================
+    // Year-to-date sum of a KPI: columns of the same calendar year as the active column, up to it
+    function kpiYearToDate(tool, ind, activeIdx) {
+      const cols = getToolColumns(tool);
+      const year = cols[activeIdx]?.year;
+      let sum = 0, months = 0;
+      cols.forEach((c, i) => {
+        if (c.year !== year || i > activeIdx) return;
+        months++;
+        sum += parseKpiNumber(ind.months[i]) || 0;
+      });
+      return { sum, months: Math.max(months, cols[activeIdx] ? cols[activeIdx].month + 1 : 1) };
+    }
+
     function getAutoActiveMonthIdx(tool) {
       if (!tool) tool = TOOLS_DATA["1.1"];
       const cols = getToolColumns(tool);
@@ -6600,7 +6564,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       });
 
       const uniqueMissing = [...new Set(missingList)];
-      const completionPct = Math.round((filledKpisCount / totalKpisCount) * 100);
+      const completionPct = totalKpisCount ? Math.round((filledKpisCount / totalKpisCount) * 100) : 0;
       const isMonthComplete = (filledKpisCount === totalKpisCount);
 
             // CAUSAL CROSS-ANALYSIS INSIGHTS
@@ -6644,9 +6608,9 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       }
 
       // Run-Rate Annual Diagnostic (Dynamique PME)
-      if (activeMonthIdx >= 1) {
-        const elapsed = activeMonthIdx + 1;
-        const projectedCa = Math.round((caCumul / elapsed) * 12);
+      const caYtd = caInd ? kpiYearToDate(tool, caInd, activeMonthIdx) : null;
+      if (caYtd && caYtd.months >= 2) {
+        const projectedCa = Math.round((caYtd.sum / caYtd.months) * 12);
         const annualTarget = pmeSettings.annualBudget || 600000;
         const diffPrj = projectedCa - annualTarget;
         if (diffPrj < -15000) {
@@ -6685,8 +6649,9 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
         let caHtml;
         if (caInd) {
           let caToDate = 0;
-          for (let m = 0; m <= activeMonthIdx; m++) caToDate += parseKpiNumber(caInd.months[m]) || 0;
-          const budgetToDate = (pmeSettings.annualBudget || 0) * (activeMonthIdx + 1) / 12;
+          const ytd = kpiYearToDate(tool, caInd, activeMonthIdx);
+          caToDate = ytd.sum;
+          const budgetToDate = (pmeSettings.annualBudget || 0) * ytd.months / 12;
           const gapPct = budgetToDate > 0 ? Math.round((caToDate / budgetToDate - 1) * 100) : null;
           const tone = gapPct === null ? 'none' : (gapPct >= 0 ? 'ok' : (gapPct >= -10 ? 'warn' : 'bad'));
           const sub = gapPct === null ? `Objectif annuel non défini` : `${gapPct >= 0 ? '+' : ''}${gapPct} % vs objectif à date (${fmtEur(budgetToDate)})`;
@@ -6940,7 +6905,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
                   data-kpi-cell="${pIdx}_${iIdx}_${colIdx}"
                   ${canEdit ? `onfocus="handleKpiCellFocus(this)" onkeydown="handleKpiCellKeyDown(event, ${pIdx}, ${iIdx}, ${colIdx})" onblur="updateKpiMonth(${pIdx}, ${iIdx}, ${colIdx}, this.innerText)"` : `title="Mois clôturé — Données sanctuarisées (Lecture seule)"`}
                   class="outline-none ${canEdit ? 'focus:ring-2 focus:ring-delacour-gold focus:bg-white cursor-text' : 'cursor-not-allowed opacity-80'} rounded-md px-1.5 py-0.5 transition block font-mono ${isMasked ? 'text-slate-400 italic text-[11px]' : (isColActive ? 'text-slate-950 text-[11.5px] font-black' : (isPastLocked ? 'text-slate-500 text-[11px]' : 'text-slate-700 text-[11px] font-semibold'))}">
-                  ${val || '-'} ${isPastLocked && val ? '<span class="text-[11px] opacity-50 ml-0.5 no-print"></span>' : ''}
+                  ${escapeHtml(val) || '-'} ${isPastLocked && val ? '<span class="text-[11px] opacity-50 ml-0.5 no-print"></span>' : ''}
                 </span>
               </td>
             `;
@@ -6962,15 +6927,15 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
                 `;
               } else if (s.isConnected) {
                 return `
-                  <span class="inline-flex items-center gap-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border border-indigo-200 px-1.5 py-0.5 rounded text-[11px] font-bold shadow-2xs transition" title="${s.name}">
-                    ${s.url ? `<a href="${s.url}" class="hover:underline flex items-center gap-0.5"><span></span><span class="truncate max-w-[80px]">${s.name}</span></a>` : `<span class="truncate max-w-[80px]">${s.name}</span>`}
+                  <span class="inline-flex items-center gap-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border border-indigo-200 px-1.5 py-0.5 rounded text-[11px] font-bold shadow-2xs transition" title="${escapeHtml(s.name)}">
+                    ${s.url ? `<a href="${s.url}" class="hover:underline flex items-center gap-0.5"><span></span><span class="truncate max-w-[80px]">${escapeHtml(s.name)}</span></a>` : `<span class="truncate max-w-[80px]">${escapeHtml(s.name)}</span>`}
                     <button onclick="syncSingleIndicatorSource(${pIdx}, ${iIdx}, ${sIdx})" title="Rapatrier maintenant" class="no-print hover:scale-110 text-[11px] text-indigo-700 hover:text-indigo-950 transition"></button>
                   </span>
                 `;
               } else {
                 return `
-                  <span class="inline-flex items-center bg-slate-100 text-slate-700 border border-slate-200 px-1.5 py-0.5 rounded text-[11px] font-medium truncate max-w-[85px]" title="${s.name}">
-                    ${s.name}
+                  <span class="inline-flex items-center bg-slate-100 text-slate-700 border border-slate-200 px-1.5 py-0.5 rounded text-[11px] font-medium truncate max-w-[85px]" title="${escapeHtml(s.name)}">
+                    ${escapeHtml(s.name)}
                   </span>
                 `;
               }
@@ -6993,12 +6958,12 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
               <!-- KPI identity (Pinned Left): name on 2 lines + type, target and sources underneath -->
               <td class="py-2 px-3 ${KPI_COL.left} sticky left-0 bg-white group-hover:bg-slate-50 transition-colors z-10 border-b border-r border-slate-100 shadow-[3px_0_6px_-2px_rgba(0,0,0,0.06)] align-top">
                 <div class="flex items-start justify-between gap-1.5">
-                  <span contenteditable="true" onblur="updateKpiField(${pIdx}, ${iIdx}, 'name', this.innerText)" title="${escapeHtml(ind.name)}" class="outline-none focus:ring-1 focus:ring-delacour-gold px-1 rounded line-clamp-2 hover:text-delacour-primary transition cursor-text flex-1 min-w-0 font-bold text-slate-900 text-[11.5px] leading-snug">${ind.name}</span>
+                  <span contenteditable="true" onblur="updateKpiField(${pIdx}, ${iIdx}, 'name', this.innerText)" title="${escapeHtml(ind.name)}" class="outline-none focus:ring-1 focus:ring-delacour-gold px-1 rounded line-clamp-2 hover:text-delacour-primary transition cursor-text flex-1 min-w-0 font-bold text-slate-900 text-[11.5px] leading-snug">${escapeHtml(ind.name)}</span>
                   <button onclick="deleteKpiIndicator(${pIdx}, ${iIdx})" title="Supprimer cet indicateur" aria-label="Supprimer cet indicateur" class="no-print opacity-0 group-hover:opacity-100 focus:opacity-100 text-slate-400 hover:text-red-600 transition p-0.5 shrink-0"><svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
                 </div>
                 <div class="mt-1 px-1 flex flex-wrap items-center gap-1 text-[11px] text-slate-500">
                   <span class="${badgeTypeClass} px-1.5 py-px rounded-full text-[11px] font-bold border">${ind.type}</span>
-                  <span class="whitespace-nowrap">Cible <span contenteditable="true" onblur="updateKpiField(${pIdx}, ${iIdx}, 'target', this.innerText)" class="outline-none focus:ring-1 focus:ring-delacour-gold rounded cursor-text font-mono font-bold text-slate-700">${isMasked ? '---' : ind.target}</span></span>
+                  <span class="whitespace-nowrap">Cible <span contenteditable="true" onblur="updateKpiField(${pIdx}, ${iIdx}, 'target', this.innerText)" class="outline-none focus:ring-1 focus:ring-delacour-gold rounded cursor-text font-mono font-bold text-slate-700">${isMasked ? '---' : escapeHtml(ind.target)}</span></span>
                 </div>
                 <div class="mt-1 px-1">${sourceCellContent}</div>
               </td>
@@ -8857,8 +8822,17 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       } else {
         const pIdx = kLink.procIdx !== undefined ? kLink.procIdx : 0;
         const proc = tool11.processes ? tool11.processes[pIdx] : null;
+        const kpiIdx = kLink.kpiIdx !== undefined ? kLink.kpiIdx : 0;
+        const kpiInd = proc && proc.indicators ? proc.indicators[kpiIdx] : null;
+        const mIdx = kLink.monthIdx !== undefined ? kLink.monthIdx : getActiveMonthIdx(tool11);
         const newAct = {
           id: 'act-' + Date.now(),
+          kpiId: kpiInd ? kpiInd.id : undefined,
+          pIdx: pIdx,
+          iIdx: kpiIdx,
+          processId: proc ? proc.id : (kLink.procId || 'P1'),
+          monthLabel: getColumnLabel(tool11, mIdx),
+          date: new Date().toLocaleDateString('fr-FR'),
           procId: proc ? proc.id : (kLink.procId || 'P1'),
           procName: proc ? proc.name : '',
           kpiName: kLink.kpiName || session.problem,
@@ -9610,11 +9584,20 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       const ind = findKpiById(tool, act.kpiId);
       if (!ind) return { label: "Non lié", cls: "bg-slate-100 text-slate-500 border-slate-200" };
 
-      // Find last active month value
-      const nums = ind.months.map(m => parseKpiNumber(m)).filter(n => n !== null);
-      if (nums.length === 0) return { label: "En cours", cls: "bg-amber-100 text-amber-800 border-amber-300" };
-      
-      const lastVal = nums[nums.length - 1];
+      // Value of the first month after the closure (fallback: latest value when the closure date is unknown)
+      const closed = parseDeadlineToDate(act.closedAt);
+      let lastVal = null;
+      if (closed) {
+        const cols = getToolColumns(TOOLS_DATA["1.1"]);
+        const next = new Date(closed.getFullYear(), closed.getMonth() + 1, 1);
+        const idx = cols.findIndex(c => c.year === next.getFullYear() && c.month === next.getMonth());
+        lastVal = idx >= 0 ? parseKpiNumber(ind.months[idx]) : null;
+        if (lastVal === null) return { label: "À mesurer le mois suivant la clôture", cls: "bg-slate-100 text-slate-600 border-slate-200" };
+      } else {
+        const nums = ind.months.map(m => parseKpiNumber(m)).filter(n => n !== null);
+        if (nums.length === 0) return { label: "En cours", cls: "bg-amber-100 text-amber-800 border-amber-300" };
+        lastVal = nums[nums.length - 1];
+      }
       const target = ind.targetVal !== undefined ? ind.targetVal : parseKpiNumber(ind.target);
 
       if (target === null || target === undefined) {
@@ -9624,7 +9607,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       const isGood = (ind.goalDirection === "higher") ? (lastVal >= target) : (lastVal <= target);
       if (isGood) {
         return { 
-          label: `Efficacité démontrée (dernier constat : ${formatProcessChartVal(lastVal, ind.unit, false)})`, 
+          label: `Efficacité démontrée (${closed ? 'mois suivant la clôture' : 'dernier constat'} : ${formatProcessChartVal(lastVal, ind.unit, false)})`, 
           cls: "bg-emerald-100 text-emerald-900 border-emerald-300 font-bold" 
         };
       } else {
@@ -10089,7 +10072,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       } else if (e.key === 'Tab') {
         e.preventDefault();
         const nextM = e.shiftKey ? mIdx - 1 : mIdx + 1;
-        if (nextM >= 0 && nextM < 12) {
+        if (nextM >= 0 && nextM < getToolColumns(tool).length) {
           window.pendingKpiCellFocus = `${pIdx}_${iIdx}_${nextM}`;
         } else if (!e.shiftKey) {
           let nextP = pIdx;
@@ -10143,8 +10126,16 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     function updateKpiMonth(pIdx, iIdx, mIdx, val) {
       const tool = TOOLS_DATA["1.1"];
       const ind = tool.processes[pIdx].indicators[iIdx];
-      
-      ind.months[mIdx] = formatKpiInput(val, ind.unit);
+      const newVal = (val || '').trim() === '-' ? '' : formatKpiInput(val, ind.unit);
+      if (newVal === (ind.months[mIdx] || '')) {
+        const key = window.pendingKpiCellFocus;
+        window.pendingKpiCellFocus = null;
+        const cell = key && document.querySelector(`[data-kpi-cell="${key}"]`);
+        if (cell) { cell.focus(); handleKpiCellFocus(cell); }
+        return;
+      }
+
+      ind.months[mIdx] = newVal;
       tool.processes[pIdx].lastUpdated = new Date().toLocaleDateString('fr-FR') + " à " + new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
       
       saveLiveState();
@@ -10176,10 +10167,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
         const textToAnalyze = `${ind.name || ''} ${ind.target || ''}`;
         
         // 1. Valeur cible numérique
-        const num = parseKpiNumber(ind.target);
-        if (num !== null) {
-          ind.targetVal = num;
-        }
+        ind.targetVal = parseKpiNumber(ind.target);   // null when the target is cleared or not numeric
 
         // 2. Détection automatique du sens de la cible (Supérieur ou Inférieur)
         if (/[<≤]|max\b/i.test(ind.target)) {
@@ -10188,8 +10176,10 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
           ind.goalDirection = "higher";
         }
 
-        // 3. Détection automatique de l'unité et du type de consolidation
-        if (/%/.test(textToAnalyze)) {
+        // 3. Détection automatique de l'unité et du type de consolidation (seulement si aucune unité n'est définie)
+        if (ind.unit) {
+          // unit chosen at creation: never overwritten by a rename
+        } else if (/%/.test(textToAnalyze)) {
           ind.unit = "%";
           ind.calcType = "avg"; // Pourcentage = consolidation en moyenne
         } else if (/€|eur\b|chiffre|ca\b|tréso|marge|coût|cnq|prix|factur|avoir/i.test(textToAnalyze)) {
@@ -10397,7 +10387,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
                 <span class="text-[11px] font-bold text-emerald-900">${statusCfg.icon} ${statusCfg.label}</span>
                 <span class="text-[11px] text-slate-400 font-mono">(${formatDeadlineShort(latestAction.closedAt || latestAction.date)})</span>
               </div>
-              <span class="text-[11px] text-slate-600 block truncate font-medium">${latestAction.pilot || 'Pilote'} : ${latestAction.action}</span>
+              <span class="text-[11px] text-slate-600 block truncate font-medium">${escapeHtml(latestAction.pilot || 'Pilote')} : ${escapeHtml(latestAction.action)}</span>
             </div>
             <button onclick="event.stopPropagation(); openKpiActionModal(${pIdx}, ${iIdx}, null, true)" 
               class="text-[11px] font-bold text-slate-500 hover:text-delacour-primary bg-white hover:bg-slate-50 px-1.5 py-0.5 rounded border border-slate-200 transition shrink-0" 
@@ -10406,7 +10396,12 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
         `;
       }
 
-      // Case 4: Compliant and no actions
+      // Case 4: month not entered yet
+      if (autoStatus.isPending) {
+        return `<span class="text-[11px] text-slate-400 px-1">Valeur du mois à saisir</span>`;
+      }
+
+      // Case 5: Compliant and no actions
       return `
         <div class="flex items-center justify-between text-[11px] px-1 text-slate-500">
           <span class="text-emerald-700 font-bold flex items-center space-x-1">

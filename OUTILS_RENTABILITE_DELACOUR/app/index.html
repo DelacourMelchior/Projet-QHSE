@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full bg-slate-50">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>DELACOUR QUALITY OS | Suivi des Indicateurs par Processus</title>
+  <meta name="description" content="Plateforme opérationnelle de pilotage de la rentabilité et des 11 outils indispensables Cabinet Delacour.">
+  <meta name="theme-color" content="#1B4D3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            delacour: {
+              primary: '#1B4D3E',     // Vert Empire
+              dark: '#11352A',        // Vert Foncé
+              light: '#286854',       // Vert Sage
+              gold: '#C5A065',        // Or Métallique
+              goldlight: '#DFBF87',   // Or Clair
+              golddark: '#9E7A3E',    // Or Foncé
+              cream: '#FDFBF7',       // Fond Crème
+              slate: '#0F172A',
+            }
+          },
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'system-ui', '-apple-system', 'sans-serif'],
+            mono: ['"Fira Code"', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #F1F5F9; }
+    ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }
+    .gold-gradient { background: linear-gradient(135deg, #DFBF87 0%, #C5A065 50%, #9E7A3E 100%); }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: #C5A065; box-shadow: 0 0 0 3px rgba(197, 160, 101, 0.2); }
+  </style>
+</head>
+<body class="h-full flex flex-col font-sans text-slate-800 bg-slate-100 antialiased selection:bg-delacour-gold selection:text-white">
+
+  <!-- TOP BAR / HEADER -->
+  <header class="bg-delacour-primary text-white border-b border-delacour-gold/40 shadow-md sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      
+      <!-- Brand / Logo -->
+      <div class="flex items-center space-x-3 cursor-pointer" onclick="window.location.reload()">
+        <div class="w-10 h-10 rounded-lg gold-gradient flex items-center justify-center text-delacour-dark font-black text-xl shadow-inner">
+          D
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <span class="font-extrabold tracking-wider text-base uppercase">DELACOUR</span>
+            <span class="text-xs px-2 py-0.5 rounded bg-delacour-gold text-delacour-dark font-bold uppercase tracking-wider">PACK 11 ESSENTIEL</span>
+          </div>
+          <p class="text-[11px] text-slate-300 font-medium hidden sm:block">Système Opérationnel Réalité Terrain • Zéro Gras Administratif</p>
+        </div>
+      </div>
+
+      <!-- Enterprise Input & Total Fiches Counter -->
+      <div class="flex items-center space-x-4">
+        <div class="hidden sm:flex items-center space-x-2 bg-delacour-dark/70 px-3 py-1.5 rounded-lg border border-delacour-gold/30">
+          <svg class="w-3.5 h-3.5 text-delacour-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+          <span class="text-xs text-slate-300">Entreprise :</span>
+          <input id="clientNameInput" type="text" value="Entreprise Démo & Co." onchange="saveClientName(this.value)" class="bg-transparent text-white font-semibold text-xs focus:ring-0 border-b border-transparent hover:border-delacour-gold focus:border-delacour-gold px-1 py-0.5 transition w-44">
+        </div>
+
+        <div class="flex items-center space-x-3 bg-delacour-dark/50 px-3 py-1.5 rounded-lg border border-slate-700 text-xs text-slate-200">
+          <div class="flex items-center space-x-1.5">
+            <span>Fiches :</span>
+            <span id="totalFichesCounter" class="font-bold text-delacour-gold font-mono">0</span>
+          </div>
+          <div class="h-3 w-px bg-slate-700"></div>
+          <div class="flex items-center space-x-1.5 text-red-400">
+            <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+            <span>Alertes :</span>
+            <span id="totalAlertsCounter" class="font-bold font-mono">0</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- PROCESS-CENTRIC DASHBOARD CONTENT -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
+    
+    <!-- Title Banner -->
+    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div>
+        <div class="flex items-center space-x-2">
+          <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-delacour-primary/10 text-delacour-primary border border-delacour-primary/20">Système des 11 Outils Indispensables</span>
+          <span class="text-xs text-slate-500 font-medium">Pilotage PME & Contrôle d'Atelier • Version Durcie Terrain</span>
+        </div>
+        <h1 class="text-2xl font-black text-delacour-dark mt-1">Espace Opérationnel des 5 Processus Vitaux</h1>
+        <p class="text-sm text-slate-600">Outils directs sans complaisance : marge brute réelle, barrières qualité bloquantes, alertes de suppléance et pacte d'impunité.</p>
+      </div>
+
+      <div class="flex items-center space-x-3">
+        <a href="tool_page.html?tool=1.1" class="px-4 py-2 text-xs font-bold bg-delacour-primary hover:bg-delacour-dark text-white rounded-lg transition shadow-sm flex items-center space-x-1.5">
+          <span>📊 Tableau des KPI (1.1)</span>
+        </a>
+        <div class="w-full md:w-64">
+          <input id="searchToolsInput" type="text" oninput="filterProcessDashboard()" placeholder="Rechercher un outil..." class="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 bg-slate-50 focus:bg-white transition">
+        </div>
+      </div>
+    </div>
+
+    <!-- 5 PROCESS SECTIONS -->
+    <div id="processSectionsContainer" class="space-y-8">
+      <!-- Injected by JavaScript -->
+    </div>
+
+  </main>
+
+  <script>
+    const PROCESSUS = [
+      {
+        id: "P1", name: "P1 : Direction, Stratégie & Pilotage",
+        tagline: "Tableau de bord mensuel des KPI (avec source & cumul) et Plan B réactif sous 2h",
+        color: "border-emerald-500 text-emerald-800 bg-emerald-50",
+        badge: "bg-emerald-600 text-white",
+        tools: [
+          { id: "1.1", code: "OUTIL 1.1", title: "Tableau de Suivi Mensuel des Indicateurs (KPI)", sopRef: "DELACOUR-SOP-P1-01", desc: "Suivi mois par mois avec source obligatoire, cumul annuel automatique et pilote nominatif sur alerte rouge." },
+          { id: "1.2", code: "OUTIL 1.2", title: "Plan de Continuité & Solutions de Repli (Plan B)", sopRef: "DELACOUR-SOP-P1-02", desc: "Numéros d'urgence 24/7, emplacement des clés/mots de passe, commande sacrifiée en priorité et test réel annuel." }
+        ]
+      },
+      {
+        id: "P2", name: "P2 : Commercial, Vente & Contrats",
+        tagline: "Sécurisation de la marge devis, encaissement des avenants et traitement litiges 48h",
+        color: "border-blue-500 text-blue-800 bg-blue-50",
+        badge: "bg-blue-600 text-white",
+        tools: [
+          { id: "2.1", code: "OUTIL 2.1", title: "Grille de Faisabilité & Marge Devis", sopRef: "DELACOUR-SOP-P2-01", desc: "Marge brute intégrant sous-traitance et frais directs, vérification acompte 30% et visa obligatoire BE/Atelier." },
+          { id: "2.2", code: "OUTIL 2.2", title: "Fiche Réflexe Avenant & Accord Client", sopRef: "DELACOUR-SOP-P2-02", desc: "Générateur de SMS Flash pour accord client instantané sur smartphone et suivi de facturation comptable." },
+          { id: "2.3", code: "OUTIL 2.3", title: "Registre Réclamations & Alerte 48h", sopRef: "DELACOUR-SOP-P2-03", desc: "Chiffrage direct du coût du litige (€), pilote responsable nominatif et imputation du processus défaillant." }
+        ]
+      },
+      {
+        id: "P3", name: "P3 : Réalisation, Études & Opérations",
+        tagline: "Notation fournisseurs, refacturation des débits et barrière qualité atelier 95/5",
+        color: "border-purple-500 text-purple-800 bg-purple-50",
+        badge: "bg-purple-600 text-white",
+        tools: [
+          { id: "3.1", code: "OUTIL 3.1", title: "Notation Fournisseurs & Fiche Débit", sopRef: "DELACOUR-SOP-P3-01", desc: "Classification stratégique/standard, contrôle des réserves sur BL à réception et lettre de débit Word en 1 clic." },
+          { id: "3.2", code: "OUTIL 3.2", title: "Barrière Autocontrôle & Libération 95/5", sopRef: "DELACOUR-SOP-P3-02", desc: "Fiche suiveuse palette : 2 cotes critiques vitales max, contrôle bloquant 1ère pièce au démarrage et visa final." },
+          { id: "3.3", code: "OUTIL 3.3", title: "Fiche de Poste & Missions Opérationnelles", sopRef: "DELACOUR-SOP-P3-03", desc: "Répertoire complet des fiches de poste, sous-outil de création guidée, missions clés, suppléants désignés et critères de performance." }
+        ]
+      },
+      {
+        id: "P4", name: "P4 : Ressources Humaines & Organisation",
+        tagline: "Suppléances d'urgence opérationnelles et cartographie matricielle de polyvalence",
+        color: "border-amber-500 text-amber-800 bg-amber-50",
+        badge: "bg-amber-600 text-white",
+        tools: [
+          { id: "4.1", code: "OUTIL 4.1", title: "Matrice des Suppléances d'Urgence", sopRef: "DELACOUR-SOP-P4-01", desc: "Binômes nominatifs, pouvoir d'ordonnancement et alerte automatique 🔴 si pas de pratique réelle depuis > 90 jours." },
+          { id: "4.2", code: "OUTIL 4.2", title: "Matrice de Polyvalence (0 à 4)", sopRef: "DELACOUR-SOP-P4-02", desc: "Vue croisée postes × salariés, alerte rouge sur postes à homme-clé unique et suivi des primes de tutorat." }
+        ]
+      },
+      {
+        id: "P5", name: "P5 : Qualité, SSE & Amélioration",
+        tagline: "Quarantaine bac rouge sans complaisance et chiffrage choc du coût de non-qualité",
+        color: "border-rose-500 text-rose-800 bg-rose-50",
+        badge: "bg-rose-600 text-white",
+        tools: [
+          { id: "5.1", code: "OUTIL 5.1", title: "Protocole Quarantaine Bac Rouge", sopRef: "DELACOUR-SOP-P5-01", desc: "Bannière pacte d'impunité, causes racines immédiates et arbitrage obligatoire sous 24h chrono (rebut/retouche)." },
+          { id: "5.2", code: "OUTIL 5.2", title: "Chiffrage Coût Non-Qualité (€)", sopRef: "DELACOUR-SOP-P5-02", desc: "Calculateur de choc : CA compensatoire nécessaire (×20 à 5% marge) et suivi des factures clients bloquées en tréso." },
+          { id: "5.3", code: "OUTIL 5.3", title: "Trame d'Atelier 5 Pourquoi (Résolution à la Racine)", sopRef: "DELACOUR-SOP-P5-03", desc: "Résolution systémique de problème, règle du zéro blâme, test du 'DONC' à rebours et contre-mesure physique sous 7 jours." }
+        ]
+      }
+    ];
+
+    function saveClientName(val) {
+      localStorage.setItem('DELACOUR_CLIENT_NAME', val);
+    }
+
+    function getToolRecordsStats(toolId) {
+      try {
+        const raw = localStorage.getItem('DELACOUR_TOOL_RECORDS_' + toolId);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            let count = parsed.length;
+            let redCount = parsed.filter(r => r.status === 'rouge').length;
+            let orangeCount = parsed.filter(r => r.status === 'orange').length;
+            return { count, redCount, orangeCount };
+          }
+        }
+      } catch(e) {}
+      return { count: 1, redCount: 0, orangeCount: 0 };
+    }
+
+    function renderDashboard() {
+      const container = document.getElementById('processSectionsContainer');
+      const savedClient = localStorage.getItem('DELACOUR_CLIENT_NAME');
+      if (savedClient) {
+        document.getElementById('clientNameInput').value = savedClient;
+      }
+
+      container.innerHTML = '';
+      let globalFiches = 0;
+      let globalAlerts = 0;
+
+      PROCESSUS.forEach(proc => {
+        let processFichesCount = 0;
+        let processRedCount = 0;
+
+        proc.tools.forEach(t => {
+          const stats = getToolRecordsStats(t.id);
+          processFichesCount += stats.count;
+          processRedCount += stats.redCount;
+        });
+
+        globalFiches += processFichesCount;
+        globalAlerts += processRedCount;
+
+        const section = document.createElement('div');
+        section.className = "bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden space-y-4 p-6";
+
+        let toolsCardsHtml = proc.tools.map(t => {
+          const stats = getToolRecordsStats(t.id);
+          return `
+            <div onclick="window.location.href='tool_page.html?tool=${t.id}'" class="p-5 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-white hover:border-delacour-gold hover:shadow-md transition cursor-pointer flex flex-col justify-between group">
+              <div>
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-xs font-black px-2 py-0.5 rounded bg-delacour-primary text-white font-mono">${t.code}</span>
+                  <div class="flex items-center space-x-1.5">
+                    ${stats.redCount > 0 ? `<span class="px-1.5 py-0.5 text-[10px] font-black rounded-full bg-red-100 text-red-700 border border-red-300 flex items-center space-x-1"><span class="w-1.5 h-1.5 rounded-full bg-red-500"></span><span>${stats.redCount}</span></span>` : ''}
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${stats.count > 1 ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-slate-200 text-slate-700'}">${stats.count} fiche${stats.count > 1 ? 's' : ''}</span>
+                  </div>
+                </div>
+                <h3 class="text-sm font-extrabold text-slate-900 group-hover:text-delacour-primary transition line-clamp-1">${t.title}</h3>
+                <p class="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">${t.desc}</p>
+              </div>
+
+              <div class="mt-4 pt-3 border-t border-slate-200/80 flex items-center justify-between text-xs">
+                <span class="text-[10px] text-slate-400 font-mono">${t.sopRef}</span>
+                <span class="font-bold text-delacour-primary group-hover:text-delacour-gold flex items-center space-x-1">
+                  <span>Ouvrir l'Outil</span>
+                  <svg class="w-3.5 h-3.5 transform group-hover:translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                </span>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        section.innerHTML = `
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-2">
+            <div>
+              <div class="flex items-center space-x-2">
+                <span class="px-2.5 py-0.5 rounded text-xs font-black ${proc.badge}">${proc.id}</span>
+                <h2 class="text-lg font-black text-slate-900">${proc.name}</h2>
+              </div>
+              <p class="text-xs text-slate-500 mt-0.5">${proc.tagline}</p>
+            </div>
+            <div class="flex items-center space-x-3">
+              ${processRedCount > 0 ? `<span class="px-2.5 py-1 rounded-lg text-xs font-bold bg-red-100 text-red-800 border border-red-300 flex items-center space-x-1"><span class="w-2 h-2 rounded-full bg-red-600 animate-pulse"></span><span>${processRedCount} Alerte</span></span>` : ''}
+              <span class="px-2.5 py-1 rounded-lg text-xs font-extrabold bg-slate-100 text-slate-800 border border-slate-200">${processFichesCount} fiches actives</span>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            ${toolsCardsHtml}
+          </div>
+        `;
+
+        container.appendChild(section);
+      });
+
+      document.getElementById('totalFichesCounter').textContent = globalFiches;
+      document.getElementById('totalAlertsCounter').textContent = globalAlerts;
+    }
+
+    function filterProcessDashboard() {
+      const q = document.getElementById('searchToolsInput').value.toLowerCase().trim();
+      const container = document.getElementById('processSectionsContainer');
+      const sections = container.children;
+
+      for (let i = 0; i < sections.length; i++) {
+        const sec = sections[i];
+        const text = sec.innerText.toLowerCase();
+        if (!q || text.includes(q)) {
+          sec.style.display = 'block';
+        } else {
+          sec.style.display = 'none';
+        }
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', renderDashboard);
+  </script>
+</body>
+</html>

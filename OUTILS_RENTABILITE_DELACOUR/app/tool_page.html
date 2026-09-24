@@ -6321,13 +6321,12 @@
         container.innerHTML = `
           <div class="my-2 bg-slate-900 border-2 border-delacour-gold rounded-lg p-3 text-white flex items-center justify-between shadow-md">
             <div class="flex items-center space-x-3">
-              <span class="text-2xl">🛡️</span>
               <div>
-                <div class="font-extrabold text-xs uppercase tracking-wider text-delacour-gold">MODE AUDIT DE CERTIFICATION ISO 9001:2015 ACTIF</div>
-                <p class="text-[10px] text-slate-300 mt-0.5">Surveillance & Mesure (§9.1.1) • Revue de Direction (§9.3) • Clôture des Non-Conformités & Actions (§10.2) • Traçabilité horodatée.</p>
+                <div class="font-extrabold text-xs text-delacour-gold">MODE AUDIT DE CERTIFICATION ISO 9001:2015 ACTIF</div>
+                <p class="text-[11px] text-slate-300 mt-0.5">Surveillance & Mesure (§9.1.1) • Revue de Direction (§9.3) • Clôture des Non-Conformités & Actions (§10.2) • Traçabilité horodatée.</p>
               </div>
             </div>
-            <button onclick="toggleIsoAuditMode()" class="px-2.5 py-1 bg-white/20 hover:bg-white/30 text-white rounded text-[10px] font-bold">Quitter Mode Audit</button>
+            <button onclick="toggleIsoAuditMode()" class="px-2.5 py-1 bg-white/20 hover:bg-white/30 text-white rounded text-[11px] font-bold">Quitter Mode Audit</button>
           </div>
         `;
         return;
@@ -6336,10 +6335,9 @@
       if (tool.isKpiMatrix && isConfidentialMode) {
         container.innerHTML = `
           <div class="my-2 bg-blue-50 border-2 border-blue-500 rounded-lg p-2.5 text-blue-900 flex items-center space-x-3 shadow-sm">
-            <span class="text-xl shrink-0">👥</span>
             <div>
-              <div class="font-extrabold text-[11px] uppercase tracking-wide text-blue-950">MODE AFFICHAGE ATELIER / ÉQUIPE ACTIF</div>
-              <p class="text-[10px] leading-tight mt-0.5">Les données financières sensibles (Trésorerie et Taux de Marge) sont masquées pour préserver la confidentialité en réunion opérationnelle.</p>
+              <div class="font-extrabold text-[11px] text-blue-950">MODE AFFICHAGE ATELIER / ÉQUIPE ACTIF</div>
+              <p class="text-[11px] leading-tight mt-0.5">Les données financières sensibles (Trésorerie et Taux de Marge) sont masquées pour préserver la confidentialité en réunion opérationnelle.</p>
             </div>
           </div>
         `;
@@ -6349,10 +6347,9 @@
       if (tool.hasImpunityBanner) {
         container.innerHTML = `
           <div class="my-2 bg-emerald-50 border-2 border-emerald-500 rounded-lg p-2.5 text-emerald-900 flex items-center space-x-3 shadow-sm">
-            <span class="text-xl shrink-0">🛡️</span>
             <div>
-              <div class="font-extrabold text-[11px] uppercase tracking-wide text-emerald-950">PACTE D'IMPUNITÉ D'ATELIER DELACOUR</div>
-              <p class="text-[10px] leading-tight mt-0.5">Toute non-conformité déclarée spontanément au Bac Rouge = <strong>ZÉRO sanction</strong>. Tout défaut dissimulé découvert en aval ou chez le client = <strong>faute grave immédiate</strong>.</p>
+              <div class="font-extrabold text-[11px] text-emerald-950">PACTE D'IMPUNITÉ D'ATELIER DELACOUR</div>
+              <p class="text-[11px] leading-tight mt-0.5">Toute non-conformité déclarée spontanément au Bac Rouge = <strong>ZÉRO sanction</strong>. Tout défaut dissimulé découvert en aval ou chez le client = <strong>faute grave immédiate</strong>.</p>
             </div>
           </div>
         `;
@@ -6362,13 +6359,12 @@
         container.innerHTML = `
           <div class="my-2 bg-amber-50 border-2 border-amber-500 rounded-lg p-2.5 text-amber-900 flex items-center justify-between shadow-sm">
             <div class="flex items-center space-x-3">
-              <span class="text-xl shrink-0">⚡</span>
               <div>
-                <div class="font-extrabold text-[11px] uppercase tracking-wide text-amber-950">CHOC FINANCIER & CA COMPENSATOIRE (RATIO ×20)</div>
-                <p class="text-[10px] leading-tight mt-0.5">À 5% de marge nette : <strong>1 € de rebus = 20 € de nouveaux contrats à vendre</strong> pour compenser la perte sèche !</p>
+                <div class="font-extrabold text-[11px] text-amber-950">CHOC FINANCIER & CA COMPENSATOIRE (RATIO ×20)</div>
+                <p class="text-[11px] leading-tight mt-0.5">À 5% de marge nette : <strong>1 € de rebus = 20 € de nouveaux contrats à vendre</strong> pour compenser la perte sèche !</p>
               </div>
             </div>
-            <div class="bg-amber-500 text-white font-black text-[10px] px-2.5 py-1 rounded uppercase tracking-wider text-center shrink-0 ml-2">
+            <div class="bg-amber-500 text-white font-black text-[11px] px-2.5 py-1 rounded text-center shrink-0 ml-2">
               Chaque € économisé<br>= Trésorerie Nette
             </div>
           </div>
@@ -6576,7 +6572,7 @@
         });
       });
       if (orphanAlerts.length > 0) {
-        insights.unshift(`<strong>Verrou managérial :</strong> ${orphanAlerts.length} indicateur(s) en dérive sans pilote désigné (${orphanAlerts.map(escapeHtml).join(', ')}). Exigez un responsable nominatif avant vendredi.`);
+        insights.unshift(`<strong>Pilote à désigner :</strong> ${orphanAlerts.length} indicateur(s) en dérive sans pilote désigné (${orphanAlerts.map(escapeHtml).join(', ')}). Nommez un pilote et une échéance pour chacun.`);
       }
       let retouchesInd = findKpiById(tool, 'kpi_retouches');
       let otifInd = findKpiById(tool, 'kpi_otif');
@@ -6587,7 +6583,7 @@
       const otifTarget = otifInd?.targetVal ?? 95;
       const retouchesTarget = retouchesInd?.targetVal ?? 15;
       if (lastOtif !== null && lastOtif < otifTarget && lastRetouches !== null && lastRetouches > retouchesTarget) {
-        insights.push(`<strong>Goulet Atelier Détecté :</strong> Les ${lastRetouches} h de retouche (cible ${retouchesTarget} h) pénalisent directement le respect des délais clients (${lastOtif} % vs cible ${otifTarget} %). Priorité : fiabiliser les réglages et l'autocontrôle.`);
+        insights.push(`<strong>Goulet atelier :</strong> Les ${lastRetouches} h de retouche (cible ${retouchesTarget} h) pénalisent directement le respect des délais clients (${lastOtif} % vs cible ${otifTarget} %). Priorité : fiabiliser les réglages et l'autocontrôle.`);
       }
 
       const cnqInd = findKpiById(tool, 'kpi_cnq');
@@ -6600,7 +6596,7 @@
       let devisInd = findKpiById(tool, 'kpi_devis_attente');
       let lastDevis = devisInd ? parseKpiNumber(devisInd.months[activeMonthIdx]) : null;
       if (lastDevis !== null && lastDevis > 4) {
-        insights.push(`<strong>Risque Commercial :</strong> ${lastDevis} devis non relancés depuis plus de 7 jours (~${(lastDevis * pmeSettings.valeurMoyenneDevis).toLocaleString('fr-FR')} € d'affaires potentielles en sommeil, base ${pmeSettings.valeurMoyenneDevis.toLocaleString('fr-FR')} € / devis).`);
+        insights.push(`<strong>Risque commercial :</strong> ${lastDevis} devis non relancés depuis plus de 7 jours (~${(lastDevis * pmeSettings.valeurMoyenneDevis).toLocaleString('fr-FR')} € d'affaires potentielles en sommeil, base ${pmeSettings.valeurMoyenneDevis.toLocaleString('fr-FR')} € / devis).`);
       }
 
       // Run-Rate Annual Diagnostic (Dynamique PME)
@@ -6610,14 +6606,14 @@
         const annualTarget = pmeSettings.annualBudget || 600000;
         const diffPrj = projectedCa - annualTarget;
         if (diffPrj < -15000) {
-          insights.push(`<strong>Atterrissage Annuel en Retard :</strong> Au rythme actuel, l'exercice bouclera à ${projectedCa.toLocaleString('fr-FR')} € (${Math.abs(diffPrj).toLocaleString('fr-FR')} € de retard sur l'objectif annuel de ${Math.round(annualTarget / 1000)} k€).`);
+          insights.push(`<strong>Atterrissage annuel en retard :</strong> Au rythme actuel, l'exercice bouclera à ${projectedCa.toLocaleString('fr-FR')} € (${Math.abs(diffPrj).toLocaleString('fr-FR')} € de retard sur l'objectif annuel de ${Math.round(annualTarget / 1000)} k€).`);
         } else if (diffPrj > 20000) {
-          insights.push(`<strong>Atterrissage Annuel Favorable :</strong> Au rythme actuel, projection à ${projectedCa.toLocaleString('fr-FR')} € (+${diffPrj.toLocaleString('fr-FR')} € d'avance sur le budget annuel de ${Math.round(annualTarget / 1000)} k€).`);
+          insights.push(`<strong>Atterrissage annuel favorable :</strong> Au rythme actuel, projection à ${projectedCa.toLocaleString('fr-FR')} € (+${diffPrj.toLocaleString('fr-FR')} € d'avance sur le budget annuel de ${Math.round(annualTarget / 1000)} k€).`);
         }
       }
 
       if (insights.length === 0) {
-        insights.push(`<strong>Maîtrise Opérationnelle :</strong> L'ensemble des indicateurs est sous contrôle ce mois-ci, aligné avec les objectifs de marge et de délais.`);
+        insights.push(`<strong>Tout est sous contrôle :</strong> L'ensemble des indicateurs est sous contrôle ce mois-ci, aligné avec les objectifs de marge et de délais.`);
       }
 
       // 0.4 SYNTHÈSE DIRIGEANT (vue "Tous" uniquement) : 4 chiffres + messages d'analyse
@@ -6819,6 +6815,7 @@
             ${proc.lastUpdated ? `<span class="hidden sm:inline text-[11px] text-slate-500 no-print">Mis à jour le ${proc.lastUpdated}</span>` : ''}
           </div>
           <div class="flex items-center space-x-2 no-print">
+            <button onclick="toggleProcessChartPanel('${proc.id || ('P' + (pIdx + 1))}')" aria-expanded="${!!kpiChartsOpen[proc.id || ('P' + (pIdx + 1))]}" class="text-[11px] px-2.5 py-1 rounded-md font-bold border transition ${kpiChartsOpen[proc.id || ('P' + (pIdx + 1))] ? 'bg-delacour-primary text-white border-delacour-primary' : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'}">Graphique</button>
             <button onclick="openAddKpiModal(${pIdx})" class="text-[11px] bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-slate-900 px-2.5 py-1 rounded-md font-bold border border-slate-200 transition flex items-center space-x-1">
               <span>+</span> <span>Ajouter un KPI</span>
             </button>
@@ -6959,6 +6956,7 @@
                 </div>
                 <div class="mt-1 px-1 flex flex-wrap items-center gap-1 text-[11px] text-slate-500">
                   <span class="${badgeTypeClass} px-1.5 py-px rounded-full text-[11px] font-bold border">${ind.type}</span>
+                  ${isMasked ? '' : generateInlineSparkline(ind.months.slice(0, activeMonthIdx + 1), ind.goalDirection)}
                   <span class="whitespace-nowrap">Cible <span contenteditable="true" onblur="updateKpiField(${pIdx}, ${iIdx}, 'target', this.innerText)" class="outline-none focus:ring-1 focus:ring-delacour-gold rounded cursor-text font-mono font-bold text-slate-700">${isMasked ? '---' : escapeHtml(ind.target)}</span></span>
                 </div>
                 <div class="mt-1 px-1">${sourceCellContent}</div>
@@ -7036,7 +7034,7 @@
         }
         
         // RENDER DYNAMIC PROCESS CHART UNDER TABLE
-        renderProcessChart(procBox, proc, pIdx);
+        if (kpiChartsOpen[proc.id || ('P' + (pIdx + 1))]) renderProcessChart(procBox, proc, pIdx);
 
         container.appendChild(procBox);
       });
@@ -7054,6 +7052,13 @@
     // ==========================================================
     // INLINE SVG SPARKLINE GENERATOR (NO DEPENDENCY)
     // ==========================================================
+    // Process charts are opened on demand (one per process), so the page stays short
+    const kpiChartsOpen = {};
+    function toggleProcessChartPanel(procId) {
+      kpiChartsOpen[procId] = !kpiChartsOpen[procId];
+      renderDocumentPreservingScroll(TOOLS_DATA["1.1"]);
+    }
+
     function generateInlineSparkline(months, goalDirection) {
       const validPoints = [];
       months.forEach((m, idx) => {
@@ -7092,7 +7097,7 @@
       const lastY = ((h - pad) - ((last - min) / range) * (h - 2 * pad)).toFixed(1);
 
       return `
-        <svg class="inline-block shrink-0 ml-1 opacity-80 hover:opacity-100 transition" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" title="Tendance sur les mois saisis">
+        <svg class="inline-block shrink-0 opacity-90" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" role="img" aria-label="Tendance sur les mois saisis">
           <polyline fill="none" stroke="${stroke}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" points="${pts}" />
           <circle cx="${lastX}" cy="${lastY}" r="2.2" fill="${stroke}" />
         </svg>
@@ -7143,10 +7148,10 @@
       if (isNormalized) return Math.round(val) + " %";
       if (unit === "€") {
         if (Math.abs(val) >= 1000000) return (val / 1000000).toFixed(1).replace('.', ',') + " M€";
-        if (Math.abs(val) >= 1000) return (val / 1000).toFixed(1).replace('.', ',') + " k€";
+        if (Math.abs(val) >= 1000) return (val % 1000 === 0 ? String(val / 1000) : (val / 1000).toFixed(1).replace('.', ',')) + " k€";
         return Math.round(val) + " €";
       }
-      if (unit === "%") return val.toFixed(1).replace('.', ',') + " %";
+      if (unit === "%") return (Number.isInteger(val) ? String(val) : val.toFixed(1).replace('.', ',')) + " %";
       if (unit === "h") return val.toFixed(1).replace('.', ',') + " h";
       return val.toFixed(1).replace('.', ',') + (unit ? " " + unit : "");
     }
@@ -7548,17 +7553,17 @@
       intro.className = "flex items-center justify-between pb-2 border-b border-slate-100";
       intro.innerHTML = `
         <div>
-          <h3 class="text-xs font-black text-slate-800 uppercase tracking-wide">Vue Croisée des Compétences : Postes Vitaux × Salariés</h3>
-          <p class="text-[10px] text-slate-500">Niveaux : 0=Non formé | 1=Notions | 2=Guidé | 3=Autonome | 4=Formateur Tuteur</p>
+          <h3 class="text-xs font-black text-slate-800">Vue Croisée des Compétences : Postes Vitaux × Salariés</h3>
+          <p class="text-[11px] text-slate-500">Niveaux : 0=Non formé | 1=Notions | 2=Guidé | 3=Autonome | 4=Formateur Tuteur</p>
         </div>
-        <div class="flex items-center space-x-2 text-[10px]">
-          <span class="px-2 py-0.5 rounded bg-red-100 text-red-800 font-bold border border-red-300">🔴 Ligne Rouge = Homme-Clé Unique (&le; 1 Autonome)</span>
+        <div class="flex items-center space-x-2 text-[11px]">
+          <span class="px-2 py-0.5 rounded bg-red-100 text-red-800 font-bold border border-red-300">Ligne Rouge = Homme-Clé Unique (&le; 1 Autonome)</span>
         </div>
       `;
       box.appendChild(intro);
 
       const tableEl = document.createElement('table');
-      tableEl.className = "w-full min-w-[950px] text-[10.5px] border-collapse border border-slate-200";
+      tableEl.className = "w-full min-w-[950px] text-[11px] border-collapse border border-slate-200";
 
       let empThs = tool.employees.map((emp, idx) => `
         <th class="p-2 bg-slate-100 text-center font-bold text-slate-800 border border-slate-200 min-w-[85px]">
@@ -7597,8 +7602,8 @@
         }).join('');
 
         let riskBadge = isCriticalRisk 
-          ? `<span class="px-2 py-1 rounded-full text-[10px] font-black bg-red-100 text-red-800 border border-red-300 animate-pulse block text-center">🔴 HOMME-CLÉ UNIQUE</span>`
-          : `<span class="px-2 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 block text-center">🟢 Poste Sécurisé (${countAutonomes})</span>`;
+          ? `<span class="px-2 py-1 rounded-full text-[11px] font-black bg-red-100 text-red-800 border border-red-300 animate-pulse block text-center">HOMME-CLÉ UNIQUE</span>`
+          : `<span class="px-2 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 block text-center">Poste Sécurisé (${countAutonomes})</span>`;
 
         return `
           <tr class="${isCriticalRisk ? 'bg-red-50/40' : 'hover:bg-slate-50'}">
@@ -7628,7 +7633,7 @@
         <div class="flex space-x-2">
           <button onclick="addMatrixSkill()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1 rounded font-semibold border border-slate-300 transition">+ Ajouter un Poste Vital</button>
         </div>
-        <span class="text-[11px] text-slate-400 italic">Cliquez sur une case "Niv X" pour changer le niveau (0 ➔ 1 ➔ 2 ➔ 3 ➔ 4)</span>
+        <span class="text-[11px] text-slate-400 italic">Cliquez sur une case "Niv X" pour changer le niveau (0 → 1 → 2 → 3 → 4)</span>
       `;
       box.appendChild(actionRow);
 
@@ -7752,39 +7757,35 @@
       const barometreHtml = `
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs">
-            <div class="text-[10px] font-extrabold uppercase tracking-wide text-slate-500">Ateliers 5P Menés</div>
+            <div class="text-[11px] font-extrabold text-slate-500">Ateliers 5P Menés</div>
             <div class="text-xl sm:text-2xl font-black text-slate-900 mt-1 font-mono flex items-center justify-between">
               <span>${totalSessions}</span>
-              <span class="text-sm">🎯</span>
             </div>
-            <div class="text-[9.5px] text-slate-400 font-semibold mt-0.5">Résolution de problème terrain</div>
+            <div class="text-[11px] text-slate-400 font-semibold mt-0.5">Résolution de problème terrain</div>
           </div>
 
           <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs">
-            <div class="text-[10px] font-extrabold uppercase tracking-wide text-slate-500">Poka-Yokes Physiques</div>
+            <div class="text-[11px] font-extrabold text-slate-500">Poka-Yokes Physiques</div>
             <div class="text-xl sm:text-2xl font-black text-delacour-primary mt-1 font-mono flex items-center justify-between">
               <span>${pokaYokeCount}</span>
-              <span class="text-sm">🛡️</span>
             </div>
-            <div class="text-[9.5px] text-emerald-700 font-semibold mt-0.5">Détrompeurs indéréglables</div>
+            <div class="text-[11px] text-emerald-700 font-semibold mt-0.5">Détrompeurs indéréglables</div>
           </div>
 
           <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs">
-            <div class="text-[10px] font-extrabold uppercase tracking-wide text-slate-500">Actions Résolues</div>
+            <div class="text-[11px] font-extrabold text-slate-500">Actions Résolues</div>
             <div class="text-xl sm:text-2xl font-black text-amber-900 mt-1 font-mono flex items-center justify-between">
               <span>${doneCount}</span>
-              <span class="text-sm">⚡</span>
             </div>
-            <div class="text-[9.5px] text-amber-700 font-semibold mt-0.5">Engagement fixe sous 7j</div>
+            <div class="text-[11px] text-amber-700 font-semibold mt-0.5">Engagement fixe sous 7j</div>
           </div>
 
           <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs">
-            <div class="text-[10px] font-extrabold uppercase tracking-wide text-slate-500">Efficacité Pérenne PDCA</div>
+            <div class="text-[11px] font-extrabold text-slate-500">Efficacité Pérenne PDCA</div>
             <div class="text-xl sm:text-2xl font-black text-emerald-700 mt-1 font-mono flex items-center justify-between">
               <span>${effectiveRate}%</span>
-              <span class="text-sm">⭐</span>
             </div>
-            <div class="text-[9.5px] text-slate-500 font-semibold mt-0.5">${effectiveCount} confirmées à J+30</div>
+            <div class="text-[11px] text-slate-500 font-semibold mt-0.5">${effectiveCount} confirmées à J+30</div>
           </div>
         </div>
       `;
@@ -7794,15 +7795,15 @@
         <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-2.5 no-print">
           <div class="flex items-center space-x-2">
             <button onclick="openFiveWhysWorkshopModal(null)" class="px-4 py-2 bg-delacour-primary hover:bg-delacour-dark text-white text-xs font-black rounded-lg shadow-sm transition flex items-center space-x-2 shrink-0">
-              <span>➕</span>
+              <span></span>
               <span>Lancer un Atelier 5 Pourquoi</span>
             </button>
             <button onclick="openFiveWhysPrintSheet(null)" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg border border-slate-300 transition flex items-center space-x-1 shrink-0" title="Imprimer une trame vierge pour animation terrain">
-              <span>🖨️</span>
+              <span></span>
               <span class="hidden sm:inline">Trame Vierge A4</span>
             </button>
             <button onclick="switchTool('1.1')" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg border border-slate-300 transition flex items-center space-x-1 shrink-0" title="Retourner au Cockpit des Indicateurs KPIs (Outil 1.1)">
-              <span>📊</span>
+              <span></span>
               <span class="hidden sm:inline">Cockpit KPIs (1.1)</span>
             </button>
           </div>
@@ -7873,8 +7874,8 @@
       if (list.length === 0) {
         container.innerHTML = `
           <div class="p-8 text-center space-y-2">
-            <div class="text-3xl">🔍</div>
-            <div class="text-xs font-black uppercase text-slate-700">Aucune séance d'atelier 5 Pourquoi correspondante</div>
+            <div class="text-3xl"></div>
+            <div class="text-xs font-black text-slate-700">Aucune séance d'atelier 5 Pourquoi correspondante</div>
             <p class="text-[11px] text-slate-400">Cliquez sur « Lancer un Atelier 5 Pourquoi » pour résoudre un incident ou une dérive d'indicateur.</p>
           </div>
         `;
@@ -7885,21 +7886,21 @@
       tableEl.className = "w-full min-w-[980px] text-left border-collapse";
 
       const SOURCE_LABELS = {
-        "bac_rouge": { badge: "bg-rose-100 text-rose-900 border-rose-300", text: "📦 Bac Rouge (5.1)" },
-        "kpi": { badge: "bg-indigo-100 text-indigo-900 border-indigo-300", text: "📊 Dérive KPI (1.1)" },
-        "reclamation": { badge: "bg-amber-100 text-amber-900 border-amber-300", text: "🤝 Client (2.3)" },
-        "terrain": { badge: "bg-slate-100 text-slate-800 border-slate-300", text: "⚙️ Atelier" }
+        "bac_rouge": { badge: "bg-rose-100 text-rose-900 border-rose-300", text: "Bac Rouge (5.1)" },
+        "kpi": { badge: "bg-indigo-100 text-indigo-900 border-indigo-300", text: "Dérive KPI (1.1)" },
+        "reclamation": { badge: "bg-amber-100 text-amber-900 border-amber-300", text: "Client (2.3)" },
+        "terrain": { badge: "bg-slate-100 text-slate-800 border-slate-300", text: "Atelier" }
       };
 
       const STATUS_LABELS = {
-        "to_start": { pill: "bg-rose-50 text-rose-700 border-rose-200", dot: "bg-rose-600", text: "🔴 À lancer" },
-        "in_progress": { pill: "bg-amber-50 text-amber-700 border-amber-200", dot: "bg-amber-500", text: "🟡 En cours" },
-        "done": { pill: "bg-emerald-50 text-emerald-800 border-emerald-200", dot: "bg-emerald-600", text: "🟢 Réalisée (Sous 7j)" },
-        "effective": { pill: "bg-amber-50 text-amber-900 border-amber-300 font-black", dot: "", text: "⭐ Efficace (J+30)" }
+        "to_start": { pill: "bg-rose-50 text-rose-700 border-rose-200", dot: "bg-rose-600", text: "À lancer" },
+        "in_progress": { pill: "bg-amber-50 text-amber-700 border-amber-200", dot: "bg-amber-500", text: "En cours" },
+        "done": { pill: "bg-emerald-50 text-emerald-800 border-emerald-200", dot: "bg-emerald-600", text: "Réalisée (Sous 7j)" },
+        "effective": { pill: "bg-amber-50 text-amber-900 border-amber-300 font-black", dot: "", text: "Efficace (J+30)" }
       };
 
       let thead = `
-        <thead class="bg-slate-100 text-[10px] uppercase font-black text-slate-600 border-b border-slate-200">
+        <thead class="bg-slate-100 text-[11px] font-black text-slate-600 border-b border-slate-200">
           <tr>
             <th class="p-3 w-[150px]">Date & Origine</th>
             <th class="p-3 w-[260px]">Problème & Participants</th>
@@ -7929,28 +7930,28 @@
         const actionTypeBadge = s.plan5M?.length ?
           `<span class="text-[11px] font-bold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded">5M : ${[...new Set(s.plan5M.map(a => WORKSHOP_5M_DIMS[a.dim]))].join(', ')}</span>` :
           s.actionType === 'poka_yoke' ?
-          `<span class="text-[9px] font-black uppercase text-delacour-primary bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded">🛡️ Poka-Yoke</span>` :
-          `<span class="text-[9px] font-bold text-slate-600 bg-slate-100 px-1.5 py-0.2 rounded">Standard SOP</span>`;
+          `<span class="text-[11px] font-black text-delacour-primary bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded">Poka-Yoke</span>` :
+          `<span class="text-[11px] font-bold text-slate-600 bg-slate-100 px-1.5 py-0.2 rounded">Standard SOP</span>`;
 
         return `
           <tr class="hover:bg-slate-50/80 border-b border-slate-100 transition text-xs">
             <td class="p-3 align-top">
               <div class="font-mono font-bold text-slate-800 text-[11px]">${s.date || ''}</div>
-              <div class="font-mono font-black text-[10px] text-delacour-primary mt-0.5">${s.ncRef || 'NC'}</div>
-              <span class="inline-block mt-1 text-[9px] font-black px-1.5 py-0.5 rounded border ${srcCfg.badge}">${srcCfg.text}</span>
+              <div class="font-mono font-black text-[11px] text-delacour-primary mt-0.5">${s.ncRef || 'NC'}</div>
+              <span class="inline-block mt-1 text-[11px] font-black px-1.5 py-0.5 rounded border ${srcCfg.badge}">${srcCfg.text}</span>
             </td>
 
             <td class="p-3 align-top">
               <div class="font-black text-slate-900 leading-snug">${s.problem || s.constat || 'Sans titre'}</div>
-              <div class="text-[10px] text-slate-500 mt-1 flex items-center space-x-1">
-                <span>👥</span>
+              <div class="text-[11px] text-slate-500 mt-1 flex items-center space-x-1">
+                <span></span>
                 <span class="truncate">${s.participants || 'Équipe terrain'}</span>
               </div>
             </td>
 
             <td class="p-3 align-top">
-              <div class="bg-amber-50/70 border border-amber-200/80 rounded-lg p-2 text-[10.5px] text-amber-950 font-bold leading-tight">
-                <span class="text-[9px] uppercase tracking-wider text-amber-800 block mb-0.5">Pourquoi 5 :</span>
+              <div class="bg-amber-50/70 border border-amber-200/80 rounded-lg p-2 text-[11px] text-amber-950 font-bold leading-tight">
+                <span class="text-[11px] text-amber-800 block mb-0.5">Pourquoi 5 :</span>
                 ${s.why5 || s.rootCause || '<span class="italic text-slate-400">Non renseigné</span>'}
               </div>
             </td>
@@ -7959,7 +7960,7 @@
               <div class="space-y-1">
                 <div class="flex items-center space-x-1.5">
                   ${actionTypeBadge}
-                  ${s.cost ? `<span class="text-[9.5px] font-mono font-bold text-slate-600">${s.cost} € HT</span>` : ''}
+                  ${s.cost ? `<span class="text-[11px] font-mono font-bold text-slate-600">${s.cost} € HT</span>` : ''}
                 </div>
                 <div class="text-[11px] text-slate-800 font-medium leading-snug">
                   ${s.countermeasure || '<span class="italic text-slate-400">À définir</span>'}
@@ -7969,15 +7970,15 @@
 
             <td class="p-3 align-top">
               <div class="font-bold text-slate-800">${s.pilot || 'N/A'}</div>
-              <div class="text-[10.5px] font-mono mt-0.5 flex items-center space-x-1 ${isOverdue ? 'text-rose-600 font-black' : 'text-slate-500'}">
-                <span>📅</span>
+              <div class="text-[11px] font-mono mt-0.5 flex items-center space-x-1 ${isOverdue ? 'text-rose-600 font-black' : 'text-slate-500'}">
+                <span></span>
                 <span>${deadlineDisplay}</span>
               </div>
-              ${isOverdue ? `<span class="text-[8.5px] font-black uppercase text-rose-700 bg-rose-100 px-1 py-0.2 rounded mt-0.5 inline-block">Dépassé</span>` : ''}
+              ${isOverdue ? `<span class="text-[11px] font-black text-rose-700 bg-rose-100 px-1 py-0.2 rounded mt-0.5 inline-block">Dépassé</span>` : ''}
             </td>
 
             <td class="p-3 align-top">
-              <span class="inline-flex items-center space-x-1 px-2 py-1 rounded-full text-[10px] border ${stCfg.pill}">
+              <span class="inline-flex items-center space-x-1 px-2 py-1 rounded-full text-[11px] border ${stCfg.pill}">
                 ${stCfg.dot ? `<span class="w-1.5 h-1.5 rounded-full ${stCfg.dot}"></span>` : ''}
                 <span>${stCfg.text}</span>
               </span>
@@ -7986,13 +7987,13 @@
             <td class="p-3 align-top text-right no-print">
               <div class="flex items-center justify-end space-x-1">
                 <button onclick="openFiveWhysWorkshopModal('${s.id}')" class="p-1.5 text-delacour-primary hover:bg-delacour-primary/10 rounded-lg transition" title="Ouvrir / Animer l'Atelier">
-                  👁️
+                  
                 </button>
                 <button onclick="openFiveWhysPrintSheet('${s.id}')" class="p-1.5 text-slate-600 hover:bg-slate-100 rounded-lg transition" title="Fiche Affichage Terrain A4">
-                  🖨️
+                  
                 </button>
                 <button onclick="deleteFiveWhysSession('${s.id}')" class="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition" title="Supprimer">
-                  🗑️
+                  
                 </button>
               </div>
             </td>
@@ -9113,10 +9114,10 @@
         <div class="space-y-1.5 w-full">
           ${items.map((it, idx) => {
             const catBadge = it.category 
-              ? `<span class="px-1.5 py-0.5 rounded text-[8.5px] font-black uppercase tracking-wider border shrink-0 ${it.category.class}">${it.category.label}</span>`
+              ? `<span class="px-1.5 py-0.5 rounded text-[11px] font-black border shrink-0 ${it.category.class}">${it.category.label}</span>`
               : (isMulti 
-                  ? `<span class="px-1.5 py-0.5 rounded text-[8.5px] font-black uppercase tracking-wider border shrink-0 bg-slate-200 text-slate-700 border-slate-300">Solution ${idx + 1}</span>`
-                  : `<span class="px-1.5 py-0.5 rounded text-[8.5px] font-black uppercase tracking-wider border shrink-0 bg-slate-200 text-slate-700 border-slate-300">Solution</span>`);
+                  ? `<span class="px-1.5 py-0.5 rounded text-[11px] font-black border shrink-0 bg-slate-200 text-slate-700 border-slate-300">Solution ${idx + 1}</span>`
+                  : `<span class="px-1.5 py-0.5 rounded text-[11px] font-black border shrink-0 bg-slate-200 text-slate-700 border-slate-300">Solution</span>`);
 
             const onBlurSol = isMulti
               ? `updateMultiSolutionItem(${originalIdx}, ${idx}, this.innerText.trim())`
@@ -9125,7 +9126,7 @@
             return `
               <div data-sol-card="${originalIdx}_${idx}" class="flex items-center space-x-1.5 p-1.5 rounded-lg bg-slate-50 hover:bg-slate-100/80 border border-slate-200/90 min-h-[36px] transition shadow-2xs w-full">
                 ${catBadge}
-                <span contenteditable="true" onblur="${onBlurSol}" class="text-[10px] text-slate-800 font-medium leading-snug outline-none focus:ring-1 focus:ring-delacour-primary rounded flex-1">${escapeHtml(it.solution || solutionStr || '')}</span>
+                <span contenteditable="true" onblur="${onBlurSol}" class="text-[11px] text-slate-800 font-medium leading-snug outline-none focus:ring-1 focus:ring-delacour-primary rounded flex-1">${escapeHtml(it.solution || solutionStr || '')}</span>
               </div>
             `;
           }).join('')}
@@ -9142,8 +9143,7 @@
 
             return `
               <div data-pilot-card="${originalIdx}_${idx}" class="flex items-center justify-center p-1.5 rounded-lg bg-slate-50 border border-slate-200/90 min-h-[36px] shadow-2xs w-full">
-                <span class="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-white border border-slate-200 text-slate-800 text-[9.5px] font-bold shadow-2xs max-w-full" title="${escapeHtml(cleanP)}">
-                  <span class="text-xs text-slate-500">👤</span>
+                <span class="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-white border border-slate-200 text-slate-800 text-[11px] font-bold shadow-2xs max-w-full" title="${escapeHtml(cleanP)}">
                   <span contenteditable="true" onblur="${onBlurPilot}" class="outline-none focus:ring-1 focus:ring-delacour-primary rounded truncate max-w-[150px]">${escapeHtml(cleanP)}</span>
                 </span>
               </div>
@@ -9213,7 +9213,6 @@
         toolbarEl.innerHTML = `
           <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
             <div class="relative flex-1 max-w-md">
-              <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 text-xs">🔍</span>
               <input type="text" id="tool12_search_input" value="${escapeHtml(window.tool12SearchQuery)}" placeholder="Rechercher risque, cause racine, parade, pilote..." oninput="onTool12SearchInput(this.value)" class="w-full pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-delacour-primary focus:outline-none transition shadow-2xs">
             </div>
             
@@ -9224,17 +9223,17 @@
 
               <div class="inline-flex rounded-lg border border-slate-300 bg-white p-0.5 shadow-2xs">
                 <button type="button" onclick="setTool12ViewMode('table')" class="px-2.5 py-1 text-xs font-bold rounded-md transition ${window.tool12ViewMode === 'table' ? 'bg-delacour-primary text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'}">
-                  📊 Tableau
+                  Tableau
                 </button>
                 <button type="button" onclick="setTool12ViewMode('cards')" class="px-2.5 py-1 text-xs font-bold rounded-md transition ${window.tool12ViewMode === 'cards' ? 'bg-delacour-primary text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'}">
-                  🗂️ Fiches
+                  Fiches
                 </button>
               </div>
             </div>
           </div>
 
           <div class="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-200/60">
-            <span class="text-[10px] font-black uppercase text-slate-400 tracking-wider mr-1">Filtrer par Processus :</span>
+            <span class="text-[11px] font-black text-slate-400 mr-1">Filtrer par Processus :</span>
             ${procButtons}
           </div>
         `;
@@ -9252,7 +9251,7 @@
           tableContainer.className = "w-full overflow-x-auto custom-scroll-x border border-slate-200 rounded-xl p-2 bg-white shadow-2xs mb-3";
 
           const tableEl = document.createElement('table');
-          tableEl.className = "w-full min-w-[980px] text-[10.5px] border-collapse border border-slate-200";
+          tableEl.className = "w-full min-w-[980px] text-[11px] border-collapse border border-slate-200";
 
           const colGroupHtml = `
             <colgroup>
@@ -9275,7 +9274,7 @@
             trs = `
               <tr>
                 <td colspan="6" class="p-8 text-center text-slate-500 italic bg-slate-50">
-                  <div class="text-xl mb-1">🔍</div>
+                  <div class="text-xl mb-1"></div>
                   <div>Aucun risque ne correspond à vos filtres.</div>
                 </td>
               </tr>
@@ -9300,7 +9299,7 @@
                 <tr class="hover:bg-slate-50/80 transition-colors">
                   <!-- Col 0 : Processus -->
                   <td class="p-2.5 border border-slate-200 bg-white text-center align-top">
-                    <span contenteditable="true" onblur="updateCell(${originalIdx}, 0, this.innerText.trim())" class="px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider border ${procBadgeStyle} inline-block outline-none focus:ring-1 focus:ring-delacour-primary shadow-2xs">${escapeHtml(data.proc)}</span>
+                    <span contenteditable="true" onblur="updateCell(${originalIdx}, 0, this.innerText.trim())" class="px-2.5 py-1 rounded-md text-[11px] font-black border ${procBadgeStyle} inline-block outline-none focus:ring-1 focus:ring-delacour-primary shadow-2xs">${escapeHtml(data.proc)}</span>
                   </td>
 
                   <!-- Col 1 : Le problème -->
@@ -9310,7 +9309,7 @@
 
                   <!-- Col 2 : L'origine du problème (sans mention redondante cause 5 pourquoi) -->
                   <td class="p-2.5 border border-slate-200 bg-white align-top">
-                    <span contenteditable="true" onblur="updateCell(${originalIdx}, 2, this.innerText.trim())" class="text-[10.5px] text-slate-700 leading-relaxed block outline-none focus:ring-1 focus:ring-delacour-primary rounded">${escapeHtml(data.origine)}</span>
+                    <span contenteditable="true" onblur="updateCell(${originalIdx}, 2, this.innerText.trim())" class="text-[11px] text-slate-700 leading-relaxed block outline-none focus:ring-1 focus:ring-delacour-primary rounded">${escapeHtml(data.origine)}</span>
                   </td>
 
                   <!-- Col 3 : La ou les solutions (sans encart vert, affichage clair pour chaque) -->
@@ -9326,10 +9325,10 @@
                   <!-- Col 5 : Actions -->
                   <td class="p-2.5 border border-slate-200 bg-white text-center align-middle">
                     <div class="flex items-center justify-center space-x-1">
-                      <button type="button" onclick="editPlanBRow(${originalIdx})" title="✏️ Modifier ce risque avec l'assistant guidé" class="p-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 transition text-xs shadow-2xs font-bold" aria-label="Modifier">✏️</button>
-                      <button type="button" onclick="openReflexCardModal(${originalIdx})" title="🖨️ Fiche Réflexe d'Urgence A5 pour ce risque" class="p-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 transition text-xs shadow-2xs font-bold" aria-label="Fiche A5">🖨️</button>
-                      <button type="button" onclick="duplicatePlanBRow(${originalIdx})" title="📋 Dupliquer ce risque" class="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition text-xs shadow-2xs font-bold" aria-label="Dupliquer">📋</button>
-                      <button type="button" onclick="deletePlanBRow(${originalIdx})" title="🗑️ Supprimer ce risque" class="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 transition text-xs shadow-2xs font-bold" aria-label="Supprimer">🗑️</button>
+                      <button type="button" onclick="editPlanBRow(${originalIdx})" title="Modifier ce risque avec l'assistant guidé" class="p-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 transition text-xs shadow-2xs font-bold" aria-label="Modifier"></button>
+                      <button type="button" onclick="openReflexCardModal(${originalIdx})" title="Fiche Réflexe d'Urgence A5 pour ce risque" class="p-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 transition text-xs shadow-2xs font-bold" aria-label="Fiche A5"></button>
+                      <button type="button" onclick="duplicatePlanBRow(${originalIdx})" title="Dupliquer ce risque" class="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition text-xs shadow-2xs font-bold" aria-label="Dupliquer"></button>
+                      <button type="button" onclick="deletePlanBRow(${originalIdx})" title="Supprimer ce risque" class="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 transition text-xs shadow-2xs font-bold" aria-label="Supprimer"></button>
                     </div>
                   </td>
                 </tr>
@@ -9348,13 +9347,13 @@
         actionRow.innerHTML = `
           <div class="flex flex-wrap items-center gap-2">
             <button onclick="openWizardPlanBModal()" class="text-xs bg-delacour-primary hover:bg-delacour-dark text-white px-4 py-2 rounded-lg font-black shadow-sm transition flex items-center space-x-2">
-              <span>🪄 Nouveau Plan B (Assistant Guidé)</span>
+              <span>Nouveau Plan B (Assistant Guidé)</span>
             </button>
             <button type="button" onclick="exportToExcel()" class="inline-flex items-center space-x-1.5 text-xs bg-white hover:bg-emerald-50 text-slate-700 hover:text-emerald-900 px-3.5 py-2 rounded-lg font-bold border border-slate-300 hover:border-emerald-300 transition shadow-2xs cursor-pointer" title="Générer et télécharger le classeur Excel (.xlsx)">
-              <span>📊 Télécharger Excel</span>
+              <span>Télécharger Excel</span>
             </button>
           </div>
-          <span class="text-[11px] text-slate-400 font-medium">💡 Chaque nouveau risque doit être qualifié via l'assistant pour garantir un Plan B exploitable.</span>
+          <span class="text-[11px] text-slate-400 font-medium">Chaque nouveau risque doit être qualifié via l'assistant pour garantir un Plan B exploitable.</span>
         `;
         container.appendChild(actionRow);
         if (typeof syncSolutionsAndPilotsHeights === 'function') {
@@ -9371,7 +9370,7 @@
       tableContainer.className = "w-full overflow-x-auto custom-scroll-x border border-slate-200 rounded-xl p-2 bg-white shadow-2xs";
 
       const tableEl = document.createElement('table');
-      tableEl.className = "w-full min-w-[980px] text-[10.5px] border-collapse border border-slate-200";
+      tableEl.className = "w-full min-w-[980px] text-[11px] border-collapse border border-slate-200";
 
       let ths = tool.colHeaders.map((h) => {
         return `<th class="p-2 bg-slate-100 text-left font-bold text-slate-700 border border-slate-200">${h}</th>`;
@@ -11261,20 +11260,20 @@
           <!-- Header Bar -->
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-200">
             <div class="flex items-center space-x-3">
-              <div class="w-9 h-9 rounded-lg bg-delacour-primary flex items-center justify-center text-white font-black text-lg shadow-sm">💡</div>
+              <div class="w-9 h-9 rounded-lg bg-delacour-primary flex items-center justify-center text-white font-black text-lg shadow-sm"></div>
               <div>
                 <div class="flex flex-wrap items-center gap-2">
-                  <h3 class="text-xs sm:text-sm font-extrabold uppercase tracking-wide text-delacour-dark">Méthode de Remplissage : 4 Questions Réflexes & Boîte à Parades PME</h3>
+                  <h3 class="text-xs sm:text-sm font-extrabold text-delacour-dark">Méthode de Remplissage : 4 Questions Réflexes & Boîte à Parades PME</h3>
                 </div>
                 <p class="text-[11px] text-slate-500 mt-0.5">Comment remplir ce tableau facilement en équipe et trouver des solutions de repli réellement applicables sous 2h à 4h.</p>
               </div>
             </div>
             <div class="flex items-center space-x-2 shrink-0">
               <button onclick="openWizardPlanBModal()" class="inline-flex items-center space-x-1.5 px-3.5 py-1.5 bg-delacour-primary hover:bg-delacour-dark text-white rounded-lg text-xs font-black shadow-sm transition">
-                <span>🪄 Assistant Guidé : Formuler un Plan B</span>
+                <span>Assistant Guidé : Formuler un Plan B</span>
               </button>
               <button type="button" onclick="exportToExcel()" class="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-bold shadow-sm transition cursor-pointer" title="Générer et télécharger le classeur Excel (.xlsx)">
-                <span>📥 Classeur Excel (.xlsx)</span>
+                <span>Classeur Excel (.xlsx)</span>
               </button>
               <button onclick="toggleMethodHelperContent()" class="text-xs px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg border border-slate-300 transition" id="toggleHelperContentBtn">
                 ${isMethodHelper12Collapsed ? 'Afficher' : 'Masquer'}
@@ -11287,10 +11286,10 @@
             <!-- Tabs Header -->
             <div class="flex items-center space-x-2 border-b border-slate-200 pb-2 text-xs font-bold">
               <button id="tabBtnQuestions" onclick="switchHelperTab('questions')" class="px-3 py-1.5 rounded-lg ${activeHelperTab12 === 'questions' ? 'bg-delacour-primary text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'} transition flex items-center space-x-1">
-                <span>🎯 Les 4 Questions pour Remplir le Tableau</span>
+                <span>Les 4 Questions pour Remplir le Tableau</span>
               </button>
               <button id="tabBtnParades" onclick="switchHelperTab('parades')" class="px-3 py-1.5 rounded-lg ${activeHelperTab12 === 'parades' ? 'bg-delacour-primary text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'} transition flex items-center space-x-1">
-                <span>🧰 Boîte à Parades par Métier (Insertion 1-clic)</span>
+                <span>Boîte à Parades par Métier (Insertion 1-clic)</span>
               </button>
             </div>
 
@@ -11299,8 +11298,8 @@
               <!-- Step 1 -->
               <div class="p-3 bg-amber-50/70 border border-amber-200 rounded-lg space-y-1.5">
                 <div class="flex items-center justify-between">
-                  <span class="font-extrabold text-amber-950 uppercase tracking-wide text-[10.5px]">1. Le Goulet Vital</span>
-                  <span class="px-1.5 py-0.5 bg-amber-200 text-amber-900 rounded font-mono text-[9px] font-bold">Col 1</span>
+                  <span class="font-extrabold text-amber-950 text-[11px]">1. Le Goulet Vital</span>
+                  <span class="px-1.5 py-0.5 bg-amber-200 text-amber-900 rounded font-mono text-[11px] font-bold">Col 1</span>
                 </div>
                 <p class="font-bold text-slate-900 leading-snug">« Si ça s'arrête, à quelle heure la boîte ne peut plus facturer ? »</p>
                 <p class="text-slate-600 text-[11px] leading-relaxed">Si l'arrêt ne bloque pas l'entreprise sous 24h à 48h, <strong>ce n'est pas un risque vital</strong> : ne l'écrivez pas ici ! Gardez max 2 goulets mortels par processus. Chiffrez le coût d'arrêt (€/h ou €/j).</p>
@@ -11309,8 +11308,8 @@
               <!-- Step 2 -->
               <div class="p-3 bg-blue-50/70 border border-blue-200 rounded-lg space-y-1.5">
                 <div class="flex items-center justify-between">
-                  <span class="font-extrabold text-blue-950 uppercase tracking-wide text-[10.5px]">2. Le Temps Critique</span>
-                  <span class="px-1.5 py-0.5 bg-blue-200 text-blue-900 rounded font-mono text-[9px] font-bold">Col 5</span>
+                  <span class="font-extrabold text-blue-950 text-[11px]">2. Le Temps Critique</span>
+                  <span class="px-1.5 py-0.5 bg-blue-200 text-blue-900 rounded font-mono text-[11px] font-bold">Col 5</span>
                 </div>
                 <p class="font-bold text-slate-900 leading-snug">« Combien de temps peut-on tenir avant pénalités ou perte client ? »</p>
                 <p class="text-slate-600 text-[11px] leading-relaxed">Ex : <strong>2h</strong> pour un goulet chaud, <strong>4h</strong> pour une machine CNC, <strong>24h</strong> pour un incident bancaire. C'est le compte à rebours maximum pour basculer sur le Plan B.</p>
@@ -11319,11 +11318,11 @@
               <!-- Step 3 -->
               <div class="p-3 bg-emerald-50/70 border border-emerald-200 rounded-lg space-y-1.5">
                 <div class="flex items-center justify-between">
-                  <span class="font-extrabold text-emerald-950 uppercase tracking-wide text-[10.5px]">3. Les 4 Parades PME</span>
-                  <span class="px-1.5 py-0.5 bg-emerald-200 text-emerald-900 rounded font-mono text-[9px] font-bold">Col 2</span>
+                  <span class="font-extrabold text-emerald-950 text-[11px]">3. Les 4 Parades PME</span>
+                  <span class="px-1.5 py-0.5 bg-emerald-200 text-emerald-900 rounded font-mono text-[11px] font-bold">Col 2</span>
                 </div>
                 <p class="font-bold text-slate-900 leading-snug">« Quelle parade réaliste et immédiatement activable ? »</p>
-                <div class="text-slate-600 text-[10.5px] space-y-1 leading-snug">
+                <div class="text-slate-600 text-[11px] space-y-1 leading-snug">
                   <div>• <strong>Réciprocité Confrère :</strong> Capacité machine réservée à froid.</div>
                   <div>• <strong>Double Sourcing Actif :</strong> Compte pré-ouvert + 1 test/an.</div>
                   <div>• <strong>Mode Dégradé Convenu :</strong> Gamme simplifiée / tableur J-1.</div>
@@ -11334,11 +11333,11 @@
               <!-- Step 4 -->
               <div class="p-3 bg-rose-50/70 border border-rose-200 rounded-lg space-y-1.5">
                 <div class="flex items-center justify-between">
-                  <span class="font-extrabold text-rose-950 uppercase tracking-wide text-[10.5px]">4. Test du Verrou</span>
-                  <span class="px-1.5 py-0.5 bg-rose-200 text-rose-900 rounded font-mono text-[9px] font-bold">Cols 3, 4, 6</span>
+                  <span class="font-extrabold text-rose-950 text-[11px]">4. Test du Verrou</span>
+                  <span class="px-1.5 py-0.5 bg-rose-200 text-rose-900 rounded font-mono text-[11px] font-bold">Cols 3, 4, 6</span>
                 </div>
                 <p class="font-bold text-slate-900 leading-snug">« Les 3 détails qui empêchent de paniquer : »</p>
-                <div class="text-slate-600 text-[10.5px] space-y-1 leading-snug">
+                <div class="text-slate-600 text-[11px] space-y-1 leading-snug">
                   <div>• <strong>Contact 24/7 & Clé :</strong> Le 06 perso de l'expert + clés/codes.</div>
                   <div>• <strong>Commande Sacrifiée :</strong> Celle qui dégage d'office sans débat.</div>
                   <div>• <strong>Mandat sans Visa DG :</strong> Budget immédiat (1 500 €) déblocable.</div>
@@ -11349,13 +11348,13 @@
               <div class="col-span-1 md:col-span-2 lg:col-span-4 mt-1 p-3.5 bg-amber-500/10 border border-amber-300 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-3 shadow-2xs">
                 <div>
                   <div class="font-extrabold text-amber-950 text-xs flex items-center space-x-1.5">
-                    <span>🪄</span>
+                    <span></span>
                     <span>Passez de la théorie à l'action immédiate avec vos équipes</span>
                   </div>
                   <p class="text-[11px] text-slate-600 mt-0.5">L'assistant interactif vous pose ces 4 questions pas-à-pas et injecte directement votre ligne complète 7 colonnes dans le tableau.</p>
                 </div>
                 <button onclick="openWizardPlanBModal()" class="px-4 py-2 bg-delacour-primary hover:bg-delacour-dark text-white rounded-lg text-xs font-black shadow transition flex items-center space-x-1.5 shrink-0">
-                  <span>🪄 Lancer l'Assistant Guidé (4 Étapes)</span>
+                  <span>Lancer l'Assistant Guidé (4 Étapes)</span>
                 </button>
               </div>
             </div>
@@ -11527,36 +11526,36 @@
           <!-- Carte 1: Nb Risques Identifiés -->
           <div class="bg-indigo-50/70 border border-indigo-200 hover:border-indigo-400 rounded-xl p-3 shadow-2xs transition flex items-center justify-between">
             <div class="space-y-0.5">
-              <span class="text-[10px] font-black uppercase tracking-wider text-indigo-900 block flex items-center space-x-1">
-                <span>📋</span>
+              <span class="text-[11px] font-black text-indigo-900 block flex items-center space-x-1">
+                <span></span>
                 <span>Goulets & Risques Identifiés</span>
               </span>
               <div class="text-xl sm:text-2xl font-black text-indigo-950 font-mono">${totalIdentifies} <span class="text-xs font-bold text-slate-500">goulets</span></div>
-              <div class="text-[9.5px] text-indigo-700 font-medium">Cartographie vitale de l'entreprise (P1 à P5)</div>
+              <div class="text-[11px] text-indigo-700 font-medium">Cartographie vitale de l'entreprise (P1 à P5)</div>
             </div>
           </div>
 
           <!-- Carte 2: Nb Risques Traités (Plan B prêt) -->
           <div class="bg-emerald-50/70 border border-emerald-200 hover:border-emerald-400 rounded-xl p-3 shadow-2xs transition flex items-center justify-between">
             <div class="space-y-0.5">
-              <span class="text-[10px] font-black uppercase tracking-wider text-emerald-900 block flex items-center space-x-1">
-                <span>🛡️</span>
+              <span class="text-[11px] font-black text-emerald-900 block flex items-center space-x-1">
+                <span></span>
                 <span>Risques Traités (Plan B Prêt)</span>
               </span>
               <div class="text-xl sm:text-2xl font-black text-emerald-950 font-mono">${totalTraites} <span class="text-xs font-bold text-slate-500">/ ${totalIdentifies} (${traitesPct}%)</span></div>
-              <div class="text-[9.5px] text-emerald-700 font-medium">Parade négociée, astreinte et mandat validés</div>
+              <div class="text-[11px] text-emerald-700 font-medium">Parade négociée, astreinte et mandat validés</div>
             </div>
           </div>
 
           <!-- Carte 3: Pilotes & Rôles Déployés -->
           <div class="bg-blue-50/70 border border-blue-200 hover:border-blue-400 rounded-xl p-3 shadow-2xs transition flex items-center justify-between">
             <div class="space-y-0.5">
-              <span class="text-[10px] font-black uppercase tracking-wider text-blue-900 block flex items-center space-x-1">
-                <span>👥</span>
+              <span class="text-[11px] font-black text-blue-900 block flex items-center space-x-1">
+                <span></span>
                 <span>Pilotes & Rôles Déployés</span>
               </span>
               <div class="text-xl sm:text-2xl font-black text-blue-950 font-mono">${totalPilotes} <span class="text-xs font-bold text-slate-500">pilotes distincts</span></div>
-              <div class="text-[9.5px] text-blue-700 font-medium">Responsables opérationnels affectés aux plans de secours</div>
+              <div class="text-[11px] text-blue-700 font-medium">Responsables opérationnels affectés aux plans de secours</div>
             </div>
           </div>
         </div>
@@ -17455,7 +17454,7 @@
       if (g.steps && g.steps.length > 0) {
         stepsHtml = g.steps.map(s => `
           <div class="flex items-start space-x-2">
-            <span class="w-3.5 h-3.5 rounded-full bg-delacour-primary/10 text-delacour-primary flex items-center justify-center font-bold text-[9px] shrink-0 mt-0.5">✓</span>
+            <span class="w-3.5 h-3.5 rounded-full bg-delacour-primary/10 text-delacour-primary flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5"></span>
             <span>${s}</span>
           </div>
         `).join('');
@@ -17463,18 +17462,18 @@
 
       container.innerHTML = `
         <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
-          <h4 class="font-bold text-delacour-primary mb-0.5 text-xs">🎯 Objectif Vital de l'Outil</h4>
+          <h4 class="font-bold text-delacour-primary mb-0.5 text-xs">Objectif Vital de l'Outil</h4>
           <p>${g.objective}</p>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
           <div class="bg-white p-2.5 rounded-lg border border-slate-200">
-            <h4 class="font-bold text-slate-900 mb-0.5 text-xs">⏰ Quand l'utiliser ?</h4>
+            <h4 class="font-bold text-slate-900 mb-0.5 text-xs">Quand l'utiliser ?</h4>
             <p>${g.whenToUse}</p>
           </div>
 
           <div class="bg-white p-2.5 rounded-lg border border-slate-200">
-            <h4 class="font-bold text-slate-900 mb-0.5 text-xs">💡 Protocole en 3 étapes de terrain</h4>
+            <h4 class="font-bold text-slate-900 mb-0.5 text-xs">Protocole en 3 étapes de terrain</h4>
             <div class="space-y-1 mt-0.5">
               ${stepsHtml}
             </div>
@@ -17482,7 +17481,7 @@
         </div>
 
         <div class="bg-emerald-50/60 p-2.5 rounded-lg border border-emerald-200 text-emerald-900">
-          <h4 class="font-bold text-emerald-950 mb-0.5 text-xs">⭐ Règle d'Or & REX Cabinet Delacour</h4>
+          <h4 class="font-bold text-emerald-950 mb-0.5 text-xs">Règle d'Or & REX Cabinet Delacour</h4>
           <p class="italic">${g.rex}</p>
         </div>
       `;

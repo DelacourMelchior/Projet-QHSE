@@ -40,6 +40,6 @@ Voir `../SCENARIO_DEMO_OUTIL_1_1.md`. Pour afficher des données : **Mon entrepr
 
 ## Limites connues
 
-- Les outils 1.2 à 5.3 n'ont pas encore reçu la passe de fiabilité et de nettoyage visuel de l'outil 1.1.
+- Les outils 1.2 à 5.3 ont reçu le nettoyage visuel de leurs écrans principaux (voir `DESIGN_OUTILS.md`), mais pas encore celui de leurs fenêtres (assistants, fiches imprimables) ni la passe de fiabilité des calculs de l'outil 1.1.
 - Pas de connexion directe à Microsoft 365 ou Google (API) : le partage passe par le dossier synchronisé.
 - La saisie sur téléphone n'est possible que pour les données locales du navigateur.

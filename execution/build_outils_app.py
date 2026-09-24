@@ -71,21 +71,14 @@ def main():
         page = build_page((APP / name).read_text(encoding="utf-8"), css, xlsx_js if name == "tool_page.html" else "")
         (OUT / name).write_text(page, encoding="utf-8")
         print(f"{name}: {len(page) // 1024} Ko")
-    # Tool 1.1 rebuilt as its own app (OUTILS_RENTABILITE_DELACOUR/pilotage, React + TypeScript, built by Vite)
+    # Tool 1.1 is its own app (OUTILS_RENTABILITE_DELACOUR/pilotage, React + TypeScript, built by Vite).
+    # Copied next to the other pages in app/ (sources) and livrable/; tool_page.html redirects 1.1 to it.
     pilotage = ROOT / "pilotage" / "dist" / "index.html"
-    if pilotage.exists():
-        (OUT / "pilotage.html").write_text(pilotage.read_text(encoding="utf-8"), encoding="utf-8")
-        idx = OUT / "index.html"
-        html = idx.read_text(encoding="utf-8").replace("tool_page.html?tool=1.1", "pilotage.html")
-        # tool cards are built in a JS template literal: the link is interpolated when the card is rendered
-        html = html.replace("window.location.href='tool_page.html?tool=${t.id}'",
-                            "window.location.href='${t.id === '1.1' ? 'pilotage.html' : 'tool_page.html?tool=' + t.id}'")
-        if "${t.id === '1.1' ? 'pilotage.html'" not in html:
-            sys.exit("index.html: tool card link not found, tool 1.1 would open the old version")
-        idx.write_text(html, encoding="utf-8")
-        print(f"pilotage.html: {pilotage.stat().st_size // 1024} Ko (outil 1.1 reconstruit)")
-    else:
-        print("pilotage/dist absent : lancer `npm run build` dans OUTILS_RENTABILITE_DELACOUR/pilotage")
+    if not pilotage.exists():
+        sys.exit("pilotage/dist/index.html absent : lancer `npm run build` dans OUTILS_RENTABILITE_DELACOUR/pilotage")
+    for dest in (APP / "pilotage.html", OUT / "pilotage.html"):
+        dest.write_text(pilotage.read_text(encoding="utf-8"), encoding="utf-8")
+    print(f"pilotage.html: {pilotage.stat().st_size // 1024} Ko (outil 1.1)")
     print(f"OK -> {OUT}")
 
 

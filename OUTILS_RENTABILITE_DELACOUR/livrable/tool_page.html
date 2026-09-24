@@ -4447,9 +4447,13 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     // ==========================================================
     // PAGE INITIALIZATION
     // ==========================================================
+    // Tool 1.1 (monthly KPI dashboard) was rebuilt as its own app: pilotage.html
+    const PILOTAGE_URL = 'pilotage.html';
+
     function initPage() {
       const urlParams = new URLSearchParams(window.location.search);
       const toolParam = urlParams.get('tool');
+      if (!toolParam || toolParam === '1.1') { window.location.replace(PILOTAGE_URL); return; }
 
       const select = document.getElementById('toolSelectHeader');
       select.innerHTML = '';
@@ -4479,6 +4483,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     }
 
     function switchTool(newToolId) {
+      if (newToolId === '1.1') { window.location.href = PILOTAGE_URL; return; }
       if (!TOOLS_DATA[newToolId]) return;
       currentToolId = newToolId;
       window.history.pushState({}, '', `tool_page.html?tool=${newToolId}`);

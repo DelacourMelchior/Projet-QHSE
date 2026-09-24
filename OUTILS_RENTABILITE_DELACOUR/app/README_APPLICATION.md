@@ -6,10 +6,10 @@ Application de 13 outils de pilotage pour PME (indicateurs, plans B, devis, réc
 
 | Dossier | Contenu |
 |---|---|
-| `app/` | **Sources** : `index.html` (accueil) et `tool_page.html` (les 13 outils). Chargent Tailwind et SheetJS depuis un CDN, pour éditer vite. |
+| `app/` | **Sources** : `index.html` (accueil), `tool_page.html` (outils 1.2 à 5.3, chargent Tailwind et SheetJS depuis un CDN) et `pilotage.html` (outil 1.1, copie générée depuis `pilotage/`). |
 | `livrable/` | **Version à remettre au client**, générée : zéro appel externe, fonctionne hors connexion. Contient aussi le guide de déploiement client. |
-| `build/` | Outils de construction (Tailwind, SheetJS) et tests des calculs de l'ancien outil 1.1. |
-| `pilotage/` | **Outil 1.1 reconstruit** (React + TypeScript), livré en `livrable/pilotage.html`. Voir `pilotage/README.md`. |
+| `build/` | Outils de construction (Tailwind, SheetJS) et tests de l'ancien code 1.1 encore présent dans `tool_page.html`. |
+| `pilotage/` | **Outil 1.1** (React + TypeScript), livré en `pilotage.html`. Voir `pilotage/README.md`. `tool_page.html?tool=1.1` redirige vers lui. |
 
 ## Construire le livrable
 

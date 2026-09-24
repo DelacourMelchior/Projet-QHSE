@@ -77,10 +77,10 @@ def main():
         (OUT / "pilotage.html").write_text(pilotage.read_text(encoding="utf-8"), encoding="utf-8")
         idx = OUT / "index.html"
         html = idx.read_text(encoding="utf-8").replace("tool_page.html?tool=1.1", "pilotage.html")
-        # tool cards are built in JS: send tool 1.1 to the new app
+        # tool cards are built in a JS template literal: the link is interpolated when the card is rendered
         html = html.replace("window.location.href='tool_page.html?tool=${t.id}'",
-                            "window.location.href=(t.id === '1.1' ? 'pilotage.html' : 'tool_page.html?tool=' + t.id)")
-        if "pilotage.html' : 'tool_page.html?tool='" not in html:
+                            "window.location.href='${t.id === '1.1' ? 'pilotage.html' : 'tool_page.html?tool=' + t.id}'")
+        if "${t.id === '1.1' ? 'pilotage.html'" not in html:
             sys.exit("index.html: tool card link not found, tool 1.1 would open the old version")
         idx.write_text(html, encoding="utf-8")
         print(f"pilotage.html: {pilotage.stat().st_size // 1024} Ko (outil 1.1 reconstruit)")

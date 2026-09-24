@@ -199,7 +199,7 @@
         let toolsCardsHtml = proc.tools.map(t => {
           const stats = getToolRecordsStats(t.id);
           return `
-            <div onclick="window.location.href=(t.id === '1.1' ? 'pilotage.html' : 'tool_page.html?tool=' + t.id)" class="p-5 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-white hover:border-delacour-gold hover:shadow-md transition cursor-pointer flex flex-col justify-between group">
+            <div onclick="window.location.href='${t.id === '1.1' ? 'pilotage.html' : 'tool_page.html?tool=' + t.id}'" class="p-5 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-white hover:border-delacour-gold hover:shadow-md transition cursor-pointer flex flex-col justify-between group">
               <div>
                 <div class="flex items-center justify-between mb-2">
                   <span class="text-xs font-black px-2 py-0.5 rounded bg-delacour-primary text-white font-mono">${t.code}</span>

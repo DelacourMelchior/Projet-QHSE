@@ -6819,7 +6819,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
             ${proc.lastUpdated ? `<span class="hidden sm:inline text-[11px] text-slate-500 no-print">Mis à jour le ${proc.lastUpdated}</span>` : ''}
           </div>
           <div class="flex items-center space-x-2 no-print">
-            <button onclick="toggleProcessChartPanel('${proc.id || ('P' + (pIdx + 1))}')" aria-expanded="${!!kpiChartsOpen[proc.id || ('P' + (pIdx + 1))]}" class="text-[11px] px-2.5 py-1 rounded-md font-bold border transition ${kpiChartsOpen[proc.id || ('P' + (pIdx + 1))] ? 'bg-delacour-primary text-white border-delacour-primary' : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'}">Graphique</button>
+            <button onclick="toggleProcessChartPanel('${proc.id || ('P' + (pIdx + 1))}')" aria-expanded="${!kpiChartsHidden[proc.id || ('P' + (pIdx + 1))]}" class="text-[11px] px-2.5 py-1 rounded-md font-bold border transition bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200">${kpiChartsHidden[proc.id || ('P' + (pIdx + 1))] ? 'Afficher le graphique' : 'Masquer le graphique'}</button>
             <button onclick="openAddKpiModal(${pIdx})" class="text-[11px] bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-slate-900 px-2.5 py-1 rounded-md font-bold border border-slate-200 transition flex items-center space-x-1">
               <span>+</span> <span>Ajouter un KPI</span>
             </button>
@@ -6960,7 +6960,6 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
                 </div>
                 <div class="mt-1 px-1 flex flex-wrap items-center gap-1 text-[11px] text-slate-500">
                   <span class="${badgeTypeClass} px-1.5 py-px rounded-full text-[11px] font-bold border">${ind.type}</span>
-                  ${isMasked ? '' : generateInlineSparkline(ind.months.slice(0, activeMonthIdx + 1), ind.goalDirection)}
                   <span class="whitespace-nowrap">Cible <span contenteditable="true" onblur="updateKpiField(${pIdx}, ${iIdx}, 'target', this.innerText)" class="outline-none focus:ring-1 focus:ring-delacour-gold rounded cursor-text font-mono font-bold text-slate-700">${isMasked ? '---' : escapeHtml(ind.target)}</span></span>
                 </div>
                 <div class="mt-1 px-1">${sourceCellContent}</div>
@@ -7038,7 +7037,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
         }
         
         // RENDER DYNAMIC PROCESS CHART UNDER TABLE
-        if (kpiChartsOpen[proc.id || ('P' + (pIdx + 1))]) renderProcessChart(procBox, proc, pIdx);
+        if (!kpiChartsHidden[proc.id || ('P' + (pIdx + 1))]) renderProcessChart(procBox, proc, pIdx);
 
         container.appendChild(procBox);
       });
@@ -7056,10 +7055,10 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     // ==========================================================
     // INLINE SVG SPARKLINE GENERATOR (NO DEPENDENCY)
     // ==========================================================
-    // Process charts are opened on demand (one per process), so the page stays short
-    const kpiChartsOpen = {};
+    // Process charts are shown by default; the "Graphique" button hides or shows one
+    const kpiChartsHidden = {};
     function toggleProcessChartPanel(procId) {
-      kpiChartsOpen[procId] = !kpiChartsOpen[procId];
+      kpiChartsHidden[procId] = !kpiChartsHidden[procId];
       renderDocumentPreservingScroll(TOOLS_DATA["1.1"]);
     }
 

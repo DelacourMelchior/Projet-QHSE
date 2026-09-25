@@ -62,12 +62,12 @@ export function typicalRisks(profile: string): Risk[] {
   });
 }
 
-// ---- fictitious company: the 7 risks of the previous version, completed, with tests at various ages
-export function demoRisks(today = new Date()): { risks: State['risks']; actions: State['actions']; contacts: State['contacts'] } {
+// Example directory (every category): used by the demo, and offered when the directory is empty
+export function exampleContacts(today = new Date()): Contact[] {
   const ago = (days: number) => isoDate(new Date(today.getFullYear(), today.getMonth(), today.getDate() - days));
   const contact = (id: string, category: Contact['category'], name: string, role: string, company: string, phone: string, always: boolean, verified: number): Contact =>
     ({ id, category, name, role, company, phone, always, verifiedAt: ago(verified) });
-  const contacts = [
+  return [
     contact('ct_demo_it', 'prestataire', 'Support informatique', 'Intervention et restauration', 'Prestataire IT', '04 00 00 00 01', true, 40),
     contact('ct_demo_thomas', 'interne', 'Thomas M.', 'Informatique', 'Interne', '06 00 00 00 01', false, 40),
     contact('ct_demo_cyber', 'finance', 'Assistance cyber', 'Déclaration de sinistre', 'Assureur', '0 800 000 000', true, 40),
@@ -95,6 +95,12 @@ export function demoRisks(today = new Date()): { risks: State['risks']; actions:
     contact('ct_demo_clientB', 'client', 'Acheteur', 'Client B', 'Client B', '04 00 00 00 26', false, 180),
     contact('ct_demo_expert', 'finance', 'Cabinet comptable', 'Expert-comptable', 'Cabinet Comptable', '04 00 00 00 27', false, 60),
   ];
+}
+
+// ---- fictitious company: the 7 risks of the previous version, completed, with tests at various ages
+export function demoRisks(today = new Date()): { risks: State['risks']; actions: State['actions']; contacts: State['contacts'] } {
+  const ago = (days: number) => isoDate(new Date(today.getFullYear(), today.getMonth(), today.getDate() - days));
+  const contacts = exampleContacts(today);
   const base = (id: string, p: Partial<Risk>): Risk => ({ ...newRisk('P1', today), id, createdAt: ago(300), ratedBy: 'Jean-Marc', ratedAt: ago(300), ...p });
   const risks: Risk[] = [
     base('risk_demo_cyber', {

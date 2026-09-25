@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { CheckCircle2, Phone, Plus, Printer, Search, Trash2 } from 'lucide-react';
 import type { Contact, ContactCategory } from '../domain/types';
 import { CATEGORIES, contactLabel, toCheck } from '../domain/contacts';
+import { exampleContacts } from '../domain/riskTemplates';
 import { frDate, isoDate } from '../domain/periods';
 import { useStore } from '../store/StoreContext';
 import { Button, Card, inputCls } from './common';
@@ -34,6 +35,11 @@ export function Annuaire() {
       delete d.contacts[c.id];
       Object.values(d.risks).forEach(r => { r.contactIds = r.contactIds.filter(x => x !== c.id); r.notifyIds = r.notifyIds.filter(x => x !== c.id); });
     });
+  };
+  const fillExamples = () => {
+    const xs = exampleContacts();
+    update(d => { xs.forEach(c => { d.contacts[c.id] = c; }); });
+    setOrder(xs.sort((a, b) => contactLabel(a).localeCompare(contactLabel(b))).map(c => c.id));
   };
   const words = norm(q).split(/\s+/).filter(Boolean);
   const shown = all.filter(c => (filter === 'all' || (filter === 'always' ? c.always : toCheck(c)))
@@ -67,7 +73,12 @@ export function Annuaire() {
           ))}
         </div>
 
-        {all.length === 0 ? <p className="py-6 text-center text-xs text-slate-500">Aucun contact. Ajoutez le prestataire informatique, la banque, l'assureur, les confrères et les clients à prévenir.</p>
+        {all.length === 0 ? (
+          <div className="space-y-3 py-6 text-center">
+            <p className="text-xs text-slate-500">Aucun contact. Ajoutez le prestataire informatique, la banque, l'assureur, les confrères et les clients à prévenir.</p>
+            <Button kind="primary" onClick={fillExamples}>Remplir avec des exemples</Button>
+          </div>
+        )
           : shown.length === 0 ? <p className="py-6 text-center text-xs text-slate-500">Aucun contact ne correspond.</p> : (
             <div className="space-y-4 print:hidden">
               {CATEGORIES.map(cat => {

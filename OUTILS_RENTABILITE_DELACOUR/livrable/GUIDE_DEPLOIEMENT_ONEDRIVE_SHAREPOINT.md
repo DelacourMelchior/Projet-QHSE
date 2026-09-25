@@ -70,10 +70,10 @@ Conseil : sur chaque poste, faites un clic droit sur le dossier `donnees`, puis 
 
 - **À chaque ouverture**, le navigateur redemande l'accès au dossier : cliquez sur **Reconnecter le dossier** (en haut à droite). C'est une protection du navigateur.
 - **Trois outils**, choisis sous le nom de l'entreprise :
-  - **Indicateurs** : **Piloter** (synthèse, alertes, graphiques), **Saisir** (les chiffres du mois), **Agir** (plan d'actions et efficacité) ;
-  - **Plans B** : **Cartographie** (matrice de criticité, risques à coter, fiches réflexes en PDF), **Tests** (tous les 6 mois en zone rouge, chaque année en zone orange), **Agir** ;
+  - **Indicateurs** : **Piloter** (synthèse, alertes, graphiques), **Saisir** (les chiffres du mois), **Actions** (plan d'actions et efficacité) ;
+  - **Plans B** : **Risques** (matrice de criticité, risques à coter, prochain test de chaque Plan B, filtre « À tester », fiches réflexes en PDF) et **Actions** (préparation et réparation des Plans B) ;
   - **Annuaire** : les numéros de crise par catégorie, à imprimer pour l'accueil.
-- **Un seul plan d'actions** : l'écran Agir réunit les actions correctives des indicateurs et les actions de préparation des Plans B. Filtrez par origine si besoin.
+- **Un seul plan d'actions** : l'écran Actions montre celles de l'outil ouvert (indicateurs ou Plans B) ; le filtre permet de tout afficher.
 - **Cotez les risques ensemble** : Plans B, **Coter les risques**, puis gravité et probabilité de chaque risque (les définitions sont affichées ; montants et textes réglables dans Réglages). Les risques proposés par l'outil arrivent sans cotation.
 - **Fiches réflexes** : Plans B, **Fiches réflexes (PDF)**. Imprimez-les et gardez-en une copie papier près des postes : le jour d'une panne informatique, l'application peut être inaccessible.
 - **Annuaire** : chaque numéro n'est saisi qu'une fois et sert à toutes les fiches réflexes. Préférez les numéros professionnels et prévenez les personnes concernées (RGPD). Cochez **Contacts vérifiés** lors d'un test d'un Plan B : la date de vérification se met à jour.

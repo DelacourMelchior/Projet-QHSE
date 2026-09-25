@@ -1,8 +1,8 @@
 // Shell: header (company, tool, month, team/management view, storage, settings) + screens.
-// Tool 1.1 "Indicateurs": Piloter, Saisir, Agir. Tool 1.2 "Plans B" (#continuite): Cartographie, Tests, Agir.
-// Tool 1.3 "Annuaire" (#annuaire): the crisis directory, one screen. Agir is the single action register of 1.1 and 1.2.
+// Tool 1.1 "Indicateurs": Piloter, Saisir, Actions. Tool 1.2 "Plans B" (#continuite): Risques, Actions.
+// Tool 1.3 "Annuaire" (#annuaire): the crisis directory, one screen. Actions is the single action register of 1.1 and 1.2 (filtered on the current tool).
 import { useEffect, useState } from 'react';
-import { ArrowLeft, CalendarCheck, ChevronLeft, ChevronRight, Eye, EyeOff, FolderSync, Grid3x3, LayoutDashboard, ListChecks, PenLine, SlidersHorizontal } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, Eye, EyeOff, FolderSync, Grid3x3, LayoutDashboard, ListChecks, PenLine, SlidersHorizontal } from 'lucide-react';
 import type { Action, Risk } from '../domain/types';
 import { newRisk, riskSummary } from '../domain/risk';
 import { isoDate } from '../domain/periods';
@@ -17,11 +17,10 @@ import { ActionSheet, newAction } from './ActionSheet';
 import { KpiDetail } from './KpiDetail';
 import { Settings } from './Settings';
 import { Risques } from './Risques';
-import { Tests } from './Tests';
 import { RiskSheet } from './RiskSheet';
 import { Annuaire } from './Annuaire';
 
-type Screen = 'piloter' | 'saisir' | 'agir' | 'risques' | 'tests' | 'annuaire';
+type Screen = 'piloter' | 'saisir' | 'agir' | 'risques' | 'annuaire';
 type Tool = 'kpi' | 'risk' | 'dir';
 const TOOLS: Record<Tool, { label: string; hash: string; first: Screen; title: string }> = {
   kpi: { label: 'Indicateurs', hash: '', first: 'piloter', title: 'Tableau de pilotage mensuel' },
@@ -45,7 +44,8 @@ export function App() {
 
   const ps = timelinePeriods(state);
   const syn = synthesis(state, period);
-  const late = Object.values(state.actions).filter(a => isOverdue(a)).length;
+  // late actions of the current tool only (the register is filtered the same way)
+  const late = Object.values(state.actions).filter(a => isOverdue(a) && (tool === 'risk') === !!a.riskId).length;
   const openAction = (id: string) => { setKpiOpen(null); setRisk(null); setAction(state.actions[id]); };
   const startAction = (kpiId: string, riskId?: string) => {
     setKpiOpen(null); setRisk(null);
@@ -61,14 +61,13 @@ export function App() {
   const rsum = riskSummary(state);
   const forcedTeam = folder.status === 'connected' && !folder.hasDirection;
 
-  const agir = { id: 'agir' as Screen, label: 'Agir', icon: ListChecks, badge: late || undefined, badgeTone: 'bg-red-600' };
+  const agir = { id: 'agir' as Screen, label: 'Actions', icon: ListChecks, badge: late || undefined, badgeTone: 'bg-red-600' };
   const TABS: { id: Screen; label: string; icon: typeof LayoutDashboard; badge?: number; badgeTone?: string }[] = tool === 'kpi' ? [
     { id: 'piloter', label: 'Piloter', icon: LayoutDashboard, badge: syn.alerts.length || undefined, badgeTone: 'bg-red-600' },
     { id: 'saisir', label: 'Saisir', icon: PenLine, badge: syn.total - syn.filled || undefined, badgeTone: 'bg-slate-500' },
     agir,
   ] : tool === 'risk' ? [
-    { id: 'risques', label: 'Cartographie', icon: Grid3x3, badge: rsum.byState.uncovered || undefined, badgeTone: 'bg-red-600' },
-    { id: 'tests', label: 'Tests', icon: CalendarCheck, badge: rsum.toTest || undefined, badgeTone: 'bg-amber-600' },
+    { id: 'risques', label: 'Risques', icon: Grid3x3, badge: rsum.byState.uncovered || undefined, badgeTone: 'bg-red-600' },
     agir,
   ] : [];
 
@@ -138,10 +137,9 @@ export function App() {
         {teamView && tool !== 'dir' && <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-900 print:hidden">Vue équipe : les montants confidentiels (chiffre d'affaires, marge, trésorerie, coût des arrêts…) sont masqués.</p>}
         {screen === 'piloter' && <Piloter onOpenKpi={setKpiOpen} onNewAction={startAction} onOpenAction={openAction} goSaisir={() => setScreen('saisir')} />}
         {screen === 'saisir' && <Saisir done={() => setScreen('piloter')} />}
-        {screen === 'agir' && <Agir onOpenAction={openAction} onNewAction={startAction} />}
+        {screen === 'agir' && <Agir key={tool} onOpenAction={openAction} onNewAction={startAction} defaultOrigin={tool === 'risk' ? 'risk' : 'kpi'} />}
         {screen === 'risques' && <Risques onOpenRisk={openRisk} onNewRisk={() => setRisk({ r: newRisk(state.processes[0]?.id || 'P1'), step: 0 })} onOpenDirectory={() => setTool('dir')} />}
         {screen === 'annuaire' && <Annuaire />}
-        {screen === 'tests' && <Tests onOpenRisk={openRisk} />}
       </main>
 
       {kpiOpen && <KpiDetail kpiId={kpiOpen} onClose={() => setKpiOpen(null)} onOpenAction={openAction} onNewAction={startAction} />}

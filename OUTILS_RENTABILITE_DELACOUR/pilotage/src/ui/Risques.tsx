@@ -1,10 +1,10 @@
 // Tool 1.2, screen "Cartographie": are we ready? Summary, messages, criticality matrix with its rules,
 // risks to rate, rating session for the whole team, reflex cards in PDF, link to the crisis directory (tool 1.3).
 import { useMemo, useState } from 'react';
-import { BookUser, ChevronRight, FileDown, Plus, Printer, SlidersVertical } from 'lucide-react';
+import { BookUser, CalendarCheck, ChevronRight, FileDown, Plus, Printer, SlidersVertical } from 'lucide-react';
 import type { Risk, Scale, State } from '../domain/types';
 import {
-  gravityScale, lastTest, likelihoodScale, riskInsights, riskState, riskSummary, risksInOrder, STATE_INFO, ZONE_RULES, zoneOf,
+  gravityScale, lastTest, likelihoodScale, testDueDate, riskInsights, riskState, riskSummary, risksInOrder, STATE_INFO, ZONE_RULES, zoneOf,
 } from '../domain/risk';
 import { applyPlansBExample, typicalRisks } from '../domain/riskTemplates';
 import { PROFILES, type ProfileKey } from '../domain/templates';
@@ -17,12 +17,14 @@ import { ScalePicker, ScoreBadge, ZONE_STYLE } from './RiskSheet';
 import { reflexCardsPdf } from '../domain/reflexPdf';
 import { downloadFile } from './download';
 
+const TO_TEST = ['failed', 'expired', 'ready'];
 const TONE = { good: 'border-emerald-200 bg-emerald-50 text-emerald-900', warn: 'border-amber-200 bg-amber-50 text-amber-950', bad: 'border-red-200 bg-red-50 text-red-900' };
 
-export function Risques({ onOpenRisk, onNewRisk, onOpenDirectory }: { onOpenRisk(id: string): void; onNewRisk(): void; onOpenDirectory(): void }) {
+export function Risques({ onOpenRisk, onNewRisk, onOpenDirectory }: { onOpenRisk(id: string, step?: number): void; onNewRisk(): void; onOpenDirectory(): void }) {
   const { state, update, teamView, author } = useStore();
   const [cell, setCell] = useState<[number, number] | null>(null);
   const [rating, setRating] = useState<string[] | null>(null);   // frozen order while rating, so rows do not jump
+  const [toTest, setToTest] = useState(false);
   const legacy = useMemo(() => legacyLocalRisks(), []);
   if (!state) return null;
   const risks = risksInOrder(state);
@@ -51,8 +53,11 @@ export function Risques({ onOpenRisk, onNewRisk, onOpenDirectory }: { onOpenRisk
     );
   }
 
+  const needsTest = (r: Risk) => TO_TEST.includes(riskState(state, r));
+  const testCount = risks.filter(needsTest).length;
   const shown = rating ? rating.map(id => state.risks[id]).filter(Boolean)
-    : cell ? risks.filter(r => r.gravity === cell[0] && r.likelihood === cell[1]) : risks;
+    : cell ? risks.filter(r => r.gravity === cell[0] && r.likelihood === cell[1])
+    : toTest ? risks.filter(needsTest) : risks;
   return (
     <div className="space-y-4">
       <Summary s={state} team={teamView} />
@@ -91,12 +96,24 @@ export function Risques({ onOpenRisk, onNewRisk, onOpenDirectory }: { onOpenRisk
               <h2 className="text-xs font-bold text-slate-900">Cotation des risques</h2>
               <ScaleLegend s={state} money={!teamView} />
             </div>
-          ) : <h2 className="text-xs font-bold text-slate-900">Risques par criticité <span className="font-normal text-slate-500">{shown.length}</span></h2>}
-          {shown.length === 0 ? <p className="py-6 text-center text-xs text-slate-500">Aucun risque dans cette case.</p> : (
+          ) : (
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-xs font-bold text-slate-900">Risques par criticité <span className="font-normal text-slate-500">{shown.length}</span></h2>
+              <div className="flex gap-1.5 print:hidden">
+                {([[false, 'Tous', risks.length], [true, 'À tester', testCount]] as const).map(([v, l, n]) => (
+                  <button key={l} type="button" onClick={() => { setCell(null); setToTest(v); }} aria-pressed={toTest === v && !cell}
+                    className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${toTest === v && !cell ? 'border-delacour-primary bg-delacour-primary text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'}`}>
+                    {l} <span className="opacity-75">{n}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          {shown.length === 0 ? <p className="py-6 text-center text-xs text-slate-500">{toTest ? 'Aucun Plan B à tester : tout est à jour.' : 'Aucun risque dans cette case.'}</p> : (
             <ul className="divide-y divide-slate-100">
               {shown.map(r => rating
                 ? <RateRow key={r.id} s={state} r={r} money={!teamView} rate={p => rate(r.id, p)} />
-                : <RiskRow key={r.id} s={state} r={r} open={() => onOpenRisk(r.id)} />)}
+                : <RiskRow key={r.id} s={state} r={r} open={() => onOpenRisk(r.id)} test={() => onOpenRisk(r.id, 3)} />)}
             </ul>
           )}
         </Card>
@@ -211,13 +228,25 @@ function ScaleLegend({ s, money }: { s: State; money: boolean }) {
   );
 }
 
-function RiskRow({ s, r, open }: { s: State; r: Risk; open(): void }) {
-  const st = STATE_INFO[riskState(s, r)];
+// Next test of a Plan B, in words ('' when no test is required)
+function testLine(s: State, r: Risk): { text: string; late: boolean } {
+  const state = riskState(s, r);
   const t = lastTest(r);
+  if (state === 'failed') return { text: `Test raté le ${frDate(t!.date)}`, late: true };
+  if (state === 'expired') return { text: `Test en retard (dû le ${frDate(testDueDate(r))})`, late: true };
+  if (state === 'tested') return { text: `Prochain test avant le ${frDate(testDueDate(r))}`, late: false };
+  if (state === 'ready' || state === 'preparing') return { text: 'Jamais testé', late: state === 'ready' };
+  return { text: '', late: false };
+}
+
+function RiskRow({ s, r, open, test }: { s: State; r: Risk; open(): void; test(): void }) {
+  const state = riskState(s, r);
+  const st = STATE_INFO[state];
+  const tl = testLine(s, r);
   const proc = s.processes.find(p => p.id === r.processId);
   return (
-    <li>
-      <button type="button" onClick={open} className="flex w-full items-center gap-3 px-1 py-2.5 text-left hover:bg-slate-50">
+    <li className="flex items-center gap-1">
+      <button type="button" onClick={open} className="flex min-w-0 flex-1 items-center gap-3 px-1 py-2.5 text-left hover:bg-slate-50">
         <ScoreBadge r={r} />
         <span className="min-w-0 flex-1">
           <span className="line-clamp-2 block text-xs font-semibold text-slate-900 sm:truncate">{r.title || 'Sans titre'}</span>
@@ -225,11 +254,12 @@ function RiskRow({ s, r, open }: { s: State; r: Risk; open(): void }) {
         </span>
         <span className="hidden shrink-0 text-right text-[11px] text-slate-600 sm:block">
           <span className="block font-semibold text-slate-800">{r.owner || <span className="text-red-700">À désigner</span>}</span>
-          {t ? `Test ${t.ok ? 'réussi' : 'raté'} le ${frDate(t.date)}` : 'Jamais testé'}
+          <span className={tl.late ? 'font-semibold text-red-700' : ''}>{tl.text}</span>
         </span>
         <span className="shrink-0"><StatusBadge level={st.tone} text={st.label} /></span>
         <ChevronRight size={16} className="shrink-0 text-slate-400 print:hidden" />
       </button>
+      {tl.text && <Button kind="ghost" onClick={test} title="Enregistrer le résultat d'un test du Plan B" className="shrink-0 !px-2 print:hidden"><CalendarCheck size={14} /><span className="hidden lg:inline">Test</span></Button>}
     </li>
   );
 }

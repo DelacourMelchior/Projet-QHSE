@@ -36,14 +36,16 @@ export function Agir({ onOpenAction, onNewAction, defaultOrigin = 'all' }: { onO
       <Card className="space-y-3 p-3 sm:p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <h2 className="text-sm font-bold text-slate-900">Plan d'actions</h2>
-            <p className="text-[11px] text-slate-500">Indicateurs et Plans B dans un seul plan. Efficacité : le mois qui suit la clôture (indicateur) ou le test suivant (Plan B).</p>
+            <h2 className="text-sm font-bold text-slate-900">Actions</h2>
+            <p className="text-[11px] text-slate-500">{origin === 'risk' ? "Ce qu'il faut faire pour qu'un Plan B soit prêt ou réparé. Qui, quoi, pour quand."
+              : origin === 'kpi' ? 'Ce qu\'il faut faire pour ramener un indicateur dans sa cible. Qui, quoi, pour quand.'
+              : 'Toutes les actions : indicateurs et Plans B. Qui, quoi, pour quand.'}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2 print:hidden">
             <select value={newKpi} onChange={e => setNewKpi(e.target.value)} aria-label="Origine de la nouvelle action" className="max-w-[220px] rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs">
-              <option value="">Indicateur ou risque…</option>
-              {Object.keys(state.kpis).length > 0 && <optgroup label="Indicateurs">{kpisInOrder(state).map(k => <option key={k.id} value={`k:${k.id}`}>{k.name}</option>)}</optgroup>}
-              {Object.keys(state.risks).length > 0 && <optgroup label="Risques (Plans B)">{risksInOrder(state).map(r => <option key={r.id} value={`r:${r.id}`}>{r.title}</option>)}</optgroup>}
+              <option value="">{origin === 'risk' ? 'Risque…' : origin === 'kpi' ? 'Indicateur…' : 'Indicateur ou risque…'}</option>
+              {origin !== 'risk' && Object.keys(state.kpis).length > 0 && <optgroup label="Indicateurs">{kpisInOrder(state).map(k => <option key={k.id} value={`k:${k.id}`}>{k.name}</option>)}</optgroup>}
+              {origin !== 'kpi' && Object.keys(state.risks).length > 0 && <optgroup label="Risques (Plans B)">{risksInOrder(state).map(r => <option key={r.id} value={`r:${r.id}`}>{r.title}</option>)}</optgroup>}
             </select>
             <Button kind="primary" disabled={!newKpi} onClick={() => newKpi.startsWith('r:') ? onNewAction('', newKpi.slice(2)) : onNewAction(newKpi.slice(2))}><Plus size={14} />Nouvelle action</Button>
             <Button onClick={() => window.print()}><Printer size={14} />Imprimer</Button>
@@ -72,7 +74,7 @@ export function Agir({ onOpenAction, onNewAction, defaultOrigin = 'all' }: { onO
             <table className="w-full min-w-[820px] border-separate border-spacing-0 text-left text-xs">
               <thead>
                 <tr className="text-[11px] text-slate-500">
-                  {['Mois', 'Origine', 'Plan', 'Pilote', 'Échéance', 'Statut', 'Efficacité'].map(h => <th key={h} className="border-b border-slate-200 px-2 py-2 font-semibold">{h}</th>)}
+                  {['Mois', origin === 'risk' ? 'Risque' : origin === 'kpi' ? 'Indicateur' : 'Origine', 'Plan', 'Pilote', 'Échéance', 'Statut', 'Efficacité'].map(h => <th key={h} className="border-b border-slate-200 px-2 py-2 font-semibold">{h}</th>)}
                 </tr>
               </thead>
               <tbody>

@@ -3,7 +3,7 @@
 - **Indicateurs (1.1)** : tableau de pilotage mensuel d'une PME : synthèse dirigeant, saisie du mois, plan d'actions (5 pourquoi + 5M) et mesure d'efficacité.
 - **Plans B (1.2)**, ouvert par `pilotage.html#continuite` : cartographie des risques vitaux (matrice gravité × probabilité avec la règle de chaque zone, risques à coter, séance de cotation), fiche risque en 4 étapes, tests des Plans B, fiches réflexes en PDF.
 - **Annuaire (1.3)**, ouvert par `pilotage.html#annuaire` : les numéros à appeler, par catégorie, avec la date de vérification ; les fiches réflexes des Plans B y prennent leurs contacts.
-- **Agir** : un seul plan d'actions pour les deux outils (actions correctives d'indicateurs et actions de préparation des Plans B).
+- **Actions** : un seul plan d'actions pour les deux outils, filtré sur l'outil ouvert (actions correctives d'indicateurs et actions de préparation des Plans B).
 
 Remplace les outils 1.1 et 1.2 de `../app/tool_page.html` ; le 1.3 est nouveau.
 
@@ -25,7 +25,7 @@ python3 ../../execution/build_outils_app.py   # met à jour ../livrable/ (depuis
 |---|---|
 | `src/domain/` | **Métier, sans interface** : types, périodes, nombres, moteur de calcul des indicateurs (`engine.ts` : statuts, bilans, tendance, dérive lente, efficacité, messages) et des risques (`risk.ts` : criticité, état du Plan B, tests, exposition), reprise de l'ancienne version, exemple et listes par métier (`templates.ts`, `riskTemplates.ts`). Testé. |
 | `src/store/` | **Stockage** : clés synchronisées, navigateur (`localStorage`), dossier partagé (un fichier par personne, dossier `direction` séparé), contexte React. Testé. |
-| `src/ui/` | **Écrans** : mise en route, Piloter, Saisir, Agir, fiche action, détail d'un indicateur, réglages, graphique ; pour le 1.2 : Cartographie (`Risques.tsx`), fiche risque, aperçu de fiche réflexe, Tests ; pour le 1.3 : Annuaire. |
+| `src/ui/` | **Écrans** : mise en route, Piloter, Saisir, Actions (`Agir.tsx`), fiche action, détail d'un indicateur, réglages, graphique ; pour le 1.2 : Risques (`Risques.tsx`, avec le prochain test de chaque Plan B), fiche risque, aperçu de fiche réflexe ; pour le 1.3 : Annuaire. |
 | `scripts/extract-templates.cjs` | Extraction unique de l'exemple et des listes par métier depuis l'ancienne version (`src/domain/legacy-templates.json`). |
 
 ## Principes

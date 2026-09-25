@@ -6,7 +6,7 @@ import type { Risk, Scale, State } from '../domain/types';
 import {
   gravityScale, lastTest, likelihoodScale, riskInsights, riskState, riskSummary, risksInOrder, STATE_INFO, ZONE_RULES, zoneOf,
 } from '../domain/risk';
-import { typicalRisks } from '../domain/riskTemplates';
+import { applyPlansBExample, typicalRisks } from '../domain/riskTemplates';
 import { PROFILES, type ProfileKey } from '../domain/templates';
 import { formatValue } from '../domain/numbers';
 import { frDate, isoDate } from '../domain/periods';
@@ -45,6 +45,7 @@ export function Risques({ onOpenRisk, onNewRisk, onOpenDirectory }: { onOpenRisk
           <Button kind="primary" onClick={() => addAll(typicalRisks(profile))}>Partir des 8 risques fréquents ({PROFILES[profile]})</Button>
           <Button onClick={onNewRisk}><Plus size={14} />Ajouter un risque</Button>
           {legacy.length > 0 && <Button onClick={() => addAll(legacy)}>Reprendre les {legacy.length} risques de l'ancienne version</Button>}
+          <Button onClick={() => update(d => applyPlansBExample(d))}>Voir un exemple traité</Button>
         </div>
       </Card>
     );
@@ -62,7 +63,8 @@ export function Risques({ onOpenRisk, onNewRisk, onOpenDirectory }: { onOpenRisk
         <span className="mx-1 hidden h-5 w-px bg-slate-300 sm:block" />
         <Button onClick={onOpenDirectory}><BookUser size={14} />Annuaire</Button>
         <Button onClick={cardsPdf}><FileDown size={14} />Fiches réflexes (PDF)</Button>
-        <Button kind="ghost" onClick={() => window.print()} aria-label="Imprimer la cartographie" className="sm:ml-auto"><Printer size={14} />Imprimer</Button>
+        <Button kind="ghost" onClick={() => { if (window.confirm('Remplacer vos risques par 9 risques d\'exemple entièrement traités ? Vos indicateurs ne changent pas.')) update(d => applyPlansBExample(d)); }} className="sm:ml-auto">Remplir avec des exemples</Button>
+        <Button kind="ghost" onClick={() => window.print()} aria-label="Imprimer la cartographie"><Printer size={14} />Imprimer</Button>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[320px_1fr]">

@@ -190,3 +190,12 @@ export function demoRisks(today = new Date()): { risks: State['risks']; actions:
   const byId = <T extends { id: string }>(xs: T[]) => Object.fromEntries(xs.map(x => [x.id, x]));
   return { risks: byId(risks), actions: byId(actions), contacts: byId(contacts) };
 }
+
+// Replaces the Plans B of a state by the treated examples (risks, their actions, contacts); indicators untouched
+export function applyPlansBExample(d: State, today = new Date()) {
+  const ex = demoRisks(today);
+  Object.values(d.actions).filter(a => a.riskId).forEach(a => { delete d.actions[a.id]; });
+  d.risks = ex.risks;
+  Object.assign(d.actions, ex.actions);
+  Object.assign(d.contacts, ex.contacts);
+}

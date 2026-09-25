@@ -105,6 +105,9 @@ export interface RiskTest {
 export type ContactCategory = 'secours' | 'interne' | 'prestataire' | 'fournisseur' | 'client' | 'finance' | 'autre';
 
 // Crisis directory (tool 1.3), used by the reflex cards of the Plans B
+// One line of the reflex card: when, what, who
+export interface ReflexStep { when: string; what: string; who: string }
+
 export interface Contact {
   id: string;
   category: ContactCategory;
@@ -152,7 +155,11 @@ export interface Risk {
   relay: string;          // who or what takes over
   activation: Duration | null;  // time to get the Plan B working
   // 4. lock and test (the reflex card)
-  firstHour: string;      // actions of the first hour, one per line
+  trigger: string;        // who decides to start the Plan B
+  steps: ReflexStep[];    // what is done, in order, by whom
+  holdFor: Duration | null;     // how long the Plan B can last
+  clientMessage: string;  // message ready to send to the customers
+  recovery: string;       // when and how to go back to normal
   contactIds: string[];   // who to call (crisis directory)
   notifyIds: string[];    // who to inform: customers, insurer…
   access: string;         // where keys, codes, documents are

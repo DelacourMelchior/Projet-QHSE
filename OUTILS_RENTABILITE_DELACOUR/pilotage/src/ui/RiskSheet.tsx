@@ -1,7 +1,7 @@
 // Risk sheet (tool 1.2), 4 steps: what stops, why and how serious, Plan B, reflex card and test.
 import { useState } from 'react';
-import { Check, FileDown, Lightbulb, Phone, Plus, Trash2, X } from 'lucide-react';
-import type { Contact, Duration, DurationUnit, Risk, RiskCost, Scale, State } from '../domain/types';
+import { ArrowUp, Check, FileDown, Lightbulb, Phone, Plus, Trash2, X } from 'lucide-react';
+import type { Contact, Duration, DurationUnit, ReflexStep, Risk, RiskCost, Scale, State } from '../domain/types';
 import {
   actionsOfRisk, gravityScale, likelihoodScale, lossPerEvent, planBGain, riskState, riskZone, score, STATE_INFO, suggestedGravity, testDueDate,
   ZONE_LABEL, zoneOf, type ScaleLevel,
@@ -31,8 +31,7 @@ export function ScoreBadge({ r, className = '' }: { r: Pick<Risk, 'gravity' | 'l
   return <span title={`Criticité ${sc} / 16 : ${ZONE_LABEL[zoneOf(sc)]}`} className={`${cls} ${ZONE_STYLE[zoneOf(sc)]}`}>{sc}</span>;
 }
 
-const STEPS = ['Ce qui s\'arrête', 'Pourquoi, cotation', 'Plan B', 'Fiche réflexe et test'];
-const textArea = `${inputCls} min-h-[96px] resize-y`;
+const STEPS = ['Ce qui s\'arrête', 'Pourquoi, cotation', 'Plan B et fiche réflexe', 'Test'];
 const today = () => isoDate(new Date());
 const emptyTest = () => ({ date: today(), ok: null as boolean | null, note: '', delay: null as Duration | null, contactsChecked: false });
 
@@ -98,7 +97,7 @@ export function RiskSheet({ initial, startStep = 0, onClose, onNewAction, onOpen
   const pdf = () => downloadFile(`Fiche-reflexe-${fileSlug(r.title)}.pdf`, cardPdf(withR, r, { company: state.settings.companyName, by: author, date: new Date() }), 'application/pdf');
 
   return (
-    <Modal wide onClose={close}
+    <Modal xwide onClose={close}
       title={isNew ? 'Nouveau risque' : r.title || 'Risque'}
       subtitle={<span className="flex flex-wrap items-center gap-1.5"><ScoreBadge r={r} className="!h-5 !w-5 !text-[11px]" />{zone ? `Criticité ${score(r)} / 16` : 'À coter'} · <StatusBadge level={st.tone} text={st.label} /></span>}
       footer={<>
@@ -129,9 +128,9 @@ export function RiskSheet({ initial, startStep = 0, onClose, onNewAction, onOpen
               </select>
             </Field>
             <Field label="Ressource vitale concernée" hint="Machine, personne, fournisseur, logiciel, client…"><input className={inputCls} value={r.resource} onChange={e => set({ resource: e.target.value })} /></Field>
-            <Field label="Comment s'en aperçoit-on ?" hint="Le signal qui déclenche le Plan B."><input className={inputCls} value={r.signal} onChange={e => set({ signal: e.target.value })} /></Field>
             <DurationInput label="Arrêt tolérable au maximum" hint="Au-delà, les clients ou la trésorerie sont touchés." value={r.maxOutage} onChange={v => set({ maxOutage: v })} />
             <Field label="Responsable du risque (obligatoire)"><input className={inputCls} value={r.owner} list="risk-people" onChange={e => set({ owner: e.target.value })} /></Field>
+            <Field label="Suppléant du responsable"><input className={inputCls} value={r.deputy} list="risk-people" onChange={e => set({ deputy: e.target.value })} /></Field>
           </section>
         )}
 
@@ -177,8 +176,9 @@ export function RiskSheet({ initial, startStep = 0, onClose, onNewAction, onOpen
         )}
 
         {step === 2 && (
-          <section className="space-y-3">
-            <PartTitle n="1" title="Le jour J : ce qu'on fait" text="La consigne à appliquer quand le risque survient. Elle figure sur la fiche réflexe." />
+          <section className="grid gap-4 lg:grid-cols-[1fr_360px]">
+           <div className="min-w-0 space-y-3">
+            <PartTitle n="A" title="Le jour J : ce qu'on fait" text="Remplissez dans l'ordre : la fiche réflexe se construit à droite." />
             <div className="space-y-1.5">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[11px] font-semibold text-slate-700">Famille de parade</span>
@@ -202,12 +202,40 @@ export function RiskSheet({ initial, startStep = 0, onClose, onNewAction, onOpen
                 </div>
               )}
             </div>
-            <Field label="Plan B" hint="Vide = risque non couvert."><textarea className={textArea} value={r.planB} onChange={e => set({ planB: e.target.value })} /></Field>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Relais (qui ou quoi prend le relais)"><input className={inputCls} value={r.relay} onChange={e => set({ relay: e.target.value })} /></Field>
-              <DurationInput label="Délai d'activation du Plan B" hint={r.maxOutage ? `Arrêt tolérable : ${formatDuration(r.maxOutage)}.` : 'Renseignez l\'arrêt tolérable (étape 1) pour comparer.'} value={r.activation} onChange={v => set({ activation: v })} />
-            </div>
+            <Field label="Le Plan B en une phrase" hint="Vide = risque non couvert."><input className={inputCls} value={r.planB} placeholder="Ex. : usinage chez le confrère grâce à l'accord de réciprocité" onChange={e => set({ planB: e.target.value })} /></Field>
+            <Field label="Relais (qui ou quoi prend le relais)"><input className={inputCls} value={r.relay} onChange={e => set({ relay: e.target.value })} /></Field>
+
+            <Part n="1" title="Déclencher">
+              <div className="grid gap-2 sm:grid-cols-2">
+                <Field label="Signal : comment s'en aperçoit-on ?"><input className={inputCls} value={r.signal} onChange={e => set({ signal: e.target.value })} /></Field>
+                <Field label="Qui décide de lancer le Plan B"><input className={inputCls} value={r.trigger} list="risk-people" onChange={e => set({ trigger: e.target.value })} /></Field>
+              </div>
+            </Part>
+            <Part n="2" title="Dérouler : les étapes, dans l'ordre">
+              <StepsEditor steps={r.steps} onChange={steps => set({ steps })} />
+              <DurationInput label="Plan B opérationnel en" hint={r.maxOutage ? `Arrêt tolérable : ${formatDuration(r.maxOutage)}.` : 'Renseignez l\'arrêt tolérable (étape 1) pour comparer.'} value={r.activation} onChange={v => set({ activation: v })} />
+            </Part>
             {slow && <p role="alert" className="rounded-lg bg-red-50 px-2.5 py-1.5 text-[11px] font-semibold text-red-800">Plan B trop lent : {formatDuration(r.activation)} pour s'activer, alors que l'arrêt tolérable est de {formatDuration(r.maxOutage)}. Raccourcissez le délai ou renforcez la parade.</p>}
+            <Part n="3" title="Tenir">
+              <div className="grid gap-2 sm:grid-cols-2">
+                <DurationInput label="Le Plan B tient au maximum" value={r.holdFor} onChange={v => set({ holdFor: v })} />
+                <Field label="Ce qu'on laisse tomber en premier"><input className={inputCls} value={r.sacrifice} onChange={e => set({ sacrifice: e.target.value })} /></Field>
+              </div>
+            </Part>
+            <Part n="4" title="Prévenir">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <ContactsPicker label="Qui appeler" ids={r.contactIds} onChange={ids => set({ contactIds: ids })} directory={state.contacts} onCreate={addContact} />
+                <ContactsPicker label="Qui informer (clients, assureur…)" ids={r.notifyIds} onChange={ids => set({ notifyIds: ids })} directory={state.contacts} onCreate={addContact} />
+              </div>
+              <Field label="Message type aux clients"><textarea className={`${inputCls} min-h-[64px] resize-y`} value={r.clientMessage} placeholder="Ex. : suite à une panne, votre commande est décalée de 48 h ; qualité et contrôle restent sous notre responsabilité." onChange={e => set({ clientMessage: e.target.value })} /></Field>
+            </Part>
+            <Part n="5" title="Accès">
+              <Field label="Où sont les clés, codes, documents"><input className={inputCls} value={r.access} onChange={e => set({ access: e.target.value })} /></Field>
+            </Part>
+            <Part n="6" title="Revenir à la normale">
+              <Field label="À quelle condition on arrête le Plan B, et ce qu'on vérifie avant de reprendre"><textarea className={`${inputCls} min-h-[64px] resize-y`} value={r.recovery} onChange={e => set({ recovery: e.target.value })} /></Field>
+            </Part>
+
             {money && (
               <div className="space-y-2 rounded-lg border border-slate-200 p-2.5">
                 <div className="grid gap-2 sm:grid-cols-2">
@@ -224,7 +252,7 @@ export function RiskSheet({ initial, startStep = 0, onClose, onNewAction, onOpen
             )}
 
             <div className="border-t border-slate-200 pt-3">
-              <PartTitle n="2" title="Avant : ce qu'il reste à faire pour que ce Plan B soit prêt" text="Accord à signer, pièces à acheter, personne à former… Chaque action a un pilote et une échéance ; elle apparaît aussi dans l'onglet Actions." />
+              <PartTitle n="B" title="Avant : ce qu'il reste à faire pour que ce Plan B soit prêt" text="Accord à signer, pièces à acheter, personne à former… Chaque action a un pilote et une échéance ; elle apparaît aussi dans l'onglet Actions." />
             </div>
             <div className="space-y-1.5 rounded-lg border border-slate-200 p-2.5">
               <div className="flex items-center justify-between gap-2">
@@ -239,22 +267,19 @@ export function RiskSheet({ initial, startStep = 0, onClose, onNewAction, onOpen
                   </button>
                 ))}
             </div>
+           </div>
+           <aside className="space-y-2 lg:sticky lg:top-0 lg:self-start">
+             <div className="flex items-center justify-between gap-2">
+               <h3 className="text-xs font-bold text-slate-900">Fiche réflexe</h3>
+               <Button onClick={pdf} className="!px-2 !py-1"><FileDown size={13} />PDF</Button>
+             </div>
+             <ReflexCard r={r} s={withR} />
+           </aside>
           </section>
         )}
 
         {step === 3 && (
           <section className="space-y-3">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Première heure : les gestes, un par ligne"><textarea className={textArea} value={r.firstHour} onChange={e => set({ firstHour: e.target.value })} /></Field>
-              <div className="space-y-3">
-                <ContactsPicker label="Qui appeler" ids={r.contactIds} onChange={ids => set({ contactIds: ids })} directory={state.contacts} onCreate={addContact} />
-                <ContactsPicker label="Qui prévenir (clients, assureur…)" ids={r.notifyIds} onChange={ids => set({ notifyIds: ids })} directory={state.contacts} onCreate={addContact} />
-              </div>
-              <Field label="Où sont les clés, codes, documents"><input className={inputCls} value={r.access} onChange={e => set({ access: e.target.value })} /></Field>
-              <Field label="Ce qu'on laisse tomber en premier" hint="Commande, client ou tâche reportée pour tenir l'essentiel."><input className={inputCls} value={r.sacrifice} onChange={e => set({ sacrifice: e.target.value })} /></Field>
-              <Field label="Suppléant du responsable"><input className={inputCls} value={r.deputy} list="risk-people" onChange={e => set({ deputy: e.target.value })} /></Field>
-            </div>
-
             <div className="space-y-2 rounded-lg border border-slate-200 p-2.5">
               <div className="text-xs font-bold text-slate-900">Test du Plan B</div>
               <div className="grid gap-2 sm:grid-cols-2">
@@ -304,18 +329,45 @@ export function RiskSheet({ initial, startStep = 0, onClose, onNewAction, onOpen
               )}
             </div>
 
-            <div className="space-y-2">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <h3 className="text-xs font-bold text-slate-900">Aperçu de la fiche réflexe</h3>
-                <Button onClick={pdf}><FileDown size={14} />Fiche en PDF</Button>
-              </div>
-              <ReflexCard r={r} s={withR} />
-            </div>
           </section>
         )}
       </div>
       <datalist id="risk-people">{[...new Set([...Object.values(state.risks).flatMap(x => [x.owner, x.deputy]), ...Object.values(state.actions).map(a => a.pilot)].filter(Boolean))].map(p => <option key={p} value={p} />)}</datalist>
     </Modal>
+  );
+}
+
+function Part({ n, title, children }: { n: string; title: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-2 rounded-lg border border-slate-200 p-2.5">
+      <h4 className="text-[11px] font-bold uppercase tracking-wide text-red-800">{n}. {title}</h4>
+      {children}
+    </div>
+  );
+}
+
+// Steps of the reflex card: when, what, who; in the order they are done
+const WHEN = ['Immédiat', 'Sous 15 min', 'Sous 1 h', 'Sous 4 h', 'Jour 1', 'Jour 2', 'Semaine 1'];
+function StepsEditor({ steps, onChange }: { steps: ReflexStep[]; onChange(s: ReflexStep[]): void }) {
+  const set = (i: number, p: Partial<ReflexStep>) => onChange(steps.map((x, j) => (j === i ? { ...x, ...p } : x)));
+  const up = (i: number) => { const n = [...steps]; [n[i - 1], n[i]] = [n[i], n[i - 1]]; onChange(n); };
+  return (
+    <div className="space-y-1.5">
+      {steps.map((x, i) => (
+        <div key={i} className="space-y-1 rounded-lg bg-slate-50 p-1.5">
+          <div className="flex items-center gap-1.5">
+            <span className="w-4 shrink-0 text-xs font-bold text-red-700">{i + 1}.</span>
+            <input className={`${inputCls} !w-28 shrink-0`} value={x.when} list="step-when" placeholder="Quand" aria-label={`Étape ${i + 1} : quand`} onChange={e => set(i, { when: e.target.value })} />
+            <input className={`${inputCls} min-w-0 flex-1`} value={x.who} list="risk-people" placeholder="Qui" aria-label={`Étape ${i + 1} : qui`} onChange={e => set(i, { who: e.target.value })} />
+            <button type="button" aria-label="Monter cette étape" disabled={i === 0} onClick={() => up(i)} className="rounded p-1 text-slate-400 hover:text-slate-700 disabled:opacity-30"><ArrowUp size={14} /></button>
+            <button type="button" aria-label="Retirer cette étape" onClick={() => onChange(steps.filter((_, j) => j !== i))} className="rounded p-1 text-slate-400 hover:text-red-600"><X size={14} /></button>
+          </div>
+          <input className={`${inputCls} ml-[22px] !w-[calc(100%-22px)]`} value={x.what} placeholder="Quoi : l'action à faire" aria-label={`Étape ${i + 1} : quoi`} onChange={e => set(i, { what: e.target.value })} />
+        </div>
+      ))}
+      <Button className="!px-2 !py-1" onClick={() => onChange([...steps, { when: steps.length ? '' : 'Immédiat', what: '', who: '' }])}><Plus size={13} />Ajouter une étape</Button>
+      <datalist id="step-when">{WHEN.map(w => <option key={w} value={w} />)}</datalist>
+    </div>
   );
 }
 

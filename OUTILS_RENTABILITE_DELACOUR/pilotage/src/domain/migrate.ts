@@ -127,6 +127,11 @@ export function normalize(s: State): State {
     if (typeof r.maxOutage === 'string') r.maxOutage = parseDuration(r.maxOutage);
     if (typeof r.activation === 'string') r.activation = parseDuration(r.activation);
     if (typeof r.contacts === 'string') { r.contactIds = contactsFromText(r.contacts, contacts); delete r.contacts; }
+    if (typeof r.firstHour === 'string') {   // first-hour lines become steps, to complete with when and who
+      r.steps ||= r.firstHour.split('\n').map((l: string) => l.trim()).filter(Boolean).map((what: string) => ({ when: '', what, who: '' }));
+      delete r.firstHour;
+    }
+    r.steps ||= []; r.trigger ??= ''; r.holdFor ??= null; r.clientMessage ??= ''; r.recovery ??= '';
     r.maxOutage ??= null; r.activation ??= null; r.contactIds ||= []; r.notifyIds ||= []; r.tests ||= [];
     return [id, r as Risk];
   }));

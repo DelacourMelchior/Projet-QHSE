@@ -43,8 +43,8 @@ export function Field({ label, hint, children }: { label: string; hint?: string;
 export const inputCls = 'w-full rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-900 outline-none focus:border-delacour-gold focus:ring-2 focus:ring-delacour-gold/30';
 
 // Modal dialog (Escape or backdrop closes it)
-export function Modal({ title, subtitle, onClose, children, footer, wide }: {
-  title: ReactNode; subtitle?: ReactNode; onClose(): void; children: ReactNode; footer?: ReactNode; wide?: boolean;
+export function Modal({ title, subtitle, onClose, children, footer, wide, xwide }: {
+  title: ReactNode; subtitle?: ReactNode; onClose(): void; children: ReactNode; footer?: ReactNode; wide?: boolean; xwide?: boolean;
 }) {
   useEffect(() => {
     const k = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -53,7 +53,7 @@ export function Modal({ title, subtitle, onClose, children, footer, wide }: {
   }, [onClose]);
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 p-0 sm:items-center sm:p-4" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div role="dialog" aria-modal="true" className={`flex max-h-[92vh] w-full flex-col rounded-t-2xl bg-white shadow-2xl sm:rounded-2xl ${wide ? 'sm:max-w-4xl' : 'sm:max-w-lg'}`}>
+      <div role="dialog" aria-modal="true" className={`flex max-h-[92vh] w-full flex-col rounded-t-2xl bg-white shadow-2xl sm:rounded-2xl ${xwide ? 'sm:max-w-6xl' : wide ? 'sm:max-w-4xl' : 'sm:max-w-lg'}`}>
         <div className="flex items-start justify-between gap-3 border-b border-slate-100 px-4 py-3 sm:px-5">
           <div className="min-w-0">
             <h2 className="text-sm font-bold text-slate-900">{title}</h2>

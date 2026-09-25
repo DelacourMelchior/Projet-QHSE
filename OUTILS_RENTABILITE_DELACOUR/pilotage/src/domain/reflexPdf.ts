@@ -16,7 +16,7 @@ interface Opts { company: string; by: string; date: Date }
 
 // Cards in order of criticality, not rated last
 const cardsOrder = (s: State) => Object.values(s.risks).sort((a, b) => (score(b) ?? -1) - (score(a) ?? -1) || a.title.localeCompare(b.title));
-const lines = (t: string) => t.split('\n').map(x => x.trim()).filter(Boolean);
+export const sentence = (t: string) => (/[.!?…]$/.test(t.trim()) ? t.trim() : `${t.trim()}.`);
 export const noDot = (t: string) => t.trim().replace(/\.+$/, '');   // "Antoine P." at the end of a sentence
 
 class Writer {
@@ -62,36 +62,49 @@ function drawCard(w: Writer, s: State, r: Risk, o: Opts) {
   const sc = score(r);
   w.para([sc === null ? 'Criticité : à coter' : `Criticité ${sc} / 16 (${ZONE_LABEL[zoneOf(sc)].toLowerCase()})`,
     `Responsable : ${r.owner || 'à désigner'}`, r.deputy && `Suppléant : ${r.deputy}`].filter(Boolean).join('   ·   '), 10, { color: GRAY, gap: 0 });
-  const delays = [r.maxOutage && `Arrêt tolérable : ${formatDuration(r.maxOutage)}`, r.activation && `Activation du Plan B : ${formatDuration(r.activation)}`].filter(Boolean).join('   ·   ');
-  if (delays) w.para(delays, 10, { color: GRAY, gap: 0 });
-  if (r.signal) { w.heading('Signal'); w.para(r.signal); }
+  if (r.maxOutage) w.para(`Arrêt tolérable : ${formatDuration(r.maxOutage)}`, 10, { color: GRAY, gap: 0 });
+  const steps = r.steps.filter(x => x.what.trim());
+  const who = (ids: string[]) => ids.map(id => s.contacts[id]).filter(Boolean);
 
-  if (!r.planB.trim()) {
-    const who = `Pas de Plan B prévu. Appelez ${noDot(r.owner) || 'le dirigeant'}${r.deputy ? `, ou ${noDot(r.deputy)}` : ''}.`;
+  if (!r.planB.trim() && !steps.length) {
+    const call = `Pas de Plan B prévu. Appelez ${noDot(r.owner) || 'le dirigeant'}${r.deputy ? `, ou ${noDot(r.deputy)}` : ''}.`;
     w.ensure(40);
     w.y -= 12;
     w.doc.rect(M, w.y - 26, WIDTH, 30, PALE);
-    w.doc.text(who, M + 10, w.y - 15, 12, { bold: true, color: RED });
+    w.doc.text(call, M + 10, w.y - 15, 12, { bold: true, color: RED });
     w.y -= 34;
   } else {
-    w.heading('Première heure');
-    const steps = lines(r.firstHour);
-    if (!steps.length) w.para('Gestes à écrire dans la fiche du risque.', 11, { color: GRAY });
-    steps.forEach((t, i) => {
+    if (r.planB.trim()) {
+      w.heading(`Plan B${r.family ? ` · ${familyLabel(r.family)}` : ''}`);
+      w.para(sentence(r.planB) + (r.relay ? ` Relais : ${r.relay}.` : ''), 11.5);
+    }
+    if (r.signal || r.trigger) {
+      w.heading('1. Déclencher');
+      if (r.signal) w.para(`Signal : ${r.signal}`);
+      if (r.trigger) w.para(`Décide du déclenchement : ${r.trigger}`, 11, { bold: true });
+    }
+    w.heading(`2. Dérouler${r.activation ? ` · Plan B opérationnel en ${formatDuration(r.activation)}` : ''}`);
+    if (!steps.length) w.para('Étapes à écrire dans la fiche du risque.', 11, { color: GRAY });
+    steps.forEach((x, i) => {
       w.ensure(18);
       const top = w.y;
-      w.para(t, 12, { x: M + 20, gap: 3 });
+      w.para(`${x.when ? `${x.when} : ` : ''}${x.what}${x.who ? ` (${x.who})` : ''}`, 12, { x: M + 20, gap: 3 });
       w.doc.text(`${i + 1}.`, M, top - 12 * 1.35 + 12 * 0.3, 12, { bold: true, color: RED });
     });
-    w.heading(`Plan B${r.family ? ` · ${familyLabel(r.family)}` : ''}`);
-    w.para(r.planB, 11.5);
-    if (r.relay) w.para(`Relais : ${r.relay}`, 10, { color: GRAY });
+    if (r.holdFor || r.sacrifice) {
+      w.heading('3. Tenir');
+      if (r.holdFor) w.para(`Le Plan B tient ${formatDuration(r.holdFor)} au maximum.`);
+      if (r.sacrifice) w.para(`On laisse tomber d'abord : ${r.sacrifice}`);
+    }
   }
-  const who = (ids: string[]) => ids.map(id => s.contacts[id]).filter(Boolean);
-  if (r.contactIds.length) { w.heading('Qui appeler'); who(r.contactIds).forEach(c => w.contact(c)); }
-  if (r.notifyIds.length) { w.heading('Qui prévenir'); who(r.notifyIds).forEach(c => w.contact(c)); }
-  if (r.access) { w.heading('Clés, codes, documents'); w.para(r.access); }
-  if (r.sacrifice) { w.heading("On laisse tomber d'abord"); w.para(r.sacrifice); }
+  if (r.contactIds.length || r.notifyIds.length || r.clientMessage) {
+    w.heading('4. Prévenir');
+    if (r.contactIds.length) { w.para('Qui appeler', 10, { bold: true, gap: 0 }); who(r.contactIds).forEach(c => w.contact(c)); }
+    if (r.notifyIds.length) { w.para('Qui informer', 10, { bold: true, gap: 0 }); who(r.notifyIds).forEach(c => w.contact(c)); }
+    if (r.clientMessage) w.para(`Message aux clients : « ${r.clientMessage} »`, 10.5, { color: GRAY });
+  }
+  if (r.access) { w.heading('5. Accès'); w.para(r.access); }
+  if (r.recovery) { w.heading('6. Revenir à la normale'); w.para(r.recovery); }
 }
 
 function footers(doc: PdfDoc, o: Opts) {

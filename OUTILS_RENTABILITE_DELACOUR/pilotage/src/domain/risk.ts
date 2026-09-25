@@ -212,6 +212,6 @@ export function newRisk(processId: string, today = new Date()): Risk {
     title: '', resource: '', signal: '', maxOutage: null, owner: '',
     whys: ['', '', '', '', ''], cause: '', gravity: null, likelihood: null,
     family: '', planB: '', relay: '', activation: null,
-    firstHour: '', contactIds: [], notifyIds: [], access: '', sacrifice: '', deputy: '', testMethod: '', testCriterion: '', tests: [],
+    trigger: '', steps: [], holdFor: null, clientMessage: '', recovery: '', contactIds: [], notifyIds: [], access: '', sacrifice: '', deputy: '', testMethod: '', testCriterion: '', tests: [],
   };
 }

@@ -128,13 +128,15 @@ describe('demo, directory, reflex cards', () => {
     expect(Object.values(a)).toMatchObject([{ name: 'Prestataire informatique', phone: '04 00 00 00 01', category: 'autre' }, { name: 'Thomas M.', role: 'IT', phone: '06 00 00 00 01' }]);
     const s = demoState(today);
     const r = s.risks.risk_demo_cyber as unknown as Record<string, unknown>;
-    Object.assign(r, { maxOutage: '1 jour', activation: 'sous 4 h', contacts: 'Banque : 04 11 11 11 11' });
-    delete r.contactIds;
+    Object.assign(r, { maxOutage: '1 jour', activation: 'sous 4 h', contacts: 'Banque : 04 11 11 11 11', firstHour: 'Débrancher le réseau\nAppeler le support' });
+    delete r.contactIds; delete r.steps;
     delete (s.contacts.ct_demo_it as unknown as Record<string, unknown>).category;
     const ns = normalize(s);
     expect(ns.risks.risk_demo_cyber.maxOutage).toEqual({ value: 1, unit: 'j' });
     expect(ns.risks.risk_demo_cyber.contactIds).toHaveLength(1);
     expect(ns.contacts.ct_demo_it.category).toBe('autre');
+    expect(ns.risks.risk_demo_cyber.steps).toEqual([{ when: '', what: 'Débrancher le réseau', who: '' }, { when: '', what: 'Appeler le support', who: '' }]);
+    expect(ns.risks.risk_demo_cyber).not.toHaveProperty('firstHour');
   });
   it('directory: company first, numbers to check', () => {
     const s = demoState(today);

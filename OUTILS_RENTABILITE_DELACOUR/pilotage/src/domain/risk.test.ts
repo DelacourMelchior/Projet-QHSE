@@ -1,4 +1,4 @@
-// Business continuity: criticality and zone rules, rating, readiness state, delays, directory, binder, storage split.
+// Business continuity: criticality and zone rules, rating, readiness state, delays, crisis directory, reflex cards PDF, storage split.
 import { describe, expect, it } from 'vitest';
 import type { Action, Risk, State } from './types';
 import {
@@ -6,8 +6,8 @@ import {
   staleContacts, suggestedGravity, testDueDate, yearlyExposure, zoneOf,
 } from './risk';
 import { formatDuration, parseDuration } from './duration';
-import { binderHash } from './binder';
-import { binderPdf, cardPdf } from './binderPdf';
+import { cardPdf, reflexCardsPdf } from './reflexPdf';
+import { contactLabel, toCheck } from './contacts';
 import { wrap } from './pdf';
 import { demoState } from './templates';
 import { typicalRisks } from './riskTemplates';
@@ -112,44 +112,45 @@ describe('delays', () => {
   });
 });
 
-describe('demo, directory, binder', () => {
+describe('demo, directory, reflex cards', () => {
   it('the demo shows every state and every kind of message', () => {
     const s = demoState(today);
     expect(Object.keys(s.risks)).toHaveLength(9);
     const states = new Set(Object.values(s.risks).map(r => riskState(s, r, today)));
     expect([...states].sort()).toEqual(['accepted', 'expired', 'failed', 'preparing', 'ready', 'tested', 'uncovered', 'unrated']);
-    expect(riskInsights(s, today).map(i => i.key)).toEqual(expect.arrayContaining(['failed', 'slow', 'expired', 'unrated', 'contacts', 'binder', 'uncovered-medium']));
+    expect(riskInsights(s, today).map(i => i.key)).toEqual(expect.arrayContaining(['failed', 'slow', 'expired', 'unrated', 'contacts', 'uncovered-medium']));
     expect(staleContacts(s, today).map(c => c.id)).toEqual(['ct_demo_banque2']);
   });
   it('old free-text contacts become directory entries, the same id for everyone', () => {
     const a = {}, b = {};
     const ids = contactsFromText('Prestataire informatique : 04 00 00 00 01\nThomas M., IT : 06 00 00 00 01', a);
     expect(ids).toEqual(contactsFromText('Prestataire informatique : 04 00 00 00 01\nThomas M., IT : 06 00 00 00 01', b));
-    expect(Object.values(a)).toMatchObject([{ name: 'Prestataire informatique', phone: '04 00 00 00 01' }, { name: 'Thomas M.', role: 'IT', phone: '06 00 00 00 01' }]);
+    expect(Object.values(a)).toMatchObject([{ name: 'Prestataire informatique', phone: '04 00 00 00 01', category: 'autre' }, { name: 'Thomas M.', role: 'IT', phone: '06 00 00 00 01' }]);
     const s = demoState(today);
     const r = s.risks.risk_demo_cyber as unknown as Record<string, unknown>;
     Object.assign(r, { maxOutage: '1 jour', activation: 'sous 4 h', contacts: 'Banque : 04 11 11 11 11' });
     delete r.contactIds;
-    const n = normalize(s).risks.risk_demo_cyber;
-    expect(n.maxOutage).toEqual({ value: 1, unit: 'j' });
-    expect(n.contactIds).toHaveLength(1);
+    delete (s.contacts.ct_demo_it as unknown as Record<string, unknown>).category;
+    const ns = normalize(s);
+    expect(ns.risks.risk_demo_cyber.maxOutage).toEqual({ value: 1, unit: 'j' });
+    expect(ns.risks.risk_demo_cyber.contactIds).toHaveLength(1);
+    expect(ns.contacts.ct_demo_it.category).toBe('autre');
   });
-  it('the binder is stale when a card changes, not when a number is checked', () => {
+  it('directory: company first, numbers to check', () => {
     const s = demoState(today);
-    const h = binderHash(s);
-    s.contacts.ct_demo_it.verifiedAt = '2026-09-25';
-    expect(binderHash(s)).toBe(h);
-    s.contacts.ct_demo_it.phone = '04 99 99 99 99';
-    expect(binderHash(s)).not.toBe(h);
+    expect(contactLabel(s.contacts.ct_demo_banque2)).toBe('Banque B · Conseiller entreprises');
+    expect(toCheck(s.contacts.ct_demo_banque2, today)).toBe(true);    // 400 days
+    expect(toCheck(s.contacts.ct_demo_it, today)).toBe(false);
+    expect(toCheck({ ...s.contacts.ct_demo_it, verifiedAt: '' }, today)).toBe(true);
   });
-  it('writes a valid PDF: cover, table of contents, one card per risk', () => {
+  it('writes a valid PDF: one reflex card per page', () => {
     const s = demoState(today);
-    const pdf = binderPdf(s, { company: 'Exemple', by: 'Jean', date: today });
+    const pdf = reflexCardsPdf(s, { company: 'Exemple', by: 'Jean', date: today });
     expect(pdf.startsWith('%PDF-1.4')).toBe(true);
     expect(pdf.trimEnd().endsWith('%%EOF')).toBe(true);
     expect(/[^\x09\x0a\x0d\x20-\x7e]/.test(pdf)).toBe(false);          // plain ASCII
     const count = Number(pdf.match(/\/Type \/Pages \/Kids \[[^\]]*\] \/Count (\d+)/)![1]);
-    expect(count).toBeGreaterThanOrEqual(1 + 9);
+    expect(count).toBeGreaterThanOrEqual(9);
     const xref = Number(pdf.match(/startxref\n(\d+)/)![1]);
     expect(pdf.slice(xref, xref + 4)).toBe('xref');                     // offsets are right
     const one = cardPdf(s, s.risks.risk_demo_cnc, { company: '', by: '', date: today });
@@ -163,17 +164,15 @@ describe('demo, directory, binder', () => {
 });
 
 describe('storage', () => {
-  it('money of a risk goes to the direction folder only; directory, scale and binder to everyone', () => {
+  it('money of a risk goes to the direction folder only; directory and scale to everyone', () => {
     const s = demoState(today);
-    s.binder = { hash: 'x', at: '2026-09-01T00:00:00Z', by: 'Jean' };
     const m = flatten(s);
     expect(m['risk|risk_demo_cnc']).not.toHaveProperty('cost');
     expect(bucketOf('riskcost|risk_demo_cnc', s)).toBe('direction');
-    for (const k of ['risk|risk_demo_cnc', 'contact|ct_demo_it', 'scale', 'binder']) expect(bucketOf(k, s)).toBe('equipe');
+    for (const k of ['risk|risk_demo_cnc', 'contact|ct_demo_it', 'scale']) expect(bucketOf(k, s)).toBe('equipe');
     const back = unflatten(m);
     expect(back.risks.risk_demo_cnc.cost?.perDay).toBe(2800);
     expect(back.contacts.ct_demo_it.phone).toBe('04 00 00 00 01');
-    expect(back.binder?.by).toBe('Jean');
     delete m['riskcost|risk_demo_cnc'];                                 // team member without rights
     expect(unflatten(m).risks.risk_demo_cnc.cost).toBeUndefined();
   });

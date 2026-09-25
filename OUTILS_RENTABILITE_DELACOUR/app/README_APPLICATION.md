@@ -1,15 +1,15 @@
 # Delacour Quality OS : guide développeur et consultant
 
-Application de 13 outils de pilotage pour PME (indicateurs, plans B, devis, réclamations, fournisseurs, compétences, non-qualité, 5 Pourquoi). Trois fichiers HTML (accueil, outils 1.1 et 1.2, outils 2.1 à 5.3), sans serveur.
+Application de 14 outils de pilotage pour PME (indicateurs, plans B, annuaire de crise, devis, réclamations, fournisseurs, compétences, non-qualité, 5 Pourquoi). Trois fichiers HTML (accueil, outils 1.1 à 1.3, outils 2.1 à 5.3), sans serveur.
 
 ## Structure
 
 | Dossier | Contenu |
 |---|---|
-| `app/` | **Sources** : `index.html` (accueil), `tool_page.html` (outils 2.1 à 5.3, chargent Tailwind et SheetJS depuis un CDN) et `pilotage.html` (outils 1.1 et 1.2, copie générée depuis `pilotage/`). |
+| `app/` | **Sources** : `index.html` (accueil), `tool_page.html` (outils 2.1 à 5.3, chargent Tailwind et SheetJS depuis un CDN) et `pilotage.html` (outils 1.1 à 1.3, copie générée depuis `pilotage/`). |
 | `livrable/` | **Version à remettre au client**, générée : zéro appel externe, fonctionne hors connexion. Contient aussi le guide de déploiement client. |
 | `build/` | Outils de construction (Tailwind, SheetJS) et tests de l'ancien code 1.1 encore présent dans `tool_page.html`. |
-| `pilotage/` | **Outils 1.1 et 1.2** (React + TypeScript), livrés en `pilotage.html` (`pilotage.html#continuite` ouvre le 1.2). Voir `pilotage/README.md`. `tool_page.html?tool=1.1` et `?tool=1.2` redirigent vers lui. |
+| `pilotage/` | **Outils 1.1 à 1.3** (React + TypeScript), livrés en `pilotage.html` (`#continuite` ouvre le 1.2, `#annuaire` le 1.3). Voir `pilotage/README.md`. `tool_page.html?tool=1.1`, `1.2` et `1.3` redirigent vers lui. |
 
 ## Construire le livrable
 
@@ -30,7 +30,7 @@ Les tests couvrent la lecture des nombres, les statuts (mois actif, cible à zé
 
 ## Stockage des données
 
-- **Outils 1.1 et 1.2** (`livrable/pilotage.html`) : dossier partagé du client (OneDrive, SharePoint, Google Drive, Nextcloud…), un journal par personne, dossier `direction` séparé pour les montants confidentiels. Voir `livrable/GUIDE_DEPLOIEMENT_ONEDRIVE_SHAREPOINT.md`. Sans dossier connecté, ou sous Safari et Firefox, les données restent dans le navigateur du poste.
+- **Outils 1.1 à 1.3** (`livrable/pilotage.html`) : dossier partagé du client (OneDrive, SharePoint, Google Drive, Nextcloud…), un journal par personne, dossier `direction` séparé pour les montants confidentiels. Voir `livrable/GUIDE_DEPLOIEMENT_ONEDRIVE_SHAREPOINT.md`. Sans dossier connecté, ou sous Safari et Firefox, les données restent dans le navigateur du poste.
 - **Outils 2.1 à 5.3** : navigateur du poste uniquement (`localStorage`), avec export et import `.json`.
 
 Aucune donnée n'est envoyée au Cabinet Delacour ni à un tiers.

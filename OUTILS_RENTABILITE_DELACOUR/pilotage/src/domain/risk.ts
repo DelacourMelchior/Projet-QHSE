@@ -4,7 +4,7 @@ import type { Action, Risk, RiskScale, RiskState, Scale, Settings, State } from 
 import { isoDate, parseDate } from './periods';
 import { formatValue } from './numbers';
 import { formatDuration, hoursOf } from './duration';
-import { binderHash } from './binder';
+import { contactLabel, toCheck } from './contacts';
 
 // ---- criticality: gravity x likelihood (1 to 16), null while the risk is not rated
 export const score = (r: Pick<Risk, 'gravity' | 'likelihood'>): number | null =>
@@ -16,9 +16,9 @@ export const ZONE_LABEL: Record<Zone, string> = { low: 'Faible', medium: 'À sur
 
 // What each zone requires: red = Plan B tested every 6 months, orange = Plan B tested every year, green = accepted
 export const ZONE_RULES: { zone: Zone; range: string; rule: string; testDays: number | null }[] = [
-  { zone: 'high', range: '9 à 16', rule: 'Plan B obligatoire, testé tous les 6 mois', testDays: 180 },
-  { zone: 'medium', range: '4 à 8', rule: 'Plan B obligatoire, testé chaque année', testDays: 365 },
-  { zone: 'low', range: '1 à 3', rule: 'Risque accepté, cotation revue chaque année', testDays: null },
+  { zone: 'high', range: '9 à 16', rule: 'Plan B testé tous les 6 mois', testDays: 180 },
+  { zone: 'medium', range: '4 à 8', rule: 'Plan B testé chaque année', testDays: 365 },
+  { zone: 'low', range: '1 à 3', rule: 'risque accepté', testDays: null },
 ];
 export const testValidityDays = (r: Risk): number | null => {
   const z = riskZone(r);
@@ -167,7 +167,7 @@ export function riskSummary(s: State, today = new Date()) {
 // Contacts used by at least one card whose number was not checked for a year
 export function staleContacts(s: State, today = new Date()) {
   const used = new Set(Object.values(s.risks).flatMap(r => [...r.contactIds, ...r.notifyIds]));
-  return Object.values(s.contacts).filter(c => used.has(c.id) && ageDays(c.verifiedAt, today) > 365);
+  return Object.values(s.contacts).filter(c => used.has(c.id) && toCheck(c, today));
 }
 
 export interface RiskInsight { key: string; tone: 'good' | 'warn' | 'bad'; title: string; text: string }
@@ -189,22 +189,20 @@ export function riskInsights(s: State, today = new Date()): RiskInsight[] {
     push('slow', 'bad', 'Plan B trop lent', `${x.r.title} : ${x.sl!.kind === 'measured' ? 'délai mesuré au dernier test' : 'activation annoncée'} ${formatDuration({ value: x.sl!.hours, unit: 'h' })} pour ${formatDuration(x.r.maxOutage)} d'arrêt tolérable${slow.length > 1 ? ` (et ${slow.length - 1} autre(s))` : ''}. Raccourcir le délai ou renforcer la parade (stock tampon, relais plus proche).`);
   }
   const orangeNoPlan = all.filter(x => x.z === 'medium' && x.st === 'uncovered');
-  if (orangeNoPlan.length) push('uncovered-medium', 'warn', 'Risque à surveiller sans Plan B', `${names(orangeNoPlan)}. La zone orange exige aussi un Plan B.`);
+  if (orangeNoPlan.length) push('uncovered-medium', 'warn', 'Risque à surveiller sans Plan B', `${names(orangeNoPlan)}.`);
   const expired = all.filter(x => x.st === 'expired');
-  if (expired.length) push('expired', 'warn', 'Test périmé', `${names(expired)}. Un Plan B non testé dans le délai de sa zone n'est plus garanti (contacts, accès, relais).`);
+  if (expired.length) push('expired', 'warn', 'Test périmé', `${names(expired)}.`);
   const soon = all.filter(x => x.st === 'tested' && (parseDate(testDueDate(x.r))?.getTime() ?? Infinity) - startOfDay(today).getTime() <= 30 * dayMs);
   if (soon.length) push('soon', 'warn', 'Test à planifier sous 30 jours', names(soon) + '.');
   const unrated = all.filter(x => x.st === 'unrated');
-  if (unrated.length) push('unrated', 'warn', 'Risque à coter', `${names(unrated)}. Sans gravité ni probabilité, le risque n'entre ni dans la matrice ni dans la couverture.`);
+  if (unrated.length) push('unrated', 'warn', 'Risque à coter', `${names(unrated)}.`);
   const noOwner = all.filter(x => !x.r.owner.trim());
   if (noOwner.length) push('owner', 'warn', 'Responsable à désigner', names(noOwner) + '.');
   const stale = staleContacts(s, today);
-  if (stale.length) push('contacts', 'warn', 'Numéros à vérifier', `${stale.slice(0, 3).map(c => [c.company, c.name].filter(Boolean).join(' · ')).join(', ')}${stale.length > 3 ? ` et ${stale.length - 3} autre(s)` : ''} : pas vérifié(s) depuis plus d'un an. Appelez-les au prochain test (case « Contacts vérifiés »).`);
+  if (stale.length) push('contacts', 'warn', 'Numéros à vérifier', `${stale.slice(0, 3).map(contactLabel).join(', ')}${stale.length > 3 ? ` et ${stale.length - 3} autre(s)` : ''} : pas vérifié(s) depuis plus d'un an (annuaire de crise).`);
   const review = all.filter(x => x.st !== 'unrated' && x.r.ratedAt && ageDays(x.r.ratedAt, today) > 365);
   if (review.length) push('review', 'warn', 'Revue annuelle des cotations', `${names(review)} : cotation de plus d'un an, à revoir.`);
-  if (!s.binder) push('binder', 'warn', 'Classeur de crise jamais enregistré', 'Enregistrez le classeur PDF (bouton Classeur de crise) : le jour de la panne, l\'ordinateur peut être inaccessible.');
-  else if (s.binder.hash !== binderHash(s)) push('binder', 'warn', 'Classeur de crise à mettre à jour', `Des fiches ont changé depuis le dernier enregistrement (${new Date(s.binder.at).toLocaleDateString('fr-FR')}) : enregistrez-le de nouveau et réimprimez-le.`);
-  if (!out.length) push('ok', 'good', 'Plans B sous contrôle', 'Chaque risque orange ou rouge a un Plan B testé à temps, et le classeur de crise est à jour.');
+  if (!out.length) push('ok', 'good', 'Plans B sous contrôle', 'Chaque risque orange ou rouge a un Plan B testé à temps.');
   return out;
 }
 

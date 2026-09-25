@@ -4,13 +4,14 @@ import { Check, FileDown, Lightbulb, Phone, Plus, Trash2, X } from 'lucide-react
 import type { Contact, Duration, DurationUnit, Risk, RiskCost, Scale, State } from '../domain/types';
 import {
   actionsOfRisk, gravityScale, likelihoodScale, lossPerEvent, planBGain, riskState, riskZone, score, STATE_INFO, suggestedGravity, testDueDate,
-  ZONE_LABEL, ZONE_RULES, zoneOf, type ScaleLevel,
+  ZONE_LABEL, zoneOf, type ScaleLevel,
 } from '../domain/risk';
 import { FAMILIES } from '../domain/riskTemplates';
+import { contactLabel } from '../domain/contacts';
 import { formatValue, parseNumber } from '../domain/numbers';
 import { frDate, isoDate } from '../domain/periods';
 import { formatDuration, hoursOf, UNITS } from '../domain/duration';
-import { cardPdf } from '../domain/binderPdf';
+import { cardPdf } from '../domain/reflexPdf';
 import { useStore } from '../store/StoreContext';
 import { Button, Field, inputCls, Modal, StatusBadge } from './common';
 import { STATUS_LABEL } from './ActionSheet';
@@ -33,7 +34,6 @@ export function ScoreBadge({ r, className = '' }: { r: Pick<Risk, 'gravity' | 'l
 const STEPS = ['Ce qui s\'arrête', 'Pourquoi, cotation', 'Plan B', 'Fiche réflexe et test'];
 const textArea = `${inputCls} min-h-[96px] resize-y`;
 const today = () => isoDate(new Date());
-const ruleOf = (z: string) => { const t = ZONE_RULES.find(x => x.zone === z)!.rule; return t[0].toLowerCase() + t.slice(1); };
 const emptyTest = () => ({ date: today(), ok: null as boolean | null, note: '', delay: null as Duration | null, contactsChecked: false });
 
 export function RiskSheet({ initial, startStep = 0, onClose, onNewAction, onOpenAction }: {
@@ -167,12 +167,12 @@ export function RiskSheet({ initial, startStep = 0, onClose, onNewAction, onOpen
 
             <ScalePicker title="Gravité si le risque survient" value={r.gravity} onChange={g => rate({ gravity: g })} items={gravityScale(state, money)} />
             <ScalePicker title="Probabilité" value={r.likelihood} onChange={l => rate({ likelihood: l })} items={likelihoodScale(state)} />
-            {zone ? (
+            {zone && (
               <p className="flex flex-wrap items-center gap-2 text-xs text-slate-700">
-                <ScoreBadge r={r} />Criticité {score(r)} / 16 : <strong>{ZONE_LABEL[zone]}</strong>. Règle : {ruleOf(zone)}.
-                {r.ratedAt && <span className="text-[11px] text-slate-500">Coté{r.ratedBy ? ` par ${r.ratedBy}` : ''} le {frDate(r.ratedAt)}.</span>}
+                <ScoreBadge r={r} />Criticité {score(r)} / 16 : <strong>{ZONE_LABEL[zone].toLowerCase()}</strong>
+                {r.ratedAt && <span className="text-[11px] text-slate-500">Coté{r.ratedBy ? ` par ${r.ratedBy}` : ''} le {frDate(r.ratedAt)}</span>}
               </p>
-            ) : <p className="text-xs text-slate-600">Choisissez la gravité et la probabilité : le risque entrera alors dans la matrice.</p>}
+            )}
           </section>
         )}
 
@@ -252,7 +252,7 @@ export function RiskSheet({ initial, startStep = 0, onClose, onNewAction, onOpen
             </div>
 
             <div className="space-y-2 rounded-lg border border-slate-200 p-2.5">
-              <div className="text-xs font-bold text-slate-900">Test du Plan B <span className="font-normal text-slate-500">({zone ? ruleOf(zone) : 'fréquence fixée par la cotation'})</span></div>
+              <div className="text-xs font-bold text-slate-900">Test du Plan B</div>
               <div className="grid gap-2 sm:grid-cols-2">
                 <Field label="Comment on le teste"><input className={inputCls} value={r.testMethod} placeholder="Ex. : envoi réel d'un programme au confrère" onChange={e => set({ testMethod: e.target.value })} /></Field>
                 <Field label="Critère de réussite"><input className={inputCls} value={r.testCriterion} placeholder="Ex. : pièce conforme en moins de 48 h" onChange={e => set({ testCriterion: e.target.value })} /></Field>
@@ -306,7 +306,6 @@ export function RiskSheet({ initial, startStep = 0, onClose, onNewAction, onOpen
                 <Button onClick={pdf}><FileDown size={14} />Fiche en PDF</Button>
               </div>
               <ReflexCard r={r} s={withR} />
-              <p className="text-[11px] text-slate-500">Toutes les fiches, avec les numéros d'urgence : bouton « Classeur de crise » de la cartographie.</p>
             </div>
           </section>
         )}
@@ -358,7 +357,7 @@ function ContactsPicker({ label, ids, onChange, directory, onCreate }: {
   const free = Object.values(directory).filter(c => !ids.includes(c.id)).sort((a, b) => (a.company || a.name).localeCompare(b.company || b.name));
   const create = () => {
     if (!draft.name.trim() || !draft.phone.trim()) return;
-    const c: Contact = { id: `ct_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`, ...draft, always: false, verifiedAt: isoDate(new Date()) };
+    const c: Contact = { id: `ct_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`, category: 'autre', ...draft, always: false, verifiedAt: isoDate(new Date()) };
     onCreate(c);
     onChange([...ids, c.id]);
     setDraft({ name: '', role: '', company: '', phone: '' });
@@ -369,7 +368,7 @@ function ContactsPicker({ label, ids, onChange, directory, onCreate }: {
       <span className="block text-[11px] font-semibold text-slate-700">{label}</span>
       {ids.map(id => directory[id]).filter(Boolean).map(c => (
         <div key={c.id} className="flex items-center gap-2 rounded-lg border border-slate-200 px-2 py-1 text-[11px]">
-          <span className="min-w-0 flex-1 truncate"><strong>{c.company || c.name}</strong>{c.company ? ` · ${c.name}` : ''}</span>
+          <span className="min-w-0 flex-1 truncate font-semibold">{contactLabel(c)}</span>
           <span className="shrink-0 font-mono text-slate-700">{c.phone}</span>
           <button type="button" aria-label={`Retirer ${c.name}`} onClick={() => onChange(ids.filter(x => x !== c.id))} className="rounded p-0.5 text-slate-400 hover:text-red-600"><X size={14} /></button>
         </div>
@@ -377,7 +376,7 @@ function ContactsPicker({ label, ids, onChange, directory, onCreate }: {
       <div className="flex gap-1.5">
         <select className={inputCls} value="" aria-label={`${label} : ajouter depuis l'annuaire`} onChange={e => e.target.value && onChange([...ids, e.target.value])}>
           <option value="">{free.length ? 'Ajouter depuis l\'annuaire…' : 'Annuaire vide'}</option>
-          {free.map(c => <option key={c.id} value={c.id}>{[c.company, c.name].filter(Boolean).join(' · ')} ({c.phone})</option>)}
+          {free.map(c => <option key={c.id} value={c.id}>{contactLabel(c)} ({c.phone})</option>)}
         </select>
         <Button className="shrink-0 !px-2" onClick={() => setAdding(!adding)} aria-expanded={adding}><Plus size={13} />Nouveau</Button>
       </div>

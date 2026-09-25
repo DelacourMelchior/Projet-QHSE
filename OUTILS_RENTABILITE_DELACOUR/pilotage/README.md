@@ -1,10 +1,11 @@
-# Pilotage Delacour : outils 1.1 et 1.2 reconstruits
+# Pilotage Delacour : outils 1.1 à 1.3
 
 - **Indicateurs (1.1)** : tableau de pilotage mensuel d'une PME : synthèse dirigeant, saisie du mois, plan d'actions (5 pourquoi + 5M) et mesure d'efficacité.
-- **Plans B (1.2)**, ouvert par `pilotage.html#continuite` : cartographie des risques vitaux (matrice gravité × probabilité avec la règle de chaque zone, risques à coter, séance de cotation), fiche risque en 4 étapes, tests des Plans B, annuaire de crise et classeur de crise en PDF (fiches réflexes et numéros d'urgence).
+- **Plans B (1.2)**, ouvert par `pilotage.html#continuite` : cartographie des risques vitaux (matrice gravité × probabilité avec la règle de chaque zone, risques à coter, séance de cotation), fiche risque en 4 étapes, tests des Plans B, fiches réflexes en PDF.
+- **Annuaire de crise (1.3)**, ouvert par `pilotage.html#annuaire` : les numéros à appeler, par catégorie, avec la date de vérification ; les fiches réflexes des Plans B y prennent leurs contacts.
 - **Agir** : un seul plan d'actions pour les deux outils (actions correctives d'indicateurs et actions de préparation des Plans B).
 
-Remplace les outils 1.1 et 1.2 de `../app/tool_page.html`.
+Remplace les outils 1.1 et 1.2 de `../app/tool_page.html` ; le 1.3 est nouveau.
 
 Livré comme **un seul fichier HTML** (`dist/index.html`, copié en `../livrable/pilotage.html`), sans aucune requête réseau (règle de sécurité CSP intégrée), qui enregistre dans le navigateur ou dans le dossier OneDrive / SharePoint du client.
 
@@ -24,7 +25,7 @@ python3 ../../execution/build_outils_app.py   # met à jour ../livrable/ (depuis
 |---|---|
 | `src/domain/` | **Métier, sans interface** : types, périodes, nombres, moteur de calcul des indicateurs (`engine.ts` : statuts, bilans, tendance, dérive lente, efficacité, messages) et des risques (`risk.ts` : criticité, état du Plan B, tests, exposition), reprise de l'ancienne version, exemple et listes par métier (`templates.ts`, `riskTemplates.ts`). Testé. |
 | `src/store/` | **Stockage** : clés synchronisées, navigateur (`localStorage`), dossier partagé (un fichier par personne, dossier `direction` séparé), contexte React. Testé. |
-| `src/ui/` | **Écrans** : mise en route, Piloter, Saisir, Agir, fiche action, détail d'un indicateur, réglages, graphique ; pour le 1.2 : Cartographie (`Risques.tsx`), fiche risque, aperçu de fiche réflexe, Tests, annuaire, classeur de crise. |
+| `src/ui/` | **Écrans** : mise en route, Piloter, Saisir, Agir, fiche action, détail d'un indicateur, réglages, graphique ; pour le 1.2 : Cartographie (`Risques.tsx`), fiche risque, aperçu de fiche réflexe, Tests ; pour le 1.3 : Annuaire. |
 | `scripts/extract-templates.cjs` | Extraction unique de l'exemple et des listes par métier depuis l'ancienne version (`src/domain/legacy-templates.json`). |
 
 ## Principes
@@ -39,7 +40,7 @@ python3 ../../execution/build_outils_app.py   # met à jour ../livrable/ (depuis
 - **Règle par zone** : rouge (9 à 16) Plan B testé tous les 6 mois ; orange (4 à 8) Plan B testé chaque année ; vert (1 à 3) risque accepté. L'état, l'échéance des tests et la couverture suivent cette règle.
 - **Couverture** : part de la criticité orange et rouge dont le Plan B est testé dans les délais ; c'est le chiffre clé du 1.2.
 - **Délais chiffrés** (heures, jours, semaines, mois) : arrêt tolérable, activation du Plan B, délai mesuré au test. Activation ou délai mesuré supérieur à l'arrêt tolérable : alerte « Plan B trop lent ».
-- **Classeur de crise** : PDF écrit sans bibliothèque (`domain/pdf.ts`, polices standard Helvetica, fichier en ASCII), déposé dans le dossier partagé ou téléchargé. Une empreinte des fiches et des numéros (`binder`) indique quand il faut le refaire. Le coût d'un arrêt est facultatif : il propose une gravité, l'exposition annuelle et le délai de remboursement du Plan B.
+- **Fiches réflexes en PDF** : écrites sans bibliothèque (`domain/pdf.ts`, polices standard Helvetica, fichier en ASCII), une par page, toutes ou une seule. Le coût d'un arrêt est facultatif : il propose une gravité, l'exposition annuelle et le délai de remboursement du Plan B.
 - **Confidentialité** : en vue équipe (ou sans accès au dossier `direction`), aucun montant ni message ne révèle un indicateur confidentiel ; les coûts d'arrêt des risques sont masqués. Les contacts des fiches réflexes restent visibles de tous : l'équipe en a besoin le jour de la panne.
 - Règles visuelles : `../app/DESIGN_OUTILS.md`.
 
@@ -51,4 +52,4 @@ python3 ../../execution/build_outils_app.py   # met à jour ../livrable/ (depuis
 { "version": 2, "author": "Sandrine", "updatedAt": "…", "entries": { "value|kpi_cnq|2026-12": { "ts": "2026-12-05T09:12:00Z", "v": 310 } } }
 ```
 
-Clés : `settings`, `timeline`, `process|<id>`, `kpi|<id>`, `value|<kpi>|<AAAA-MM>`, `action|<id>`, `risk|<id>` et `riskcost|<id>` (coûts d'un risque, dossier `direction`), `contact|<id>` (annuaire de crise), `scale` (textes des niveaux), `binder` (dernier classeur de crise). Le classeur lui-même est écrit en `donnees/Classeur-de-crise.pdf`. À la lecture, toutes les entrées de tous les fichiers sont fusionnées : la plus récente gagne. Les anciens fichiers `journal-*.json` sont convertis à la première connexion. Les risques de l'ancien outil 1.2 (restés dans le navigateur) sont proposés à la reprise sur la cartographie vide.
+Clés : `settings`, `timeline`, `process|<id>`, `kpi|<id>`, `value|<kpi>|<AAAA-MM>`, `action|<id>`, `risk|<id>` et `riskcost|<id>` (coûts d'un risque, dossier `direction`), `contact|<id>` (annuaire de crise), `scale` (textes des niveaux). À la lecture, toutes les entrées de tous les fichiers sont fusionnées : la plus récente gagne. Les anciens fichiers `journal-*.json` sont convertis à la première connexion. Les risques de l'ancien outil 1.2 (restés dans le navigateur) sont proposés à la reprise sur la cartographie vide.

@@ -1,9 +1,10 @@
-// On-screen reflex card of a risk (same content as the printed card of the crisis binder).
+// On-screen reflex card of a risk (same content as the printed PDF card).
 import { Phone } from 'lucide-react';
 import type { Contact, Risk, State } from '../domain/types';
 import { familyLabel } from '../domain/riskTemplates';
 import { formatDuration } from '../domain/duration';
-import { noDot } from '../domain/binderPdf';
+import { noDot } from '../domain/reflexPdf';
+import { contactLabel } from '../domain/contacts';
 
 const lines = (t: string) => t.split('\n').map(x => x.trim()).filter(Boolean);
 
@@ -52,7 +53,7 @@ export function ContactList({ list }: { list: Contact[] }) {
     <ul className="space-y-1">
       {list.map(c => (
         <li key={c.id} className="flex flex-wrap items-baseline justify-between gap-x-2">
-          <span><strong>{[c.company, c.name].filter(Boolean).join(' · ')}</strong>{c.role ? <span className="text-slate-600"> · {c.role}</span> : ''}{c.always ? <span className="text-slate-600"> · 24 h/24</span> : ''}</span>
+          <span><strong>{contactLabel(c)}</strong>{c.role ? <span className="text-slate-600"> · {c.role}</span> : ''}{c.always ? <span className="text-slate-600"> · 24 h/24</span> : ''}</span>
           {c.phone && <a href={`tel:${c.phone.replace(/[ .]/g, '')}`} className="inline-flex items-center gap-1 font-mono font-semibold text-delacour-primary hover:underline"><Phone size={12} />{c.phone}</a>}
         </li>
       ))}

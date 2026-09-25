@@ -114,14 +114,6 @@ export class FolderSession {
     return fromLegacyTool(legacyToolFromFlatMap(map));
   }
 
-  // A document for everyone, next to the data (the crisis binder PDF)
-  async writeFile(name: string, text: string) {
-    const fh = await this.dir.getFileHandle(name, { create: true });
-    const w = await fh.createWritable();
-    await w.write(text);
-    await w.close();
-  }
-
   // Stamps every key that changed since the last load/save into my own file(s)
   async save(state: State) {
     const cur = flatten(state);

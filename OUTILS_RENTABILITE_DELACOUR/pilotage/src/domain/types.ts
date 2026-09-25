@@ -83,7 +83,6 @@ export interface State {
   risks: Record<string, Risk>;
   contacts: Record<string, Contact>;  // crisis directory, shared by the reflex cards
   scale: RiskScale;                   // wording of the gravity and likelihood levels
-  binder?: BinderMeta;                // last export of the crisis binder (PDF)
 }
 
 // ---- business continuity (tool 1.2)
@@ -103,8 +102,12 @@ export interface RiskTest {
   contactsChecked?: boolean;    // the numbers of the card were called during the test
 }
 
+export type ContactCategory = 'secours' | 'interne' | 'prestataire' | 'fournisseur' | 'client' | 'finance' | 'autre';
+
+// Crisis directory (tool 1.3), used by the reflex cards of the Plans B
 export interface Contact {
   id: string;
+  category: ContactCategory;
   name: string;
   role: string;           // function
   company: string;
@@ -115,7 +118,7 @@ export interface Contact {
 
 export interface RiskScale { gravity: string[]; likelihood: string[] }  // 4 texts each
 
-export interface BinderMeta { hash: string; at: string; by: string }
+
 
 // Money figures, stored in the "direction" folder (never shown in team view)
 export interface RiskCost {

@@ -1,6 +1,6 @@
 # Guide de déploiement : Pilotage Delacour dans votre OneDrive ou SharePoint
 
-Ce guide explique comment installer le tableau de pilotage mensuel (outil 1.1) et les Plans B (outil 1.2) dans le cloud Microsoft 365 de votre entreprise, pour que la direction et l'équipe travaillent sur les mêmes chiffres et le même plan d'actions.
+Ce guide explique comment installer le tableau de pilotage mensuel (outil 1.1), les Plans B (outil 1.2) et l'annuaire de crise (outil 1.3) dans le cloud Microsoft 365 de votre entreprise, pour que la direction et l'équipe travaillent sur les mêmes chiffres et le même plan d'actions.
 
 **Principe** : l'application est un simple fichier. Vos données restent dans votre propre OneDrive ou SharePoint. Aucun serveur du Cabinet Delacour ni d'un tiers ne les reçoit, et l'application ne fait aucun appel à internet.
 
@@ -10,7 +10,7 @@ Ce guide explique comment installer le tableau de pilotage mensuel (outil 1.1) e
 
 | Élément | Rôle |
 |---|---|
-| `pilotage.html` | **Indicateurs (outil 1.1)** et **Plans B (outil 1.2)**, avec un plan d'actions commun |
+| `pilotage.html` | **Indicateurs (outil 1.1)**, **Plans B (outil 1.2)** avec un plan d'actions commun, et **Annuaire de crise (outil 1.3)** |
 | `index.html` | Page d'accueil qui liste tous les outils |
 | `tool_page.html` | Les autres outils (2.1 à 5.3) |
 | `GUIDE_DEPLOIEMENT_ONEDRIVE_SHAREPOINT.md` | Ce guide |
@@ -45,7 +45,6 @@ Pilotage Delacour/
 ├─ pilotage.html
 ├─ index.html, tool_page.html
 └─ donnees/
-   ├─ Classeur-de-crise.pdf   fiches réflexes et numéros d'urgence (créé par le bouton Classeur de crise)
    ├─ equipe/      fichiers lisibles par tous (indicateurs, valeurs non confidentielles, actions, risques, annuaire de crise)
    └─ direction/   fichiers réservés : CA, marge, trésorerie, hypothèses financières, coût des arrêts
 ```
@@ -70,13 +69,14 @@ Conseil : sur chaque poste, faites un clic droit sur le dossier `donnees`, puis 
 ## 7. Au quotidien
 
 - **À chaque ouverture**, le navigateur redemande l'accès au dossier : cliquez sur **Reconnecter le dossier** (en haut à droite). C'est une protection du navigateur.
-- **Deux outils**, choisis sous le nom de l'entreprise :
+- **Trois outils**, choisis sous le nom de l'entreprise :
   - **Indicateurs** : **Piloter** (synthèse, alertes, graphiques), **Saisir** (les chiffres du mois), **Agir** (plan d'actions et efficacité) ;
-  - **Plans B** : **Cartographie** (matrice de criticité, risques à coter, annuaire et classeur de crise), **Tests** (tous les 6 mois en zone rouge, chaque année en zone orange), **Agir**.
+  - **Plans B** : **Cartographie** (matrice de criticité, risques à coter, fiches réflexes en PDF), **Tests** (tous les 6 mois en zone rouge, chaque année en zone orange), **Agir** ;
+  - **Annuaire** : les numéros de crise par catégorie, à imprimer pour l'accueil.
 - **Un seul plan d'actions** : l'écran Agir réunit les actions correctives des indicateurs et les actions de préparation des Plans B. Filtrez par origine si besoin.
 - **Cotez les risques ensemble** : Plans B, **Coter les risques**, puis gravité et probabilité de chaque risque (les définitions sont affichées ; montants et textes réglables dans Réglages). Les risques proposés par l'outil arrivent sans cotation.
-- **Classeur de crise** : Plans B, **Classeur de crise**, **Enregistrer dans le dossier partagé**. Le PDF (fiches réflexes, numéros d'urgence, sommaire) est déposé dans `donnees`. Sur chaque téléphone concerné, dans l'application OneDrive, ouvrez-le et choisissez **Rendre disponible hors connexion**. Imprimez-le aussi et rangez-le à l'accueil et près des postes : le jour d'une panne informatique, l'application peut être inaccessible. La cartographie signale quand il faut le refaire (fiche ou numéro modifié).
-- **Annuaire de crise** : chaque numéro n'est saisi qu'une fois et sert à toutes les fiches. Préférez les numéros professionnels et prévenez les personnes concernées (RGPD). Cochez **Contacts vérifiés** lors d'un test : la date de vérification se met à jour.
+- **Fiches réflexes** : Plans B, **Fiches réflexes (PDF)**. Imprimez-les et gardez-en une copie papier près des postes : le jour d'une panne informatique, l'application peut être inaccessible.
+- **Annuaire de crise** : chaque numéro n'est saisi qu'une fois et sert à toutes les fiches réflexes. Préférez les numéros professionnels et prévenez les personnes concernées (RGPD). Cochez **Contacts vérifiés** lors d'un test d'un Plan B : la date de vérification se met à jour.
 - **Chacun saisit librement.** Chaque personne écrit dans son propre fichier (`pilotage-<nom>.json`) : deux personnes ne peuvent pas s'écraser mutuellement, et OneDrive ne crée pas de copies en conflit.
 - **Les chiffres des collègues arrivent** en quelques secondes à quelques minutes, selon la synchronisation OneDrive. L'application relit le dossier quand vous revenez sur la fenêtre ; **Réglages → Actualiser** force la relecture.
 - **Si deux personnes modifient la même valeur**, la modification la plus récente est conservée.
@@ -94,7 +94,7 @@ Conseil : sur chaque poste, faites un clic droit sur le dossier `donnees`, puis 
 
 ## 10. Limites actuelles
 
-- Seuls les outils **1.1 et 1.2** partagent leurs données par le dossier. Les autres outils (2.1 à 5.3) enregistrent encore sur le poste de chaque utilisateur.
+- Seuls les outils **1.1 à 1.3** partagent leurs données par le dossier. Les autres outils (2.1 à 5.3) enregistrent encore sur le poste de chaque utilisateur.
 - Pas de saisie depuis un téléphone sur les données partagées : un navigateur mobile n'a pas accès au dossier synchronisé.
 - L'écriture dans le dossier nécessite Edge ou Chrome.
 

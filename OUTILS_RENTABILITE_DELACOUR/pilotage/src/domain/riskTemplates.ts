@@ -65,19 +65,19 @@ export function typicalRisks(profile: string): Risk[] {
 // ---- fictitious company: the 7 risks of the previous version, completed, with tests at various ages
 export function demoRisks(today = new Date()): { risks: State['risks']; actions: State['actions']; contacts: State['contacts'] } {
   const ago = (days: number) => isoDate(new Date(today.getFullYear(), today.getMonth(), today.getDate() - days));
-  const contact = (id: string, name: string, role: string, company: string, phone: string, always: boolean, verified: number): Contact =>
-    ({ id, name, role, company, phone, always, verifiedAt: ago(verified) });
+  const contact = (id: string, category: Contact['category'], name: string, role: string, company: string, phone: string, always: boolean, verified: number): Contact =>
+    ({ id, category, name, role, company, phone, always, verifiedAt: ago(verified) });
   const contacts = [
-    contact('ct_demo_it', 'Support informatique', 'Intervention et restauration', 'Prestataire IT', '04 00 00 00 01', true, 40),
-    contact('ct_demo_thomas', 'Thomas M.', 'Informatique', 'Interne', '06 00 00 00 01', false, 40),
-    contact('ct_demo_cyber', 'Assistance cyber', 'Déclaration de sinistre', 'Assureur', '0 800 000 000', true, 40),
-    contact('ct_demo_banque1', 'Conseiller entreprises', 'Banque principale', 'Banque A', '04 00 00 00 02', false, 230),
-    contact('ct_demo_banque2', 'Conseiller entreprises', 'Ligne de trésorerie de secours', 'Banque B', '04 00 00 00 03', false, 400),
-    contact('ct_demo_confrere', 'Chef d\'atelier', 'Accord de réciprocité', 'Confrère Usinage X', '06 00 00 00 04', false, 90),
-    contact('ct_demo_maint', 'Maintenance constructeur', 'Dépannage CNC', 'Constructeur', '04 00 00 00 05', true, 90),
-    contact('ct_demo_distrib', 'Service clients', 'Compte de secours tôle', 'Distributeur B', '04 00 00 00 06', false, 200),
-    contact('ct_demo_clientA', 'Acheteur', 'À prévenir en cas de retard', 'Client A (grand compte)', '04 00 00 00 07', false, 90),
-    contact('ct_demo_clientC', 'Responsable approvisionnement', 'À prévenir en cas de retard', 'Client C', '04 00 00 00 08', false, 200),
+    contact('ct_demo_it', 'prestataire', 'Support informatique', 'Intervention et restauration', 'Prestataire IT', '04 00 00 00 01', true, 40),
+    contact('ct_demo_thomas', 'interne', 'Thomas M.', 'Informatique', 'Interne', '06 00 00 00 01', false, 40),
+    contact('ct_demo_cyber', 'finance', 'Assistance cyber', 'Déclaration de sinistre', 'Assureur', '0 800 000 000', true, 40),
+    contact('ct_demo_banque1', 'finance', 'Conseiller entreprises', 'Banque principale', 'Banque A', '04 00 00 00 02', false, 230),
+    contact('ct_demo_banque2', 'finance', 'Conseiller entreprises', 'Ligne de trésorerie de secours', 'Banque B', '04 00 00 00 03', false, 400),
+    contact('ct_demo_confrere', 'prestataire', 'Chef d\'atelier', 'Accord de réciprocité', 'Confrère Usinage X', '06 00 00 00 04', false, 90),
+    contact('ct_demo_maint', 'prestataire', 'Maintenance constructeur', 'Dépannage CNC', 'Constructeur', '04 00 00 00 05', true, 90),
+    contact('ct_demo_distrib', 'fournisseur', 'Service clients', 'Compte de secours tôle', 'Distributeur B', '04 00 00 00 06', false, 200),
+    contact('ct_demo_clientA', 'client', 'Acheteur', 'À prévenir en cas de retard', 'Client A (grand compte)', '04 00 00 00 07', false, 90),
+    contact('ct_demo_clientC', 'client', 'Responsable approvisionnement', 'À prévenir en cas de retard', 'Client C', '04 00 00 00 08', false, 200),
   ];
   const base = (id: string, p: Partial<Risk>): Risk => ({ ...newRisk('P1', today), id, createdAt: ago(300), ratedBy: 'Jean-Marc', ratedAt: ago(300), ...p });
   const risks: Risk[] = [

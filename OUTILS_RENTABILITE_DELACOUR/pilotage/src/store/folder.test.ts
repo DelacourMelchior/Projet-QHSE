@@ -75,13 +75,6 @@ describe('shared folder', () => {
     expect((root.children.get('equipe') as MemDir).children.get('pilotage-karim.json')).toBeUndefined();
   });
 
-  it('writes the crisis binder next to the data folders', async () => {
-    const root = new MemDir('donnees');
-    await initDataFolder(asDir(root));
-    await new FolderSession(asDir(root), 'Jean').writeFile('Classeur-de-crise.pdf', '%PDF-1.4');
-    expect((root.children.get('Classeur-de-crise.pdf') as MemFile).data).toBe('%PDF-1.4');
-  });
-
   it("migrates the previous version's journals once", async () => {
     const root = new MemDir('donnees');
     await initDataFolder(asDir(root));

@@ -1,7 +1,7 @@
 // Tool 1.2, screen "Cartographie": are we ready? Summary, messages, criticality matrix with its rules,
-// risks to rate, rating session for the whole team, crisis directory and crisis binder.
+// risks to rate, rating session for the whole team, reflex cards in PDF, link to the crisis directory (tool 1.3).
 import { useMemo, useState } from 'react';
-import { BookUser, ChevronRight, FileText, HelpCircle, Plus, Printer, SlidersVertical } from 'lucide-react';
+import { BookUser, ChevronRight, FileDown, Plus, Printer, SlidersVertical } from 'lucide-react';
 import type { Risk, Scale, State } from '../domain/types';
 import {
   gravityScale, lastTest, likelihoodScale, riskInsights, riskState, riskSummary, risksInOrder, STATE_INFO, ZONE_RULES, zoneOf,
@@ -14,17 +14,15 @@ import { legacyLocalRisks } from '../store/local';
 import { useStore } from '../store/StoreContext';
 import { Button, Card, StatusBadge } from './common';
 import { ScalePicker, ScoreBadge, ZONE_STYLE } from './RiskSheet';
-import { Annuaire } from './Annuaire';
-import { Classeur } from './Classeur';
+import { reflexCardsPdf } from '../domain/reflexPdf';
+import { downloadFile } from './download';
 
 const TONE = { good: 'border-emerald-200 bg-emerald-50 text-emerald-900', warn: 'border-amber-200 bg-amber-50 text-amber-950', bad: 'border-red-200 bg-red-50 text-red-900' };
 
-export function Risques({ onOpenRisk, onNewRisk }: { onOpenRisk(id: string): void; onNewRisk(): void }) {
+export function Risques({ onOpenRisk, onNewRisk, onOpenDirectory }: { onOpenRisk(id: string): void; onNewRisk(): void; onOpenDirectory(): void }) {
   const { state, update, teamView, author } = useStore();
   const [cell, setCell] = useState<[number, number] | null>(null);
   const [rating, setRating] = useState<string[] | null>(null);   // frozen order while rating, so rows do not jump
-  const [help, setHelp] = useState(false);
-  const [dialog, setDialog] = useState<'annuaire' | 'classeur' | null>(null);
   const legacy = useMemo(() => legacyLocalRisks(), []);
   if (!state) return null;
   const risks = risksInOrder(state);
@@ -34,24 +32,20 @@ export function Risques({ onOpenRisk, onNewRisk }: { onOpenRisk(id: string): voi
   const startRating = () => { setCell(null); setRating(risks.map(r => r.id)); };
   const rate = (id: string, patch: Partial<Pick<Risk, 'gravity' | 'likelihood'>>) =>
     update(d => { Object.assign(d.risks[id], patch, { ratedBy: author, ratedAt: isoDate(new Date()) }); });
-  const dialogs = <>
-    {dialog === 'annuaire' && <Annuaire onClose={() => setDialog(null)} />}
-    {dialog === 'classeur' && <Classeur onClose={() => setDialog(null)} />}
-  </>;
+  const cardsPdf = () => downloadFile('Fiches-reflexes.pdf', reflexCardsPdf(state, { company: state.settings.companyName, by: author, date: new Date() }), 'application/pdf');
 
   if (!risks.length) {
     return (
       <Card className="space-y-4 p-4 sm:p-6">
         <div>
           <h2 className="text-sm font-bold text-delacour-primary">Plans B : de quoi l'entreprise ne peut-elle pas se passer ?</h2>
-          <p className="mt-1 max-w-2xl text-xs text-slate-600">Recensez les machines, personnes, fournisseurs, clients et logiciels dont l'arrêt bloque l'activité. Cotez-les ensemble, puis, pour chaque risque orange ou rouge : un Plan B, un responsable, une fiche réflexe et un test régulier.</p>
+          <p className="mt-1 max-w-2xl text-xs text-slate-600">Recensez les machines, personnes, fournisseurs, clients et logiciels dont l'arrêt bloque l'activité.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button kind="primary" onClick={() => addAll(typicalRisks(profile))}>Partir des 8 risques fréquents ({PROFILES[profile]})</Button>
           <Button onClick={onNewRisk}><Plus size={14} />Ajouter un risque</Button>
           {legacy.length > 0 && <Button onClick={() => addAll(legacy)}>Reprendre les {legacy.length} risques de l'ancienne version</Button>}
         </div>
-        <p className="text-[11px] text-slate-500">Les risques proposés arrivent sans cotation : c'est à vous de juger leur gravité et leur probabilité.</p>
       </Card>
     );
   }
@@ -66,27 +60,22 @@ export function Risques({ onOpenRisk, onNewRisk }: { onOpenRisk(id: string): voi
         {rating ? <Button kind="primary" onClick={() => setRating(null)}>Terminer la cotation</Button>
           : <Button onClick={startRating}><SlidersVertical size={14} />Coter les risques</Button>}
         <span className="mx-1 hidden h-5 w-px bg-slate-300 sm:block" />
-        <Button onClick={() => setDialog('annuaire')}><BookUser size={14} />Annuaire de crise</Button>
-        <Button onClick={() => setDialog('classeur')}><FileText size={14} />Classeur de crise</Button>
+        <Button onClick={onOpenDirectory}><BookUser size={14} />Annuaire de crise</Button>
+        <Button onClick={cardsPdf}><FileDown size={14} />Fiches réflexes (PDF)</Button>
         <Button kind="ghost" onClick={() => window.print()} aria-label="Imprimer la cartographie" className="sm:ml-auto"><Printer size={14} />Imprimer</Button>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
         <div className="space-y-4">
           <Card className="space-y-3 p-3 sm:p-4 print:break-inside-avoid">
-            <div className="flex items-center justify-between gap-2">
-              <h2 className="text-xs font-bold text-slate-900">Matrice de criticité</h2>
-              <button type="button" onClick={() => setHelp(!help)} aria-expanded={help} className="inline-flex items-center gap-1 text-[11px] font-semibold text-delacour-primary hover:underline print:hidden"><HelpCircle size={13} />Comment coter ?</button>
-            </div>
+            <h2 className="text-xs font-bold text-slate-900">Matrice de criticité</h2>
             <Matrix risks={risks} cell={cell} setCell={c => { setRating(null); setCell(c); }} />
             {cell && <button type="button" className="text-[11px] font-semibold text-delacour-primary hover:underline" onClick={() => setCell(null)}>Afficher tous les risques</button>}
             <ZoneRules />
-            {help && <ScaleLegend s={state} money={!teamView} />}
           </Card>
           {unrated.length > 0 && !rating && (
             <Card className="space-y-2 border-dashed border-slate-300 p-3 sm:p-4 print:hidden">
               <h2 className="text-xs font-bold text-slate-900">À coter <span className="font-normal text-slate-500">{unrated.length}</span></h2>
-              <p className="text-[11px] text-slate-600">Hors matrice tant que la gravité et la probabilité ne sont pas choisies.</p>
               <ul className="space-y-0.5 text-[11px] text-slate-800">{unrated.slice(0, 5).map(r => <li key={r.id} className="truncate">{r.title || 'Sans titre'}</li>)}</ul>
               {unrated.length > 5 && <p className="text-[11px] text-slate-500">et {unrated.length - 5} autre(s)</p>}
               <Button kind="primary" onClick={startRating}>Coter maintenant</Button>
@@ -98,7 +87,6 @@ export function Risques({ onOpenRisk, onNewRisk }: { onOpenRisk(id: string): voi
           {rating ? (
             <div className="space-y-2">
               <h2 className="text-xs font-bold text-slate-900">Cotation des risques</h2>
-              <p className="text-[11px] text-slate-600">Passez les risques un par un avec l'équipe : gravité (G) puis probabilité (P). La matrice se met à jour à chaque choix ; survolez un chiffre pour sa définition.</p>
               <ScaleLegend s={state} money={!teamView} />
             </div>
           ) : <h2 className="text-xs font-bold text-slate-900">Risques par criticité <span className="font-normal text-slate-500">{shown.length}</span></h2>}
@@ -111,7 +99,6 @@ export function Risques({ onOpenRisk, onNewRisk }: { onOpenRisk(id: string): voi
           )}
         </Card>
       </div>
-      {dialogs}
     </div>
   );
 }
@@ -127,9 +114,9 @@ function Summary({ s, team }: { s: State; team: boolean }) {
     <Card className="space-y-3 p-3 sm:p-4">
       <h2 className="text-sm font-bold text-delacour-primary">Sommes-nous prêts ?</h2>
       <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
-        <Tile title="Couverture" value={cov === null ? '—' : `${cov} %`} sub="de la criticité orange et rouge a un Plan B testé dans les délais" cls={covTone} />
+        <Tile title="Couverture" value={cov === null ? '—' : `${cov} %`} sub="Plans B testés à jour" cls={covTone} />
         <Tile title="Risques recensés" value={String(sum.count)} sub={`dont ${sum.critical} critique(s)${sum.byState.unrated ? `, ${sum.byState.unrated} à coter` : ''}`} />
-        <Tile title="Sans Plan B" value={String(sum.byState.uncovered)} sub="risque(s) orange ou rouge non couvert(s)" cls={sum.byState.uncovered ? 'border-red-300 bg-red-50/70' : undefined} />
+        <Tile title="Sans Plan B" value={String(sum.byState.uncovered)} sub="risque(s) non couvert(s)" cls={sum.byState.uncovered ? 'border-red-300 bg-red-50/70' : undefined} />
         {team ? <Tile title="Exposition annuelle" value="Masqué" sub="Réservé à la direction" />
           : <Tile title="Exposition annuelle" value={sum.exposure === null ? '—' : formatValue(sum.exposure, '€')}
             sub={sum.exposure === null ? 'Renseignez le coût d\'un arrêt dans les fiches' : `perte moyenne par an, sur ${sum.exposureCount} risque(s) chiffré(s)`} />}
@@ -187,16 +174,16 @@ function Matrix({ risks, cell, setCell }: { risks: Risk[]; cell: [number, number
   );
 }
 
-// What each zone requires
+// The one place that explains the matrix: the score and what each zone requires
 function ZoneRules() {
   return (
     <div className="space-y-1 border-t border-slate-100 pt-2">
-      <p className="text-[11px] text-slate-600">Criticité = gravité × probabilité (de 1 à 16). Le chiffre d'une case est le nombre de risques.</p>
+      <p className="text-[11px] text-slate-600">Criticité = gravité × probabilité</p>
       <ul className="space-y-1">
         {ZONE_RULES.map(z => (
           <li key={z.zone} className="flex items-start gap-2 text-[11px] text-slate-700">
             <span className={`mt-0.5 h-3 w-3 shrink-0 rounded-sm ${ZONE_STYLE[z.zone].split(' ')[0]}`} />
-            <span><strong>{z.range}</strong> : {z.rule}.</span>
+            <span><strong>{z.range}</strong> : {z.rule}</span>
           </li>
         ))}
       </ul>
@@ -204,7 +191,7 @@ function ZoneRules() {
   );
 }
 
-// Definitions of the 4 levels of each scale (Réglages to adapt them)
+// Definitions of the 4 levels of each scale, shown only while rating
 function ScaleLegend({ s, money }: { s: State; money: boolean }) {
   const col = (title: string, items: ReturnType<typeof gravityScale>) => (
     <div className="space-y-1">
@@ -218,7 +205,6 @@ function ScaleLegend({ s, money }: { s: State; money: boolean }) {
     <div className="grid gap-3 rounded-lg bg-slate-50 p-2.5 sm:grid-cols-2">
       {col('Gravité (G) : si le risque survient', gravityScale(s, money))}
       {col('Probabilité (P) : à quelle fréquence', likelihoodScale(s))}
-      <p className="text-[11px] text-slate-500 sm:col-span-2">Les montants et les textes s'adaptent dans Réglages, section Cotation des risques.</p>
     </div>
   );
 }

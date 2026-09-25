@@ -4451,6 +4451,7 @@
       const toolParam = urlParams.get('tool');
       if (!toolParam || toolParam === '1.1') { window.location.replace(PILOTAGE_URL); return; }
       if (toolParam === '1.2') { window.location.replace(PILOTAGE_URL + '#continuite'); return; }
+      if (toolParam === '1.3') { window.location.replace(PILOTAGE_URL + '#annuaire'); return; }
 
       const select = document.getElementById('toolSelectHeader');
       select.innerHTML = '';
@@ -4459,6 +4460,12 @@
         opt.value = id;
         opt.textContent = `${t.code} - ${t.title}`;
         select.appendChild(opt);
+        if (id === '1.2') {   // tool 1.3 exists only in pilotage.html
+          const dir = document.createElement('option');
+          dir.value = '1.3';
+          dir.textContent = "OUTIL 1.3 - Annuaire de Crise & Contacts d'Urgence";
+          select.appendChild(dir);
+        }
       }
 
       const savedClient = localStorage.getItem('DELACOUR_CLIENT_NAME');
@@ -4482,6 +4489,7 @@
     function switchTool(newToolId) {
       if (newToolId === '1.1') { window.location.href = PILOTAGE_URL; return; }
       if (newToolId === '1.2') { window.location.href = PILOTAGE_URL + '#continuite'; return; }
+      if (newToolId === '1.3') { window.location.href = PILOTAGE_URL + '#annuaire'; return; }
       if (!TOOLS_DATA[newToolId]) return;
       currentToolId = newToolId;
       window.history.pushState({}, '', `tool_page.html?tool=${newToolId}`);

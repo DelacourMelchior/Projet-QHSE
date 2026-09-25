@@ -1,6 +1,6 @@
 // State <-> flat map of independent keys, the unit of synchronisation between people.
 //   settings | timeline | process|<id> | kpi|<id> | value|<kpiId>|<YYYY-MM> | action|<id>
-//   risk|<id> (without money) | riskcost|<id> (money figures of a risk, direction folder) | contact|<id> | scale | binder
+//   risk|<id> (without money) | riskcost|<id> (money figures of a risk, direction folder) | contact|<id> | scale
 import type { Contact, Risk, RiskCost, State } from '../domain/types';
 import { DEFAULT_SCALE } from '../domain/risk';
 import { DEFAULT_SETTINGS } from '../domain/migrate';
@@ -19,7 +19,6 @@ export function flatten(s: State): FlatMap {
   });
   Object.values(s.contacts || {}).forEach(c => { m[`contact|${c.id}`] = c; });
   if (s.scale) m.scale = s.scale;
-  if (s.binder) m.binder = s.binder;
   return m;
 }
 
@@ -29,7 +28,6 @@ export function unflatten(m: FlatMap): State {
     timeline: (m.timeline as State['timeline']) || { start: '2026-01', end: '2026-12' },
     processes: [], kpis: {}, values: {}, actions: {}, risks: {}, contacts: {},
     scale: (m.scale as State['scale']) || DEFAULT_SCALE,
-    ...(m.binder ? { binder: m.binder as State['binder'] } : {}),
   };
   const costs: Record<string, RiskCost> = {};
   for (const [k, v] of Object.entries(m)) {

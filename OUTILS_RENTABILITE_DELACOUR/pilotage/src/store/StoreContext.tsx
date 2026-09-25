@@ -35,7 +35,6 @@ interface Store {
   reconnectFolder(): Promise<void>;
   disconnectFolder(): Promise<void>;
   refresh(): Promise<void>;
-  writeFolderFile(name: string, text: string): Promise<boolean>;
 }
 
 const Ctx = createContext<Store | null>(null);
@@ -147,12 +146,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async () => { if (session.current) await loadFromFolder(); }, [loadFromFolder]);
 
-  const writeFolderFile = useCallback(async (name: string, text: string) => {
-    const s = session.current;
-    if (!s || folderRef.current.status !== 'connected') return false;
-    try { await s.writeFile(name, text); return true; } catch { return false; }
-  }, []);
-
   // boot: reopen the remembered folder when the browser still grants access (otherwise one click to reconnect)
   useEffect(() => {
     if (!folderSupported()) return;
@@ -200,7 +193,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const value: Store = {
     state, period, setPeriod, teamView, setTeamView, update, replace, author, setAuthor,
-    folder, connectFolder, reconnectFolder, disconnectFolder, refresh, writeFolderFile,
+    folder, connectFolder, reconnectFolder, disconnectFolder, refresh,
   };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

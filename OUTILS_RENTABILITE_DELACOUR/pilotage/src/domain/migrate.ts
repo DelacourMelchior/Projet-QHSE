@@ -5,7 +5,13 @@ import type { Contact, Risk, Action, ActionStatus, Aggregation, Dim5M, Kpi, KpiR
 import { isoDate, parseDate, periodOf } from './periods';
 import { DEFAULT_SCALE, newRisk } from './risk';
 import { parseDuration } from './duration';
-import { fnv } from './binder';
+
+// Short stable hash (FNV-1a): the same old contact line gives the same id on every computer
+function fnv(text: string): string {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < text.length; i++) { h ^= text.charCodeAt(i); h = Math.imul(h, 0x01000193); }
+  return (h >>> 0).toString(16).padStart(8, '0');
+}
 import { parseNumber } from './numbers';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -123,6 +129,7 @@ export function normalize(s: State): State {
     r.maxOutage ??= null; r.activation ??= null; r.contactIds ||= []; r.notifyIds ||= []; r.tests ||= [];
     return [id, r as Risk];
   }));
+  Object.values(contacts).forEach(c => { c.category ||= 'autre'; });
   return { ...s, risks, contacts, scale: s.scale || DEFAULT_SCALE };
 }
 
@@ -133,7 +140,7 @@ export function contactsFromText(text: string, into: Record<string, Contact>): s
     const phone = m ? m[0].trim() : '';
     const [name, ...rest] = line.replace(phone, '').replace(/[\s:–-]+$/, '').split(',');
     const id = `ct_${fnv(line)}`;
-    into[id] ||= { id, name: name.trim() || line, role: rest.join(',').trim(), company: '', phone, always: false, verifiedAt: '' };
+    into[id] ||= { id, category: 'autre', name: name.trim() || line, role: rest.join(',').trim(), company: '', phone, always: false, verifiedAt: '' };
     return id;
   });
 }

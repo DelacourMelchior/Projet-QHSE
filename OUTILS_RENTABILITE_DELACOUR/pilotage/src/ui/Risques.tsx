@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import { BookUser, CalendarCheck, ChevronRight, FileDown, Plus, Printer, SlidersVertical } from 'lucide-react';
 import type { Risk, Scale, State } from '../domain/types';
 import {
-  gravityScale, lastTest, likelihoodScale, testDueDate, riskInsights, riskState, riskSummary, risksInOrder, STATE_INFO, ZONE_RULES, zoneOf,
+  actionsOfRisk, gravityScale, lastTest, likelihoodScale, testDueDate, riskInsights, riskState, riskSummary, risksInOrder, STATE_INFO, ZONE_RULES, zoneOf,
 } from '../domain/risk';
 import { applyPlansBExample, typicalRisks } from '../domain/riskTemplates';
 import { PROFILES, type ProfileKey } from '../domain/templates';
@@ -18,6 +18,7 @@ import { reflexCardsPdf } from '../domain/reflexPdf';
 import { downloadFile } from './download';
 
 const TO_TEST = ['failed', 'expired', 'ready'];
+const openPrep = (s: State, r: Risk) => actionsOfRisk(s, r.id).filter(a => a.status === 'to_start' || a.status === 'in_progress').length;
 const TONE = { good: 'border-emerald-200 bg-emerald-50 text-emerald-900', warn: 'border-amber-200 bg-amber-50 text-amber-950', bad: 'border-red-200 bg-red-50 text-red-900' };
 
 export function Risques({ onOpenRisk, onNewRisk, onOpenDirectory }: { onOpenRisk(id: string, step?: number): void; onNewRisk(): void; onOpenDirectory(): void }) {
@@ -251,6 +252,7 @@ function RiskRow({ s, r, open, test }: { s: State; r: Risk; open(): void; test()
         <span className="min-w-0 flex-1">
           <span className="line-clamp-2 block text-xs font-semibold text-slate-900 sm:truncate">{r.title || 'Sans titre'}</span>
           <span className="block truncate text-[11px] text-slate-500">{[proc?.name.split(' · ')[0] || r.processId, r.planB ? `Plan B : ${r.planB}` : r.resource].filter(Boolean).join(' · ')}</span>
+          {state === 'preparing' && <span className="block text-[11px] font-semibold text-amber-800">Plan B pas encore prêt : {openPrep(s, r)} action(s) à terminer</span>}
         </span>
         <span className="hidden shrink-0 text-right text-[11px] text-slate-600 sm:block">
           <span className="block font-semibold text-slate-800">{r.owner || <span className="text-red-700">À désigner</span>}</span>

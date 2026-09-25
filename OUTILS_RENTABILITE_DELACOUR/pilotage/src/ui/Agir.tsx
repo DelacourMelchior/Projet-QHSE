@@ -13,7 +13,7 @@ import { dimLabel, STATUS_LABEL } from './ActionSheet';
 type Filter = 'all' | 'open' | 'late' | 'closed';
 export type Origin = 'all' | 'kpi' | 'risk';
 
-export function Agir({ onOpenAction, onNewAction, defaultOrigin = 'all' }: { onOpenAction(id: string): void; onNewAction(kpiId: string, riskId?: string): void; defaultOrigin?: Origin }) {
+export function Agir({ onOpenAction, onNewAction, onOpenRisk, defaultOrigin = 'all' }: { onOpenAction(id: string): void; onNewAction(kpiId: string, riskId?: string): void; onOpenRisk?(id: string): void; defaultOrigin?: Origin }) {
   const { state, teamView } = useStore();
   const [filter, setFilter] = useState<Filter>('open');
   const [origin, setOrigin] = useState<Origin>(defaultOrigin);
@@ -88,7 +88,9 @@ export function Agir({ onOpenAction, onNewAction, defaultOrigin = 'all' }: { onO
                   return (
                     <tr key={a.id} onClick={() => onOpenAction(a.id)} className="cursor-pointer hover:bg-slate-50">
                       <td className="whitespace-nowrap border-b border-slate-100 px-2 py-2 text-slate-600">{periodLabel(a.period)}</td>
-                      <td className="border-b border-slate-100 px-2 py-2 font-semibold text-slate-900">{a.riskId ? <><span className="block text-[11px] font-semibold text-slate-500">Plan B</span>{r?.title || 'Risque supprimé'}</> : k?.name || 'Indicateur supprimé'}</td>
+                      <td className="border-b border-slate-100 px-2 py-2 font-semibold text-slate-900">{a.riskId ? <><span className="block text-[11px] font-normal text-slate-500">Pour préparer le Plan B de :</span>{r && onOpenRisk
+                        ? <button type="button" onClick={e => { e.stopPropagation(); onOpenRisk(r.id); }} className="text-left font-semibold text-delacour-primary hover:underline">{r.title}</button>
+                        : r?.title || 'Risque supprimé'}</> : k?.name || 'Indicateur supprimé'}</td>
                       <td className="max-w-[320px] border-b border-slate-100 px-2 py-2 text-slate-700">
                         {a.plan.slice(0, 2).map((p, i) => <div key={i} className="truncate"><span className="text-slate-500">{dimLabel(p.dim)} :</span> {p.text}{p.pilot ? ` (${p.pilot})` : ''}</div>)}
                         {a.plan.length > 2 && <div className="text-[11px] text-slate-500">+ {a.plan.length - 2} autre(s)</div>}

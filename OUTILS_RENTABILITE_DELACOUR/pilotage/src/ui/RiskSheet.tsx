@@ -178,6 +178,7 @@ export function RiskSheet({ initial, startStep = 0, onClose, onNewAction, onOpen
 
         {step === 2 && (
           <section className="space-y-3">
+            <PartTitle n="1" title="Le jour J : ce qu'on fait" text="La consigne à appliquer quand le risque survient. Elle figure sur la fiche réflexe." />
             <div className="space-y-1.5">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[11px] font-semibold text-slate-700">Famille de parade</span>
@@ -201,7 +202,7 @@ export function RiskSheet({ initial, startStep = 0, onClose, onNewAction, onOpen
                 </div>
               )}
             </div>
-            <Field label="Plan B : ce qu'on fait quand ça arrive" hint="Vide = risque non couvert."><textarea className={textArea} value={r.planB} onChange={e => set({ planB: e.target.value })} /></Field>
+            <Field label="Plan B" hint="Vide = risque non couvert."><textarea className={textArea} value={r.planB} onChange={e => set({ planB: e.target.value })} /></Field>
             <div className="grid gap-3 sm:grid-cols-2">
               <Field label="Relais (qui ou quoi prend le relais)"><input className={inputCls} value={r.relay} onChange={e => set({ relay: e.target.value })} /></Field>
               <DurationInput label="Délai d'activation du Plan B" hint={r.maxOutage ? `Arrêt tolérable : ${formatDuration(r.maxOutage)}.` : 'Renseignez l\'arrêt tolérable (étape 1) pour comparer.'} value={r.activation} onChange={v => set({ activation: v })} />
@@ -222,12 +223,15 @@ export function RiskSheet({ initial, startStep = 0, onClose, onNewAction, onOpen
               </div>
             )}
 
+            <div className="border-t border-slate-200 pt-3">
+              <PartTitle n="2" title="Avant : ce qu'il reste à faire pour que ce Plan B soit prêt" text="Accord à signer, pièces à acheter, personne à former… Chaque action a un pilote et une échéance ; elle apparaît aussi dans l'onglet Actions." />
+            </div>
             <div className="space-y-1.5 rounded-lg border border-slate-200 p-2.5">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-xs font-bold text-slate-900">Actions de préparation</span>
-                <Button className="!px-2 !py-1" onClick={newPrep}><Plus size={13} />Action</Button>
+                <span className="text-[11px] font-semibold text-slate-700">{prepProgress(actionsOfRisk(state, r.id))}</span>
+                <Button className="!px-2 !py-1" onClick={newPrep}><Plus size={13} />Action à faire</Button>
               </div>
-              {actionsOfRisk(state, r.id).length === 0 ? <p className="text-[11px] text-slate-500">Aucune. Ajoutez ce qu'il faut faire pour que le Plan B soit prêt (5M) : elles rejoignent le plan d'actions commun.</p>
+              {actionsOfRisk(state, r.id).length === 0 ? <p className="text-[11px] text-slate-500">Rien à faire ? Le Plan B est alors considéré comme prêt, à tester.</p>
                 : actionsOfRisk(state, r.id).map(a => (
                   <button key={a.id} type="button" onClick={() => { if (valid()) { commit(r); onOpenAction(a.id); } }} className="flex w-full items-center justify-between gap-2 rounded-lg border border-slate-100 px-2 py-1.5 text-left text-[11px] hover:bg-slate-50">
                     <span className="min-w-0 truncate text-slate-800">{a.plan.map(p => p.text).join(' · ') || a.constat}</span>
@@ -314,6 +318,21 @@ export function RiskSheet({ initial, startStep = 0, onClose, onNewAction, onOpen
     </Modal>
   );
 }
+
+function PartTitle({ n, title, text }: { n: string; title: string; text: string }) {
+  return (
+    <div className="flex items-start gap-2">
+      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-delacour-primary text-[11px] font-bold text-white">{n}</span>
+      <div><h3 className="text-xs font-bold text-slate-900">{title}</h3><p className="text-[11px] text-slate-500">{text}</p></div>
+    </div>
+  );
+}
+
+const prepProgress = (xs: { status: string }[]) => {
+  if (!xs.length) return 'Aucune action';
+  const done = xs.filter(a => a.status === 'done' || a.status === 'effective').length;
+  return done === xs.length ? `Plan B prêt : ${xs.length} action(s) terminée(s)` : `${done} action(s) terminée(s) sur ${xs.length}`;
+};
 
 export function ScalePicker({ title, value, items, onChange, compact }: { title: string; value: Scale | null; items: ScaleLevel[]; onChange(v: Scale): void; compact?: boolean }) {
   return (

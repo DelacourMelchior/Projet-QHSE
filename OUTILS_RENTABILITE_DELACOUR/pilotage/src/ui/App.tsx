@@ -137,7 +137,7 @@ export function App() {
         {teamView && tool !== 'dir' && <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-900 print:hidden">Vue équipe : les montants confidentiels (chiffre d'affaires, marge, trésorerie, coût des arrêts…) sont masqués.</p>}
         {screen === 'piloter' && <Piloter onOpenKpi={setKpiOpen} onNewAction={startAction} onOpenAction={openAction} goSaisir={() => setScreen('saisir')} />}
         {screen === 'saisir' && <Saisir done={() => setScreen('piloter')} />}
-        {screen === 'agir' && <Agir key={tool} onOpenAction={openAction} onNewAction={startAction} defaultOrigin={tool === 'risk' ? 'risk' : 'kpi'} />}
+        {screen === 'agir' && <Agir key={tool} onOpenAction={openAction} onNewAction={startAction} onOpenRisk={id => openRisk(id, 2)} defaultOrigin={tool === 'risk' ? 'risk' : 'kpi'} />}
         {screen === 'risques' && <Risques onOpenRisk={openRisk} onNewRisk={() => setRisk({ r: newRisk(state.processes[0]?.id || 'P1'), step: 0 })} onOpenDirectory={() => setTool('dir')} />}
         {screen === 'annuaire' && <Annuaire />}
       </main>

@@ -62,11 +62,35 @@ export function typicalRisks(profile: string): Risk[] {
   });
 }
 
+// Fictitious addresses, on the domain reserved for examples
+export const EMAILS: Record<string, string> = {
+  ct_demo_it: 'support@prestataire-it.example.com',
+  ct_demo_thomas: 'thomas.m@entreprise.example.com',
+  ct_demo_cyber: 'sinistres.cyber@assureur.example.com',
+  ct_demo_banque1: 'entreprises@banque-a.example.com',
+  ct_demo_banque2: 'entreprises@banque-b.example.com',
+  ct_demo_confrere: 'atelier@usinage-x.example.com',
+  ct_demo_maint: 'sav@constructeur.example.com',
+  ct_demo_distrib: 'commandes@distributeur-b.example.com',
+  ct_demo_clientA: 'achats@client-a.example.com',
+  ct_demo_clientC: 'appro@client-c.example.com',
+  ct_demo_medtravail: 'accueil@sst.example.com',
+  ct_demo_dirigeant: 'jean-marc@entreprise.example.com',
+  ct_demo_qualite: 'antoine.p@entreprise.example.com',
+  ct_demo_atelier: 'david.k@entreprise.example.com',
+  ct_demo_elec: 'depannage@electricite-martin.example.com',
+  ct_demo_eau: 'urgence@plomberie-dupuis.example.com',
+  ct_demo_acier: 'ventes@aciers-du-rhone.example.com',
+  ct_demo_transport: 'exploitation@transports-rapides.example.com',
+  ct_demo_clientB: 'achats@client-b.example.com',
+  ct_demo_expert: 'contact@cabinet-comptable.example.com',
+};
+
 // Example directory (every category): used by the demo, and offered when the directory is empty
 export function exampleContacts(today = new Date()): Contact[] {
   const ago = (days: number) => isoDate(new Date(today.getFullYear(), today.getMonth(), today.getDate() - days));
   const contact = (id: string, category: Contact['category'], name: string, role: string, company: string, phone: string, always: boolean, verified: number): Contact =>
-    ({ id, category, name, role, company, phone, always, verifiedAt: ago(verified) });
+    ({ id, category, name, role, company, phone, email: EMAILS[id] || '', always, verifiedAt: ago(verified) });
   return [
     contact('ct_demo_it', 'prestataire', 'Support informatique', 'Intervention et restauration', 'Prestataire IT', '04 00 00 00 01', true, 40),
     contact('ct_demo_thomas', 'interne', 'Thomas M.', 'Informatique', 'Interne', '06 00 00 00 01', false, 40),

@@ -44,7 +44,7 @@ class Writer {
     const phoneW = textWidth(c.phone, 12.5, true);
     this.doc.text(c.phone, A4.w - M - phoneW, this.y, 12.5, { bold: true, color: DARK });
     this.doc.text(wrap(contactLabel(c), WIDTH - phoneW - 16, 11, true)[0], M, this.y, 11, { bold: true });
-    const sub = [c.role, c.always ? 'joignable 24 h/24' : ''].filter(Boolean).join(' · ');
+    const sub = [c.role, c.always ? 'joignable 24 h/24' : '', c.email].filter(Boolean).join(' · ');
     if (sub) { this.y -= 12; this.doc.text(wrap(sub, WIDTH - phoneW - 16, 9)[0], M, this.y, 9, { color: GRAY }); }
     this.y -= 5;
   }

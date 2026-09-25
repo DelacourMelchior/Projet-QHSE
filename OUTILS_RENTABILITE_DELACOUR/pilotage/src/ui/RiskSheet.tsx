@@ -353,14 +353,14 @@ function ContactsPicker({ label, ids, onChange, directory, onCreate }: {
   label: string; ids: string[]; onChange(ids: string[]): void; directory: Record<string, Contact>; onCreate(c: Contact): void;
 }) {
   const [adding, setAdding] = useState(false);
-  const [draft, setDraft] = useState({ name: '', role: '', company: '', phone: '' });
+  const [draft, setDraft] = useState({ name: '', role: '', company: '', phone: '', email: '' });
   const free = Object.values(directory).filter(c => !ids.includes(c.id)).sort((a, b) => (a.company || a.name).localeCompare(b.company || b.name));
   const create = () => {
     if (!draft.name.trim() || !draft.phone.trim()) return;
     const c: Contact = { id: `ct_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`, category: 'autre', ...draft, always: false, verifiedAt: isoDate(new Date()) };
     onCreate(c);
     onChange([...ids, c.id]);
-    setDraft({ name: '', role: '', company: '', phone: '' });
+    setDraft({ name: '', role: '', company: '', phone: '', email: '' });
     setAdding(false);
   };
   return (
@@ -386,6 +386,7 @@ function ContactsPicker({ label, ids, onChange, directory, onCreate }: {
           <input className={inputCls} placeholder="Nom (obligatoire)" value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })} />
           <input className={inputCls} placeholder="Fonction" value={draft.role} onChange={e => setDraft({ ...draft, role: e.target.value })} />
           <input className={inputCls} placeholder="Téléphone (obligatoire)" inputMode="tel" value={draft.phone} onChange={e => setDraft({ ...draft, phone: e.target.value })} />
+          <input className={`${inputCls} sm:col-span-2`} type="email" placeholder="E-mail" inputMode="email" value={draft.email} onChange={e => setDraft({ ...draft, email: e.target.value })} />
           <div className="sm:col-span-2"><Button kind="primary" disabled={!draft.name.trim() || !draft.phone.trim()} onClick={create}>Ajouter à l'annuaire et à la fiche</Button></div>
         </div>
       )}

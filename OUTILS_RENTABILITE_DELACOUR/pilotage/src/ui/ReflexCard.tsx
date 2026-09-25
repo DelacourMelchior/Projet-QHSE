@@ -1,5 +1,5 @@
 // On-screen reflex card of a risk (same content as the printed PDF card).
-import { Phone } from 'lucide-react';
+import { Mail, Phone } from 'lucide-react';
 import type { Contact, Risk, State } from '../domain/types';
 import { familyLabel } from '../domain/riskTemplates';
 import { formatDuration } from '../domain/duration';
@@ -47,14 +47,17 @@ function Block({ title, children }: { title: string; children: React.ReactNode }
   return <section><h4 className="mb-0.5 text-[11px] font-bold uppercase tracking-wide text-red-800">{title}</h4>{children}</section>;
 }
 
-// Phone numbers are links: one tap to call from a phone
+// Phone numbers and e-mails are links: one tap to call or write
 export function ContactList({ list }: { list: Contact[] }) {
   return (
     <ul className="space-y-1">
       {list.map(c => (
         <li key={c.id} className="flex flex-wrap items-baseline justify-between gap-x-2">
           <span><strong>{contactLabel(c)}</strong>{c.role ? <span className="text-slate-600"> · {c.role}</span> : ''}{c.always ? <span className="text-slate-600"> · 24 h/24</span> : ''}</span>
-          {c.phone && <a href={`tel:${c.phone.replace(/[ .]/g, '')}`} className="inline-flex items-center gap-1 font-mono font-semibold text-delacour-primary hover:underline"><Phone size={12} />{c.phone}</a>}
+          <span className="flex flex-wrap items-baseline gap-x-3">
+            {c.email && <a href={`mailto:${c.email}`} className="inline-flex items-center gap-1 text-delacour-primary hover:underline"><Mail size={12} />{c.email}</a>}
+            {c.phone && <a href={`tel:${c.phone.replace(/[ .]/g, '')}`} className="inline-flex items-center gap-1 font-mono font-semibold text-delacour-primary hover:underline"><Phone size={12} />{c.phone}</a>}
+          </span>
         </li>
       ))}
     </ul>

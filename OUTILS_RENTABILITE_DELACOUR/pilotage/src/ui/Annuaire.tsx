@@ -1,7 +1,7 @@
 // Tool 1.3 "Annuaire": the numbers to call when something breaks, by category.
 // The reflex cards of the Plans B (tool 1.2) take their contacts from here.
 import { useState } from 'react';
-import { CheckCircle2, Phone, Plus, Printer, Search, Trash2 } from 'lucide-react';
+import { CheckCircle2, Mail, Phone, Plus, Printer, Search, Trash2 } from 'lucide-react';
 import type { Contact, ContactCategory } from '../domain/types';
 import { CATEGORIES, contactLabel, toCheck } from '../domain/contacts';
 import { exampleContacts } from '../domain/riskTemplates';
@@ -23,7 +23,7 @@ export function Annuaire() {
   const usedBy = (id: string) => Object.values(state.risks).filter(r => r.contactIds.includes(id) || r.notifyIds.includes(id));
   const set = (id: string, patch: Partial<Contact>) => update(d => { d.contacts[id] = { ...d.contacts[id], ...patch }; });
   const add = () => {
-    const c: Contact = { id: `ct_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`, category: 'autre', name: '', role: '', company: '', phone: '', always: false, verifiedAt: '' };
+    const c: Contact = { id: `ct_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`, category: 'autre', name: '', role: '', company: '', phone: '', email: '', always: false, verifiedAt: '' };
     update(d => { d.contacts[c.id] = c; });
     setOrder([c.id, ...order]);
     setQ(''); setFilter('all');
@@ -43,7 +43,7 @@ export function Annuaire() {
   };
   const words = norm(q).split(/\s+/).filter(Boolean);
   const shown = all.filter(c => (filter === 'all' || (filter === 'always' ? c.always : toCheck(c)))
-    && words.every(w => norm([c.company, c.name, c.role, c.phone].join(' ')).includes(w)));
+    && words.every(w => norm([c.company, c.name, c.role, c.phone, c.email].join(' ')).includes(w)));
   const count = { all: all.length, always: all.filter(c => c.always).length, check: all.filter(c => toCheck(c)).length };
   const FILTERS: [Filter, string][] = [['all', 'Tous'], ['always', 'Joignables 24 h/24'], ['check', 'À vérifier']];
 
@@ -53,7 +53,7 @@ export function Annuaire() {
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
             <h2 className="text-sm font-bold text-delacour-primary">Annuaire</h2>
-            <p className="text-[11px] text-slate-500">Les numéros à appeler quand ça casse. Les fiches réflexes des Plans B les reprennent.</p>
+            <p className="text-[11px] text-slate-500">Les personnes à joindre quand ça casse, par téléphone ou par e-mail. Les fiches réflexes des Plans B les reprennent.</p>
           </div>
           <div className="flex gap-2 print:hidden">
             <Button kind="primary" onClick={add}><Plus size={14} />Ajouter un contact</Button>
@@ -63,7 +63,7 @@ export function Annuaire() {
         <div className="flex flex-wrap items-center gap-2 print:hidden">
           <div className="relative min-w-[200px] flex-1">
             <Search size={14} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input className={`${inputCls} pl-8`} value={q} placeholder="Rechercher un nom, une société, un numéro…" aria-label="Rechercher" onChange={e => setQ(e.target.value)} />
+            <input className={`${inputCls} pl-8`} value={q} placeholder="Rechercher un nom, une société, un numéro, un e-mail…" aria-label="Rechercher" onChange={e => setQ(e.target.value)} />
           </div>
           {FILTERS.map(([f, l]) => (
             <button key={f} type="button" onClick={() => setFilter(f)} aria-pressed={filter === f}
@@ -104,11 +104,12 @@ function Row({ c, uses, set, remove }: { c: Contact; uses: string[]; set(p: Part
   const stale = toCheck(c);
   return (
     <li className="space-y-1.5 rounded-lg border border-slate-200 p-2.5">
-      <div className="grid gap-1.5 sm:grid-cols-[1fr_1fr_1fr_150px]">
+      <div className="grid gap-1.5 sm:grid-cols-[1fr_1fr_1fr_140px_1.2fr]">
         <input className={inputCls} value={c.company} placeholder="Société" aria-label="Société" onChange={e => set({ company: e.target.value })} />
         <input className={inputCls} value={c.name} placeholder="Nom" aria-label="Nom" onChange={e => set({ name: e.target.value })} />
         <input className={inputCls} value={c.role} placeholder="Fonction" aria-label="Fonction" onChange={e => set({ role: e.target.value })} />
         <input className={`${inputCls} font-mono`} value={c.phone} placeholder="Téléphone" inputMode="tel" aria-label="Téléphone" onChange={e => set({ phone: e.target.value })} />
+        <input className={inputCls} type="email" value={c.email} placeholder="E-mail" inputMode="email" aria-label="E-mail" onChange={e => set({ email: e.target.value })} />
       </div>
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-slate-600">
         <select className="rounded-md border border-slate-300 bg-white px-1.5 py-0.5 text-[11px]" value={c.category} aria-label="Catégorie" onChange={e => set({ category: e.target.value as ContactCategory })}>
@@ -118,6 +119,7 @@ function Row({ c, uses, set, remove }: { c: Contact; uses: string[]; set(p: Part
         <span className={stale ? 'font-semibold text-amber-800' : ''}>{c.verifiedAt ? `Vérifié le ${frDate(c.verifiedAt)}` : 'Jamais vérifié'}</span>
         <button type="button" className="inline-flex items-center gap-1 font-semibold text-delacour-primary hover:underline" onClick={() => set({ verifiedAt: isoDate(new Date()) })}><CheckCircle2 size={13} />Vérifié aujourd'hui</button>
         {c.phone && <a href={`tel:${c.phone.replace(/[ .]/g, '')}`} className="inline-flex items-center gap-1 font-semibold text-delacour-primary hover:underline sm:hidden"><Phone size={13} />Appeler</a>}
+        {c.email && <a href={`mailto:${c.email}`} className="inline-flex items-center gap-1 font-semibold text-delacour-primary hover:underline"><Mail size={13} />Écrire</a>}
         <span className="min-w-0 flex-1 truncate">{uses.length ? `Fiches : ${uses.join(', ')}` : 'Sur aucune fiche réflexe'}</span>
         <button type="button" aria-label={`Supprimer ${contactLabel(c)}`} onClick={remove} className="rounded p-1 text-slate-400 hover:text-red-600"><Trash2 size={14} /></button>
       </div>
@@ -141,6 +143,7 @@ function PrintList({ contacts, company }: { contacts: Contact[]; company: string
                 <tr key={c.id} className="border-b border-slate-200">
                   <td className="py-1 pr-2 font-semibold">{contactLabel(c)}</td>
                   <td className="py-1 pr-2 text-slate-600">{[c.role, c.always ? '24 h/24' : ''].filter(Boolean).join(' · ')}</td>
+                  <td className="py-1 pr-2 text-slate-600">{c.email}</td>
                   <td className="py-1 text-right font-mono font-bold">{c.phone}</td>
                 </tr>
               ))}

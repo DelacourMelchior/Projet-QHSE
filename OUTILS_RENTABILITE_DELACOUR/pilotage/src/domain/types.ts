@@ -112,6 +112,7 @@ export interface Contact {
   role: string;           // function
   company: string;
   phone: string;
+  email: string;
   always: boolean;        // reachable 24 h a day
   verifiedAt: string;     // ISO date of the last check of the number
 }

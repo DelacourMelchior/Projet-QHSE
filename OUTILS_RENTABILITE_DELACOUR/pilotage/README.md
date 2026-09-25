@@ -2,7 +2,7 @@
 
 - **Indicateurs (1.1)** : tableau de pilotage mensuel d'une PME : synthèse dirigeant, saisie du mois, plan d'actions (5 pourquoi + 5M) et mesure d'efficacité.
 - **Plans B (1.2)**, ouvert par `pilotage.html#continuite` : cartographie des risques vitaux (matrice gravité × probabilité avec la règle de chaque zone, risques à coter, séance de cotation), fiche risque en 4 étapes, tests des Plans B, fiches réflexes en PDF.
-- **Annuaire de crise (1.3)**, ouvert par `pilotage.html#annuaire` : les numéros à appeler, par catégorie, avec la date de vérification ; les fiches réflexes des Plans B y prennent leurs contacts.
+- **Annuaire (1.3)**, ouvert par `pilotage.html#annuaire` : les numéros à appeler, par catégorie, avec la date de vérification ; les fiches réflexes des Plans B y prennent leurs contacts.
 - **Agir** : un seul plan d'actions pour les deux outils (actions correctives d'indicateurs et actions de préparation des Plans B).
 
 Remplace les outils 1.1 et 1.2 de `../app/tool_page.html` ; le 1.3 est nouveau.
@@ -52,4 +52,4 @@ python3 ../../execution/build_outils_app.py   # met à jour ../livrable/ (depuis
 { "version": 2, "author": "Sandrine", "updatedAt": "…", "entries": { "value|kpi_cnq|2026-12": { "ts": "2026-12-05T09:12:00Z", "v": 310 } } }
 ```
 
-Clés : `settings`, `timeline`, `process|<id>`, `kpi|<id>`, `value|<kpi>|<AAAA-MM>`, `action|<id>`, `risk|<id>` et `riskcost|<id>` (coûts d'un risque, dossier `direction`), `contact|<id>` (annuaire de crise), `scale` (textes des niveaux). À la lecture, toutes les entrées de tous les fichiers sont fusionnées : la plus récente gagne. Les anciens fichiers `journal-*.json` sont convertis à la première connexion. Les risques de l'ancien outil 1.2 (restés dans le navigateur) sont proposés à la reprise sur la cartographie vide.
+Clés : `settings`, `timeline`, `process|<id>`, `kpi|<id>`, `value|<kpi>|<AAAA-MM>`, `action|<id>`, `risk|<id>` et `riskcost|<id>` (coûts d'un risque, dossier `direction`), `contact|<id>` (annuaire), `scale` (textes des niveaux). À la lecture, toutes les entrées de tous les fichiers sont fusionnées : la plus récente gagne. Les anciens fichiers `journal-*.json` sont convertis à la première connexion. Les risques de l'ancien outil 1.2 (restés dans le navigateur) sont proposés à la reprise sur la cartographie vide.

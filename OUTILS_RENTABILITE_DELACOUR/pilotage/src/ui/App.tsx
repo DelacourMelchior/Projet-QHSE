@@ -26,7 +26,7 @@ type Tool = 'kpi' | 'risk' | 'dir';
 const TOOLS: Record<Tool, { label: string; hash: string; first: Screen; title: string }> = {
   kpi: { label: 'Indicateurs', hash: '', first: 'piloter', title: 'Tableau de pilotage mensuel' },
   risk: { label: 'Plans B', hash: '#continuite', first: 'risques', title: "Continuité d'activité : Plans B" },
-  dir: { label: 'Annuaire', hash: '#annuaire', first: 'annuaire', title: 'Annuaire de crise' },
+  dir: { label: 'Annuaire', hash: '#annuaire', first: 'annuaire', title: 'Annuaire' },
 };
 const toolOfHash = (): Tool => (Object.keys(TOOLS) as Tool[]).find(t => TOOLS[t].hash && TOOLS[t].hash === window.location.hash) || 'kpi';
 

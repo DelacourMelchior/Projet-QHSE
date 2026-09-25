@@ -1,4 +1,4 @@
-// Tool 1.3 "Annuaire de crise": the numbers to call when something breaks, by category.
+// Tool 1.3 "Annuaire": the numbers to call when something breaks, by category.
 // The reflex cards of the Plans B (tool 1.2) take their contacts from here.
 import { useState } from 'react';
 import { CheckCircle2, Phone, Plus, Printer, Search, Trash2 } from 'lucide-react';
@@ -46,7 +46,7 @@ export function Annuaire() {
       <Card className="space-y-3 p-3 sm:p-4">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
-            <h2 className="text-sm font-bold text-delacour-primary">Annuaire de crise</h2>
+            <h2 className="text-sm font-bold text-delacour-primary">Annuaire</h2>
             <p className="text-[11px] text-slate-500">Les numéros à appeler quand ça casse. Les fiches réflexes des Plans B les reprennent.</p>
           </div>
           <div className="flex gap-2 print:hidden">
@@ -118,7 +118,7 @@ function Row({ c, uses, set, remove }: { c: Contact; uses: string[]; set(p: Part
 function PrintList({ contacts, company }: { contacts: Contact[]; company: string }) {
   return (
     <div className="hidden space-y-3 print:block">
-      <p className="text-[11px] text-slate-600">{company ? `${company} · ` : ''}Annuaire de crise imprimé le {new Date().toLocaleDateString('fr-FR')}</p>
+      <p className="text-[11px] text-slate-600">{company ? `${company} · ` : ''}Annuaire imprimé le {new Date().toLocaleDateString('fr-FR')}</p>
       {CATEGORIES.map(cat => {
         const rows = contacts.filter(c => c.category === cat.key);
         if (!rows.length) return null;

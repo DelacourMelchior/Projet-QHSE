@@ -78,6 +78,22 @@ export function demoRisks(today = new Date()): { risks: State['risks']; actions:
     contact('ct_demo_distrib', 'fournisseur', 'Service clients', 'Compte de secours tôle', 'Distributeur B', '04 00 00 00 06', false, 200),
     contact('ct_demo_clientA', 'client', 'Acheteur', 'À prévenir en cas de retard', 'Client A (grand compte)', '04 00 00 00 07', false, 90),
     contact('ct_demo_clientC', 'client', 'Responsable approvisionnement', 'À prévenir en cas de retard', 'Client C', '04 00 00 00 08', false, 200),
+    // examples not used by any reflex card: what a complete directory looks like
+    contact('ct_demo_112', 'secours', 'Numéro d\'urgence européen', 'Tous secours', 'Secours', '112', true, 30),
+    contact('ct_demo_15', 'secours', 'SAMU', 'Urgence médicale', 'Secours', '15', true, 30),
+    contact('ct_demo_18', 'secours', 'Pompiers', 'Incendie, accident', 'Secours', '18', true, 30),
+    contact('ct_demo_17', 'secours', 'Police, gendarmerie', 'Vol, intrusion', 'Secours', '17', true, 30),
+    contact('ct_demo_antipoison', 'secours', 'Centre antipoison', 'Exposition à un produit chimique', 'Secours', '04 00 00 00 20', true, 30),
+    contact('ct_demo_medtravail', 'secours', 'Médecin du travail', 'Service de santé au travail', 'SST interentreprises', '04 00 00 00 21', false, 120),
+    contact('ct_demo_dirigeant', 'interne', 'Jean-Marc', 'Dirigeant', 'Interne', '06 00 00 00 10', true, 60),
+    contact('ct_demo_qualite', 'interne', 'Antoine P.', 'Responsable qualité', 'Interne', '06 00 00 00 11', false, 60),
+    contact('ct_demo_atelier', 'interne', 'David K.', 'Chef d\'atelier', 'Interne', '06 00 00 00 12', false, 60),
+    contact('ct_demo_elec', 'prestataire', 'Dépannage électrique', 'Coupure, armoire électrique', 'Électricité Martin', '04 00 00 00 22', true, 150),
+    contact('ct_demo_eau', 'prestataire', 'Urgence fuite', 'Plomberie, dégât des eaux', 'Plomberie Dupuis', '04 00 00 00 23', false, 420),
+    contact('ct_demo_acier', 'fournisseur', 'Commercial sédentaire', 'Tôle, fournisseur principal', 'Aciers du Rhône', '04 00 00 00 24', false, 90),
+    contact('ct_demo_transport', 'fournisseur', 'Exploitation', 'Transport express', 'Transports Rapides', '04 00 00 00 25', false, 90),
+    contact('ct_demo_clientB', 'client', 'Acheteur', 'Client B', 'Client B', '04 00 00 00 26', false, 180),
+    contact('ct_demo_expert', 'finance', 'Cabinet comptable', 'Expert-comptable', 'Cabinet Comptable', '04 00 00 00 27', false, 60),
   ];
   const base = (id: string, p: Partial<Risk>): Risk => ({ ...newRisk('P1', today), id, createdAt: ago(300), ratedBy: 'Jean-Marc', ratedAt: ago(300), ...p });
   const risks: Risk[] = [

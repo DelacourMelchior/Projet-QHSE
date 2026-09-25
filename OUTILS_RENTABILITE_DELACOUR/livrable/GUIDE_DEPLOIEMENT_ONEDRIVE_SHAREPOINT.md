@@ -1,6 +1,6 @@
 # Guide de déploiement : Pilotage Delacour dans votre OneDrive ou SharePoint
 
-Ce guide explique comment installer le tableau de pilotage mensuel (outil 1.1), les Plans B (outil 1.2) et l'annuaire de crise (outil 1.3) dans le cloud Microsoft 365 de votre entreprise, pour que la direction et l'équipe travaillent sur les mêmes chiffres et le même plan d'actions.
+Ce guide explique comment installer le tableau de pilotage mensuel (outil 1.1), les Plans B (outil 1.2) et l'annuaire (outil 1.3) dans le cloud Microsoft 365 de votre entreprise, pour que la direction et l'équipe travaillent sur les mêmes chiffres et le même plan d'actions.
 
 **Principe** : l'application est un simple fichier. Vos données restent dans votre propre OneDrive ou SharePoint. Aucun serveur du Cabinet Delacour ni d'un tiers ne les reçoit, et l'application ne fait aucun appel à internet.
 
@@ -10,7 +10,7 @@ Ce guide explique comment installer le tableau de pilotage mensuel (outil 1.1), 
 
 | Élément | Rôle |
 |---|---|
-| `pilotage.html` | **Indicateurs (outil 1.1)**, **Plans B (outil 1.2)** avec un plan d'actions commun, et **Annuaire de crise (outil 1.3)** |
+| `pilotage.html` | **Indicateurs (outil 1.1)**, **Plans B (outil 1.2)** avec un plan d'actions commun, et **Annuaire (outil 1.3)** |
 | `index.html` | Page d'accueil qui liste tous les outils |
 | `tool_page.html` | Les autres outils (2.1 à 5.3) |
 | `GUIDE_DEPLOIEMENT_ONEDRIVE_SHAREPOINT.md` | Ce guide |
@@ -45,7 +45,7 @@ Pilotage Delacour/
 ├─ pilotage.html
 ├─ index.html, tool_page.html
 └─ donnees/
-   ├─ equipe/      fichiers lisibles par tous (indicateurs, valeurs non confidentielles, actions, risques, annuaire de crise)
+   ├─ equipe/      fichiers lisibles par tous (indicateurs, valeurs non confidentielles, actions, risques, annuaire)
    └─ direction/   fichiers réservés : CA, marge, trésorerie, hypothèses financières, coût des arrêts
 ```
 
@@ -76,7 +76,7 @@ Conseil : sur chaque poste, faites un clic droit sur le dossier `donnees`, puis 
 - **Un seul plan d'actions** : l'écran Agir réunit les actions correctives des indicateurs et les actions de préparation des Plans B. Filtrez par origine si besoin.
 - **Cotez les risques ensemble** : Plans B, **Coter les risques**, puis gravité et probabilité de chaque risque (les définitions sont affichées ; montants et textes réglables dans Réglages). Les risques proposés par l'outil arrivent sans cotation.
 - **Fiches réflexes** : Plans B, **Fiches réflexes (PDF)**. Imprimez-les et gardez-en une copie papier près des postes : le jour d'une panne informatique, l'application peut être inaccessible.
-- **Annuaire de crise** : chaque numéro n'est saisi qu'une fois et sert à toutes les fiches réflexes. Préférez les numéros professionnels et prévenez les personnes concernées (RGPD). Cochez **Contacts vérifiés** lors d'un test d'un Plan B : la date de vérification se met à jour.
+- **Annuaire** : chaque numéro n'est saisi qu'une fois et sert à toutes les fiches réflexes. Préférez les numéros professionnels et prévenez les personnes concernées (RGPD). Cochez **Contacts vérifiés** lors d'un test d'un Plan B : la date de vérification se met à jour.
 - **Chacun saisit librement.** Chaque personne écrit dans son propre fichier (`pilotage-<nom>.json`) : deux personnes ne peuvent pas s'écraser mutuellement, et OneDrive ne crée pas de copies en conflit.
 - **Les chiffres des collègues arrivent** en quelques secondes à quelques minutes, selon la synchronisation OneDrive. L'application relit le dossier quand vous revenez sur la fenêtre ; **Réglages → Actualiser** force la relecture.
 - **Si deux personnes modifient la même valeur**, la modification la plus récente est conservée.

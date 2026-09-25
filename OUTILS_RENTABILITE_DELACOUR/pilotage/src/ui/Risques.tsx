@@ -60,7 +60,7 @@ export function Risques({ onOpenRisk, onNewRisk, onOpenDirectory }: { onOpenRisk
         {rating ? <Button kind="primary" onClick={() => setRating(null)}>Terminer la cotation</Button>
           : <Button onClick={startRating}><SlidersVertical size={14} />Coter les risques</Button>}
         <span className="mx-1 hidden h-5 w-px bg-slate-300 sm:block" />
-        <Button onClick={onOpenDirectory}><BookUser size={14} />Annuaire de crise</Button>
+        <Button onClick={onOpenDirectory}><BookUser size={14} />Annuaire</Button>
         <Button onClick={cardsPdf}><FileDown size={14} />Fiches réflexes (PDF)</Button>
         <Button kind="ghost" onClick={() => window.print()} aria-label="Imprimer la cartographie" className="sm:ml-auto"><Printer size={14} />Imprimer</Button>
       </div>

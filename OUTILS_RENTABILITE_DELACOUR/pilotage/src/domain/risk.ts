@@ -199,7 +199,7 @@ export function riskInsights(s: State, today = new Date()): RiskInsight[] {
   const noOwner = all.filter(x => !x.r.owner.trim());
   if (noOwner.length) push('owner', 'warn', 'Responsable à désigner', names(noOwner) + '.');
   const stale = staleContacts(s, today);
-  if (stale.length) push('contacts', 'warn', 'Numéros à vérifier', `${stale.slice(0, 3).map(contactLabel).join(', ')}${stale.length > 3 ? ` et ${stale.length - 3} autre(s)` : ''} : pas vérifié(s) depuis plus d'un an (annuaire de crise).`);
+  if (stale.length) push('contacts', 'warn', 'Numéros à vérifier', `${stale.slice(0, 3).map(contactLabel).join(', ')}${stale.length > 3 ? ` et ${stale.length - 3} autre(s)` : ''} : pas vérifié(s) depuis plus d'un an (annuaire).`);
   const review = all.filter(x => x.st !== 'unrated' && x.r.ratedAt && ageDays(x.r.ratedAt, today) > 365);
   if (review.length) push('review', 'warn', 'Revue annuelle des cotations', `${names(review)} : cotation de plus d'un an, à revoir.`);
   if (!out.length) push('ok', 'good', 'Plans B sous contrôle', 'Chaque risque orange ou rouge a un Plan B testé à temps.');

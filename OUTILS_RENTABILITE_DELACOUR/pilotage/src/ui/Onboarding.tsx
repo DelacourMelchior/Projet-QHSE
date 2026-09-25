@@ -53,7 +53,7 @@ export function Onboarding() {
     <div className="mx-auto max-w-3xl space-y-4 px-3 py-6 sm:py-10">
       <a href="index.html" className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-600 hover:text-delacour-primary"><ArrowLeft size={14} />Retour à la liste des outils</a>
       <div>
-        <h1 className="text-xl font-bold text-delacour-primary">{annuaire ? 'Annuaire de crise' : plansB ? "Plans B et continuité d'activité" : 'Tableau de pilotage mensuel'}</h1>
+        <h1 className="text-xl font-bold text-delacour-primary">{annuaire ? 'Annuaire' : plansB ? "Plans B et continuité d'activité" : 'Tableau de pilotage mensuel'}</h1>
         <p className="mt-1 text-xs text-slate-600">{annuaire
           ? "Les numéros à appeler quand ça casse : prestataires, banque, assureur, confrères, clients à prévenir. La mise en route prépare aussi le tableau d'indicateurs (outil 1.1)."
           : plansB

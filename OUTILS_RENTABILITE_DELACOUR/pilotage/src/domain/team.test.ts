@@ -32,7 +32,7 @@ describe('4.1 deputies', () => {
     expect(envelopeState({ location: '', checkedAt: '', by: '' }, now)).toBe('never');
     expect(envelopeState({ location: '', checkedAt: '2026-01-10', by: '' }, now)).toBe('due');
     expect(envelopeState({ location: '', checkedAt: '2026-06-10', by: '' }, now)).toBe('ok');
-    expect(powerInsights(st(teamExamples(now)), now).map(i => i.key)).toEqual(expect.arrayContaining(['none', 'one', 'prac', 'env']));
+    expect(powerInsights(st(teamExamples(now)), now).map(i => i.key)).toEqual(expect.arrayContaining(['none', 'prac', 'env', 'deleg']));
   });
 });
 
@@ -43,7 +43,7 @@ describe('4.2 versatility', () => {
     expect(skillRisk(s, cnc)).toBe('single');
     expect(autonomous(s, cnc).map(p => p.name)).toEqual(['Marc M.']);
     expect(skillRisk(s, s.skills.sk_demo_2)).toBe('ok');
-    expect(coveragePct(s)).toBe(43);                                   // 3 of 7
+    expect(coveragePct(s)).toBe(25);                                   // critical skills only: 1 of 4
     expect(keyPeople(s).map(k => k.person.name).sort()).toEqual(['Antoine P.', 'Hélène R.', 'Marc M.', 'Nicolas R.']);
     s.people.pp_demo_kt.active = false;
     s.people.pp_demo_nr.active = false;
@@ -56,7 +56,7 @@ describe('4.2 versatility', () => {
     expect(r.family).toBe('doublure');
     expect(r.gravity).toBeNull();
     const kpi = { id: 'kpi_suppleance', name: 'Postes clés doublés', processId: 'P4', type: 'Garde-fou' as const, unit: '%', direction: 'higher' as const, aggregation: 'avg' as const, target: '100 %', targetValue: 100, confidential: false, source: '' };
-    expect(feeds({ ...s, kpis: { kpi_suppleance: kpi } }, '2026-09', now)[0].value).toBe(43);
+    expect(feeds({ ...s, kpis: { kpi_suppleance: kpi } }, '2026-09', now)[0].value).toBe(25);
     expect(skillInsights(s).map(i => i.key)).toEqual(expect.arrayContaining(['single', 'plan', 'late']));
   });
 });

@@ -11,12 +11,13 @@ export function teamExamples(today = new Date()) {
     ['mm', 'Marc M.', 'Méthodes et programmation'], ['jp', 'Julien P.', 'Régleur CNC'], ['kt', 'Karim T.', 'Plieur'], ['lu', 'Lucie B.', 'Monteuse câbleuse'],
     ['nr', 'Nicolas R.', 'Soudeur'], ['ap', 'Antoine P.', 'Responsable qualité'], ['tm', 'Thomas M.', 'Informatique et administration'], ['hr', 'Hélène R.', 'Comptabilité'],
   ];
-  const people: Person[] = team.map(([k, name, role]) => ({ id: `pp_demo_${k}`, name, role, active: true }));
+  const TEAM: Record<string, string> = { jm: 'Direction', lb: 'Bureau', sv: 'Bureau', hr: 'Bureau', tm: 'Bureau', ap: 'Bureau', dk: 'Atelier', mm: 'Atelier', jp: 'Atelier', kt: 'Atelier', lu: 'Atelier', nr: 'Atelier' };
+  const people: Person[] = team.map(([k, name, role]) => ({ id: `pp_demo_${k}`, name, role, active: true, team: TEAM[k], ...(k === 'kt' ? { absences: [{ from: ago(-20), to: ago(-34) }] } : {}) }));
   const pp = (k: string) => `pp_demo_${k}`;
   const power = (n: number, processId: string, what: string, holder: string, d1: string, p1: number | null, d2: string, p2: number | null, access: string): Power =>
     ({ id: `pw_demo_${n}`, processId, power: what, holder, deputies: [d1, d2], practiced: [p1 === null ? '' : ago(p1), p2 === null ? '' : ago(p2)], access });
   const powers: Power[] = [
-    power(1, 'P1', 'Signature bancaire et virement des salaires', 'Jean-Marc', 'Hélène R.', 200, '', null, 'Double signature bancaire ; codes sous pli au coffre'),
+    { ...power(1, 'P1', 'Signature bancaire et virement des salaires', 'Jean-Marc', 'Hélène R.', 200, '', null, 'Double signature bancaire ; codes sous pli au coffre'), extra: ['Cabinet comptable'], extraPracticed: [''], delegationSigned: true, bankInformed: false },
     power(2, 'P2', 'Validation des devis engageants et des avenants', 'Laurent B.', 'Jean-Marc', 100, 'Sophie V.', null, 'Droits de validation dans le logiciel de devis'),
     power(3, 'P3', 'Lancement des fabrications et planning atelier', 'David K.', 'Marc M.', 60, 'Julien P.', 340, 'Session partagée du planning'),
     power(4, 'P4', 'Clés des locaux, alarme et contrats intérimaires', 'David K.', 'Julien P.', 30, 'Jean-Marc', 90, 'Double des clés et code alarme au coffre'),
@@ -26,13 +27,13 @@ export function teamExamples(today = new Date()) {
   const lv = (x: Record<string, SkillLevel>): Record<string, SkillLevel> => Object.fromEntries(Object.entries(x).map(([k, v]) => [pp(k), v]));
   const skill = (n: number, name: string, processId: string, levels: Record<string, SkillLevel>, plan: Skill['plan'] = null): Skill => ({ id: `sk_demo_${n}`, name, processId, levels: lv(levels), plan });
   const skills: Skill[] = [
-    skill(1, 'Programmation CNC 5 axes', 'P3', { mm: 4, jp: 2, dk: 1 }, { tutor: pp('mm'), learner: pp('jp'), slot: 'Vendredi 14 h - 16 h', target: ago(-30), sessions: 3 }),
-    skill(2, 'Réglage de la presse plieuse', 'P3', { kt: 4, nr: 3, dk: 3, jp: 1 }),
+    { ...skill(1, 'Programmation CNC 5 axes', 'P3', { mm: 4, jp: 2, dk: 1 }, { tutor: pp('mm'), learner: pp('jp'), slot: 'Vendredi 14 h - 16 h', target: ago(-30), sessions: 3 }), critical: true },
+    { ...skill(2, 'Réglage de la presse plieuse', 'P3', { kt: 4, nr: 3, dk: 3, jp: 1 }), required: 3, critical: true },
     skill(3, 'Soudure TIG inox', 'P3', { nr: 4, kt: 1 }),
     skill(4, 'Montage et câblage des armoires', 'P3', { lu: 4, jp: 3, nr: 2 }),
-    skill(5, 'Contrôle final et PV de réception', 'P5', { ap: 4, lu: 2, dk: 2 }, { tutor: pp('ap'), learner: pp('lu'), slot: 'Mardi 9 h - 10 h 30', target: ago(5), sessions: 6 }),
+    { ...skill(5, 'Contrôle final et PV de réception', 'P5', { ap: 4, lu: 2, dk: 2 }, { tutor: pp('ap'), learner: pp('lu'), slot: 'Mardi 9 h - 10 h 30', target: ago(5), sessions: 6 }), critical: true },
     skill(6, 'Chiffrage des devis', 'P2', { lb: 4, jm: 3, sv: 1 }),
-    skill(7, 'Paie et virements', 'P1', { hr: 4, jm: 1 }),
+    { ...skill(7, 'Paie et virements', 'P1', { hr: 4, jm: 1 }), critical: true },
   ];
   const all = (keys: string[], days: number) => Object.fromEntries(keys.map(k => [k, ago(days)]));
   const day1 = CHECKLIST.filter(c => c.stage.startsWith('Jour 1')).map(c => c.key);

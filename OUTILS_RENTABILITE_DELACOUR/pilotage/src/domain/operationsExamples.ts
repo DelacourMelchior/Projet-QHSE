@@ -9,7 +9,8 @@ export function operationsExamples(today = new Date()) {
   const sup = (id: string, p: Partial<Supplier>): Supplier => ({ id, name: '', category: 'matiere', supplies: '', strategic: false, contact: '', ratings: [], ...p });
   const rating = (days: number, quality: number, delay: number, service: number, note = '') => ({ date: ago(days), quality, delay, service, by: 'Sophie V.', note });
   const suppliers: Supplier[] = [
-    sup('sup_demo_acier', { name: 'Aciers du Rhône', supplies: 'Tôle acier et inox', strategic: true, contact: 'Commercial sédentaire · 04 00 00 00 24', ratings: [rating(300, 34, 32, 16, 'Retards ponctuels en été')] }),
+    sup('sup_demo_acier', { name: 'Aciers du Rhône', supplies: 'Tôle acier et inox', strategic: true, contact: 'Commercial sédentaire · 04 00 00 00 24', contactId: 'ct_demo_acier', certRequired: true, ratings: [rating(300, 34, 32, 16, 'Retards ponctuels en été')],
+      receipts: [{ id: 'rc_demo_1', date: ago(60), promised: ago(62), received: ago(60), certOk: true, note: '' }, { id: 'rc_demo_2', date: ago(26), promised: ago(26), received: ago(26), certOk: false, note: 'Certificat demandé' }] }),
     sup('sup_demo_distrib', { name: 'Distributeur B', supplies: 'Tôle, compte de secours', contact: 'Service clients · 04 00 00 00 06', ratings: [rating(200, 38, 36, 16)] }),
     sup('sup_demo_usinage', { name: 'Confrère Usinage X', category: 'soustraitance', supplies: 'Usinage de précision', contact: "Chef d'atelier · 06 00 00 00 04", ratings: [rating(400, 31, 22, 14, 'Délais non tenus sur 3 commandes')] }),
     sup('sup_demo_transport', { name: 'Transports Rapides', category: 'logistique', supplies: 'Transport express', contact: 'Exploitation · 04 00 00 00 25', ratings: [rating(100, 35, 24, 12)] }),
@@ -39,6 +40,7 @@ export function operationsExamples(today = new Date()) {
       good: 'Dénuder avec la butée de calibrage : 12 mm, aucun brin coupé, gaine thermo centrée.', trap: 'Dénuder à la pince universelle sans butée : longueur au hasard, brins coupés, court-circuit au test final.',
       goodPhoto: '', trapPhoto: '', ppe: ['Lunettes de sécurité', 'Chaussures de sécurité', 'Gants anti-coupure'],
       habilitations: [{ person: 'Lucie B.', tutor: 'David K.', date: ago(180) }, { person: 'Nicolas R.', tutor: 'Lucie B.', date: ago(20) }],
+      skillId: 'sk_demo_4', displayedAt: ago(31), acks: [{ person: 'Lucie B.', v: 2, date: ago(32) }],
     },
     {
       id: 'sop_demo_2', processId: 'P3', poste: 'Presse plieuse', operation: 'Pliage des équerres de fixation', version: 1, versionDate: ago(90), history: [{ v: 1, date: ago(90), reason: 'Création' }],
@@ -65,6 +67,13 @@ export function operationsExamples(today = new Date()) {
         { name: 'Électrovanne pneumatique', ref: 'EV-24V', supplier: 'Constructeur', leadTime: '10 jours', min: 1, stock: 0 },
         { name: 'Jeu de joints racleurs', ref: 'JR-5520', supplier: 'Constructeur', leadTime: '2 semaines', min: 2, stock: 2 },
       ],
+      tasks: [
+        { id: 'tk_demo_1', label: 'Vérification périodique des installations électriques', everyDays: 365, lastDone: ago(372), legal: true },
+        { id: 'tk_demo_2', label: 'Vidange et graissage de la broche', everyDays: 90, lastDone: ago(40), legal: false },
+      ],
+      breakdowns: [{ id: 'bd_demo_1', date: ago(120), hours: 16, cost: 2400, cause: 'Courroie de l\'axe Z cassée' }],
+      anomalies: [{ id: 'an_demo_cnc', label: 'Pression pneumatique', date: ago(2), note: 'Manomètre à 5,8 bars', closedAt: '' }],
+      contactId: 'ct_demo_maint', manual: 'Armoire du bureau d\'atelier, classeur bleu', lastRevision: ago(300),
     },
     {
       id: 'eq_demo_plieuse', name: 'Presse plieuse 300 t', location: 'Atelier tôlerie', operator: 'Karim T.', manager: 'David K.', riskId: '',
@@ -74,6 +83,7 @@ export function operationsExamples(today = new Date()) {
       ],
       inspections: [{ date: ago(20), by: 'Karim T.', results: ['ok', 'ok', 'ok', 'ok'], note: '' }, { date: ago(27), by: 'Karim T.', results: ['ok', 'ok', 'ok', 'ok'], note: '' }],
       parts: [{ name: 'Kit de joints hydrauliques', ref: 'KJ-300', supplier: 'Constructeur', leadTime: '1 semaine', min: 1, stock: 1 }],
+      tasks: [{ id: 'tk_demo_3', label: 'Vérification générale périodique des appareils de levage', everyDays: 182, lastDone: ago(150), legal: true }],
     },
   ];
   const ms = (oks: (boolean | null)[], measured: string[] = []): Milestone[] => DEFAULT_MILESTONES.map((m, i) => ({ ...m, measured: measured[i] || '', ok: oks[i] ?? null, by: oks[i] === null ? '' : 'David K.', date: oks[i] === null ? '' : ago(6) }));

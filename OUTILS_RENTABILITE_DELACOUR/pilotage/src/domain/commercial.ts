@@ -165,7 +165,7 @@ export function changeSummary(s: State, today = new Date()) {
 // Pricing aid: hours at the hourly cost + material, with the margin floor
 export const changePriceHint = (c: Change, p: Params) => {
   const cost = (c.hours || 0) * p.hourlyRate + (c.material || 0);
-  return cost ? Math.ceil(cost / (1 - p.marginFloorPct / 100) / 10) * 10 : null;
+  return cost ? Math.ceil(Math.round(cost / (1 - p.marginFloorPct / 100)) / 10) * 10 : null;
 };
 // Accepted extras still to invoice, as a file for the accountant (semicolon separated, opens in Excel)
 export function toInvoiceCsv(s: State): string {

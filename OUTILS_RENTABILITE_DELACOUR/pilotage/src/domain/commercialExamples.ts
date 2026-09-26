@@ -33,10 +33,10 @@ export function commercialExamples(today = new Date()) {
     sentAt: '', via: '', answer: '', answeredAt: '', startedAt: '', invoiceRef: '', invoicedAt: '', ...p,
   });
   const changes: Change[] = [
-    c(1, { affaire: 'Châssis série 150', client: 'Client A', askedBy: 'M. Durand', date: ago(35), description: 'Finition thermolaquée RAL 7016 au lieu du galvanisé', price: 1450, delayDays: 3, sentAt: ago(35), via: 'sms', answer: 'accepted', answeredAt: ago(34), startedAt: ago(30), invoiceRef: `FA-${y}-089`, invoicedAt: ago(8) }),
+    c(1, { quoteId: 'qt_demo_1', affaire: 'Châssis série 150', client: 'Client A', askedBy: 'M. Durand', date: ago(35), description: 'Finition thermolaquée RAL 7016 au lieu du galvanisé', price: 1450, delayDays: 3, sentAt: ago(35), via: 'sms', answer: 'accepted', answeredAt: ago(34), startedAt: ago(30), invoiceRef: `FA-${y}-089`, invoicedAt: ago(8) }),
     c(2, { affaire: 'Escalier atelier', client: 'BâtiPro', askedBy: 'Mme Lopez', date: ago(6), description: 'Déplacement de l\'entraxe des fixations (plan V2)', price: 850, delayDays: 2, sentAt: ago(5), via: 'mail', startedAt: ago(2) }),
     c(3, { affaire: 'Platines inox', client: 'Client C', askedBy: 'Acheteur', date: ago(1), description: '3 perçages complémentaires par platine' }),
-    c(4, { affaire: 'Supports moteur', client: 'Client A', askedBy: 'M. Durand', date: ago(9), description: 'Emballage renforcé pour l\'export', price: 620, delayDays: 0, sentAt: ago(9), via: 'sms', answer: 'accepted', answeredAt: ago(8) }),
+    c(4, { quoteId: 'qt_demo_6', affaire: 'Supports moteur', client: 'Client A', askedBy: 'M. Durand', date: ago(9), description: 'Emballage renforcé pour l\'export', price: 620, delayDays: 0, sentAt: ago(9), via: 'sms', answer: 'accepted', answeredAt: ago(8) }),
   ];
   const cp = (n: number, p: Partial<Complaint>): Complaint => ({
     id: `cp_demo_${n}`, ref: `R-${y}-${String(n).padStart(3, '0')}`, at: at(30, 9), client: '', affaire: '', channel: 'tel', receivedBy: 'Laurent B.', description: '',

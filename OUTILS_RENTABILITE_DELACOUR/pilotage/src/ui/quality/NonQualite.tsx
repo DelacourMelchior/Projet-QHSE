@@ -3,7 +3,11 @@
 import { useEffect, useState } from 'react';
 import { Printer } from 'lucide-react';
 import type { State } from '../../domain/types';
-import { cnqItems, cnqMonth, cnqSeries, compensatingRevenue, qualityInsights } from '../../domain/quality';
+import { cnqItems, cnqMonth, cnqSeries, compensatingRevenue, compensatingRevenueVariable, declarationsPerWeek, qualityInsights } from '../../domain/quality';
+import { valueOf } from '../../domain/engine';
+import { monthlyReportPdf } from '../../domain/reportPdf';
+import { downloadFile } from '../download';
+import { FileDown } from 'lucide-react';
 import { frStamp, PROCESS_IDS, processLabel } from '../../domain/base';
 import { kpiByRole } from '../../domain/engine';
 import { formatValue } from '../../domain/numbers';
@@ -18,7 +22,7 @@ const KIND = { nc: 'Bac rouge', complaint: 'Réclamation', debit: 'Fournisseur' 
 const TOOL = { nc: '5.1', complaint: '2.3', debit: '3.1' } as const;
 
 export function NonQualite({ nav }: ScreenProps) {
-  const { state, period, setPeriod, update } = useStore();
+  const { state, period, setPeriod, update, teamView } = useStore();
   const [proc, setProc] = useState<string | null>(null);
   // a month still to come has no cost yet: open on the current month
   useEffect(() => { const now = periodOfDate(new Date()); if (period > now) setPeriod(now); }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -34,6 +38,11 @@ export function NonQualite({ nav }: ScreenProps) {
   const prev = [1, 2, 3].map(i => cnqMonth(state, addMonths(period, -i)).total);
   const avg3 = prev.reduce((a, b) => a + b, 0) / 3;
   const kpi = kpiByRole(state, 'cnq');
+  const caKpi = kpiByRole(state, 'ca');
+  const caMonth = caKpi && !teamView ? valueOf(state, caKpi.id, period) : null;
+  const weeks = declarationsPerWeek(state);
+  const retKpi = kpiByRole(state, 'retouches');
+  const retEntered = retKpi ? valueOf(state, retKpi.id, period) : null;
   const items = cnqItems(state, period).filter(i => proc === null || (i.processId || '') === proc);
   const insights = qualityInsights(state, period).filter(i => ['unq', 'top', '5p'].includes(i.key));
   if (avg3 > 0 && m.total > avg3 * 1.2) insights.unshift({ key: 'up', tone: 'bad', title: 'Non-qualité en hausse', text: `${formatValue(m.total, '€')} en ${periodLabel(period)}, contre ${formatValue(avg3, '€')} en moyenne sur les 3 mois précédents.` });
@@ -42,8 +51,8 @@ export function NonQualite({ nav }: ScreenProps) {
   return (
     <div className="space-y-4">
       <Summary title={`Combien a coûté la non-qualité en ${periodLabel(period)} ?`} insights={insights} tiles={<>
-        <Tile title="Coût du mois" value={formatValue(m.total, '€')} sub={kpi?.targetValue ? `cible ${kpi.target}` : `${m.items.length} événement(s) chiffré(s)`} tone={kpi?.targetValue ? (m.total > kpi.targetValue ? 'alert' : 'ok') : undefined} />
-        <Tile title="CA à refaire pour compenser" value={formatValue(compensatingRevenue(m.total, state.settings.netMarginPct), '€')} sub={`sur la base d'une marge nette de ${state.settings.netMarginPct} %`} />
+        <Tile title="Coût du mois" value={formatValue(m.total + m.indirect, '€')} sub={`${kpi?.targetValue ? `cible ${kpi.target} · ` : ''}${m.indirect ? `dont ${formatValue(m.indirect, '€')} indirects · ` : ''}net après avoirs ${formatValue(m.net, '€')}${caMonth ? ` · ${((m.total + m.indirect) / caMonth * 100).toFixed(1).replace('.', ',')} % du CA` : ''}`} tone={kpi?.targetValue ? (m.total > kpi.targetValue ? 'alert' : 'ok') : undefined} />
+        <Tile title="CA à refaire pour compenser" value={formatValue(compensatingRevenue(m.total + m.indirect, state.settings.netMarginPct), '€')} sub={`lecture stricte (marge nette ${state.settings.netMarginPct} %)${compensatingRevenueVariable(m.total + m.indirect, state.params.variableMarginPct ?? 0) !== null ? ` ; ${formatValue(compensatingRevenueVariable(m.total + m.indirect, state.params.variableMarginPct!), '€')} en marge sur coûts variables (${state.params.variableMarginPct} %)` : ''}`} />
         <Tile title="Heures perdues et retouches" value={`${formatValue(m.hours, '')} h`} sub={`à ${formatValue(state.params.hourlyRate, '€')} de l'heure`} />
         <Tile title="Récupéré sur les fournisseurs" value={formatValue(m.recovered, '€')} sub="avoirs reçus dans le mois (3.1)" tone={m.recovered ? 'ok' : undefined} />
       </>} />
@@ -65,6 +74,7 @@ export function NonQualite({ nav }: ScreenProps) {
       <Card className="space-y-3 p-3 sm:p-4">
         <ToolHeader title={`Détail de ${periodLabel(period)}${proc !== null ? ` · ${proc ? processLabel(proc) : 'à qualifier'}` : ''}`} text="Chaque ligne vient d'une fiche : cliquez sur la référence pour l'ouvrir.">
           <HourlyRate s={state} onChange={v => update(d => { d.params.hourlyRate = v; })} />
+          <Button kind="ghost" onClick={() => downloadFile(`Rapport-${period}.pdf`, monthlyReportPdf(state, period, { company: state.settings.companyName, date: new Date(), money: !teamView }), 'application/pdf')}><FileDown size={14} />Rapport du mois (PDF)</Button>
           <Button kind="ghost" onClick={() => window.print()}><Printer size={14} />Imprimer</Button>
         </ToolHeader>
         {items.length === 0 ? <p className="py-6 text-center text-xs text-slate-500">Aucun coût enregistré sur ce mois.</p> : (
@@ -96,6 +106,18 @@ export function NonQualite({ nav }: ScreenProps) {
           </div>
         )}
       </Card>
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card className="space-y-2 p-3 sm:p-4">
+          <h2 className="text-xs font-bold text-slate-900">Coûts indirects de {periodLabel(period)}</h2>
+          <p className="text-[11px] text-slate-600">Pénalités de retard, heures supplémentaires pour rattraper, temps d'encadrement : une estimation suffit.</p>
+          <label className="flex items-center gap-2 text-[11px] text-slate-700">Montant estimé <NumInput className="!w-28 text-right" value={state.params.cnqIndirect?.[period] ?? null} aria-label="Coûts indirects du mois" onChange={v => update(d => { d.params.cnqIndirect = { ...(d.params.cnqIndirect || {}), [period]: v ?? 0 }; })} />€</label>
+        </Card>
+        <Card className="space-y-2 p-3 sm:p-4">
+          <h2 className="text-xs font-bold text-slate-900">Les défauts sont-ils déclarés ?</h2>
+          <div className="flex h-10 items-end gap-1" aria-label="Fiches du bac rouge par semaine, 8 dernières semaines">{weeks.map((n, i) => <span key={i} title={`${n} fiche(s)`} className="w-5 rounded-t bg-delacour-primary" style={{ height: `${Math.max(4, n / Math.max(1, ...weeks) * 40)}px` }} />)}</div>
+          <p className="text-[11px] text-slate-600">Fiches du bac rouge par semaine sur 8 semaines. {weeks.slice(-4).every(n => n === 0) ? <strong className="text-red-700">Aucune déclaration depuis 4 semaines : un coût bas peut venir d'un manque de déclarations.</strong> : ''}{retEntered !== null && m.hours < retEntered * 0.5 ? <strong className="text-amber-800"> Heures de retouche pointées ({formatValue(retEntered, 'h')}) très au-dessus des heures déclarées au bac rouge ({formatValue(m.hours, 'h')}) : des défauts ne sont pas déclarés.</strong> : ''}</p>
+        </Card>
+      </div>
       <FeedBox tool={['5.2', '5.1']} period={period} />
       <Method rule="Tant qu'un défaut est décrit avec des mots, il est négligé. Chiffré en euros et imputé à son processus, il finance sa propre disparition."
         steps={[['Chiffrer en 3 minutes', "Dès qu'une pièce est rebutée ou retouchée : matière, heures perdues, heures de retouche, frais d'urgence."], ['Imputer au processus', "Quel maillon a rendu le défaut possible ? Sans complaisance, mais sans chercher de coupable."], ['Arbitrer chaque mois', 'Le cumul du mois finance en priorité les détrompeurs et les formations qui suppriment les causes.']]}

@@ -7,7 +7,11 @@ import {
   causeLabel, compensatingRevenue, cnqMonth, DECISION_HOURS, DECISIONS, NC_CAUSES, NC_STATE, ncCost, ncState, newAnalysis, newNc, qualityInsights,
 } from '../../domain/quality';
 import { applyQualityExample } from '../../domain/qualityExamples';
-import { labelsPdf } from '../../domain/qualityPdf';
+import { blankLabelsPdf, labelsPdf } from '../../domain/qualityPdf';
+import { nextRef } from '../../domain/base';
+import { pareto } from '../../domain/quality';
+import { QuickButton } from '../QuickForm';
+import { PhotoBox } from '../PhotoBox';
 import { formatHours, frStamp, hoursBetween, nowLocal, PROCESS_IDS, processLabel } from '../../domain/base';
 import { formatValue } from '../../domain/numbers';
 import { periodOfDate } from '../../domain/periods';
@@ -36,6 +40,9 @@ export function BacRouge({ nav, focus, clearFocus }: ScreenProps) {
       <div className="space-y-4">
         <Empty title="Bac rouge : toute pièce douteuse isolée sous 5 minutes" text="Déclarez chaque défaut dès qu'il est vu, étiquetez la pièce, puis décidez sous 24 h : rebut, retouche, dérogation ou retour fournisseur. Chaque fiche est chiffrée dans le coût de non-qualité (outil 5.2).">
           <Button kind="primary" onClick={declare}><Plus size={14} />Déclarer un défaut</Button>
+          <QuickButton label="Déclaration rapide" title="Déclarer un défaut en 30 secondes" photo
+            fields={[{ key: 'description', label: 'Le défaut', required: true, placeholder: 'Ex. : perçage décalé' }, { key: 'item', label: 'La pièce ou l\'affaire' }, { key: 'where', label: 'Le poste', list: 'nc-where-q' }]}
+            onSave={(v, photo) => update(d => { const n = newNc(d, author); d.ncs[n.id] = { ...n, description: v.description, item: v.item || '', where: v.where || '', photo: photo || undefined }; })} />
           <Button onClick={() => update(d => applyQualityExample(d))}>Voir un exemple traité</Button>
         </Empty>
         <Impunity />
@@ -44,8 +51,9 @@ export function BacRouge({ nav, focus, clearFocus }: ScreenProps) {
     );
   }
 
-  const inBin = all.filter(n => ncState(n, now) !== 'decided');
-  const late = inBin.filter(n => ncState(n, now) === 'late');
+  const biz = !!state.params.businessHours;
+  const inBin = all.filter(n => ncState(n, now, biz) !== 'decided');
+  const late = inBin.filter(n => ncState(n, now, biz) === 'late');
   const month = cnqMonth(state, periodOfDate(now));
   const monthCount = all.filter(n => n.at.slice(0, 7) === periodOfDate(now)).length;
   const shown = filter === 'open' ? inBin : filter === 'decided' ? all.filter(n => n.decision) : all;
@@ -64,6 +72,10 @@ export function BacRouge({ nav, focus, clearFocus }: ScreenProps) {
       <Card className="space-y-3 p-3 sm:p-4">
         <ToolHeader title="Fiches de non-conformité" text="Une fiche par défaut. La quarantaine se termine par une décision datée et visée.">
           <Button kind="primary" onClick={declare}><Plus size={14} />Déclarer un défaut</Button>
+          <QuickButton label="Déclaration rapide" title="Déclarer un défaut en 30 secondes" photo
+            fields={[{ key: 'description', label: 'Le défaut', required: true, placeholder: 'Ex. : perçage décalé' }, { key: 'item', label: 'La pièce ou l\'affaire' }, { key: 'where', label: 'Le poste', list: 'nc-where-q' }]}
+            onSave={(v, photo) => update(d => { const n = newNc(d, author); d.ncs[n.id] = { ...n, description: v.description, item: v.item || '', where: v.where || '', photo: photo || undefined }; })} />
+          <Button onClick={() => downloadFile('Etiquettes-vierges.pdf', blankLabelsPdf(nextRef('NC', Object.values(state.ncs)), 10, { company: state.settings.companyName, date: now }), 'application/pdf')} title="10 étiquettes numérotées à l'avance, à remplir au stylo au poste"><FileDown size={14} />Étiquettes vierges</Button>
           <Button onClick={() => labels(inBin.length ? inBin : all.slice(0, 2))} title="Étiquettes des pièces en quarantaine, deux par page"><FileDown size={14} />Étiquettes (PDF)</Button>
           <Button kind="ghost" onClick={() => window.print()}><Printer size={14} />Imprimer</Button>
         </ToolHeader>
@@ -74,6 +86,15 @@ export function BacRouge({ nav, focus, clearFocus }: ScreenProps) {
           </ul>
         )}
       </Card>
+      <div className="grid gap-4 md:grid-cols-2">
+        {(['cause', 'where'] as const).map(by => (
+          <Card key={by} className="space-y-2 p-3 sm:p-4">
+            <h2 className="text-xs font-bold text-slate-900">{by === 'cause' ? 'Causes' : 'Postes'} les plus fréquents (90 jours)</h2>
+            {pareto(state, by).length ? <ul className="space-y-1">{pareto(state, by).slice(0, 6).map(x => <li key={x.key} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 text-[11px]"><span className="min-w-0"><span className="block truncate text-slate-700">{x.key}</span><span className="mt-0.5 block h-2 rounded-full bg-slate-100"><span className="block h-2 rounded-full bg-red-600" style={{ width: `${x.n / pareto(state, by)[0].n * 100}%` }} /></span></span><span className="font-mono text-slate-900">{x.n} · {formatValue(x.cost, '€')}</span></li>)}</ul> : <p className="text-[11px] text-slate-500">Aucune fiche sur 90 jours.</p>}
+          </Card>
+        ))}
+      </div>
+      <datalist id="nc-where-q">{[...new Set(all.map(x => x.where).filter(Boolean))].map(w => <option key={w} value={w} />)}</datalist>
       <Method rule="Une non-conformité qui n'est pas isolée dans les 5 minutes finit tôt ou tard chez le client."
         steps={[['Stop et étiquette sous 5 min', "Dès qu'un défaut est vu ou soupçonné, l'opérateur étiquette la pièce, sans hésiter."], ['Bac rouge fermé', "La pièce part dans le bac rouge sous clé. Jamais sur l'établi."], ['Décision chaque matin', "Le responsable inspecte le bac à heure fixe et décide : rebut, retouche, dérogation ou retour."]]}
         tips={["Remercier la personne qui déclare : elle vient d'éviter une réclamation.", 'Seul le responsable désigné peut sortir une pièce du bac rouge.']} />
@@ -87,7 +108,7 @@ function Impunity() {
 }
 
 function NcRow({ s, n, now, open }: { s: State; n: Nc; now: Date; open(): void }) {
-  const st = ncState(n, now);
+  const st = ncState(n, now, !!s.params.businessHours);
   const cost = ncCost(n, s.params);
   const age = hoursBetween(n.at, now);
   return (
@@ -111,7 +132,7 @@ export function NcSheet({ initial, onClose, nav }: { initial: Nc; onClose(): voi
   const set = (p: Partial<Nc>) => setN(x => ({ ...x, ...p }));
   const setCost = (p: Partial<Nc['cost']>) => set({ cost: { ...n.cost, ...p } });
   const cost = ncCost(n, state.params);
-  const st = ncState(n);
+  const st = ncState(n, new Date(), !!state.params.businessHours);
   const valid = () => {
     if (!n.description.trim()) { setError('Décrivez le défaut constaté.'); return false; }
     if (!n.item.trim() && !n.where.trim()) { setError('Indiquez la pièce ou le poste.'); return false; }
@@ -161,9 +182,11 @@ export function NcSheet({ initial, onClose, nav }: { initial: Nc; onClose(): voi
             <Field label="Poste, machine ou chantier"><input className={inputCls} value={n.where} list="nc-where" onChange={e => set({ where: e.target.value })} /></Field>
             <div className="grid grid-cols-2 gap-2">
               <Field label="Quantité isolée"><NumInput value={n.qty} onChange={v => set({ qty: v })} /></Field>
+              <Field label="Quantité finalement rebutée"><NumInput value={n.qtyScrapped ?? null} onChange={v => set({ qtyScrapped: v })} /></Field>
               <Field label="Isolé le"><input type="datetime-local" className={inputCls} value={n.at} onChange={e => set({ at: e.target.value })} /></Field>
             </div>
             <Field label="Déclaré par"><input className={inputCls} value={n.by} list="people" onChange={e => set({ by: e.target.value })} /></Field>
+            <div className="max-w-xs"><PhotoBox value={n.photo || ''} label="Photo du défaut" onChange={v => set({ photo: v })} /></div>
             <Field label="Cause immédiate">
               <select className={inputCls} value={n.cause} onChange={e => set({ cause: e.target.value as Nc['cause'] })}>
                 <option value="">À préciser</option>
@@ -190,7 +213,7 @@ export function NcSheet({ initial, onClose, nav }: { initial: Nc; onClose(): voi
 
         <section className="space-y-2">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <SubTitle>2. Décision sous {DECISION_HOURS} h</SubTitle>
+            <SubTitle>2. Décision sous {DECISION_HOURS} h (responsable du bac rouge)</SubTitle>
             {st !== 'decided' && <span className={`text-[11px] font-semibold ${st === 'late' ? 'text-red-700' : 'text-amber-800'}`}>En quarantaine depuis {formatHours(hoursBetween(n.at, new Date()) || 0)}</span>}
           </div>
           <div className="grid gap-1.5 sm:grid-cols-4" role="radiogroup" aria-label="Décision">

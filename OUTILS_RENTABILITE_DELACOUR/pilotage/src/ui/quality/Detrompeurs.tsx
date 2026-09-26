@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { FileDown, Lightbulb, Plus, Printer, SearchCheck, Trash2 } from 'lucide-react';
 import type { Poka, PokaCheck } from '../../domain/types';
-import { checkDate, levelLabel, ncsSince, newPoka, POKA_IDEAS, POKA_LEVELS, POKA_STATE, pokaState } from '../../domain/quality';
+import { checkDate, checkPassed, levelLabel, ncsSince, newPoka, nextFollowCheck, POKA_CATALOGUE, POKA_IDEAS, POKA_LEVELS, POKA_STATE, pokaPayback, pokaState } from '../../domain/quality';
 import { applyQualityExample } from '../../domain/qualityExamples';
 import { pokaPdf } from '../../domain/qualityPdf';
 import { daysBetween, PROCESS_IDS, processLabel, sum, type Insight } from '../../domain/base';
@@ -99,7 +99,7 @@ export function PokaSheet({ initial, onClose, nav }: { initial: Poka; onClose():
   const close = () => { if (JSON.stringify(p) === JSON.stringify(initial) || window.confirm('Fermer sans enregistrer ? Vos modifications seront perdues.')) onClose(); };
   const save = () => {
     if (!p.defect.trim()) return setError('Décrivez le défaut à éliminer.');
-    if (p.check && (p.check.produced === null || p.check.defects === null)) return setError('Contrôle J+30 : indiquez les pièces produites et le nombre de défauts.');
+    if (p.check && p.check.defects === null && (p.check.seen ?? null) === null) return setError('Contrôle J+30 : le défaut a-t-il été revu (ou combien de défauts) ?');
     update(d => { d.pokas[p.id] = p; });
     onClose();
   };
@@ -142,6 +142,12 @@ export function PokaSheet({ initial, onClose, nav }: { initial: Poka; onClose():
           </div>
           {ideas && (
             <div className="grid gap-1.5 sm:grid-cols-2">
+              {POKA_CATALOGUE.map(cat => (
+                <div key={cat.defect} className="space-y-1 rounded-lg bg-slate-50 p-1.5 sm:col-span-1">
+                  <div className="text-[11px] font-bold text-slate-800">{cat.defect}</div>
+                  {cat.ideas.map(t => <button key={t} type="button" onClick={() => set({ description: t })} className="block w-full rounded border border-slate-200 bg-white px-2 py-1 text-left text-[11px] text-slate-700 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-950">{t}</button>)}
+                </div>
+              ))}
               {(POKA_IDEAS[p.processId] || []).concat(p.processId !== 'P3' ? POKA_IDEAS.P3 : []).map(t => (
                 <button key={t} type="button" onClick={() => set({ description: t })} className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-left text-[11px] text-slate-700 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-950">{t}</button>
               ))}
@@ -168,6 +174,8 @@ export function PokaSheet({ initial, onClose, nav }: { initial: Poka; onClose():
             <div className="space-y-1.5 pt-4">
               <label className="flex items-center gap-2 text-[11px] text-slate-700"><input type="checkbox" checked={p.trained} onChange={e => set({ trained: e.target.checked })} />Tous les opérateurs du poste formés au dispositif</label>
               <label className="flex items-center gap-2 text-[11px] text-slate-700"><input type="checkbox" checked={p.bypassTested} onChange={e => set({ bypassTested: e.target.checked })} />Test de contournement fait : le dispositif résiste</label>
+              <label className="flex items-center gap-2 text-[11px] text-slate-700"><input type="checkbox" checked={!!p.operatorOk} onChange={e => set({ operatorOk: e.target.checked })} />Validé par les opérateurs (pas gênant, pas ralentissant)</label>
+              <label className="flex items-center gap-2 text-[11px] text-slate-700"><input type="checkbox" checked={!!p.office} onChange={e => set({ office: e.target.checked })} />Dispositif de bureau ou logiciel (pas de pièces comptées)</label>
             </div>
           </div>
         </section>
@@ -183,21 +191,41 @@ export function PokaSheet({ initial, onClose, nav }: { initial: Poka; onClose():
               {!check ? <Button onClick={() => setCheck({})}><SearchCheck size={14} />Saisir le contrôle</Button> : (
                 <div className="grid gap-2 rounded-lg border border-slate-200 p-2.5 sm:grid-cols-4">
                   <Field label="Date du contrôle"><input type="date" className={inputCls} value={check.date} onChange={e => setCheck({ date: e.target.value })} /></Field>
-                  <Field label="Pièces produites"><NumInput value={check.produced} onChange={v => setCheck({ produced: v })} /></Field>
-                  <Field label="Défauts constatés"><NumInput value={check.defects} onChange={v => setCheck({ defects: v })} /></Field>
+                  <div className="space-y-1"><span className="block text-[11px] font-semibold text-slate-700">Le défaut est-il revenu ?</span><YesNo label="Défaut revu" labels={['Oui', 'Non']} value={check.seen ?? null} onChange={v => setCheck({ seen: v, defects: v === false ? (check.defects ?? 0) : v ? Math.max(1, check.defects ?? 1) : check.defects })} /></div>
+                  {!p.office && <Field label="Pièces produites (si connu)"><NumInput value={check.produced} onChange={v => setCheck({ produced: v })} /></Field>}
+                  <Field label={p.office ? 'Erreurs constatées' : 'Défauts constatés'}><NumInput value={check.defects} onChange={v => setCheck({ defects: v })} /></Field>
                   <Field label="Contrôlé par"><input className={inputCls} value={check.by} list="people" onChange={e => setCheck({ by: e.target.value })} /></Field>
                   <div className="space-y-1"><span className="block text-[11px] font-semibold text-slate-700">Dispositif en place, non contourné</span><YesNo label="Dispositif en place" value={check.inPlace} onChange={v => setCheck({ inPlace: v !== false })} /></div>
                   <div className="space-y-1"><span className="block text-[11px] font-semibold text-slate-700">Cadence normale</span><YesNo label="Cadence normale" value={check.cadenceOk} onChange={v => setCheck({ cadenceOk: v !== false })} /></div>
                   <div className="sm:col-span-2"><Field label="Constat"><input className={inputCls} value={check.note} onChange={e => setCheck({ note: e.target.value })} /></Field></div>
                   <div className="flex flex-wrap items-center gap-2 sm:col-span-4">
-                    {check.produced !== null && check.defects !== null && <StatusBadge level={check.inPlace && check.defects === 0 ? 'ok' : 'alert'} text={check.inPlace && check.defects === 0 ? 'Efficace : dossier clos' : 'Récidive : reprendre l\'analyse'} />}
+                    {(check.defects !== null || check.seen != null) && <StatusBadge level={checkPassed(check) ? 'ok' : 'alert'} text={checkPassed(check) ? 'Efficace : dossier clos' : 'Récidive : reprendre l\'analyse'} />}
                     <button type="button" className="text-[11px] font-semibold text-slate-500 hover:underline" onClick={() => set({ check: null })}>Effacer le contrôle</button>
+                  </div>
+                </div>
+              )}
+              {check && checkPassed(check) && (
+                <div className="space-y-1.5 rounded-lg border border-dashed border-slate-300 p-2.5">
+                  <div className="text-[11px] font-semibold text-slate-700">Contrôles de suivi : à J+90 puis chaque année (prochain le {frDate(nextFollowCheck(p))})</div>
+                  {(p.later || []).map((c, i) => <div key={i} className="text-[11px] text-slate-700"><span className="font-mono">{frDate(c.date)}</span> · {checkPassed(c) ? 'toujours en place, pas de défaut' : 'récidive ou dispositif retiré'}{c.note ? ` · ${c.note}` : ''} ({c.by})</div>)}
+                  <div className="flex flex-wrap gap-1.5">
+                    <Button className="!px-2 !py-1" onClick={() => set({ later: [...(p.later || []), { ...emptyCheck(author), defects: 0, seen: false, note: 'Toujours en place et utilisé' }] })}>Toujours en place</Button>
+                    <Button kind="danger" className="!px-2 !py-1" onClick={() => set({ later: [...(p.later || []), { ...emptyCheck(author), inPlace: false, defects: 1, seen: true, note: 'Retiré ou contourné' }] })}>Retiré ou contourné</Button>
                   </div>
                 </div>
               )}
             </>
           )}
         </section>
+
+        {(() => { const pb = pokaPayback(state, p); const sop = Object.values(state.sops).find(x => p.poste.trim() && x.poste.trim().toLowerCase() === p.poste.trim().toLowerCase()); return (
+          <section className="space-y-1.5">
+            {pb && <p className="rounded-lg bg-emerald-50 px-2.5 py-1.5 text-[11px] text-emerald-900">Ce défaut a coûté {formatValue(pb.yearly, '€')} sur les 12 mois avant le dispositif{pb.months !== null ? ` : le détrompeur (${formatValue(p.cost, '€')}) est remboursé en ${pb.months < 1 ? 'moins d\'un mois' : `${Math.ceil(pb.months)} mois`}` : ''}.</p>}
+            {p.installedAt && (sop
+              ? <button type="button" className="text-[11px] font-semibold text-delacour-primary hover:underline" onClick={() => { update(d => { d.pokas[p.id] = p; }); onClose(); nav.tool('3.2', sop.id); }}>Mettre à jour l'instruction du poste {sop.poste} ({sop.version > 0 ? `V${String(sop.version).padStart(2, '0')}` : ''}) avec le détrompeur</button>
+              : <p className="text-[11px] text-slate-500">Pas d'instruction de poste « {p.poste || '…'} » (outil 3.2) : pensez à la créer avec le détrompeur.</p>)}
+          </section>
+        ); })()}
       </div>
       <datalist id="nc-where-all">{[...new Set(Object.values(state.ncs).map(x => x.where).filter(Boolean))].map(w => <option key={w} value={w} />)}</datalist>
     </Modal>

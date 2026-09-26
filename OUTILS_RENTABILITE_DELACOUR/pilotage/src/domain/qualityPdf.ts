@@ -57,6 +57,13 @@ export function labelsPdf(ncs: Nc[], o: Opts): string {
   return doc.toString('Étiquettes bac rouge');
 }
 
+// Blank labels numbered in advance, to fill in by hand at the workstation and enter later
+export function blankLabelsPdf(firstRef: string, count: number, o: Opts): string {
+  const m = firstRef.match(/^(.*-)(\d+)$/);
+  const refs = Array.from({ length: count }, (_, i) => (m ? `${m[1]}${String(+m[2] + i).padStart(m[2].length, '0')}` : `${firstRef}-${i + 1}`));
+  return labelsPdf(refs.map(ref => ({ id: ref, ref, at: '', by: '', where: '', item: '', qty: null, description: '', cause: '', origin: 'interne', decision: '', decidedAt: '', decidedBy: '', decisionNote: '', processId: '', cost: { scrap: null, lostHours: null, reworkHours: null, logistics: null } })), o);
+}
+
 // Workshop sheet: the problem, the chain of whys, the root cause and the countermeasures
 export function analysisPdf(s: State, a: Analysis, o: Opts): string {
   const w = new DocWriter({ company: o.company, title: `Atelier 5 Pourquoi ${a.ref}`, date: o.date });
@@ -67,10 +74,30 @@ export function analysisPdf(s: State, a: Analysis, o: Opts): string {
   w.table(['', 'Réponse vérifiée sur place'], [['Constat', a.problem], ...whys.map((x, i) => [`Pourquoi ${i + 1}`, x])], [0.18, 0.82], { size: 10 });
   w.callout(`Cause racine : ${a.rootCause || 'à trouver'}`, [254, 242, 242], RED);
   w.para(a.backCheck ? 'Test à rebours fait : « puisque la cause racine, donc… donc le problème » tient.' : 'Test à rebours à faire : relire de la cause racine vers le problème avec « donc ».', 9.5, { color: COLORS.gray });
+  (a.branches || []).filter(b => b.title || b.rootCause).forEach(b => {
+    w.heading(`Autre piste : ${b.title || 'sans titre'}`);
+    w.table(['', 'Réponse'], [...b.whys.filter(x => x.trim()).map((x, i) => [`Pourquoi ${i + 1}`, x]), ['Cause racine', b.rootCause]], [0.18, 0.82], { size: 10 });
+  });
+  const ish = Object.entries(a.ishikawa || {}).filter(([, v]) => v?.trim());
+  if (ish.length) { w.heading('Pistes par famille (5M)'); w.fields(ish.map(([k, v]) => [({ main_oeuvre: 'Main-d\'œuvre', methode: 'Méthode', materiel: 'Matériel', matiere: 'Matière', milieu: 'Milieu' } as Record<string, string>)[k], v as string])); }
   const acts = actionsOfAnalysis(s, a.id);
   w.heading('Contre-mesures');
   if (!acts.length) w.para('Aucune contre-mesure décidée.', 10, { color: COLORS.gray });
   else w.table(['Action', 'Pilote', 'Échéance'], acts.flatMap(x => x.plan.map(p => [p.text, p.pilot || x.pilot, frDate(x.deadline)])), [0.62, 0.2, 0.18]);
+  return w.finish();
+}
+
+// Blank workshop sheet, to fill in standing at the machine
+export function blankAnalysisPdf(o: Opts): string {
+  const w = new DocWriter({ company: o.company, title: 'Trame d\'atelier 5 Pourquoi', date: o.date });
+  w.band('Atelier 5 Pourquoi · 15 minutes devant la machine', 'Problème : ..............................................................', 'Date : ........  Participants : ....................................................');
+  w.para('Règle : on ne cherche pas de coupable. Si une personne a pu se tromper, qu\'est-ce qui, dans le poste, la méthode ou l\'outil, l\'a rendu possible ?', 10, { color: COLORS.gray });
+  w.heading('Enchaînement des causes (vérifiées sur place)');
+  w.table(['', 'Parce que…'], [['Constat', ''], ['Pourquoi 1', ''], ['Pourquoi 2', ''], ['Pourquoi 3', ''], ['Pourquoi 4', ''], ['Pourquoi 5', ''], ['Cause racine', '']].map(r => [r[0], '\n\n']), [0.18, 0.82], { size: 10 });
+  w.heading('Autres pistes (5M)');
+  w.table(['Main-d\'œuvre', 'Méthode', 'Matériel', 'Matière', 'Milieu'], [['\n\n\n', '', '', '', '']], [0.2, 0.2, 0.2, 0.2, 0.2]);
+  w.heading('Contre-mesure physique, sous 7 jours');
+  w.table(['Action', 'Pilote', 'Échéance'], [['\n\n', '', ''], ['\n\n', '', '']], [0.62, 0.2, 0.18]);
   return w.finish();
 }
 

@@ -7,7 +7,10 @@ import {
   actionsOfAnalysis, ANALYSIS_STATE, analysisInsights, analysisState, blamesPerson, newAnalysis, newPoka, pokasOfAnalysis, POKA_STATE, pokaState, slowActions,
 } from '../../domain/quality';
 import { applyQualityExample } from '../../domain/qualityExamples';
-import { analysisPdf } from '../../domain/qualityPdf';
+import { analysisPdf, blankAnalysisPdf } from '../../domain/qualityPdf';
+import { recurrences, workshopsToOpen } from '../../domain/quality';
+import { DIMS } from '../ActionSheet';
+import { Search } from 'lucide-react';
 import { addDays, PROCESS_IDS, processLabel } from '../../domain/base';
 import { frDate } from '../../domain/periods';
 import { useStore } from '../../store/StoreContext';
@@ -32,6 +35,7 @@ export function Ateliers({ nav, focus, clearFocus }: ScreenProps) {
   const { state, update } = useStore();
   const [open, setOpen] = useState<Analysis | null>(null);
   const [filter, setFilter] = useState<Filter>('open');
+  const [q, setQ] = useState('');
   useEffect(() => { if (focus && state?.analyses[focus]) { setOpen(state.analyses[focus]); clearFocus(); } }, [focus]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!state) return null;
   const now = new Date();
@@ -51,7 +55,16 @@ export function Ateliers({ nav, focus, clearFocus }: ScreenProps) {
   const st = all.map(a => ({ a, st: analysisState(state, a, now) }));
   const count = (k: string) => st.filter(x => x.st === k).length;
   const openOnes = st.filter(x => !['effective'].includes(x.st));
-  const shown = filter === 'open' ? openOnes : filter === 'done' ? st.filter(x => x.st === 'effective') : st;
+  const words = q.toLowerCase().split(/\s+/).filter(Boolean);
+  const text = (a: Analysis) => [a.ref, a.problem, a.rootCause, a.participants, ...a.whys, state.ncs[a.source.id]?.where || ''].join(' ').toLowerCase();
+  const shown = (filter === 'open' ? openOnes : filter === 'done' ? st.filter(x => x.st === 'effective') : st).filter(x => words.every(w => text(x.a).includes(w)));
+  const toOpen = workshopsToOpen(state, now);
+  const openFrom = (x: (typeof toOpen)[number]) => {
+    const src = x.kind === 'nc' ? state.ncs[x.id] : state.complaints[x.id];
+    const a = newAnalysis(state, { kind: x.kind, id: x.id }, x.kind === 'nc' ? (src as typeof state.ncs[string]).description : `${(src as typeof state.complaints[string]).client} : ${src.description}`, (src as { processId: string }).processId || 'P3');
+    update(d => { d.analyses[a.id] = a; if (x.kind === 'nc') d.ncs[x.id].analysisId = a.id; else d.complaints[x.id].analysisId = a.id; });
+    setOpen(a);
+  };
   return (
     <div className="space-y-4">
       <Summary title="Les causes racines sont-elles traitées ?" insights={analysisInsights(state, now)} tiles={<>
@@ -63,8 +76,16 @@ export function Ateliers({ nav, focus, clearFocus }: ScreenProps) {
       <Card className="space-y-3 p-3 sm:p-4">
         <ToolHeader title="Ateliers" text="Un atelier par problème récurrent ou coûteux. Il est clos quand le défaut ne revient plus.">
           <Button kind="primary" onClick={start}><Plus size={14} />Nouvel atelier</Button>
+          <Button onClick={() => downloadFile('Trame-5-Pourquoi.pdf', blankAnalysisPdf({ company: state.settings.companyName, date: now }), 'application/pdf')} title="Trame vierge à remplir debout devant la machine"><FileDown size={14} />Trame vierge</Button>
           <Button kind="ghost" onClick={() => window.print()}><Printer size={14} />Imprimer</Button>
         </ToolHeader>
+        {toOpen.length > 0 && (
+          <div className="space-y-1 rounded-lg border border-amber-200 bg-amber-50 p-2.5">
+            <div className="text-[11px] font-bold text-amber-950">Ateliers à ouvrir (coût d'au moins {state.params.cnqTrigger ?? 500} €, défaut répété, client touché)</div>
+            {toOpen.slice(0, 6).map(x => <div key={x.kind + x.id} className="flex items-center gap-2 text-[11px] text-amber-950"><span className="min-w-0 flex-1">{x.ref} : {x.why}</span><button type="button" className="font-semibold underline" onClick={() => openFrom(x)}>Ouvrir l'atelier</button></div>)}
+          </div>
+        )}
+        <div className="relative max-w-sm"><Search size={14} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" /><input className={`${inputCls} pl-8`} value={q} placeholder="Rechercher : poste, cause, mot-clé…" aria-label="Rechercher un atelier" onChange={e => setQ(e.target.value)} /></div>
         <Chips value={filter} onChange={setFilter} items={[['open', 'En cours', openOnes.length], ['done', 'Efficaces', count('effective')], ['all', 'Tous', all.length]]} />
         {shown.length === 0 ? <p className="py-6 text-center text-xs text-slate-500">Aucun atelier dans ce filtre.</p> : (
           <ul className="divide-y divide-slate-100">
@@ -137,7 +158,11 @@ export function AnalysisSheet({ initial, onClose, nav }: { initial: Analysis; on
               <Field label="Processus concerné">
                 <select className={inputCls} value={a.processId} onChange={e => set({ processId: e.target.value })}>{PROCESS_IDS.map(p => <option key={p} value={p}>{processLabel(p)}</option>)}</select>
               </Field>
-              <Field label="Participants"><input className={inputCls} value={a.participants} placeholder="Opérateur, régleur, responsable" onChange={e => set({ participants: e.target.value })} /></Field>
+              <Field label="Participants"><input className={inputCls} value={a.participants} placeholder="Opérateur, régleur, responsable" onChange={e => set({ participants: e.target.value })} />
+                <select className="mt-1 w-full rounded-md border border-slate-300 bg-white px-1.5 py-0.5 text-[11px]" value="" aria-label="Ajouter un participant de l'équipe" onChange={e => e.target.value && set({ participants: [a.participants, e.target.value].filter(Boolean).join(', ') })}>
+                  <option value="">+ ajouter de l'équipe…</option>{Object.values(state.people).filter(x => x.active).map(x => <option key={x.id} value={x.name}>{x.name}</option>)}
+                </select>
+              </Field>
               <Field label="Pilote"><input className={inputCls} value={a.pilot} list="people" onChange={e => set({ pilot: e.target.value })} /></Field>
             </div>
             {srcTool && <button type="button" className="text-[11px] font-semibold text-delacour-primary hover:underline" onClick={() => { if (valid()) { commit(a); onClose(); nav.tool(srcTool, a.source.id); } }}>Ouvrir la fiche d'origine ({sourceText(state, a)})</button>}
@@ -160,7 +185,28 @@ export function AnalysisSheet({ initial, onClose, nav }: { initial: Analysis; on
             <Field label="Cause racine : la faille du processus">
               <input className={`${inputCls} font-semibold`} value={a.rootCause} onChange={e => set({ rootCause: e.target.value, backCheck: false })} />
             </Field>
-            {blamesPerson(a.rootCause) && <p role="alert" className="rounded-lg bg-red-50 px-2.5 py-1.5 text-[11px] font-semibold text-red-800">Cette cause désigne une personne. Demandez encore pourquoi : qu'est-ce qui a rendu l'erreur possible ?</p>}
+            <p className="text-[11px] text-slate-600">Question à se poser : qu'est-ce qui, dans le poste, la méthode, l'outil ou la conception, a rendu cette erreur possible ?</p>
+            {blamesPerson(a.rootCause) && <p role="alert" className="rounded-lg bg-amber-50 px-2.5 py-1.5 text-[11px] font-semibold text-amber-900">Cette cause semble viser une personne. Si c'est bien une faille du processus, reformulez-la ; sinon, demandez encore pourquoi.</p>}
+            {recurrences(withA, a).length > 0 && <p role="alert" className="rounded-lg bg-red-50 px-2.5 py-1.5 text-[11px] font-semibold text-red-800">Le défaut est revenu au même poste après les actions : {recurrences(withA, a).map(n => n.ref).join(', ')}. Reprendre l'analyse.</p>}
+          </section>
+
+          <section className="space-y-2">
+            <SubTitle>Autres chaînes de causes</SubTitle>
+            <p className="text-[11px] text-slate-500">Un problème a souvent plusieurs causes : une chaîne par piste.</p>
+            {(a.branches || []).map((b, bi) => (
+              <div key={bi} className="space-y-1 rounded-lg border border-slate-200 p-2">
+                <div className="flex gap-1.5"><input className={`${inputCls} font-semibold`} value={b.title} placeholder="Piste (ex. : réglage de la butée)" aria-label="Piste" onChange={e => set({ branches: a.branches!.map((x, j) => (j === bi ? { ...x, title: e.target.value } : x)) })} /><Button kind="ghost" onClick={() => set({ branches: a.branches!.filter((_, j) => j !== bi) })}>Retirer</Button></div>
+                {[0, 1, 2].map(i => <input key={i} className={inputCls} value={b.whys[i] || ''} placeholder={`Pourquoi ${i + 1}`} aria-label={`Piste ${bi + 1}, pourquoi ${i + 1}`} onChange={e => { const w = [...b.whys]; w[i] = e.target.value; set({ branches: a.branches!.map((x, j) => (j === bi ? { ...x, whys: w } : x)) }); }} />)}
+                <input className={`${inputCls} font-semibold`} value={b.rootCause} placeholder="Cause racine de cette piste" aria-label={`Piste ${bi + 1}, cause racine`} onChange={e => set({ branches: a.branches!.map((x, j) => (j === bi ? { ...x, rootCause: e.target.value } : x)) })} />
+              </div>
+            ))}
+            <Button className="!px-2 !py-1" onClick={() => set({ branches: [...(a.branches || []), { title: '', whys: ['', '', ''], rootCause: '' }] })}><Plus size={13} />Autre chaîne</Button>
+            <details className="rounded-lg border border-slate-200 p-2" open={!!a.ishikawa && Object.values(a.ishikawa).some(Boolean)}>
+              <summary className="cursor-pointer text-[11px] font-semibold text-slate-700">Toutes les pistes, par famille (5M)</summary>
+              <div className="mt-2 grid gap-2 sm:grid-cols-5">
+                {DIMS.map(d => <Field key={d.key} label={d.label} hint={d.hint}><textarea className={`${inputCls} min-h-[56px]`} value={a.ishikawa?.[d.key] || ''} onChange={e => set({ ishikawa: { ...(a.ishikawa || {}), [d.key]: e.target.value } })} /></Field>)}
+              </div>
+            </details>
           </section>
 
           {a.rootCause.trim() && (

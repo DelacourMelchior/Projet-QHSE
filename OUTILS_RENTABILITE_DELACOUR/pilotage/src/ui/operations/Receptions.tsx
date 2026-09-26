@@ -4,7 +4,11 @@ import { useEffect, useState } from 'react';
 import { Check, FileDown, Plus, Printer, Trash2, X } from 'lucide-react';
 import type { Delivery, Milestone, State } from '../../domain/types';
 import { newNc } from '../../domain/quality';
-import { DELIVERY_STATE, deliveryInsights, deliveryState, LIFT_DAYS, liftDue, MAX_RETENTION, newDelivery, split } from '../../domain/operations';
+import { amountFromQuote, DELIVERY_STATE, deliveryInsights, deliveryState, LIFT_DAYS, liftDue, MAX_RETENTION, newDelivery, split, templatesOf } from '../../domain/operations';
+import { feedbackState, FEEDBACK_STATE, newFeedback } from '../../domain/commercial';
+import { coordsOf } from '../../domain/docPdf';
+import { SignaturePad } from '../SignaturePad';
+import { PhotoBox } from '../PhotoBox';
 import { applyOperationsExample } from '../../domain/operationsExamples';
 import { pvPdf } from '../../domain/operationsPdf';
 import { sum } from '../../domain/base';
@@ -101,7 +105,7 @@ function DeliverySheet({ initial, onClose, nav }: { initial: Delivery; onClose()
     onClose();
     nav.tool('5.1', n.id);
   };
-  const pdf = () => downloadFile(`PV-reception-${fileSlug(d.ref || d.client)}.pdf`, pvPdf(d, { company: state.settings.companyName, date: new Date() }), 'application/pdf');
+  const pdf = () => downloadFile(`PV-reception-${fileSlug(d.ref || d.client)}.pdf`, pvPdf(d, { company: state.settings.companyName, date: new Date(), coords: coordsOf(state.params) }), 'application/pdf');
 
   return (
     <Modal xwide onClose={close} title={isNew ? 'Nouvelle commande à suivre' : `${d.ref} · ${d.client}`}
@@ -119,7 +123,18 @@ function DeliverySheet({ initial, onClose, nav }: { initial: Delivery; onClose()
           <Field label="Client"><input className={inputCls} value={d.client} list="clients-dl" onChange={e => set({ client: e.target.value })} /></Field>
           <Field label="Livrable"><input className={inputCls} value={d.item} onChange={e => set({ item: e.target.value })} /></Field>
           <Field label="Quantité"><NumInput value={d.qty} onChange={v => set({ qty: v })} /></Field>
+          <Field label="Devis d'origine (2.1)">
+            <select className={inputCls} value={d.quoteId || ''} onChange={e => { const id = e.target.value; const q = state.quotes[id]; set({ quoteId: id || undefined, ...(q && !d.client ? { client: q.client } : {}), ...(q && !d.item ? { item: q.object } : {}) }); }}>
+              <option value="">Aucun</option>{Object.values(state.quotes).filter(q => q.status === 'won').map(q => <option key={q.id} value={q.id}>{q.ref} · {q.client}</option>)}
+            </select>
+          </Field>
+          <Field label="Type de jalons">
+            <select className={inputCls} value={d.template || ''} onChange={e => { const tp = templatesOf(state.params).find(x => x.name === e.target.value); if (!tp) return; if (d.milestones.some(m => m.ok !== null) && !window.confirm('Remplacer les jalons déjà contrôlés ?')) return; set({ template: tp.name, milestones: tp.milestones.map(m => ({ ...m, measured: '', ok: null, by: '', date: '' })) }); }}>
+              <option value="">Fabrication (par défaut)</option>{templatesOf(state.params).map(x => <option key={x.name} value={x.name}>{x.name}</option>)}
+            </select>
+          </Field>
         </section>
+        <p className="text-[11px] text-slate-500">Sur le poste ou le chantier : imprimez le PV avant de commencer, il sert de fiche suiveuse à cocher, puis reportez les résultats ici.</p>
 
         <section className="space-y-2">
           <SubTitle>1. Autocontrôle aux jalons</SubTitle>
@@ -161,7 +176,9 @@ function DeliverySheet({ initial, onClose, nav }: { initial: Delivery; onClose()
             <Field label="Réceptionné le"><input type="date" className={inputCls} value={d.reception.date} onChange={e => setR({ date: e.target.value })} /></Field>
             <Field label="Par (nom lisible)"><input className={inputCls} value={d.reception.name} onChange={e => setR({ name: e.target.value })} /></Field>
             <Field label="Fonction"><input className={inputCls} value={d.reception.role} onChange={e => setR({ role: e.target.value })} /></Field>
-            <Field label="Montant de la facture (€ HT)"><NumInput value={d.reception.amount} onChange={v => setR({ amount: v })} /></Field>
+            <Field label="Montant de la facture (€ HT)" hint={d.quoteId && amountFromQuote(state, d.quoteId) !== null ? `Devis + avenants acceptés : ${formatValue(amountFromQuote(state, d.quoteId), '€')}` : undefined}>
+              <span className="flex gap-1.5"><NumInput value={d.reception.amount} onChange={v => setR({ amount: v })} />{d.quoteId && <Button className="shrink-0 !px-2" onClick={() => setR({ amount: amountFromQuote(state, d.quoteId!) })}>Reprendre</Button>}</span>
+            </Field>
           </div>
           <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Résultat de la réception">
             {([['sans', 'Sans réserve'], ['reserve', 'Avec réserve mineure'], ['refus', 'Refusée']] as const).map(([k, l]) => (
@@ -174,10 +191,25 @@ function DeliverySheet({ initial, onClose, nav }: { initial: Delivery; onClose()
               <Field label="Réserve, précise"><input className={inputCls} value={d.reception.reserve} onChange={e => setR({ reserve: e.target.value })} /></Field>
               <Field label="Retenue (%)" hint={`${MAX_RETENTION} % au plus`}><NumInput value={d.reception.retentionPct} onChange={v => setR({ retentionPct: v })} /></Field>
               <Field label="Réserve levée le" hint={d.reception.date ? `À lever avant le ${frDate(liftDue(d))}` : undefined}><input type="date" className={inputCls} value={d.reception.liftedAt} onChange={e => setR({ liftedAt: e.target.value })} /></Field>
+              {d.reception.liftedAt && <Field label="Levée constatée par (client)"><input className={inputCls} value={d.liftSignedBy || ''} onChange={e => set({ liftSignedBy: e.target.value })} /></Field>}
+              {d.reception.liftedAt && <div className="max-w-xs"><PhotoBox value={d.liftPhoto || ''} label="Photo de la reprise" onChange={v => set({ liftPhoto: v })} /></div>}
             </div>
           )}
+          <div className="grid gap-3 sm:grid-cols-3">
+            <SignaturePad label="Signature de l'entreprise" value={d.signCompany} onChange={v => set({ signCompany: v })} />
+            <SignaturePad label="Signature du client" value={d.signClient} onChange={v => set({ signClient: v })} />
+            <div className="space-y-1"><span className="block text-[11px] font-semibold text-slate-700">Ou photo du PV papier signé</span><PhotoBox value={d.pvPhoto || ''} label="PV signé" onChange={v => set({ pvPhoto: v })} /></div>
+          </div>
+          <p className="text-[11px] text-slate-500">La règle 95/5 ne s'applique que si elle figure dans vos conditions générales ou le devis accepté (verrou P1 du devis).</p>
           {(d.reception.retentionPct ?? 0) > MAX_RETENTION && d.reception.result === 'reserve' && <p className="rounded-lg bg-amber-50 px-2.5 py-1.5 text-[11px] font-semibold text-amber-900">Retenue supérieure à {MAX_RETENTION} % : une réserve mineure ne justifie pas de bloquer plus.</p>}
           {sp && d.reception.result && <p className="rounded-lg bg-slate-50 px-3 py-2 text-[11px] text-slate-700">Payable tout de suite : <strong className="font-mono">{formatValue(sp.now, '€')}</strong>{sp.held ? <> · retenu jusqu'à la levée : <strong className="font-mono">{formatValue(sp.held, '€')}</strong></> : null}</p>}
+        </section>
+
+        <section className="space-y-2">
+          <SubTitle>4. Bilan de fin d'affaire (outil 2.4)</SubTitle>
+          {(() => { const fb = Object.values(state.feedbacks).find(f => f.deliveryId === d.id); if (fb) { const st = feedbackState(fb, state); return <p className="flex flex-wrap items-center gap-2 text-[11px] text-slate-700">Bilan de {fb.client} · {FEEDBACK_STATE[st].label}<button type="button" className="font-semibold text-delacour-primary underline" onClick={() => { update(x => { x.deliveries[d.id] = d; }); onClose(); nav.tool('2.4', fb.id); }}>Ouvrir le bilan</button></p>; }
+            return <Button onClick={() => { const f = { ...newFeedback(), deliveryId: d.id, quoteId: d.quoteId, client: d.client, affaire: d.ref || d.item, contact: d.reception.name, date: d.reception.date || isoDate(new Date()) }; update(x => { x.deliveries[d.id] = d; x.feedbacks[f.id] = f; }); onClose(); nav.tool('2.4', f.id); }}>Poser les 3 questions au client</Button>; })()}
+          <p className="text-[11px] text-slate-500">Même moment, une seule visite : le bilan se fait à la signature du PV.</p>
         </section>
       </div>
       <datalist id="clients-dl">{clientsOf(state).map(x => <option key={x} value={x} />)}</datalist>

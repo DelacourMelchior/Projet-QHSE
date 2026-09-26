@@ -112,6 +112,7 @@ function FeedbackSheet({ initial, onClose, nav }: { initial: Feedback; onClose()
       <div className="space-y-5">
         <section className="space-y-2">
           <SubTitle>1. La livraison</SubTitle>
+          {f.deliveryId && state.deliveries[f.deliveryId] && <button type="button" className="text-[11px] font-semibold text-delacour-primary hover:underline" onClick={() => { update(d => { d.feedbacks[f.id] = f; }); onClose(); nav.tool('3.4', f.deliveryId); }}>PV de réception {state.deliveries[f.deliveryId].ref} (3.4)</button>}
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label="Client"><input className={inputCls} value={f.client} list="clients-fb" onChange={e => set({ client: e.target.value })} /></Field>
             <Field label="Affaire"><input className={inputCls} value={f.affaire} onChange={e => set({ affaire: e.target.value })} /></Field>

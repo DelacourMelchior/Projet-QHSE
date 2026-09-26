@@ -59,10 +59,12 @@ export function pvPdf(dl: Delivery, o: Opts): string {
   w.para(`${box(r.result === 'sans')} Réception sans réserve : bon pour facturation du solde à 100 %.`, 10.5, { bold: r.result === 'sans' });
   w.para(`${box(r.result === 'reserve')} Réception avec réserve mineure : ${r.reserve || '................................................'}`, 10.5, { bold: r.result === 'reserve' });
   w.para(`Retenue : ${r.retentionPct ?? MAX_RETENTION} % au plus ${MAX_RETENTION} %, levée sous ${LIFT_DAYS} jours${r.date ? ` (avant le ${frDate(liftDue(dl))})` : ''}. Le reste est payable immédiatement${sp ? ` : ${formatValue(sp.now, '€')} HT sur ${formatValue(r.amount, '€')} HT` : ''}.`, 10, { x: 62 });
+  w.para('Clause applicable si elle figure dans les conditions générales ou le devis acceptés par le client.', 8.5, { color: COLORS.gray });
+  if (r.liftedAt) w.para(`Réserve levée le ${frDate(r.liftedAt)}${dl.liftSignedBy ? `, constaté par ${dl.liftSignedBy}` : ''}.`, 10, { bold: true });
   w.para(`${box(r.result === 'refus')} Réception refusée (motif) : ........................................`, 10.5, { bold: r.result === 'refus' });
   w.signatures([
-    { title: `Pour ${o.company || "l'entreprise"} (libération)`, name: dl.releasedBy, date: frDate(dl.releasedAt) },
-    { title: 'Pour le client (réceptionnaire habilité)', name: [r.name, r.role].filter(Boolean).join(', '), date: frDate(r.date) },
+    { title: `Pour ${o.company || "l'entreprise"} (libération)`, name: dl.releasedBy, date: frDate(dl.releasedAt), strokes: dl.signCompany },
+    { title: 'Pour le client (réceptionnaire habilité)', name: [r.name, r.role].filter(Boolean).join(', '), date: frDate(r.date), strokes: dl.signClient },
   ]);
   return w.finish();
 }

@@ -2,6 +2,7 @@
 // a coloured title band, headings, paragraphs, label/value lines, tables and signature boxes, on A4 pages.
 // Pure: the same data gives the same file.
 import { A4, PdfDoc, textWidth, wrap, type Rgb } from './pdf';
+import type { Strokes } from './types';
 
 export const M = 42;
 export const WIDTH = A4.w - 2 * M;
@@ -93,7 +94,7 @@ export class DocWriter {
   }
 
   // Boxes to sign by hand: title, name and date lines, blank space
-  signatures(boxes: { title: string; name?: string; date?: string }[]) {
+  signatures(boxes: { title: string; name?: string; date?: string; strokes?: Strokes }[]) {
     const h = 96, gap = 12;
     const w = (WIDTH - gap * (boxes.length - 1)) / boxes.length;
     this.ensure(h + 16);
@@ -108,6 +109,9 @@ export class DocWriter {
       this.doc.text(`Nom : ${b.name || ''}`, x + 6, this.y - 28, 9, { color: COLORS.dark });
       this.doc.text(`Date : ${b.date || ''}`, x + 6, this.y - 41, 9, { color: COLORS.dark });
       this.doc.text('Signature :', x + 6, this.y - 54, 9, { color: COLORS.gray });
+      // signature drawn on the tablet: 300 x 100 box scaled into the lower part of the frame
+      const k = Math.min((w - 70) / 300, 36 / 100), ox = x + 60, oy = this.y - 52;
+      (b.strokes || []).forEach(s => s.forEach(([px, py], j) => { if (j) this.doc.line(ox + s[j - 1][0] * k, oy - s[j - 1][1] * k, ox + px * k, oy - py * k, COLORS.dark, 1); }));
     });
     this.y -= h + 8;
   }

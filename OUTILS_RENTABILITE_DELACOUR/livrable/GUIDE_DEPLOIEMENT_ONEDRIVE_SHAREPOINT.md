@@ -1,6 +1,6 @@
 # Guide de déploiement : Pilotage Delacour dans votre OneDrive ou SharePoint
 
-Ce guide explique comment installer le tableau de pilotage mensuel (outil 1.1), les Plans B (outil 1.2) et l'annuaire (outil 1.3) dans le cloud Microsoft 365 de votre entreprise, pour que la direction et l'équipe travaillent sur les mêmes chiffres et le même plan d'actions.
+Ce guide explique comment installer les 19 outils Delacour (pilotage, Plans B, annuaire, devis, avenants, réclamations, fournisseurs, instructions de poste, maintenance, réceptions, suppléances, polyvalence, accueil, classement, bac rouge, non-qualité, 5 Pourquoi, détrompeurs) dans le cloud Microsoft 365 de votre entreprise, pour que la direction et l'équipe travaillent sur les mêmes données et le même plan d'actions.
 
 **Principe** : l'application est un simple fichier. Vos données restent dans votre propre OneDrive ou SharePoint. Aucun serveur du Cabinet Delacour ni d'un tiers ne les reçoit, et l'application ne fait aucun appel à internet.
 
@@ -10,9 +10,8 @@ Ce guide explique comment installer le tableau de pilotage mensuel (outil 1.1), 
 
 | Élément | Rôle |
 |---|---|
-| `pilotage.html` | **Indicateurs (outil 1.1)**, **Plans B (outil 1.2)** avec un plan d'actions commun, et **Annuaire (outil 1.3)** |
-| `index.html` | Page d'accueil qui liste tous les outils |
-| `tool_page.html` | Les autres outils (2.1 à 5.3) |
+| `pilotage.html` | **Les 19 outils**, rangés par processus (P1 Pilotage, P2 Commercial, P3 Opérations, P4 RH, P5 Qualité), avec un plan d'actions commun |
+| `index.html` | Raccourci qui ouvre `pilotage.html` sur la liste des outils |
 | `GUIDE_DEPLOIEMENT_ONEDRIVE_SHAREPOINT.md` | Ce guide |
 
 Le dossier `donnees` n'est pas livré : il est créé au premier lancement (étape 4).
@@ -43,10 +42,11 @@ Le dossier `donnees` n'est pas livré : il est créé au premier lancement (éta
 ```
 Pilotage Delacour/
 ├─ pilotage.html
-├─ index.html, tool_page.html
+├─ index.html
 └─ donnees/
-   ├─ equipe/      fichiers lisibles par tous (indicateurs, valeurs non confidentielles, actions, risques, annuaire)
-   └─ direction/   fichiers réservés : CA, marge, trésorerie, hypothèses financières, coût des arrêts
+   ├─ equipe/      fichiers lisibles par tous (indicateurs, valeurs non confidentielles, actions, risques, annuaire,
+   │               devis sans leurs coûts, réclamations, bac rouge, fournisseurs, instructions de poste, compétences…)
+   └─ direction/   fichiers réservés : CA, marge, trésorerie, hypothèses financières, coût des arrêts, coûts et marges des devis
 ```
 
 ## 5. Protéger le dossier direction (recommandé)
@@ -69,11 +69,16 @@ Conseil : sur chaque poste, faites un clic droit sur le dossier `donnees`, puis 
 ## 7. Au quotidien
 
 - **À chaque ouverture**, le navigateur redemande l'accès au dossier : cliquez sur **Reconnecter le dossier** (en haut à droite). C'est une protection du navigateur.
-- **Trois outils**, choisis sous le nom de l'entreprise :
-  - **Indicateurs** : **Piloter** (synthèse, alertes, graphiques), **Saisir** (les chiffres du mois), **Actions** (plan d'actions et efficacité) ;
-  - **Plans B** : **Risques** (matrice de criticité, risques à coter, prochain test de chaque Plan B, filtre « À tester », fiches réflexes en PDF) et **Actions** (préparation et réparation des Plans B) ;
-  - **Annuaire** : les numéros de crise par catégorie, à imprimer pour l'accueil.
-- **Un seul plan d'actions** : l'écran Actions montre celles de l'outil ouvert (indicateurs ou Plans B) ; le filtre permet de tout afficher.
+- **L'accueil** (le carré D en haut à gauche) montre les 19 outils, chacun avec ce qui demande attention aujourd'hui (devis à relancer, client à rappeler, pièce en quarantaine depuis plus de 24 h…).
+- **Les processus**, sous le nom de l'entreprise : **Pilotage**, **Commercial**, **Opérations**, **RH**, **Qualité**. Chaque processus affiche ses outils en onglets, avec un compteur rouge ou orange quand il y a quelque chose à faire :
+  - **Pilotage** : **Indicateurs** (synthèse, alertes, graphiques), **Saisie** (les chiffres du mois), **Plans B** (matrice de criticité, tests, fiches réflexes en PDF), **Annuaire** (numéros de crise) ;
+  - **Commercial** : **Devis** (5 verrous, marge, visas, relance à 7 jours), **Avenants** (message à valider par « OK » avant de faire, puis facture), **Réclamations** (rappel sous 48 h, processus en cause), **Bilan de fin** (3 questions, facture sous 24 h) ;
+  - **Opérations** : **Fournisseurs** (fiche de débit sous 48 h, note annuelle A, B, C), **Instructions** (fiche A4 avec photos, versions, personnes habilitées), **Maintenance** (routine du lundi, armoire de survie), **Réceptions** (jalons, PV de réception, retenue de 5 % au plus) ;
+  - **RH** : **Suppléances** (2 suppléants entraînés, enveloppe des accès), **Polyvalence** (matrice 0 à 4, homme-clé), **Accueil** (parcours de 15 jours, test en 3 questions), **Classement** (nom des fichiers, plan de classement, test des 30 secondes) ;
+  - **Qualité** : **Bac rouge** (étiquette, décision sous 24 h), **Non-qualité** (coût du mois par processus), **5 Pourquoi** (cause racine sans coupable), **Détrompeurs** (contrôle sur le terrain à J+30).
+- **Un seul plan d'actions** : l'onglet Actions de chaque processus montre les actions créées depuis ses outils ; le filtre permet de tout afficher.
+- **Les outils se complètent** : une réclamation ouvre une fiche du bac rouge et un atelier 5 Pourquoi, un défaut fournisseur devient une fiche de débit, le coût de chaque fiche remonte dans la non-qualité. Les chiffres calculés (coût de non-qualité, réclamations, devis, postes doublés) sont proposés dans l'écran **Saisie** du tableau de pilotage : un clic sur **Reprendre** les recopie.
+- **Imprimer** : chaque outil produit ses documents (PDF ou impression A4) : étiquettes du bac rouge, fiche de débit, bon pour accord d'un avenant, PV de réception, instruction de poste, feuille de routine d'une machine, parcours d'accueil, charte de classement.
 - **Cotez les risques ensemble** : Plans B, **Coter les risques**, puis gravité et probabilité de chaque risque (les définitions sont affichées ; montants et textes réglables dans Réglages). Les risques proposés par l'outil arrivent sans cotation.
 - **Fiches réflexes** : Plans B, **Fiches réflexes (PDF)**. Imprimez-les et gardez-en une copie papier près des postes : le jour d'une panne informatique, l'application peut être inaccessible.
 - **Annuaire** : chaque numéro n'est saisi qu'une fois et sert à toutes les fiches réflexes. Préférez les numéros professionnels et prévenez les personnes concernées (RGPD). Cochez **Contacts vérifiés** lors d'un test d'un Plan B : la date de vérification se met à jour.
@@ -84,19 +89,20 @@ Conseil : sur chaque poste, faites un clic droit sur le dossier `donnees`, puis 
 ## 8. Sauvegarde et historique
 
 - SharePoint conserve l'historique des versions de chaque fichier : en cas d'erreur, restaurez la version précédente depuis SharePoint.
-- **Réglages → Exporter une sauvegarde (.json)** produit une copie complète à archiver. Les sauvegardes de l'ancienne version de l'outil 1.1 peuvent être restaurées.
+- **Réglages → Exporter une sauvegarde (.json)** produit une copie complète des 19 outils, à archiver. Les sauvegardes de l'ancienne version de l'outil 1.1 peuvent être restaurées.
 
-## 9. Reprise de l'ancienne version des outils 1.1 et 1.2
+## 9. Reprise de l'ancienne version
 
 - Données restées sur un poste : au premier lancement de `pilotage.html` dans le même navigateur, le bouton **Reprendre mes données** apparaît.
 - Risques de l'ancien outil 1.2 restés sur un poste : ouvrez **Plans B** dans le même navigateur ; la cartographie vide propose **Reprendre les risques de l'ancienne version**. Complétez ensuite chaque fiche (gravité, probabilité, fiche réflexe, test).
+- Tableaux des anciens outils 2.1 à 5.3 restés sur un poste (devis, avenants, réclamations, fournisseurs, autocontrôle, suppléances, polyvalence, bac rouge, coût de non-qualité, ateliers 5 Pourquoi) : ouvrez **Réglages** dans le même navigateur ; la section **Ancienne version des outils 2 à 5** indique ce qui a été trouvé et propose **Reprendre ces données**. Rien n'est effacé ; vérifiez ensuite chaque outil. L'ancienne « fiche de poste » (3.3) n'a pas d'équivalent : ses informations se retrouvent dans les instructions de poste (3.2) et la polyvalence (4.2).
 - Dossier partagé déjà utilisé par l'ancienne version (fichiers `journal-*.json`) : ils sont lus et convertis automatiquement à la première connexion, puis republiés au nouveau format (`pilotage-*.json`). Les anciens fichiers ne sont ni modifiés ni supprimés.
 
 ## 10. Limites actuelles
 
-- Seuls les outils **1.1 à 1.3** partagent leurs données par le dossier. Les autres outils (2.1 à 5.3) enregistrent encore sur le poste de chaque utilisateur.
 - Pas de saisie depuis un téléphone sur les données partagées : un navigateur mobile n'a pas accès au dossier synchronisé.
 - L'écriture dans le dossier nécessite Edge ou Chrome.
+- Les photos des instructions de poste alourdissent les fichiers partagés (environ 60 Ko par photo) : quelques photos par poste suffisent.
 
 ## 11. Dépannage
 

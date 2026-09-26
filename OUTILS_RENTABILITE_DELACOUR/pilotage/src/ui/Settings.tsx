@@ -1,5 +1,5 @@
 // Company settings, KPI list, risk rating scale, shared folder, backups, demo.
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Download, FolderSync, Plus, Upload } from 'lucide-react';
 import type { Kpi, State } from '../domain/types';
 import { fromLegacyTool } from '../domain/migrate';
@@ -7,7 +7,10 @@ import { parseNumber } from '../domain/numbers';
 import { demoState } from '../domain/templates';
 import { autoThresholds, DEFAULT_SCALE } from '../domain/risk';
 import { formatValue } from '../domain/numbers';
+import { legacyToolRecords } from '../domain/legacyTools';
+import { legacyLocalTools } from '../store/local';
 import { useStore } from '../store/StoreContext';
+import { toolDef, type ToolId } from './tools';
 import { Button, Field, inputCls, Modal } from './common';
 
 export function Settings({ onClose }: { onClose(): void }) {
@@ -16,6 +19,9 @@ export function Settings({ onClose }: { onClose(): void }) {
   const [scale, setScale] = useState(state!.scale);
   const [th, setTh] = useState<string[]>(() => (state!.settings.gravityThresholds || ['', '', '']).map(String));
   const [msg, setMsg] = useState('');
+  const [params, setParams] = useState(state!.params);
+  const legacy = useMemo(() => legacyToolRecords(legacyLocalTools(), state!), []); // eslint-disable-line react-hooks/exhaustive-deps
+  const legacyTotal = Object.values(legacy.counts).reduce((a, b) => a + b, 0);
   const fileRef = useRef<HTMLInputElement>(null);
   if (!state) return null;
 
@@ -95,6 +101,17 @@ export function Settings({ onClose }: { onClose(): void }) {
         </section>
 
         <section className="space-y-3">
+          <h3 className="text-xs font-bold text-slate-900">Hypothèses des outils 2 à 5</h3>
+          <div className="grid gap-3 sm:grid-cols-4">
+            <Field label="Coût horaire chargé (€/h)" hint="Valorise les heures perdues, de retouche et de reprise (5.1, 5.2, 3.1, 2.1)."><input className={inputCls} inputMode="decimal" value={params.hourlyRate} onChange={e => setParams({ ...params, hourlyRate: parseNumber(e.target.value) ?? 0 })} /></Field>
+            <Field label="Marge brute plancher (%)" hint="En dessous, un devis ne part qu'avec une dérogation (2.1)."><input className={inputCls} inputMode="decimal" value={params.marginFloorPct} onChange={e => setParams({ ...params, marginFloorPct: parseNumber(e.target.value) ?? 0 })} /></Field>
+            <Field label="Acompte à la commande (%)"><input className={inputCls} inputMode="decimal" value={params.depositPct} onChange={e => setParams({ ...params, depositPct: parseNumber(e.target.value) ?? 0 })} /></Field>
+            <Field label="Visas obligatoires dès (€ HT)" hint="Commercial, technique et direction (2.1)."><input className={inputCls} inputMode="decimal" value={params.visaThreshold} onChange={e => setParams({ ...params, visaThreshold: parseNumber(e.target.value) ?? 0 })} /></Field>
+          </div>
+          <Button kind="primary" onClick={() => { if (params.hourlyRate <= 0) return setMsg('Le coût horaire doit être positif.'); update(d => { d.params = params; }); setMsg('Hypothèses des outils enregistrées.'); }}>Enregistrer les hypothèses des outils</Button>
+        </section>
+
+        <section className="space-y-3">
           <h3 className="text-xs font-bold text-slate-900">Cotation des risques (Plans B)</h3>
           {!teamView && (
             <div className="space-y-1.5">
@@ -154,6 +171,14 @@ export function Settings({ onClose }: { onClose(): void }) {
           </div>
           <p className="text-[11px] text-slate-500">Les sauvegardes de l'ancienne version de l'outil sont acceptées.</p>
         </section>
+
+        {legacyTotal > 0 && (
+          <section className="space-y-2">
+            <h3 className="text-xs font-bold text-slate-900">Ancienne version des outils 2 à 5</h3>
+            <p className="text-[11px] text-slate-600">Données trouvées sur ce poste : {Object.entries(legacy.counts).filter(([, n]) => n).map(([id, n]) => `${toolDef(id as ToolId).label} (${n})`).join(', ')}. Elles s'ajoutent aux données actuelles ; rien n'est effacé.</p>
+            <Button onClick={() => { if (window.confirm(`Reprendre ${legacyTotal} élément(s) de l'ancienne version ?`)) { update(d => legacy.apply(d)); setMsg('Données de l\'ancienne version reprises : vérifiez-les outil par outil.'); } }}>Reprendre ces données</Button>
+          </section>
+        )}
 
         <section className="space-y-2">
           <h3 className="text-xs font-bold text-slate-900">Données</h3>

@@ -1,84 +1,62 @@
 #!/usr/bin/env python3
 """
-Build the self-contained Delacour tools app (OUTILS_RENTABILITE_DELACOUR/livrable/).
+Build the Delacour tools deliverable (OUTILS_RENTABILITE_DELACOUR/livrable/).
 
-Sources  : OUTILS_RENTABILITE_DELACOUR/app/index.html, tool_page.html (use CDNs for quick editing)
-Output   : OUTILS_RENTABILITE_DELACOUR/livrable/ — same pages with NO external call:
-           - Tailwind CSS compiled once and inlined (replaces cdn.tailwindcss.com + inline config)
-           - SheetJS inlined (replaces cdn.jsdelivr.net)
-           - Google Fonts links removed (system fonts)
-           - Content-Security-Policy meta that blocks any network request
+The 19 tools (1.1 to 5.4) are one React + TypeScript app (OUTILS_RENTABILITE_DELACOUR/pilotage), built by Vite into a single
+self-contained HTML file with a Content-Security-Policy that blocks any network request.
 
-Prerequisite (once): cd OUTILS_RENTABILITE_DELACOUR/build && npm install
-                    cd OUTILS_RENTABILITE_DELACOUR/pilotage && npm install && npm run build   (tool 1.1)
-Usage             : python3 execution/build_outils_app.py
+Output : livrable/pilotage.html  the application (also copied to app/ for local review)
+         livrable/index.html     entry page: opens the tool list of pilotage.html (kept for existing links and shortcuts)
+
+Prerequisite (once): cd OUTILS_RENTABILITE_DELACOUR/pilotage && npm install
+Usage             : python3 execution/build_outils_app.py            (builds the app, then copies it)
+                    python3 execution/build_outils_app.py --no-build (copies the last build)
 """
-import re
 import subprocess
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent / "OUTILS_RENTABILITE_DELACOUR"
-APP, BUILD, OUT = ROOT / "app", ROOT / "build", ROOT / "livrable"
-PAGES = ["index.html", "tool_page.html"]
+APP, OUT, PILOTAGE = ROOT / "app", ROOT / "livrable", ROOT / "pilotage"
 
-# Inline scripts/styles are allowed (the whole app is inline); everything that leaves the page is not.
 CSP = ("default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; "
        "img-src data: blob:; font-src data:; connect-src 'none'; frame-src 'none'; "
        "form-action 'none'; base-uri 'none'")
 
-
-def compile_css() -> str:
-    tw = BUILD / "node_modules" / ".bin" / "tailwindcss"
-    if not tw.exists():
-        sys.exit(f"Tailwind missing: run `npm install` in {BUILD}")
-    src = BUILD / "input.css"
-    src.write_text("@tailwind base;\n@tailwind components;\n@tailwind utilities;\n")
-    out = BUILD / "tailwind.generated.css"
-    subprocess.run([str(tw), "-c", "tailwind.config.js", "-i", src.name, "-o", out.name, "--minify"],
-                   cwd=BUILD, check=True, capture_output=True)
-    return out.read_text()
-
-
-def build_page(html: str, css: str, xlsx_js: str) -> str:
-    # Tailwind CDN + its inline config
-    html = re.sub(r'\s*<script src="https://cdn\.tailwindcss\.com"></script>', "", html)
-    html, n = re.subn(r'\s*<script>\s*tailwind\.config\s*=.*?</script>', "", html, count=1, flags=re.S)
-    if n != 1:
-        sys.exit("tailwind.config block not found")
-    # Google Fonts
-    html = re.sub(r'\s*<link[^>]+fonts\.(?:googleapis|gstatic)\.com[^>]*>', "", html)
-    # SheetJS
-    html = re.sub(r'\s*<!-- XLSX for Excel Export -->', "", html)
-    html = html.replace('<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>',
-                        f"<script>{xlsx_js}</script>")
-    head_inject = (f'\n  <meta http-equiv="Content-Security-Policy" content="{CSP}">'
-                   f"\n  <style>{css}</style>")
-    html = html.replace("<head>", "<head>" + head_inject, 1)
-    leftovers = re.findall(r'(?:src|href)="https?://[^"]+"', html)
-    if leftovers:
-        sys.exit(f"External references left: {leftovers[:5]}")
-    return html
+# No script needed: the browser follows the refresh, even from a file opened on disk
+INDEX = f"""<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="{CSP}">
+  <meta http-equiv="refresh" content="0; url=pilotage.html#accueil">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Outils Delacour</title>
+  <style>body{{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:#FDFBF7;color:#11352A;display:grid;place-items:center;min-height:100vh;margin:0}}a{{color:#1B4D3E;font-weight:600}}</style>
+</head>
+<body>
+  <p>Ouverture des outils… <a href="pilotage.html#accueil">Ouvrir les outils Delacour</a></p>
+</body>
+</html>
+"""
 
 
 def main():
-    css = compile_css()
-    xlsx_js = (BUILD / "node_modules" / "xlsx" / "dist" / "xlsx.full.min.js").read_text()
-    # A literal "</script>" inside the inlined library would close our tag early
-    xlsx_js = xlsx_js.replace("</script", "<\\/script")
-    OUT.mkdir(exist_ok=True)
-    for name in PAGES:
-        page = build_page((APP / name).read_text(encoding="utf-8"), css, xlsx_js if name == "tool_page.html" else "")
-        (OUT / name).write_text(page, encoding="utf-8")
-        print(f"{name}: {len(page) // 1024} Ko")
-    # Tool 1.1 is its own app (OUTILS_RENTABILITE_DELACOUR/pilotage, React + TypeScript, built by Vite).
-    # Copied next to the other pages in app/ (sources) and livrable/; tool_page.html redirects 1.1 to it.
-    pilotage = ROOT / "pilotage" / "dist" / "index.html"
-    if not pilotage.exists():
+    if "--no-build" not in sys.argv:
+        if not (PILOTAGE / "node_modules").exists():
+            sys.exit(f"Dépendances absentes : lancer `npm install` dans {PILOTAGE}")
+        subprocess.run(["npm", "run", "build"], cwd=PILOTAGE, check=True)
+    built = PILOTAGE / "dist" / "index.html"
+    if not built.exists():
         sys.exit("pilotage/dist/index.html absent : lancer `npm run build` dans OUTILS_RENTABILITE_DELACOUR/pilotage")
-    for dest in (APP / "pilotage.html", OUT / "pilotage.html"):
-        dest.write_text(pilotage.read_text(encoding="utf-8"), encoding="utf-8")
-    print(f"pilotage.html: {pilotage.stat().st_size // 1024} Ko (outils 1.1 à 1.3)")
+    html = built.read_text(encoding="utf-8")
+    if 'http-equiv="Content-Security-Policy"' not in html:
+        sys.exit("La règle de sécurité (CSP) manque dans le fichier construit")
+    OUT.mkdir(exist_ok=True)
+    for folder in (APP, OUT):
+        (folder / "pilotage.html").write_text(html, encoding="utf-8")
+        (folder / "index.html").write_text(INDEX, encoding="utf-8")
+    print(f"pilotage.html : {len(html.encode('utf-8')) // 1024} Ko (outils 1.1 à 5.4)")
     print(f"OK -> {OUT}")
 
 

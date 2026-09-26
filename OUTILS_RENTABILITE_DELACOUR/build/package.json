@@ -1,9 +1,0 @@
-{
-  "name": "delacour-outils-build",
-  "private": true,
-  "description": "Build tooling for the self-contained Delacour tools app (no runtime dependency).",
-  "devDependencies": {
-    "tailwindcss": "3.4.17",
-    "xlsx": "0.18.5"
-  }
-}

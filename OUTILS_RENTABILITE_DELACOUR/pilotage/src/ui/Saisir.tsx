@@ -5,6 +5,7 @@ import type { Kpi, Period } from '../domain/types';
 import { kpiStatus, timelinePeriods, valueOf } from '../domain/engine';
 import { formatValue, parseNumber } from '../domain/numbers';
 import { addMonths, periodLabel, periodLong } from '../domain/periods';
+import { feeds } from '../domain/feeds';
 import { useStore } from '../store/StoreContext';
 import { Button, Card, StatusBadge } from './common';
 
@@ -16,6 +17,7 @@ export function Saisir({ done }: { done(): void }) {
   const options = [...ps, addMonths(ps[ps.length - 1], 1)];
   const filled = Object.values(state.kpis).filter(k => valueOf(state, k.id, month) !== null).length;
   const total = Object.keys(state.kpis).length;
+  const computed = Object.fromEntries(feeds(state, month).map(f => [f.kpi.id, f]));
 
   const commit = (k: Kpi, raw: string) => {
     const v = raw.trim() === '' ? null : parseNumber(raw);
@@ -64,6 +66,14 @@ export function Saisir({ done }: { done(): void }) {
                     <div className="min-w-0">
                       <div className="text-xs font-semibold text-slate-900">{k.name}</div>
                       <div className="text-[11px] text-slate-500">{k.source ? `Source : ${k.source}` : k.type}</div>
+                      {computed[k.id] && !locked && (
+                        <div className="text-[11px] text-slate-600">
+                          Outil {computed[k.id].tool} : <strong className="font-mono">{formatValue(computed[k.id].value, k.unit)}</strong>
+                          {v === null || Math.abs(v - computed[k.id].value) >= 0.05
+                            ? <button type="button" title={computed[k.id].how} className="ml-1.5 font-semibold text-delacour-primary hover:underline" onClick={() => commit(k, String(computed[k.id].value))}>Reprendre</button>
+                            : <span className="ml-1.5 text-emerald-700">identique</span>}
+                        </div>
+                      )}
                     </div>
                     <div>
                       {locked ? <span className="text-[11px] text-slate-400">Réservé à la direction</span> : (

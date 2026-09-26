@@ -1,5 +1,5 @@
 // Small shared UI pieces. Visual rules: ../../app/DESIGN_OUTILS.md (11 px minimum, no emoji, drawn icons).
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { X } from 'lucide-react';
 import type { Level } from '../domain/types';
 import type { Insight } from '../domain/base';
@@ -47,14 +47,16 @@ export const inputCls = 'w-full rounded-lg border border-slate-300 bg-white px-2
 export function Modal({ title, subtitle, onClose, children, footer, wide, xwide }: {
   title: ReactNode; subtitle?: ReactNode; onClose(): void; children: ReactNode; footer?: ReactNode; wide?: boolean; xwide?: boolean;
 }) {
+  const ref = useRef<HTMLDivElement>(null);
+  // with two sheets open (an action over a workshop), Escape closes the top one only
   useEffect(() => {
-    const k = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const k = (e: KeyboardEvent) => { if (e.key === 'Escape' && ref.current === [...document.querySelectorAll('[role=dialog]')].at(-1)) onClose(); };
     window.addEventListener('keydown', k);
     return () => window.removeEventListener('keydown', k);
   }, [onClose]);
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 p-0 sm:items-center sm:p-4" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div role="dialog" aria-modal="true" className={`flex max-h-[92vh] w-full flex-col rounded-t-2xl bg-white shadow-2xl sm:rounded-2xl ${xwide ? 'sm:max-w-6xl' : wide ? 'sm:max-w-4xl' : 'sm:max-w-lg'}`}>
+      <div ref={ref} role="dialog" aria-modal="true" className={`flex max-h-[92vh] w-full flex-col rounded-t-2xl bg-white shadow-2xl sm:rounded-2xl ${xwide ? 'sm:max-w-6xl' : wide ? 'sm:max-w-4xl' : 'sm:max-w-lg'}`}>
         <div className="flex items-start justify-between gap-3 border-b border-slate-100 px-4 py-3 sm:px-5">
           <div className="min-w-0">
             <h2 className="text-sm font-bold text-slate-900">{title}</h2>
@@ -206,7 +208,7 @@ export function Row({ onClick, lead, title, sub, right, badge }: { onClick(): vo
         {lead}
         <span className="min-w-0 flex-1">
           <span className="line-clamp-2 block text-xs font-semibold text-slate-900 sm:truncate">{title}</span>
-          {sub && <span className="block truncate text-[11px] text-slate-500">{sub}</span>}
+          {sub && <span className="line-clamp-2 block text-[11px] text-slate-500 sm:truncate">{sub}</span>}
         </span>
         {right && <span className="hidden shrink-0 text-right text-[11px] text-slate-600 sm:block">{right}</span>}
         {badge && <span className="shrink-0">{badge}</span>}

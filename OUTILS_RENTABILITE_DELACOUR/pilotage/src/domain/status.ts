@@ -6,6 +6,7 @@ import { riskSummary, staleContacts } from './risk';
 import { toCheck } from './contacts';
 import { cnqMonth, ncState, pokaState, analysisState } from './quality';
 import { formatValue } from './numbers';
+import { isoDate } from './periods';
 import { changeState, changeSummary, complaintState, feedbackState, quoteState } from './commercial';
 import { chronoSummary, envelopeState, keyPeople, newcomerState, powerState, skillRisk } from './team';
 import { anomalies, debitState, deliveryState, inspectionState, lowParts, ncsSinceVersion, supplierSummary } from './operations';
@@ -49,7 +50,7 @@ export function toolBadge(s: State, tool: string, p: Period, now = new Date()): 
       return ok('Bac rouge vide');
     }
     case '5.2': {
-      const m = cnqMonth(s, p);
+      const m = cnqMonth(s, p > isoDate(now).slice(0, 7) ? isoDate(now).slice(0, 7) : p);
       if (!Object.keys(s.ncs).length && !Object.keys(s.complaints).length && !Object.keys(s.debits).length) return empty();
       return m.unqualified ? { n: m.unqualified, tone: 'warn', text: `${plural(m.unqualified, 'coût')} à imputer` } : { n: 0, tone: 'ok', text: `${formatValue(m.total, '€')} ce mois` };
     }
@@ -69,7 +70,7 @@ export function toolBadge(s: State, tool: string, p: Period, now = new Date()): 
       const failed = st.filter(x => x === 'failed').length, due = st.filter(x => x === 'due').length;
       if (failed) return { n: failed, tone: 'alert', text: `${plural(failed, 'récidive')}` };
       if (due) return { n: due, tone: 'warn', text: `${plural(due, 'contrôle')} J+30 à faire` };
-      return ok(`${plural(st.filter(x => x === 'effective').length, 'détrompeur')} efficace(s)`);
+      return ok(`${plural(st.filter(x => x === 'effective').length, 'détrompeur')} contrôlé${st.filter(x => x === 'effective').length > 1 ? 's' : ''} efficace${st.filter(x => x === 'effective').length > 1 ? 's' : ''}`);
     }
     case '2.1': {
       const all = Object.values(s.quotes);
@@ -83,7 +84,7 @@ export function toolBadge(s: State, tool: string, p: Period, now = new Date()): 
       const all = Object.values(s.changes);
       if (!all.length) return empty();
       const sm = changeSummary(s, now);
-      if (sm.risky) return { n: sm.risky, tone: 'alert', text: `${plural(sm.risky, 'avenant')} commencé(s) sans accord` };
+      if (sm.risky) return { n: sm.risky, tone: 'alert', text: sm.risky > 1 ? `${sm.risky} avenants commencés sans accord` : '1 avenant commencé sans accord' };
       const todo = all.filter(c => ['to_price', 'to_send', 'accepted'].includes(changeState(c))).length;
       return todo ? { n: todo, tone: 'warn', text: `${plural(todo, 'avenant')} à chiffrer, envoyer ou facturer` } : ok('Avenants à jour');
     }
@@ -92,7 +93,7 @@ export function toolBadge(s: State, tool: string, p: Period, now = new Date()): 
       if (!all.length) return empty();
       const st = all.map(c => complaintState(c, now));
       const late = st.filter(x => x === 'late').length, call = st.filter(x => x === 'to_contact').length;
-      if (late) return { n: late, tone: 'alert', text: `${plural(late, 'client')} pas rappelé(s) sous 48 h` };
+      if (late) return { n: late, tone: 'alert', text: late > 1 ? `${late} clients pas rappelés sous 48 h` : '1 client pas rappelé sous 48 h' };
       return call ? { n: call, tone: 'warn', text: `${plural(call, 'client')} à rappeler` } : ok('Clients rappelés');
     }
     case '2.4': {
@@ -100,7 +101,7 @@ export function toolBadge(s: State, tool: string, p: Period, now = new Date()): 
       if (!all.length) return empty();
       const st = all.map(f => feedbackState(f, s));
       const doubt = st.filter(x => x === 'doubt' || x === 'unhappy').length, inv = st.filter(x => x === 'to_invoice' || x === 'to_ask').length;
-      if (doubt) return { n: doubt, tone: 'alert', text: `${plural(doubt, 'client')} insatisfait(s) ou réserve(s) à régler` };
+      if (doubt) return { n: doubt, tone: 'alert', text: `${plural(doubt, 'client')} à satisfaire avant la facture` };
       return inv ? { n: inv, tone: 'warn', text: `${plural(inv, 'bilan')} à finir ou facturer` } : ok('Bilans facturés');
     }
     case '3.1': {
@@ -116,7 +117,7 @@ export function toolBadge(s: State, tool: string, p: Period, now = new Date()): 
       if (!all.length) return empty();
       const stale = all.filter(x => ncsSinceVersion(s, x).length).length, noVal = all.filter(x => !x.validatedBy.trim()).length;
       if (stale) return { n: stale, tone: 'alert', text: `${plural(stale, 'instruction')} à mettre à jour` };
-      return noVal ? { n: noVal, tone: 'warn', text: `${plural(noVal, 'instruction')} à valider` } : ok(`${plural(all.length, 'poste')} couvert(s)`);
+      return noVal ? { n: noVal, tone: 'warn', text: `${plural(noVal, 'instruction')} à valider` } : ok(`${plural(all.length, 'poste')} avec instruction`);
     }
     case '3.3': {
       const all = Object.values(s.equipments);
@@ -132,7 +133,7 @@ export function toolBadge(s: State, tool: string, p: Period, now = new Date()): 
       const st = all.map(d => deliveryState(d, now));
       const bad = st.filter(x => x === 'blocked' || x === 'reserve_late' || x === 'refused').length;
       const todo = st.filter(x => x === 'to_release' || x === 'released' || x === 'reserve').length;
-      if (bad) return { n: bad, tone: 'alert', text: `${plural(bad, 'commande')} bloquée(s) ou réserve en retard` };
+      if (bad) return { n: bad, tone: 'alert', text: `${plural(bad, 'commande')} en défaut (jalon, réserve, refus)` };
       return todo ? { n: todo, tone: 'warn', text: `${plural(todo, 'commande')} à libérer, faire signer ou lever` } : ok('Réceptions à jour');
     }
     case '4.1': {
@@ -142,13 +143,13 @@ export function toolBadge(s: State, tool: string, p: Period, now = new Date()): 
       const none = st.filter(x => x === 'no_deputy').length;
       const todo = st.filter(x => x !== 'ok' && x !== 'no_deputy').length + (envelopeState(s.envelope, now) === 'ok' ? 0 : 1);
       if (none) return { n: none, tone: 'alert', text: `${plural(none, 'pouvoir')} sans suppléant` };
-      return todo ? { n: todo, tone: 'warn', text: `${plural(todo, 'suppléance')} à compléter ou entraîner` } : ok('Suppléances prêtes');
+      return todo ? { n: todo, tone: 'warn', text: `${plural(todo, 'suppléance')} à compléter ou à entraîner` } : ok('Suppléances prêtes');
     }
     case '4.2': {
       const ks = Object.values(s.skills);
       if (!ks.length) return empty();
       const keys = keyPeople(s).length, bad = ks.filter(k => skillRisk(s, k) !== 'ok').length;
-      return bad ? { n: bad, tone: 'alert', text: `${plural(bad, 'compétence')} non doublée(s)${keys ? `, ${plural(keys, 'homme-clé', 'hommes-clés')}` : ''}` } : ok('Toutes les compétences doublées');
+      return bad ? { n: bad, tone: 'alert', text: `${plural(bad, 'compétence')} sans doublure${keys ? `, ${plural(keys, 'homme-clé', 'hommes-clés')}` : ''}` } : ok('Toutes les compétences doublées');
     }
     case '4.3': {
       const ns = Object.values(s.newcomers);
@@ -156,13 +157,13 @@ export function toolBadge(s: State, tool: string, p: Period, now = new Date()): 
       const st = ns.map(n => newcomerState(n, now));
       const bad = st.filter(x => x === 'failed').length + ns.filter(n => !n.authorizedAt && !n.tutor.trim()).length;
       const todo = st.filter(x => ['welcome', 'test_due', 'to_authorize'].includes(x)).length;
-      if (bad) return { n: bad, tone: 'alert', text: `${plural(bad, 'recrue')} sans tuteur ou test à repasser` };
+      if (bad) return { n: bad, tone: 'alert', text: `${plural(bad, 'recrue')} sans tuteur ou avec un test à repasser` };
       return todo ? { n: todo, tone: 'warn', text: `${plural(todo, 'étape')} d'accueil à faire` } : ok('Recrues autonomes');
     }
     case '4.4': {
       const c = chronoSummary(s, now);
       if (!c.count && !s.ged.owner) return empty('Plan de classement à adopter');
-      if (c.obsolete) return { n: c.obsolete, tone: 'alert', text: `${plural(c.obsolete, 'version')} périmée(s) trouvée(s)` };
+      if (c.obsolete) return { n: c.obsolete, tone: 'alert', text: c.obsolete > 1 ? `${c.obsolete} versions périmées trouvées` : '1 version périmée trouvée' };
       return c.monthDone ? ok(`Tests réussis : ${c.okPct ?? 0} %`) : { n: 1, tone: 'warn', text: 'Test des 30 secondes du mois à faire' };
     }
     default:

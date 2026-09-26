@@ -1,6 +1,7 @@
 // Browser storage: the data when no shared folder is connected, and per-computer preferences.
 import type { State } from '../domain/types';
 import { fromLegacyTool, legacyRisks, normalize } from '../domain/migrate';
+import { LEGACY_TOOL_IDS } from '../domain/legacyTools';
 
 const KEY = 'DELACOUR_PILOTAGE_V2';
 const LEGACY_KEY = 'DELACOUR_DATA_1.1';   // tool 1.1 of the previous version
@@ -29,6 +30,12 @@ export const legacyLocalRisks = () => safe(() => {
   const raw = localStorage.getItem('DELACOUR_DATA_1.2');
   return raw ? legacyRisks(JSON.parse(raw)) : [];
 }, []);
+
+// Tables of the previous version's tools 2.1 to 5.3 on this computer (only those it saved)
+export const legacyLocalTools = (): Record<string, unknown> => safe(() => Object.fromEntries(LEGACY_TOOL_IDS
+  .map(id => [id, localStorage.getItem(`DELACOUR_DATA_${id}`)] as const)
+  .filter(([, raw]) => raw)
+  .map(([id, raw]) => [id, JSON.parse(raw!)])), {});
 
 export const pref = {
   get: (k: string, fallback = '') => safe(() => localStorage.getItem(`DELACOUR_PILOTAGE_PREF_${k}`) ?? fallback, fallback),

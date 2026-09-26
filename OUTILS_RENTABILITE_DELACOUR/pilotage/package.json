@@ -3,7 +3,7 @@
   "private": true,
   "version": "2.0.0",
   "type": "module",
-  "description": "Outil 1.1 Delacour : tableau de pilotage mensuel des indicateurs (reconstruction).",
+  "description": "Outils Delacour 1.1 à 5.4 : pilotage, Plans B, commercial, opérations, RH et qualité d'une PME, dans un seul fichier HTML.",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",

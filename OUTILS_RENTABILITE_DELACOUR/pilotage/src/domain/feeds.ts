@@ -14,7 +14,7 @@ const find = (s: State, id: string, role?: Kpi['role']) => s.kpis[id] || (role ?
 
 export function feeds(s: State, p: Period, today = new Date()): Feed[] {
   const out: Feed[] = [];
-  const add = (k: Kpi | undefined, value: number | null, tool: string, how: string) => { if (k && value !== null) out.push({ kpi: k, value: Math.round(value * 10) / 10, tool, how }); };
+  const add = (k: Kpi | undefined, value: number | null, tool: string, how: string) => { if (k && value !== null) out.push({ kpi: k, value: k.unit === '€' ? Math.round(value) : Math.round(value * 10) / 10, tool, how }); };
   if (Object.keys(s.ncs).length || Object.keys(s.complaints).length || Object.keys(s.debits).length) {
     const m = cnqMonth(s, p);
     add(find(s, 'kpi_cnq', 'cnq'), m.total, '5.2', 'somme des fiches du bac rouge, des réclamations et des fiches de débit du mois');

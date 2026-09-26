@@ -8,7 +8,7 @@ import { riskState, testDueDate } from './risk';
 import { ncState, pokaState, checkDate, DECISION_HOURS } from './quality';
 import { complaintState, courtesyDue, changeState, feedbackState, quoteState, FOLLOW_DAYS, CONTACT_HOURS } from './commercial';
 import { debitState, inspectionState, lowParts, liftDue, deliveryState, ncsSinceVersion, ratingDue, CLAIM_DAYS, taskDue } from './operations';
-import { newcomerState, powerDeputies, powerState, testDate, chronoSummary } from './team';
+import { checklistOf, newcomerState, powerDeputies, powerState, testDate, chronoSummary } from './team';
 
 export interface Task { id: string; who: string; due: string; text: string; tool: string; focus: string }
 
@@ -68,7 +68,7 @@ export function allTasks(s: State, now = new Date()): Task[] {
     powerDeputies(p).forEach((dep, i) => add(`p${p.id}${i}`, dep.name, p.nextPracticeAt || isoDate(now), `Faire l'acte en suppléant : ${p.power}`, '4.1', p.id));
   });
   Object.values(s.newcomers).forEach(n => {
-    const st = newcomerState(n, now);
+    const st = newcomerState(n, now, checklistOf(s));
     if (st === 'test_due' || st === 'failed' || st === 'tutoring') add(`nw${n.id}`, n.tutor, n.retestAt || testDate(n), `Test d'autonomie de ${n.name}`, '4.3', n.id);
     if (st === 'to_authorize') add(`nwa${n.id}`, '', isoDate(now), `Signer l'autorisation de ${n.name}`, '4.3', n.id);
   });

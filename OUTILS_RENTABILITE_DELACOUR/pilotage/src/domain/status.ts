@@ -8,7 +8,7 @@ import { cnqMonth, ncState, pokaState, analysisState } from './quality';
 import { formatValue } from './numbers';
 import { isoDate } from './periods';
 import { changeState, changeSummary, complaintState, feedbackState, quoteState } from './commercial';
-import { chronoSummary, envelopeState, keyPeople, newcomerState, powerState, skillRisk } from './team';
+import { checklistOf, chronoSummary, envelopeState, keyPeople, newcomerState, powerState, skillRisk } from './team';
 import { anomalies, debitState, deliveryState, inspectionState, lowParts, ncsSinceVersion, supplierSummary } from './operations';
 
 export interface ToolStatus { n: number; tone: 'ok' | 'warn' | 'alert' | 'pending'; text: string }
@@ -156,7 +156,7 @@ export function toolBadge(s: State, tool: string, p: Period, now = new Date()): 
     case '4.3': {
       const ns = Object.values(s.newcomers);
       if (!ns.length) return empty();
-      const st = ns.map(n => newcomerState(n, now));
+      const st = ns.map(n => newcomerState(n, now, checklistOf(s)));
       const bad = ns.filter((n, i) => st[i] === 'failed' || (!n.authorizedAt && !n.tutor.trim())).length;
       const todo = st.filter(x => ['welcome', 'test_due', 'to_authorize'].includes(x)).length;
       if (bad) return { n: bad, tone: 'alert', text: `${plural(bad, 'recrue')} sans tuteur ou avec un test à repasser` };

@@ -3,7 +3,10 @@
 import { useState } from 'react';
 import { Copy, Plus, Printer, Timer, X } from 'lucide-react';
 import type { ChronoTest, Ged } from '../../domain/types';
-import { CHRONO_SECONDS, checkName, chronoOk, chronoSummary, fileName, gedInsights, newChrono } from '../../domain/team';
+import { auditFiles, CHRONO_SECONDS, checkName, chronoOk, chronoSummary, fileName, gedInsights, MIGRATION_STEPS, newChrono } from '../../domain/team';
+import { useEffect, useRef } from 'react';
+import { FileDown, FolderSearch } from 'lucide-react';
+import { downloadFile } from '../download';
 import { applyTeamExample } from '../../domain/teamExamples';
 import { processLabel } from '../../domain/base';
 import { frDate, isoDate } from '../../domain/periods';
@@ -50,6 +53,29 @@ export function Classement(_: ScreenProps) {
               <input className={inputCls} value={f.rights} aria-label={`Droits d'accès de ${f.code}`} placeholder="Droits d'accès" onChange={e => setG({ folders: g.folders.map((x, j) => (j === i ? { ...x, rights: e.target.value } : x)) })} />
             </li>
           ))}
+        </ul>
+        <div className="flex flex-wrap gap-1.5">
+          <Button className="!px-2 !py-1" onClick={() => setG({ folders: [...g.folders, { code: `0${g.folders.length + 1}_NOUVEAU`, processId: '', subfolders: [], rights: '' }] })}><Plus size={13} />Dossier racine</Button>
+          <Button className="!px-2 !py-1" title="Fichier à lancer sous Windows dans le dossier partagé : il crée les dossiers et sous-dossiers" onClick={() => downloadFile('creer-dossiers.bat', ['@echo off', 'chcp 65001 >nul', ...g.folders.flatMap(f => [`mkdir "${f.code}"`, ...f.subfolders.map(s => `mkdir "${f.code}\\${s}"`)]), `mkdir "${g.archive}"`, 'echo Dossiers crees.', 'pause'].join('\r\n'), 'application/octet-stream')}><FileDown size={13} />Script de création des dossiers</Button>
+          {g.folders.length > 5 && <Button kind="ghost" className="!px-2 !py-1" onClick={() => setG({ folders: g.folders.slice(0, -1) })}>Retirer le dernier dossier</Button>}
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <CodeList title="Codes des processus" items={g.procCodes} onChange={procCodes => setG({ procCodes })} />
+          <CodeList title="Types de documents" items={g.typeCodes} onChange={typeCodes => setG({ typeCodes })} />
+        </div>
+        <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-700">
+          Droits d'accès vérifiés {g.rightsCheckedAt ? `le ${frDate(g.rightsCheckedAt)}` : 'jamais'} (chaque semestre).
+          <Button className="!px-2 !py-1" onClick={() => setG({ rightsCheckedAt: isoDate(new Date()) })}>Vérifiés aujourd'hui</Button>
+        </div>
+        <p className="text-[11px] text-slate-500">SharePoint garde déjà l'historique des versions d'un fichier. Réservez l'indice _V01, _V02 aux plans et aux documents envoyés hors de l'entreprise (devis, PV) ; pour les documents internes, un seul fichier et l'historique de SharePoint suffisent.</p>
+      </Card>
+      <FolderAudit g={g} />
+      <Card className="space-y-2 p-3 sm:p-4">
+        <ToolHeader title="Passage progressif à la charte" text="Des milliers de fichiers ne se renomment pas en un jour. Cocher chaque étape une fois faite." />
+        <ul className="space-y-1">
+          {MIGRATION_STEPS.map(step => { const done = (g.migration || []).find(m => m.label === step)?.done; return (
+            <li key={step}><label className="flex items-center gap-2 text-[11px] text-slate-700"><input type="checkbox" checked={!!done} onChange={e => setG({ migration: [...(g.migration || []).filter(m => m.label !== step), { label: step, done: e.target.checked ? isoDate(new Date()) : '' }] })} />{step}{done ? <span className="text-slate-500"> · fait le {frDate(done)}</span> : ''}</label></li>
+          ); })}
         </ul>
       </Card>
       <Chronos />
@@ -117,7 +143,7 @@ function Chronos() {
           <Field label="Date"><input type="date" className={inputCls} value={t.date} onChange={e => setT({ ...t, date: e.target.value })} /></Field>
           <Field label="Personne tirée au sort"><input className={inputCls} value={t.person} list="people" onChange={e => setT({ ...t, person: e.target.value })} /></Field>
           <Field label="Document demandé"><input className={inputCls} value={t.asked} placeholder="Ex. : dernier plan validé du châssis 405" onChange={e => setT({ ...t, asked: e.target.value })} /></Field>
-          <Field label="Secondes"><NumInput className="!w-20" value={t.seconds} onChange={v => setT({ ...t, seconds: v })} /></Field>
+          <Field label="Secondes"><span className="flex gap-1"><NumInput className="!w-20" value={t.seconds} onChange={v => setT({ ...t, seconds: v })} /><Stopwatch onStop={s => setT(x => x && { ...x, seconds: s })} /></span></Field>
           <div className="flex flex-wrap items-center gap-3 sm:col-span-3">
             <span className="flex items-center gap-1.5 text-[11px] text-slate-700">Trouvé <YesNo label="Document trouvé" value={t.found} onChange={v => setT({ ...t, found: v !== false })} /></span>
             <span className="flex items-center gap-1.5 text-[11px] text-slate-700">Une version périmée a été ouverte <YesNo label="Version périmée ouverte" value={t.obsolete} onChange={v => setT({ ...t, obsolete: v === true })} /></span>
@@ -184,5 +210,72 @@ function Charter({ g, company }: { g: Ged; company: string }) {
         <p className="mt-2 text-[9pt] text-slate-600">Responsable du classement : {g.owner || '—'}</p>
       </section>
     </div>
+  );
+}
+
+function Stopwatch({ onStop }: { onStop(s: number): void }) {
+  const [start, setStart] = useState<number | null>(null);
+  const [now, setNow] = useState(0);
+  const tick = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearInterval(tick.current), []);
+  const go = () => { const t0 = Date.now(); setStart(t0); setNow(0); tick.current = window.setInterval(() => setNow(Math.round((Date.now() - t0) / 1000)), 250); };
+  const stop = () => { window.clearInterval(tick.current); onStop(Math.round((Date.now() - (start || Date.now())) / 1000)); setStart(null); };
+  return start === null ? <Button className="shrink-0 !px-2" onClick={go}><Timer size={13} />Chrono</Button>
+    : <Button kind="primary" className="shrink-0 !px-2 font-mono" onClick={stop}>{now} s · Stop</Button>;
+}
+
+function CodeList({ title, items, onChange }: { title: string; items: { code: string; label: string }[]; onChange(x: { code: string; label: string }[]): void }) {
+  return (
+    <div className="space-y-1">
+      <span className="block text-[11px] font-semibold text-slate-700">{title}</span>
+      {items.map((c, i) => (
+        <div key={i} className="grid grid-cols-[80px_1fr_auto] gap-1">
+          <input className={`${inputCls} !py-1 font-mono uppercase`} value={c.code} aria-label="Code" onChange={e => onChange(items.map((x, j) => (j === i ? { ...x, code: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '') } : x)))} />
+          <input className={`${inputCls} !py-1`} value={c.label} aria-label="Signification" onChange={e => onChange(items.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)))} />
+          <button type="button" aria-label={`Retirer ${c.code}`} onClick={() => onChange(items.filter((_, j) => j !== i))} className="rounded p-1 text-slate-400 hover:text-red-600"><X size={13} /></button>
+        </div>
+      ))}
+      <button type="button" className="text-[11px] font-semibold text-delacour-primary hover:underline" onClick={() => onChange([...items, { code: '', label: '' }])}>+ code</button>
+    </div>
+  );
+}
+
+// Reads a real folder of the computer (read only) and lists the names off the charter and the documents kept in several versions
+function FolderAudit({ g }: { g: Ged }) {
+  const [res, setRes] = useState<ReturnType<typeof auditFiles> | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  const supported = typeof (window as unknown as { showDirectoryPicker?: unknown }).showDirectoryPicker === 'function';
+  const run = async () => {
+    setErr('');
+    let dir: FileSystemDirectoryHandle;
+    try { dir = await (window as unknown as { showDirectoryPicker(o: object): Promise<FileSystemDirectoryHandle> }).showDirectoryPicker({ mode: 'read' }); } catch { return; }
+    setBusy(true);
+    const files: { folder: string; name: string }[] = [];
+    const walk = async (d: FileSystemDirectoryHandle, path: string, depth: number) => {
+      for await (const [name, h] of (d as unknown as { entries(): AsyncIterable<[string, FileSystemHandle]> }).entries()) {
+        if (name.startsWith('.') || name.startsWith('~')) continue;
+        if (h.kind === 'file') files.push({ folder: path, name });
+        else if (depth < 6 && name !== g.archive && files.length < 20000) await walk(h as FileSystemDirectoryHandle, `${path}/${name}`, depth + 1);
+      }
+    };
+    try { await walk(dir, dir.name, 0); setRes(auditFiles(files, g)); } catch (e) { setErr(`Lecture impossible : ${(e as Error).message}`); }
+    setBusy(false);
+  };
+  return (
+    <Card className="space-y-2 p-3 sm:p-4">
+      <ToolHeader title="Audit d'un dossier réel" text="Choisissez un dossier du serveur ou de SharePoint synchronisé : l'outil lit les noms (sans rien modifier) et liste ce qui ne suit pas la charte.">
+        <Button disabled={!supported || busy} onClick={run}><FolderSearch size={14} />{busy ? 'Lecture…' : 'Auditer un dossier'}</Button>
+      </ToolHeader>
+      {!supported && <p className="text-[11px] text-slate-500">Possible avec Microsoft Edge ou Google Chrome.</p>}
+      {err && <p className="text-[11px] text-red-700">{err}</p>}
+      {res && (
+        <div className="space-y-2 text-[11px] text-slate-700">
+          <p><strong>{res.total}</strong> fichier(s) lu(s) : <strong>{res.okPct ?? 0} %</strong> conformes, {res.bad.length} à renommer, {res.versions.length} document(s) en plusieurs versions dans le même dossier (garder la dernière, déplacer les autres dans {g.archive}).</p>
+          {res.versions.length > 0 && <ul className="max-h-40 space-y-0.5 overflow-y-auto">{res.versions.slice(0, 50).map((v, i) => <li key={i}><span className="text-slate-500">{v.folder} :</span> {v.names.join(', ')}</li>)}</ul>}
+          {res.bad.length > 0 && <ul className="max-h-48 space-y-0.5 overflow-y-auto">{res.bad.slice(0, 100).map((f, i) => <li key={i}><span className="text-slate-500">{f.folder}/</span><span className="font-mono">{f.name}</span></li>)}</ul>}
+        </div>
+      )}
+    </Card>
   );
 }

@@ -151,7 +151,7 @@ export function skillInsights(s: State): Insight[] {
 }
 
 // ---- 4.3 welcome path over 15 days and autonomy test in 3 questions
-export const CHECKLIST: { key: string; stage: string; label: string }[] = [
+export const CHECKLIST: { key: string; stage: string; label: string; legal?: boolean }[] = [
   { key: 'visit', stage: 'Jour 1 : accueil et sécurité', label: 'Visite des locaux et présentation de l\'équipe et du tuteur' },
   { key: 'ppe', stage: 'Jour 1 : accueil et sécurité', label: 'Équipements de protection remis et portés' },
   { key: 'safety', stage: 'Jour 1 : accueil et sécurité', label: 'Consignes de sécurité et d\'urgence expliquées' },
@@ -200,9 +200,9 @@ export function newcomerInsights(s: State, today = new Date()): Insight[] {
   const ns = Object.values(s.newcomers);
   const alone = ns.filter(n => !n.authorizedAt && (daysBetween(n.arrival, today) ?? 0) > TEST_DAYS + 7);
   if (alone.length) out.push({ key: 'alone', tone: 'bad', title: 'Autonomie non validée', text: `${names(alone, n => n.name)} : plus de 3 semaines sans autorisation écrite. Ne pas le laisser seul au poste avant le test.` });
-  const due = ns.filter(n => newcomerState(n, today) === 'test_due');
+  const due = ns.filter(n => newcomerState(n, today, checklistOf(s)) === 'test_due');
   if (due.length) out.push({ key: 'due', tone: 'warn', title: 'Test d\'autonomie à faire', text: `${names(due, n => `${n.name} (tuteur : ${n.tutor || 'à désigner'})`)}.` });
-  const welcome = ns.filter(n => newcomerState(n, today) === 'welcome');
+  const welcome = ns.filter(n => newcomerState(n, today, checklistOf(s)) === 'welcome');
   if (welcome.length) out.push({ key: 'welcome', tone: 'warn', title: 'Accueil incomplet', text: `${names(welcome, n => n.name)} : sécurité et équipements du jour 1 à terminer.` });
   const load: Record<string, number> = {};
   ns.filter(n => !n.authorizedAt && n.tutor.trim()).forEach(n => { load[n.tutor.trim()] = (load[n.tutor.trim()] || 0) + 1; });

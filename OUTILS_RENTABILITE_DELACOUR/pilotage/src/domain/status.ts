@@ -21,6 +21,7 @@ export function toolBadge(s: State, tool: string, p: Period, now = new Date()): 
     case '1.1': {
       const syn = synthesis(s, p);
       if (!syn.total) return empty();
+      if (!syn.filled) return { n: 0, tone: 'pending', text: 'Chiffres du mois à saisir' };
       return syn.alerts.length ? { n: syn.alerts.length, tone: syn.orphans.length ? 'alert' : 'warn', text: `${plural(syn.alerts.length, 'indicateur')} en dérive` } : ok('Indicateurs dans leur cible');
     }
     case 'saisie': {
@@ -70,7 +71,8 @@ export function toolBadge(s: State, tool: string, p: Period, now = new Date()): 
       const failed = st.filter(x => x === 'failed').length, due = st.filter(x => x === 'due').length;
       if (failed) return { n: failed, tone: 'alert', text: `${plural(failed, 'récidive')}` };
       if (due) return { n: due, tone: 'warn', text: `${plural(due, 'contrôle')} J+30 à faire` };
-      return ok(`${plural(st.filter(x => x === 'effective').length, 'détrompeur')} contrôlé${st.filter(x => x === 'effective').length > 1 ? 's' : ''} efficace${st.filter(x => x === 'effective').length > 1 ? 's' : ''}`);
+      const eff = st.filter(x => x === 'effective').length;
+      return ok(eff ? `${plural(eff, 'détrompeur')} efficace${eff > 1 ? 's' : ''} à J+30` : 'Détrompeurs en service');
     }
     case '2.1': {
       const all = Object.values(s.quotes);
@@ -155,7 +157,7 @@ export function toolBadge(s: State, tool: string, p: Period, now = new Date()): 
       const ns = Object.values(s.newcomers);
       if (!ns.length) return empty();
       const st = ns.map(n => newcomerState(n, now));
-      const bad = st.filter(x => x === 'failed').length + ns.filter(n => !n.authorizedAt && !n.tutor.trim()).length;
+      const bad = ns.filter((n, i) => st[i] === 'failed' || (!n.authorizedAt && !n.tutor.trim())).length;
       const todo = st.filter(x => ['welcome', 'test_due', 'to_authorize'].includes(x)).length;
       if (bad) return { n: bad, tone: 'alert', text: `${plural(bad, 'recrue')} sans tuteur ou avec un test à repasser` };
       return todo ? { n: todo, tone: 'warn', text: `${plural(todo, 'étape')} d'accueil à faire` } : ok('Recrues autonomes');

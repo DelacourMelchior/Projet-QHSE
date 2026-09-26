@@ -39,7 +39,7 @@ export function Maintenance({ nav, focus, clearFocus }: ScreenProps) {
   return (
     <div className="space-y-4">
       <Summary title="Les machines goulets sont-elles surveillées ?" insights={equipmentInsights(state, now)} tiles={<>
-        <Tile title="Machines suivies" value={String(all.length)} sub={`${all.filter(e => e.riskId).length} reliée(s) à un Plan B (1.2)`} />
+        <Tile title="Machines suivies" value={String(all.length)} sub={`${all.filter(e => state.risks[e.riskId]).length} reliée(s) à un Plan B (1.2)`} />
         <Tile title="Inspectées cette semaine" value={`${upToDate} / ${all.length}`} sub="routine du lundi" tone={upToDate === all.length ? 'ok' : 'warn'} />
         <Tile title="Anomalies ouvertes" value={String(ano)} sub="relevées à la dernière inspection" tone={ano ? 'alert' : undefined} />
         <Tile title="Pièces sous le stock mini" value={String(low)} sub="armoire de survie" tone={low ? 'alert' : 'ok'} />
@@ -116,6 +116,7 @@ function EquipmentSheet({ initial, onClose, nav }: { initial: Equipment; onClose
           <Field label="Plan B (outil 1.2)">
             <select className={inputCls} value={e.riskId} onChange={x => set({ riskId: x.target.value })}>
               <option value="">Aucun</option>
+              {e.riskId && !state.risks[e.riskId] && <option value={e.riskId}>Risque supprimé</option>}
               {Object.values(state.risks).sort((a, b) => a.title.localeCompare(b.title)).map(r => <option key={r.id} value={r.id}>{r.title}</option>)}
             </select>
           </Field>

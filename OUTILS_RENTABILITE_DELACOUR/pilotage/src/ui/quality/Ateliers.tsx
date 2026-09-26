@@ -116,7 +116,7 @@ export function AnalysisSheet({ initial, onClose, nav }: { initial: Analysis; on
     nav.tool('5.4', p.id);
   };
   const pdf = () => downloadFile(`Atelier-5P-${fileSlug(a.ref)}.pdf`, analysisPdf(withA, a, { company: state.settings.companyName, date: new Date() }), 'application/pdf');
-  const srcTool = a.source.kind === 'nc' ? '5.1' : a.source.kind === 'complaint' ? '2.3' : null;
+  const srcTool = a.source.kind === 'nc' && state.ncs[a.source.id] ? '5.1' : a.source.kind === 'complaint' && state.complaints[a.source.id] ? '2.3' : null;
 
   return (
     <Modal xwide onClose={close} title={isNew ? 'Nouvel atelier 5 Pourquoi' : `Atelier ${a.ref}`}

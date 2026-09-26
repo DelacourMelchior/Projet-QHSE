@@ -156,7 +156,7 @@ export function equipmentInsights(s: State, today = new Date()): Insight[] {
   if (ano.length) out.push({ key: 'ano', tone: 'bad', title: 'Anomalie relevée', text: `${names(ano, e => `${e.name} : ${anomalies(e).map(c => c.label.toLowerCase()).join(', ')}`)}. Traiter avant la casse.` });
   const late = eqs.filter(e => ['late', 'never'].includes(inspectionState(e, today)));
   if (late.length) out.push({ key: 'late', tone: 'warn', title: 'Routine du lundi manquée', text: `${names(late, e => e.name)} : pas d'inspection depuis plus de 2 semaines.` });
-  const noRisk = eqs.filter(e => !e.riskId);
+  const noRisk = eqs.filter(e => !s.risks[e.riskId]);
   if (noRisk.length && Object.keys(s.risks).length) out.push({ key: 'risk', tone: 'warn', title: 'Sans Plan B', text: `${names(noRisk, e => e.name)} : machine goulet non reliée à un risque de l'outil 1.2.` });
   return out;
 }

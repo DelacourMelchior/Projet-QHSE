@@ -2,6 +2,7 @@
 // take over the previous version's data, or join a shared folder that already holds data.
 import { useMemo, useState } from 'react';
 import { ArrowLeft, ArrowRight, FolderSync } from 'lucide-react';
+import { toolDef, toolOfHash } from './tools';
 import type { State } from '../domain/types';
 import { blankState, demoState, PROFILES, type ProfileKey } from '../domain/templates';
 import { parseNumber } from '../domain/numbers';
@@ -12,8 +13,8 @@ import { Button, Card, Field, inputCls } from './common';
 export function Onboarding() {
   const { replace, folder, author, setAuthor, connectFolder, reconnectFolder } = useStore();
   const legacy = useMemo(() => legacyLocal(), []);
-  const plansB = window.location.hash === '#continuite';
-  const annuaire = window.location.hash === '#annuaire';
+  const asked = toolOfHash(window.location.hash);
+  const tool = asked === 'home' || asked === '1.1' ? null : toolDef(asked);
   const [step, setStep] = useState(0);
   const [company, setCompany] = useState('');
   const [profile, setProfile] = useState<ProfileKey>('industrie');
@@ -51,14 +52,11 @@ export function Onboarding() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-4 px-3 py-6 sm:py-10">
-      <a href="index.html" className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-600 hover:text-delacour-primary"><ArrowLeft size={14} />Retour à la liste des outils</a>
       <div>
-        <h1 className="text-xl font-bold text-delacour-primary">{annuaire ? 'Annuaire' : plansB ? "Plans B et continuité d'activité" : 'Tableau de pilotage mensuel'}</h1>
-        <p className="mt-1 text-xs text-slate-600">{annuaire
-          ? "Les numéros à appeler quand ça casse : prestataires, banque, assureur, confrères, clients à prévenir. La mise en route prépare aussi le tableau d'indicateurs (outil 1.1)."
-          : plansB
-          ? "Vos risques vitaux, un Plan B testé pour chacun, des fiches réflexes pour le jour de la panne. La mise en route prépare aussi le tableau d'indicateurs (outil 1.1), qui partage le même plan d'actions."
-          : "Vos indicateurs clés, une synthèse pour décider, un plan d'actions pour corriger."} Vos données restent sur ce poste ou dans le dossier partagé de votre entreprise.</p>
+        <h1 className="text-xl font-bold text-delacour-primary">{tool ? `${tool.id} · ${tool.title}` : 'Outils Delacour : mise en route'}</h1>
+        <p className="mt-1 text-xs text-slate-600">{tool
+          ? `${tool.desc} La mise en route prépare l'entreprise pour les 19 outils, dont le tableau d'indicateurs (outil 1.1) qui partage le même plan d'actions.`
+          : "Vos indicateurs clés, vos Plans B, vos devis, vos réclamations, votre bac rouge : 19 outils qui partagent un seul plan d'actions."} Vos données restent sur ce poste ou dans le dossier partagé de votre entreprise.</p>
       </div>
 
       {step === 0 && (

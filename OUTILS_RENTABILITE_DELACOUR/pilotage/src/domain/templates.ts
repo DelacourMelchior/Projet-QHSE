@@ -4,6 +4,8 @@ import { fromLegacyTool, DEFAULT_SETTINGS } from './migrate';
 import { addMonths, periodOfDate } from './periods';
 import legacy from './legacy-templates.json';
 import { demoRisks } from './riskTemplates';
+import { emptyTools } from './base';
+import { applyQualityExample } from './qualityExamples';
 
 export const PROFILES = {
   industrie: 'Industrie, usinage & atelier',
@@ -12,7 +14,7 @@ export const PROFILES = {
 } as const;
 export type ProfileKey = keyof typeof PROFILES;
 
-// Fictitious company, full year 2026 with 13 actions, and 9 risks with their Plan B (tool 1.2)
+// Fictitious company, full year 2026 with 13 actions, 9 risks with their Plan B (tool 1.2), and examples of every tool of processes 2 to 5
 export function demoState(today = new Date()): State {
   const s = fromLegacyTool(JSON.parse(JSON.stringify(legacy.demo)));
   s.settings = { ...DEFAULT_SETTINGS, companyName: 'Entreprise exemple (fictive)', profile: 'industrie' };
@@ -20,6 +22,7 @@ export function demoState(today = new Date()): State {
   s.risks = d.risks;
   s.contacts = d.contacts;
   Object.assign(s.actions, d.actions);
+  applyQualityExample(s, today);
   return s;
 }
 
@@ -29,5 +32,5 @@ export function blankState(profile: ProfileKey, today = new Date()): State {
   const s = fromLegacyTool(JSON.parse(JSON.stringify({ processes: tpl.processes })));
   const start = `${today.getFullYear()}-01`;
   const end = addMonths(start, 11) < periodOfDate(today) ? periodOfDate(today) : addMonths(start, 11);
-  return { ...s, settings: { ...DEFAULT_SETTINGS, profile }, timeline: { start, end }, values: {}, actions: {}, risks: {}, contacts: {} };
+  return { ...s, settings: { ...DEFAULT_SETTINGS, profile }, timeline: { start, end }, values: {}, actions: {}, risks: {}, contacts: {}, ...emptyTools() };
 }

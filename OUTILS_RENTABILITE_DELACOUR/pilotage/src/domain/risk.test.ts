@@ -1,4 +1,5 @@
 // Business continuity: criticality and zone rules, rating, readiness state, delays, crisis directory, reflex cards PDF, storage split.
+import { emptyTools } from './base';
 import { describe, expect, it } from 'vitest';
 import type { Action, Risk, State } from './types';
 import {
@@ -17,7 +18,7 @@ import { bucketOf, flatten, unflatten } from '../store/flat';
 const today = new Date(2026, 8, 25);
 const st = (risks: Risk[], actions: Action[] = []): State => ({
   settings: { companyName: '', profile: 'industrie', annualBudget: 600000, netMarginPct: 5, avgQuoteValue: 4500 },
-  timeline: { start: '2026-01', end: '2026-12' }, processes: [], kpis: {}, values: {}, contacts: {}, scale: DEFAULT_SCALE,
+  timeline: { start: '2026-01', end: '2026-12' }, processes: [], kpis: {}, values: {}, contacts: {}, scale: DEFAULT_SCALE, ...emptyTools(),
   actions: Object.fromEntries(actions.map(a => [a.id, a])), risks: Object.fromEntries(risks.map(r => [r.id, r])),
 });
 // red by default (4 x 3 = 12)

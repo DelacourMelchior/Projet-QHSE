@@ -43,10 +43,15 @@ export interface PlanItem {
 
 export type ActionStatus = 'to_start' | 'in_progress' | 'done' | 'effective';
 
+// Record of another tool an action comes from (tools 2.1 to 5.4)
+export type RefKind = 'analysis' | 'equipment' | 'supplier' | 'feedback' | 'skill' | 'power' | 'complaint';
+export interface Ref { kind: RefKind; id: string }
+
 export interface Action {
   id: string;
   kpiId: string;          // origin: a KPI in deviation (tool 1.1)…
   riskId?: string;        // …or a risk whose Plan B must be prepared (tool 1.2); then kpiId is ''
+  ref?: Ref;              // …or a record of tools 2.1 to 5.4; then kpiId is ''
   period: Period;         // month of the deviation (month of creation for a risk)
   createdAt: string;      // ISO date
   constat: string;
@@ -83,6 +88,323 @@ export interface State {
   risks: Record<string, Risk>;
   contacts: Record<string, Contact>;  // crisis directory, shared by the reflex cards
   scale: RiskScale;                   // wording of the gravity and likelihood levels
+  // tools 2.1 to 5.4
+  params: Params;
+  quotes: Record<string, Quote>;          // 2.1
+  changes: Record<string, Change>;        // 2.2
+  complaints: Record<string, Complaint>;  // 2.3
+  feedbacks: Record<string, Feedback>;    // 2.4
+  suppliers: Record<string, Supplier>;    // 3.1
+  debits: Record<string, Debit>;          // 3.1
+  sops: Record<string, Sop>;              // 3.2
+  equipments: Record<string, Equipment>;  // 3.3
+  deliveries: Record<string, Delivery>;   // 3.4
+  powers: Record<string, Power>;          // 4.1
+  envelope: Envelope;                     // 4.1
+  people: Record<string, Person>;         // 4.2 (team), used by 4.1 and 4.3
+  skills: Record<string, Skill>;          // 4.2
+  newcomers: Record<string, Newcomer>;    // 4.3
+  ged: Ged;                               // 4.4
+  chronos: Record<string, ChronoTest>;    // 4.4
+  ncs: Record<string, Nc>;                // 5.1, costed by 5.2
+  analyses: Record<string, Analysis>;     // 5.3
+  pokas: Record<string, Poka>;            // 5.4
+}
+
+// Operating assumptions of tools 2.1 to 5.4, visible to the whole team (not money of the company)
+export interface Params {
+  hourlyRate: number;      // loaded hourly cost used to value lost and rework hours (€/h)
+  marginFloorPct: number;  // minimum gross margin of a quote (%)
+  depositPct: number;      // deposit asked on an order (%)
+  visaThreshold: number;   // quote amount above which the 3 visas are required (€ HT)
+}
+
+// ---- 2.1 feasibility and margin of a quote
+export type LockState = '' | 'ok' | 'reserve' | 'ko';
+export interface Lock { state: LockState; note: string }
+export interface Visa { by: string; date: string }
+export type QuoteStatus = 'draft' | 'sent' | 'won' | 'lost' | 'dropped';
+export interface Quote {
+  id: string;
+  ref: string;             // DEV-2026-012
+  client: string;
+  object: string;          // what is quoted
+  date: string;            // ISO date of the quote
+  amount: number | null;   // selling price € HT
+  weeks: number | null;    // promised delay (weeks)
+  locks: Lock[];           // 5 locks, one per process P1 to P5
+  visas: { commercial: Visa; technical: Visa; direction: Visa };
+  derogation: string;      // who allowed a margin under the floor, and why
+  depositReceived: boolean;
+  status: QuoteStatus;
+  sentAt: string;
+  followedAt: string;      // last follow-up call
+  decidedAt: string;
+  lostReason: string;
+  cost?: QuoteCost;        // direction folder
+}
+export interface QuoteCost { material: number | null; hours: number | null; subcontract: number | null; other: number | null }
+
+// ---- 2.2 change order (avenant)
+export interface Change {
+  id: string;
+  ref: string;             // AV-2026-004
+  affaire: string;
+  client: string;
+  askedBy: string;         // person on the customer side
+  date: string;            // date of the request
+  description: string;
+  price: number | null;    // extra cost € HT
+  delayDays: number | null;
+  sentAt: string;          // date the price was sent for agreement
+  via: '' | 'sms' | 'mail' | 'papier';
+  answer: '' | 'accepted' | 'refused';
+  answeredAt: string;
+  startedAt: string;       // date the extra work started
+  invoiceRef: string;
+  invoicedAt: string;
+}
+
+// ---- 2.3 customer complaint
+export interface Complaint {
+  id: string;
+  ref: string;             // R-2026-003
+  at: string;              // received, "YYYY-MM-DDTHH:MM"
+  client: string;
+  affaire: string;
+  channel: '' | 'tel' | 'mail' | 'site' | 'courrier';
+  receivedBy: string;
+  description: string;
+  severity: 'mineure' | 'majeure';
+  processId: string;       // process at the origin ('' = to qualify)
+  contactedAt: string;     // customer called back, "YYYY-MM-DDTHH:MM"
+  immediate: string;       // immediate action agreed with the customer
+  pilot: string;
+  cost: number | null;     // credit note, transport, rework (€ HT)
+  resolvedAt: string;
+  courtesyAt: string;      // courtesy call, closes the complaint
+  ncId?: string;
+  analysisId?: string;
+}
+
+// ---- 2.4 end-of-job flash review
+export interface Feedback {
+  id: string;
+  date: string;            // delivery or acceptance date
+  client: string;
+  affaire: string;
+  contact: string;
+  channel: 'site' | 'sms' | 'tel' | 'mail';
+  q1: boolean | null;      // meets the specification
+  q2: boolean | null;      // delivery and delays as agreed
+  q3: number | null;       // would recommend, 0 to 10
+  verbatim: string;
+  doubt: string;           // small reservation expressed
+  doubtSolvedAt: string;
+  invoicedAt: string;      // final invoice sent
+  reviewAsked: boolean;
+  complaintId?: string;
+}
+
+// ---- 3.1 suppliers and debit notes
+export type SupplierCategory = 'matiere' | 'soustraitance' | 'logistique' | 'service';
+export interface SupplierRating { date: string; quality: number; delay: number; service: number; by: string; note: string }
+export interface Supplier {
+  id: string;
+  name: string;
+  category: SupplierCategory;
+  supplies: string;
+  strategic: boolean;      // sole source, hard to replace
+  contact: string;
+  ratings: SupplierRating[];
+}
+export interface Debit {
+  id: string;
+  ref: string;             // DEB-2026-002
+  supplierId: string;
+  date: string;            // reception date
+  bl: string;              // delivery note number
+  reserveOnBl: boolean;    // written reservation on the delivery note
+  defect: string;
+  reworkHours: number | null;
+  otherCost: number | null; // scrapped material, transport, sorting (€ HT)
+  sentAt: string;          // claim sent to the supplier
+  answer: '' | 'accepted' | 'refused';
+  recovered: number | null;
+  recoveredAt: string;
+  ncId?: string;
+}
+
+// ---- 3.2 visual work instruction
+export interface SopStep { op: string; how: string; watch: string; check: string; photo: string }
+export interface Sop {
+  id: string;
+  processId: string;
+  poste: string;
+  operation: string;
+  version: number;
+  versionDate: string;
+  history: { v: number; date: string; reason: string }[];
+  author: string;          // written with the best operator
+  validatedBy: string;
+  steps: SopStep[];
+  good: string;            // the right gesture
+  trap: string;            // the frequent trap
+  goodPhoto: string;
+  trapPhoto: string;
+  ppe: string[];
+  habilitations: { person: string; tutor: string; date: string }[];
+}
+
+// ---- 3.3 weekly sensory routine and survival cabinet
+export interface Checkpoint { label: string; criterion: string }
+export interface Inspection { date: string; by: string; results: ('ok' | 'ko')[]; note: string }
+export interface SparePart { name: string; ref: string; supplier: string; leadTime: string; min: number; stock: number }
+export interface Equipment {
+  id: string;
+  name: string;
+  location: string;
+  operator: string;
+  manager: string;
+  riskId: string;          // Plan B of tool 1.2, '' if none
+  checkpoints: Checkpoint[];
+  inspections: Inspection[];
+  parts: SparePart[];
+}
+
+// ---- 3.4 self-inspection at milestones and acceptance report
+export interface Milestone { label: string; point: string; requirement: string; measured: string; ok: boolean | null; by: string; date: string }
+export interface Delivery {
+  id: string;
+  ref: string;             // order number
+  client: string;
+  item: string;
+  qty: number | null;
+  milestones: Milestone[];
+  releasedBy: string;
+  releasedAt: string;
+  reception: {
+    date: string;
+    name: string;
+    role: string;
+    result: '' | 'sans' | 'reserve' | 'refus';
+    reserve: string;
+    retentionPct: number | null;
+    amount: number | null; // invoice amount € HT
+    liftedAt: string;
+  };
+}
+
+// ---- 4.1 emergency deputies
+export interface Power {
+  id: string;
+  processId: string;
+  power: string;           // the act without which the company stops
+  holder: string;
+  deputies: [string, string];
+  practiced: [string, string]; // date of the last real practice of each deputy
+  access: string;          // codes and access, and where they are
+}
+export interface Envelope { location: string; checkedAt: string; by: string }
+
+// ---- 4.2 versatility matrix
+export type SkillLevel = 0 | 1 | 2 | 3 | 4;
+export interface Person { id: string; name: string; role: string; active: boolean }
+export interface Skill {
+  id: string;
+  name: string;
+  processId: string;
+  levels: Record<string, SkillLevel>;   // personId -> level
+  plan: { tutor: string; learner: string; slot: string; target: string; sessions: number } | null;   // person ids
+}
+
+// ---- 4.3 welcome and autonomy test
+export type NewcomerKind = 'cdi' | 'cdd' | 'interim' | 'alternance';
+export interface Newcomer {
+  id: string;
+  name: string;
+  poste: string;
+  kind: NewcomerKind;
+  tutor: string;
+  arrival: string;
+  done: Record<string, string>;   // checklist item key -> date done
+  test: { date: string; answers: (boolean | null)[]; note: string };
+  authorizedBy: string;
+  authorizedAt: string;
+  sopId: string;
+  skillId: string;
+}
+
+// ---- 4.4 naming charter and filing plan
+export interface GedFolder { code: string; processId: string; subfolders: string[]; rights: string }
+export interface Ged {
+  owner: string;
+  folders: GedFolder[];
+  procCodes: { code: string; label: string }[];
+  typeCodes: { code: string; label: string }[];
+  archive: string;         // name of the archive folder
+}
+export interface ChronoTest { id: string; date: string; person: string; asked: string; seconds: number | null; found: boolean; obsolete: boolean }
+
+// ---- 5.1 quarantine (red bin), costed by 5.2
+export type NcDecision = 'rebut' | 'retouche' | 'derogation' | 'retour';
+export type NcCause = 'outillage' | 'reglage' | 'plan' | 'matiere' | 'manipulation' | 'methode' | 'autre';
+export interface NcCost { scrap: number | null; lostHours: number | null; reworkHours: number | null; logistics: number | null }
+export interface Nc {
+  id: string;
+  ref: string;             // NC-2026-014
+  at: string;              // "YYYY-MM-DDTHH:MM"
+  by: string;
+  where: string;           // workstation, machine, site
+  item: string;            // part, batch, job
+  qty: number | null;
+  description: string;
+  cause: NcCause | '';
+  origin: 'interne' | 'fournisseur' | 'client';
+  decision: NcDecision | '';
+  decidedAt: string;       // "YYYY-MM-DDTHH:MM"
+  decidedBy: string;
+  decisionNote: string;
+  processId: string;       // process at the origin of the defect ('' = to qualify)
+  cost: NcCost;
+  supplierId?: string;
+  complaintId?: string;
+  analysisId?: string;
+}
+
+// ---- 5.3 five whys workshop
+export interface Analysis {
+  id: string;
+  ref: string;             // 5P-2026-003
+  date: string;
+  problem: string;         // factual gap
+  source: { kind: 'nc' | 'complaint' | 'kpi' | 'free'; id: string };
+  processId: string;
+  participants: string;
+  whys: string[];
+  rootCause: string;
+  backCheck: boolean;      // "since cause 5, therefore cause 4… therefore the problem" holds
+  pilot: string;
+}
+
+// ---- 5.4 mistake-proofing and 30-day check
+export type PokaLevel = 'supprimer' | 'detromper' | 'detecter' | 'consigne';
+export interface PokaCheck { date: string; produced: number | null; defects: number | null; inPlace: boolean; cadenceOk: boolean; note: string; by: string }
+export interface Poka {
+  id: string;
+  analysisId: string;
+  processId: string;
+  poste: string;
+  defect: string;          // historical defect to eliminate
+  level: PokaLevel;
+  description: string;
+  howItBlocks: string;
+  cost: number | null;
+  owner: string;
+  installedAt: string;
+  trained: boolean;        // every operator trained on the device
+  bypassTested: boolean;   // someone tried to fool it on purpose
+  check: PokaCheck | null;
 }
 
 // ---- business continuity (tool 1.2)

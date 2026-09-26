@@ -1,13 +1,15 @@
-// Shell: header (company, tool, month, team/management view, storage, settings) + screens.
-// Tool 1.1 "Indicateurs": Piloter, Saisir, Actions. Tool 1.2 "Plans B" (#continuite): Risques, Actions.
-// Tool 1.3 "Annuaire" (#annuaire): the crisis directory, one screen. Actions is the single action register of 1.1 and 1.2 (filtered on the current tool).
+// Shell: header (company, process, tools of the process, month, team/management view, storage, settings) + screens.
+// 19 tools in 5 processes (see tools.ts). Actions is the single action register, filtered on the current process.
+// Tool 1.1 has two screens (Indicateurs, Saisie); every other tool is one screen with its own sheets.
 import { useEffect, useState } from 'react';
-import { ArrowLeft, ChevronLeft, ChevronRight, Eye, EyeOff, FolderSync, Grid3x3, LayoutDashboard, ListChecks, PenLine, SlidersHorizontal } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Eye, EyeOff, FolderSync, House, ListChecks, SlidersHorizontal } from 'lucide-react';
 import type { Action, Risk } from '../domain/types';
-import { newRisk, riskSummary } from '../domain/risk';
+import { newRisk } from '../domain/risk';
 import { isoDate } from '../domain/periods';
-import { isOverdue, synthesis, timelinePeriods } from '../domain/engine';
+import { knownPeople } from '../domain/base';
+import { isOverdue, timelinePeriods } from '../domain/engine';
 import { addMonths, periodLong } from '../domain/periods';
+import { toolBadge } from '../domain/status';
 import { useStore } from '../store/StoreContext';
 import { Onboarding } from './Onboarding';
 import { Piloter } from './Piloter';
@@ -19,81 +21,88 @@ import { Settings } from './Settings';
 import { Risques } from './Risques';
 import { RiskSheet } from './RiskSheet';
 import { Annuaire } from './Annuaire';
+import { Home } from './Home';
+import { SCREENS } from './screens';
+import { actionTool, hashOf, PROCESSES, toolDef, toolOfHash, toolsOf, type Nav, type NewActionInit, type ProcessKey, type ToolId } from './tools';
 
-type Screen = 'piloter' | 'saisir' | 'agir' | 'risques' | 'annuaire';
-type Tool = 'kpi' | 'risk' | 'dir';
-const TOOLS: Record<Tool, { label: string; hash: string; first: Screen; title: string }> = {
-  kpi: { label: 'Indicateurs', hash: '', first: 'piloter', title: 'Tableau de pilotage mensuel' },
-  risk: { label: 'Plans B', hash: '#continuite', first: 'risques', title: "Continuité d'activité : Plans B" },
-  dir: { label: 'Annuaire', hash: '#annuaire', first: 'annuaire', title: 'Annuaire' },
-};
-const toolOfHash = (): Tool => (Object.keys(TOOLS) as Tool[]).find(t => TOOLS[t].hash && TOOLS[t].hash === window.location.hash) || 'kpi';
+type View = ToolId | 'home' | 'saisir' | 'actions';
+const MONTHLY: View[] = ['1.1', '5.2'];
 
 export function App() {
   const store = useStore();
   const { state, period, setPeriod, teamView, setTeamView, folder } = store;
-  const [tool, setToolState] = useState<Tool>(toolOfHash);
-  const [screen, setScreen] = useState<Screen>(() => TOOLS[toolOfHash()].first);
+  const [view, setViewState] = useState<View>(() => toolOfHash(window.location.hash));
+  const [proc, setProc] = useState<ProcessKey>(() => { const t = toolOfHash(window.location.hash); return t === 'home' ? 'P1' : toolDef(t).process; });
   const [risk, setRisk] = useState<{ r: Risk; step: number } | null>(null);
   const [kpiOpen, setKpiOpen] = useState<string | null>(null);
   const [action, setAction] = useState<Action | null>(null);
   const [settings, setSettings] = useState(false);
+  const [focus, setFocus] = useState('');
 
-  useEffect(() => { document.title = `Pilotage Delacour · ${TOOLS[tool].title}`; }, [tool]);
+  const title = view === 'home' ? 'Outils' : view === 'saisir' ? 'Saisie du mois' : view === 'actions' ? 'Actions' : toolDef(view).title;
+  useEffect(() => { document.title = `Delacour · ${title}`; }, [title]);
+  // back and forward buttons of the browser, links between tools
+  useEffect(() => {
+    const onHash = () => { const t = toolOfHash(window.location.hash); setViewState(t); if (t !== 'home') setProc(toolDef(t).process); };
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
   if (!state) return <Onboarding />;
 
   const ps = timelinePeriods(state);
-  const syn = synthesis(state, period);
-  // late actions of the current tool only (the register is filtered the same way)
-  const late = Object.values(state.actions).filter(a => isOverdue(a) && (tool === 'risk') === !!a.riskId).length;
-  const openAction = (id: string) => { setKpiOpen(null); setRisk(null); setAction(state.actions[id]); };
-  const startAction = (kpiId: string, riskId?: string) => {
-    setKpiOpen(null); setRisk(null);
-    setAction(newAction(kpiId, riskId ? isoDate(new Date()).slice(0, 7) : period, riskId));
-  };
-  const openRisk = (id: string, step = 0) => setRisk({ r: state.risks[id], step });
-  const setTool = (t: Tool) => {
-    setToolState(t);
-    setScreen(TOOLS[t].first);
-    window.history.replaceState(null, '', TOOLS[t].hash || window.location.pathname + window.location.search);
+  const go = (v: View, p = proc) => {
+    setViewState(v);
+    setProc(p);
+    const hash = v === 'home' ? '#accueil' : v === 'saisir' || v === 'actions' ? '' : hashOf(v);
+    if (v !== 'saisir' && v !== 'actions') window.history.pushState(null, '', hash || window.location.pathname + window.location.search);
     window.scrollTo(0, 0);
   };
-  const rsum = riskSummary(state);
+  const openAction = (id: string) => { setKpiOpen(null); setRisk(null); setAction(state.actions[id]); };
+  const startAction = (init: NewActionInit) => {
+    setKpiOpen(null); setRisk(null);
+    setAction(newAction(init.kpiId || '', init.kpiId ? period : isoDate(new Date()).slice(0, 7), init.riskId, init.ref, init.constat));
+  };
+  const openRisk = (id: string, step = 0) => setRisk({ r: state.risks[id], step });
+  const nav: Nav = { tool: (id, f = '') => { setFocus(f); go(id, toolDef(id).process); }, openAction, newAction: startAction, openRisk };
   const forcedTeam = folder.status === 'connected' && !folder.hasDirection;
+  const late = Object.values(state.actions).filter(a => isOverdue(a) && toolDef(actionTool(a)).process === proc).length;
 
-  const agir = { id: 'agir' as Screen, label: 'Actions', icon: ListChecks, badge: late || undefined, badgeTone: 'bg-red-600' };
-  const TABS: { id: Screen; label: string; icon: typeof LayoutDashboard; badge?: number; badgeTone?: string }[] = tool === 'kpi' ? [
-    { id: 'piloter', label: 'Piloter', icon: LayoutDashboard, badge: syn.alerts.length || undefined, badgeTone: 'bg-red-600' },
-    { id: 'saisir', label: 'Saisir', icon: PenLine, badge: syn.total - syn.filled || undefined, badgeTone: 'bg-slate-500' },
-    agir,
-  ] : tool === 'risk' ? [
-    { id: 'risques', label: 'Risques', icon: Grid3x3, badge: rsum.byState.uncovered || undefined, badgeTone: 'bg-red-600' },
-    agir,
-  ] : [];
+  const tabs: { id: View; label: string; badge?: { n: number; tone: string } }[] = view === 'home' ? [] : [
+    ...toolsOf(proc).flatMap(t => {
+      const b = toolBadge(state, t.id, period);
+      const tab = { id: t.id as View, label: t.label, badge: b.n ? { n: b.n, tone: b.tone === 'alert' ? 'bg-red-600' : b.tone === 'warn' ? 'bg-amber-500' : 'bg-slate-500' } : undefined };
+      if (t.id !== '1.1') return [tab];
+      const b2 = toolBadge(state, 'saisie', period);
+      return [tab, { id: 'saisir' as View, label: 'Saisie', badge: b2.n ? { n: b2.n, tone: 'bg-slate-500' } : undefined }];
+    }),
+    { id: 'actions', label: 'Actions', badge: late ? { n: late, tone: 'bg-red-600' } : undefined },
+  ];
+  const Screen = view !== 'home' && view !== 'saisir' && view !== 'actions' ? SCREENS[view] : undefined;
 
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-40 bg-delacour-primary text-white shadow-sm print:static print:bg-white print:text-slate-900 print:shadow-none">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2 sm:px-6">
           <div className="flex min-w-0 items-center gap-2">
-            <a href="index.html" title="Retour à la liste des outils" className="flex shrink-0 items-center gap-1 rounded-md py-1 pr-1.5 text-emerald-100 hover:bg-white/10 hover:text-white print:hidden">
-              <ArrowLeft size={15} />
+            <button type="button" onClick={() => go('home')} title="Tous les outils" aria-label="Tous les outils" className="flex shrink-0 items-center gap-1 rounded-md py-1 pr-1.5 text-emerald-100 hover:bg-white/10 hover:text-white print:hidden">
               <span className="flex h-7 w-7 items-center justify-center rounded bg-delacour-gold text-sm font-black text-delacour-dark">D</span>
-              <span className="hidden text-[11px] font-semibold sm:inline">Outils</span>
-            </a>
+              <House size={15} className="hidden sm:block" />
+            </button>
             <div className="min-w-0 leading-tight">
               <div className="truncate text-[13px] font-bold">{state.settings.companyName || 'Mon entreprise'}</div>
-              <div className="mt-0.5 inline-flex rounded-md bg-delacour-dark/60 p-0.5 print:hidden" role="group" aria-label="Outil">
-                {(Object.keys(TOOLS) as Tool[]).map(t => (
-                  <button key={t} type="button" onClick={() => setTool(t)} aria-pressed={tool === t}
-                    className={`rounded px-2 py-0.5 text-[11px] font-semibold ${tool === t ? 'bg-white text-delacour-primary' : 'text-emerald-50 hover:bg-white/10'}`}>{TOOLS[t].label}</button>
+              <div className="mt-0.5 flex max-w-full overflow-x-auto rounded-md bg-delacour-dark/60 p-0.5 print:hidden" role="group" aria-label="Processus">
+                {PROCESSES.map(p => (
+                  <button key={p.key} type="button" onClick={() => go(toolsOf(p.key)[0].id, p.key)} aria-pressed={view !== 'home' && proc === p.key} title={`${p.key} · ${p.name}`}
+                    className={`shrink-0 rounded px-2 py-0.5 text-[11px] font-semibold ${view !== 'home' && proc === p.key ? 'bg-white text-delacour-primary' : 'text-emerald-50 hover:bg-white/10'}`}>
+                    <span className="hidden sm:inline">{p.label}</span><span className="sm:hidden">{p.key}</span>
+                  </button>
                 ))}
               </div>
-              <div className="hidden text-[11px] text-slate-500 print:block">{TOOLS[tool].title}</div>
+              <div className="hidden text-[11px] text-slate-500 print:block">{title}</div>
             </div>
           </div>
 
-          <div className={`ml-auto flex items-center gap-1 print:hidden ${tool !== 'kpi' ? '!hidden' : ''}`}>
+          <div className={`ml-auto flex items-center gap-1 print:hidden ${MONTHLY.includes(view) ? '' : '!hidden'}`}>
             <button type="button" aria-label="Mois précédent" disabled={period <= ps[0]} onClick={() => setPeriod(addMonths(period, -1))}
               className="rounded-md p-1.5 hover:bg-white/10 disabled:opacity-40"><ChevronLeft size={16} /></button>
             <select value={period} onChange={e => setPeriod(e.target.value)} aria-label="Mois affiché"
@@ -104,7 +113,7 @@ export function App() {
               className="rounded-md p-1.5 hover:bg-white/10 disabled:opacity-40"><ChevronRight size={16} /></button>
           </div>
 
-          <div className={`flex items-center gap-1.5 print:hidden ${tool !== 'kpi' ? 'ml-auto' : ''}`}>
+          <div className={`flex items-center gap-1.5 print:hidden ${MONTHLY.includes(view) ? '' : 'ml-auto'}`}>
             <button type="button" disabled={forcedTeam} onClick={() => setTeamView(!teamView)} aria-pressed={teamView}
               title={forcedTeam ? "Vous n'avez pas accès au dossier direction" : teamView ? 'Vue équipe : montants confidentiels masqués' : 'Vue direction : tout est visible'}
               className="flex items-center gap-1.5 rounded-md border border-white/20 px-2 py-1.5 text-xs font-semibold hover:bg-white/10 disabled:opacity-60">
@@ -122,30 +131,35 @@ export function App() {
           </div>
         </div>
 
-        <nav className={`mx-auto flex max-w-7xl gap-0.5 overflow-x-auto px-3 sm:gap-1 sm:px-6 print:hidden ${TABS.length ? '' : '!hidden'}`} aria-label="Écrans">
-          {TABS.map(t => (
-            <button key={t.id} type="button" onClick={() => setScreen(t.id)} aria-current={screen === t.id ? 'page' : undefined}
-              className={`flex shrink-0 items-center gap-1.5 rounded-t-lg px-2 py-2 text-xs font-semibold transition sm:px-3 ${screen === t.id ? 'bg-slate-100 text-delacour-primary' : 'text-emerald-50 hover:bg-white/10'}`}>
-              <t.icon size={15} className="hidden sm:block" />{t.label}
-              {t.badge ? <span className={`rounded-full px-1.5 text-[11px] font-bold text-white ${t.badgeTone}`}>{t.badge}</span> : null}
+        <nav className={`mx-auto flex max-w-7xl gap-0.5 overflow-x-auto px-3 sm:gap-1 sm:px-6 print:hidden ${tabs.length ? '' : '!hidden'}`} aria-label="Outils du processus">
+          {tabs.map(t => (
+            <button key={t.id} type="button" onClick={() => go(t.id)} aria-current={view === t.id ? 'page' : undefined}
+              className={`flex shrink-0 items-center gap-1.5 rounded-t-lg px-2 py-2 text-xs font-semibold transition sm:px-3 ${view === t.id ? 'bg-slate-100 text-delacour-primary' : 'text-emerald-50 hover:bg-white/10'}`}>
+              {t.id === 'actions' && <ListChecks size={15} className="hidden sm:block" />}
+              {t.id !== 'actions' && t.id !== 'saisir' && <span className={`font-mono text-[11px] ${view === t.id ? 'text-delacour-gold' : 'text-emerald-200/80'}`}>{t.id}</span>}
+              {t.label}
+              {t.badge ? <span className={`rounded-full px-1.5 text-[11px] font-bold text-white ${t.badge.tone}`}>{t.badge.n}</span> : null}
             </button>
           ))}
         </nav>
       </header>
 
       <main className="mx-auto max-w-7xl px-3 py-4 sm:px-6">
-        {teamView && tool !== 'dir' && <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-900 print:hidden">Vue équipe : les montants confidentiels (chiffre d'affaires, marge, trésorerie, coût des arrêts…) sont masqués.</p>}
-        {screen === 'piloter' && <Piloter onOpenKpi={setKpiOpen} onNewAction={startAction} onOpenAction={openAction} goSaisir={() => setScreen('saisir')} />}
-        {screen === 'saisir' && <Saisir done={() => setScreen('piloter')} />}
-        {screen === 'agir' && <Agir key={tool} onOpenAction={openAction} onNewAction={startAction} onOpenRisk={id => openRisk(id, 2)} defaultOrigin={tool === 'risk' ? 'risk' : 'kpi'} />}
-        {screen === 'risques' && <Risques onOpenRisk={openRisk} onNewRisk={() => setRisk({ r: newRisk(state.processes[0]?.id || 'P1'), step: 0 })} onOpenDirectory={() => setTool('dir')} />}
-        {screen === 'annuaire' && <Annuaire />}
+        {teamView && view !== 'home' && view !== '1.3' && <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-900 print:hidden">Vue équipe : les montants confidentiels (chiffre d'affaires, marge, trésorerie, coûts des devis et des arrêts…) sont masqués.</p>}
+        {view === 'home' && <Home nav={nav} />}
+        {view === '1.1' && <Piloter onOpenKpi={setKpiOpen} onNewAction={kpiId => startAction({ kpiId })} onOpenAction={openAction} goSaisir={() => go('saisir')} />}
+        {view === 'saisir' && <Saisir done={() => go('1.1')} />}
+        {view === 'actions' && <Agir key={proc} onOpenAction={openAction} onNewAction={startAction} onOpenRisk={id => openRisk(id, 2)} defaultScope={proc} />}
+        {view === '1.2' && <Risques onOpenRisk={openRisk} onNewRisk={() => setRisk({ r: newRisk(state.processes[0]?.id || 'P1'), step: 0 })} onOpenDirectory={() => go('1.3')} />}
+        {view === '1.3' && <Annuaire />}
+        {Screen && <Screen key={view} nav={nav} focus={focus} clearFocus={() => setFocus('')} />}
       </main>
 
-      {kpiOpen && <KpiDetail kpiId={kpiOpen} onClose={() => setKpiOpen(null)} onOpenAction={openAction} onNewAction={startAction} />}
+      {kpiOpen && <KpiDetail kpiId={kpiOpen} onClose={() => setKpiOpen(null)} onOpenAction={openAction} onNewAction={kpiId => startAction({ kpiId })} />}
       {action && <ActionSheet key={action.id} initial={action} onClose={() => setAction(null)} />}
-      {risk && <RiskSheet key={risk.r.id} initial={risk.r} startStep={risk.step} onClose={() => setRisk(null)} onNewAction={id => startAction('', id)} onOpenAction={openAction} />}
+      {risk && <RiskSheet key={risk.r.id} initial={risk.r} startStep={risk.step} onClose={() => setRisk(null)} onNewAction={id => startAction({ riskId: id })} onOpenAction={openAction} />}
       {settings && <Settings onClose={() => setSettings(false)} />}
+      <datalist id="people">{knownPeople(state).map(p => <option key={p} value={p} />)}</datalist>
     </div>
   );
 }

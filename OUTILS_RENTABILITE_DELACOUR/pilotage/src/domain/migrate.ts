@@ -6,6 +6,7 @@ import { isoDate, parseDate, periodOf } from './periods';
 import { DEFAULT_SCALE, newRisk } from './risk';
 import { parseDuration } from './duration';
 import { EMAILS } from './riskTemplates';
+import { emptyTools } from './base';
 
 // Short stable hash (FNV-1a): the same old contact line gives the same id on every computer
 function fnv(text: string): string {
@@ -115,7 +116,7 @@ export function fromLegacyTool(tool: Legacy): State {
       avgQuoteValue: parseNumber(ps.valeurMoyenneDevis) ?? DEFAULT_SETTINGS.avgQuoteValue,
     },
     timeline: { start: periods[0], end: periods[periods.length - 1] },
-    processes, kpis, values, actions, risks: {}, contacts: {}, scale: DEFAULT_SCALE,
+    processes, kpis, values, actions, risks: {}, contacts: {}, scale: DEFAULT_SCALE, ...emptyTools(),
   };
 }
 
@@ -136,7 +137,9 @@ export function normalize(s: State): State {
     return [id, r as Risk];
   }));
   Object.values(contacts).forEach(c => { c.category ||= 'autre'; c.email ??= EMAILS[c.id] || ''; });   // example contacts filled before e-mails existed
-  return { ...s, risks, contacts, scale: s.scale || DEFAULT_SCALE };
+  const tools = emptyTools();
+  const withTools = Object.fromEntries(Object.entries(tools).map(([k, v]) => [k, (s as any)[k] ?? v])) as typeof tools;
+  return { ...s, ...withTools, params: { ...tools.params, ...(s.params || {}) }, risks, contacts, scale: s.scale || DEFAULT_SCALE };
 }
 
 // "Nom, rôle : 06 00 00 00 00" lines -> crisis directory entries (same line = same id, whoever converts it)

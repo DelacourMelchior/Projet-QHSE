@@ -2,12 +2,14 @@
 // 5 whys (root cause) + 5M action plan, main pilot, deadline, status, effectiveness.
 import { useState } from 'react';
 import { Lightbulb, Plus, Trash2, X } from 'lucide-react';
-import type { Action, ActionStatus, Dim5M, PlanItem } from '../domain/types';
+import type { Action, ActionStatus, Dim5M, PlanItem, Ref } from '../domain/types';
 import { effectiveness, statusAt, valueOf } from '../domain/engine';
 import { riskActionEffectiveness, riskState, STATE_INFO } from '../domain/risk';
 import { PREP_IDEAS } from '../domain/riskTemplates';
 import { formatValue } from '../domain/numbers';
 import { frDate, isoDate, periodLabel } from '../domain/periods';
+import { KIND_LABEL, refLabel } from '../domain/refs';
+import { analysisActionEffectiveness } from '../domain/quality';
 import { useStore } from '../store/StoreContext';
 import { Button, Field, inputCls, Modal, StatusBadge } from './common';
 
@@ -21,12 +23,12 @@ export const DIMS: { key: Dim5M; label: string; hint: string; ideas: string[] }[
 export const STATUS_LABEL: Record<ActionStatus, string> = { to_start: 'À lancer', in_progress: 'En cours', done: 'Réalisée', effective: 'Efficace' };
 export const dimLabel = (d: Dim5M) => DIMS.find(x => x.key === d)?.label || d;
 
-// kpiId for a corrective action; '' and riskId for the preparation of a Plan B
-export function newAction(kpiId: string, period: string, riskId?: string): Action {
+// kpiId for a corrective action; '' and riskId for the preparation of a Plan B; '' and ref for a record of tools 2.1 to 5.4
+export function newAction(kpiId: string, period: string, riskId?: string, ref?: Ref, constat = ''): Action {
   const d = new Date();
   return {
-    id: `act_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, kpiId, ...(riskId ? { riskId } : {}), period, createdAt: isoDate(d),
-    constat: '', whys: ['', '', '', '', ''], plan: [], pilot: '', deadline: isoDate(new Date(d.getFullYear(), d.getMonth(), d.getDate() + 7)),
+    id: `act_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, kpiId, ...(riskId ? { riskId } : {}), ...(ref ? { ref } : {}), period, createdAt: isoDate(d),
+    constat, whys: ['', '', '', '', ''], plan: [], pilot: '', deadline: isoDate(new Date(d.getFullYear(), d.getMonth(), d.getDate() + 7)),
     cost: null, status: 'to_start', closedAt: '',
   };
 }
@@ -45,6 +47,8 @@ export function ActionSheet({ initial, onClose }: { initial: Action; onClose(): 
   const eff = effectiveness(state, a);
   const reff = riskActionEffectiveness(state, a);
   const rst = r && STATE_INFO[riskState(state, r)];
+  const an = a.ref?.kind === 'analysis' ? state.analyses[a.ref.id] : undefined;
+  const refEff = analysisActionEffectiveness(state, a);
   const set = (patch: Partial<Action>) => setA(x => ({ ...x, ...patch }));
   const setPlan = (plan: PlanItem[]) => set({ plan });
   const addDays = (n: number) => { const d = new Date(); d.setDate(d.getDate() + n); set({ deadline: isoDate(d) }); };
@@ -69,7 +73,7 @@ export function ActionSheet({ initial, onClose }: { initial: Action; onClose(): 
   return (
     <Modal wide onClose={close}
       title={r ? (isNew ? 'Nouvelle action de préparation' : 'Action de préparation du Plan B') : isNew ? 'Nouvelle action corrective' : 'Action corrective'}
-      subtitle={r ? <span>Risque : {r.title || 'sans titre'} {rst && <StatusBadge level={rst.tone} text={rst.label} />}</span> : k && <span>{k.name} · {periodLabel(a.period)} : <strong className="font-mono">{formatValue(v, k.unit)}</strong> (cible {k.target}) {st && <StatusBadge level={st.level} text={st.text} />}</span>}
+      subtitle={a.ref ? <span>{KIND_LABEL[a.ref.kind]} : {refLabel(state, a.ref)}</span> : r ? <span>Risque : {r.title || 'sans titre'} {rst && <StatusBadge level={rst.tone} text={rst.label} />}</span> : k && <span>{k.name} · {periodLabel(a.period)} : <strong className="font-mono">{formatValue(v, k.unit)}</strong> (cible {k.target}) {st && <StatusBadge level={st.level} text={st.text} />}</span>}
       footer={<>
         {!isNew && <Button kind="danger" onClick={remove} className="mr-auto"><Trash2 size={14} />Supprimer</Button>}
         {error && <span role="alert" className="mr-2 text-[11px] font-semibold text-red-700">{error}</span>}
@@ -78,12 +82,13 @@ export function ActionSheet({ initial, onClose }: { initial: Action; onClose(): 
       </>}>
       <div className="space-y-5">
         <section className="space-y-2">
-          <h3 className="text-xs font-bold text-slate-900">{r ? '1. Objectif' : '1. Constat et cause racine'}</h3>
+          <h3 className="text-xs font-bold text-slate-900">{r ? '1. Objectif' : a.ref ? '1. Constat' : '1. Constat et cause racine'}</h3>
           <Field label={r ? 'Ce que cette action doit rendre possible' : 'Constat factuel'}>
             <input className={inputCls} value={a.constat} placeholder={r ? `Plan B opérationnel : ${r.planB || 'à définir'}` : k ? `${k.name} : ${formatValue(v, k.unit)} en ${periodLabel(a.period)} (cible ${k.target})` : ''}
               onChange={e => set({ constat: e.target.value })} />
           </Field>
-          {r ? <p className="text-[11px] text-slate-500">Cause racine du risque : {r.cause || 'à analyser dans la fiche du risque'}.</p> : <details className="rounded-lg border border-slate-200 bg-slate-50 p-2.5" open={a.whys.some(w => w.trim())}>
+          {a.ref ? (an ? <p className="text-[11px] text-slate-500">Cause racine trouvée en atelier : {an.rootCause || 'à trouver dans l\'atelier 5 Pourquoi'}.</p> : null)
+          : r ? <p className="text-[11px] text-slate-500">Cause racine du risque : {r.cause || 'à analyser dans la fiche du risque'}.</p> : <details className="rounded-lg border border-slate-200 bg-slate-50 p-2.5" open={a.whys.some(w => w.trim())}>
             <summary className="cursor-pointer text-[11px] font-semibold text-slate-700">Analyse des 5 pourquoi (facultative, recommandée pour une récidive)</summary>
             <div className="mt-2 grid gap-2 sm:grid-cols-2">
               {[0, 1, 2, 3, 4].map(i => (
@@ -155,7 +160,10 @@ export function ActionSheet({ initial, onClose }: { initial: Action; onClose(): 
 
         <p className="rounded-lg bg-slate-50 px-3 py-2 text-[11px] text-slate-600">
           <strong>Efficacité :</strong>{' '}
-          {r ? (reff.state === 'pending' ? 'démontrée par le premier test réussi du Plan B après la réalisation de l\'action.'
+          {a.ref ? (refEff.state === 'pending' ? (an ? 'démontrée par le contrôle à J+30 du détrompeur (outil 5.4), ou constatée par le pilote (statut Efficace).' : 'constatée par le pilote une fois l\'action réalisée (statut Efficace).')
+            : refEff.state === 'waiting' ? (an ? 'en attente du contrôle à J+30 (outil 5.4).' : 'à constater par le pilote (statut Efficace).')
+            : `${refEff.state === 'effective' ? 'démontrée' : 'récidive constatée'} le ${frDate(refEff.date)}.`)
+          : r ? (reff.state === 'pending' ? 'démontrée par le premier test réussi du Plan B après la réalisation de l\'action.'
             : reff.state === 'waiting' ? 'en attente du prochain test du Plan B.'
             : `${reff.state === 'effective' ? 'démontrée par le test' : 'test raté'} du ${frDate(reff.date)}.`)
           : eff.state === 'pending' ? 'mesurée une fois l\'action réalisée, sur le mois qui suit la clôture.'

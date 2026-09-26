@@ -131,7 +131,11 @@ export function sopInsights(s: State): Insight[] {
   if (stale.length) out.push({ key: 'stale', tone: 'warn', title: 'Standard à mettre à jour', text: `${names(stale, x => x.poste)} : défaut déclaré au poste depuis la dernière version. Ajouter la parade sous 48 h et passer à la version suivante.` });
   const noPhoto = sops.filter(x => !photoCount(x));
   if (noPhoto.length) out.push({ key: 'photo', tone: 'warn', title: 'Instruction sans photo', text: `${names(noPhoto, x => x.poste || 'Sans titre')} : une photo avec le bon geste et le piège vaut mieux qu'un paragraphe.` });
-  const noHab = sops.filter(x => !x.habilitations.length);
+  const noHab = sops.filter(x => !x.habilitations.length && !(x.skillId && Object.values(s.skills[x.skillId]?.levels || {}).some(l => l >= 2)));
+  const oldPoster = sops.filter(x => x.displayedAt && x.displayedAt < x.versionDate);
+  if (oldPoster.length) out.push({ key: 'poster', tone: 'bad', title: 'Ancienne version affichée', text: `${names(oldPoster, x => x.poste)} : la fiche au poste n'est pas la dernière version.` });
+  const unread = sops.filter(x => x.version > 1 && !(x.acks || []).some(a => a.v === x.version));
+  if (unread.length) out.push({ key: 'ack', tone: 'warn', title: 'Nouvelle version non lue', text: `${names(unread, x => `${x.poste} (${sopVersion(x)})`)} : faire signer « lu et compris ».` });
   if (noHab.length) out.push({ key: 'hab', tone: 'warn', title: 'Aucune personne habilitée', text: `${names(noHab, x => x.poste || 'Sans titre')} : aucune habilitation enregistrée (test en 3 questions, outil 4.3).` });
   const noVal = sops.filter(x => !x.validatedBy.trim());
   if (noVal.length) out.push({ key: 'val', tone: 'warn', title: 'Instruction non validée', text: `${names(noVal, x => x.poste || 'Sans titre')} : à faire valider par le responsable du poste.` });

@@ -2,7 +2,7 @@
 // protective equipment, the people allowed to work alone (3-question test), a version that follows every defect (living standard).
 import { useEffect, useState } from 'react';
 import { ArrowUp, Plus, Printer, Trash2, X } from 'lucide-react';
-import type { Sop, SopStep } from '../../domain/types';
+import type { Sop, SopStep, State } from '../../domain/types';
 import { DEFAULT_PPE, ncsSinceVersion, newSop, photoCount, sopInsights, sopVersion } from '../../domain/operations';
 import { applyOperationsExample } from '../../domain/operationsExamples';
 import { PROCESS_IDS, processLabel } from '../../domain/base';
@@ -10,6 +10,7 @@ import { frDate, isoDate } from '../../domain/periods';
 import { useStore } from '../../store/StoreContext';
 import { Button, DeleteButton, Card, Empty, Field, inputCls, Method, Modal, Row, StatusBadge, SubTitle, Summary, Tile, ToolHeader } from '../common';
 import { PhotoBox } from '../PhotoBox';
+import { PpeIcon } from '../Ppe';
 import { usePrintOne } from '../PrintOne';
 import type { ScreenProps } from '../screens';
 
@@ -29,7 +30,7 @@ export function Instructions({ focus, clearFocus }: ScreenProps) {
           <Button kind="primary" onClick={() => setOpen(newSop())}><Plus size={14} />Nouvelle instruction</Button>
           <Button onClick={() => update(d => applyOperationsExample(d))}>Voir un exemple traité</Button>
         </Empty>
-        {open && <SopSheet initial={open} onClose={() => setOpen(null)} onPrint={s => print(<SopPrint s={s} company={state.settings.companyName} />)} />}
+        {open && <SopSheet initial={open} onClose={() => setOpen(null)} onPrint={s => print(<SopPrint s={s} company={state.settings.companyName} state={state} />)} />}
         {printNode}
       </div>
     );
@@ -66,7 +67,7 @@ export function Instructions({ focus, clearFocus }: ScreenProps) {
       <Method rule="Sans standard affiché, la qualité dépend de l'humeur et de la mémoire de chacun."
         steps={[['Observer le meilleur', 'Photographier les gestes du meilleur opérateur : le bon geste, et le piège classique.'], ['Une fiche A4 au poste', 'Des phrases courtes, 80 % d\'images, plastifiée face aux yeux de l\'opérateur.'], ['Habiliter en 3 questions', 'Montre-moi le standard, explique-moi le piège, fais la pièce devant moi (outil 4.3).']]}
         tips={['Une photo avec une flèche verte et une croix rouge vaut mieux qu\'un paragraphe.', 'Standard vivant : un défaut au poste, la fiche change sous 48 h.']} />
-      {open && <SopSheet initial={open} onClose={() => setOpen(null)} onPrint={s => print(<SopPrint s={s} company={state.settings.companyName} />)} />}
+      {open && <SopSheet initial={open} onClose={() => setOpen(null)} onPrint={s => print(<SopPrint s={s} company={state.settings.companyName} state={state} />)} />}
       {printNode}
     </div>
   );
@@ -76,6 +77,7 @@ function SopSheet({ initial, onClose, onPrint }: { initial: Sop; onClose(): void
   const { state, update } = useStore();
   const [s, setS] = useState<Sop>(() => structuredClone(initial));
   const [reason, setReason] = useState('');
+  const [ack, setAck] = useState('');
   const [hab, setHab] = useState({ person: '', tutor: '', date: isoDate(new Date()) });
   const [error, setError] = useState('');
   if (!state) return null;
@@ -84,6 +86,9 @@ function SopSheet({ initial, onClose, onPrint }: { initial: Sop; onClose(): void
   const setStep = (i: number, x: Partial<SopStep>) => set({ steps: s.steps.map((st, j) => (j === i ? { ...st, ...x } : st)) });
   const up = (i: number) => { const n = [...s.steps]; [n[i - 1], n[i]] = [n[i], n[i - 1]]; set({ steps: n }); };
   const stale = ncsSinceVersion(state, s);
+  const fromSkill = habilitedFromSkill(state, s);
+  const acked = (s.acks || []).filter(a => a.v === s.version).map(a => a.person);
+  const notAcked = [...new Set([...fromSkill, ...s.habilitations.map(h => h.person)])].filter(n => !acked.includes(n));
   const valid = () => { if (!s.poste.trim()) { setError('Nommez le poste.'); return false; } return true; };
   const close = () => { if (JSON.stringify(s) === JSON.stringify(initial) || window.confirm('Fermer sans enregistrer ? Vos modifications seront perdues.')) onClose(); };
   const save = () => { if (valid()) { update(d => { d.sops[s.id] = s; }); onClose(); } };
@@ -159,7 +164,7 @@ function SopSheet({ initial, onClose, onPrint }: { initial: Sop; onClose(): void
           <div className="flex flex-wrap gap-1.5">
             {[...new Set([...DEFAULT_PPE, 'Protections auditives', 'Masque', 'Blouse ou tablier', ...s.ppe])].map(p => (
               <button key={p} type="button" aria-pressed={s.ppe.includes(p)} onClick={() => togglePpe(p)}
-                className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${s.ppe.includes(p) ? 'border-delacour-primary bg-delacour-primary text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'}`}>{p}</button>
+                className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-1 text-[11px] font-semibold ${s.ppe.includes(p) ? 'border-delacour-primary bg-delacour-primary text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'}`}><PpeIcon label={p} size={16} />{p}</button>
             ))}
           </div>
         </section>
@@ -167,7 +172,13 @@ function SopSheet({ initial, onClose, onPrint }: { initial: Sop; onClose(): void
         <section className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
             <SubTitle>Personnes habilitées au poste</SubTitle>
-            {s.habilitations.length === 0 && <p className="text-[11px] text-slate-500">Personne pour l'instant.</p>}
+            <Field label="Compétence de la matrice de polyvalence (4.2)" hint="Les personnes au niveau 2 ou plus sur cette compétence sont habilitées d'office.">
+              <select className={inputCls} value={s.skillId || ''} onChange={e => set({ skillId: e.target.value || undefined })}>
+                <option value="">Aucune</option>{Object.values(state.skills).map(k => <option key={k.id} value={k.id}>{k.name}</option>)}
+              </select>
+            </Field>
+            {fromSkill.length > 0 && <p className="text-[11px] text-slate-700">Depuis la polyvalence : <strong>{fromSkill.join(', ')}</strong>.</p>}
+            {s.habilitations.length === 0 && !fromSkill.length && <p className="text-[11px] text-slate-500">Personne pour l'instant.</p>}
             <ul className="space-y-1">
               {s.habilitations.map((h, i) => (
                 <li key={i} className="flex items-center gap-2 text-[11px] text-slate-700">
@@ -184,6 +195,19 @@ function SopSheet({ initial, onClose, onPrint }: { initial: Sop; onClose(): void
             <p className="text-[11px] text-slate-500">Habilitée = test en 3 questions réussi au poste (outil 4.3).</p>
           </div>
           <div className="space-y-1.5">
+            <SubTitle>Affichage et lecture de la {sopVersion(s)}</SubTitle>
+            <div className="flex flex-wrap items-end gap-2">
+              <Field label="Fiche affichée au poste le"><input type="date" className={inputCls} value={s.displayedAt || ''} onChange={e => set({ displayedAt: e.target.value })} /></Field>
+              <Button className="!px-2" onClick={() => set({ displayedAt: isoDate(new Date()) })}>Contrôlée aujourd'hui</Button>
+            </div>
+            {s.displayedAt && s.displayedAt < s.versionDate && <p className="text-[11px] font-semibold text-red-700">La fiche affichée est antérieure à la {sopVersion(s)} : réimprimer et remplacer.</p>}
+            <p className="text-[11px] text-slate-600">Lu et compris : {acked.length ? acked.join(', ') : 'personne'}{notAcked.length ? <> · <span className="font-semibold text-amber-800">à faire lire : {notAcked.join(', ')}</span></> : ''}.</p>
+            <div className="flex gap-1.5">
+              <input className={inputCls} value={ack} list="people" placeholder="Nom de la personne qui a lu" aria-label="Lu et compris par" onChange={e => setAck(e.target.value)} />
+              <Button className="shrink-0 !px-2" disabled={!ack.trim()} onClick={() => { set({ acks: [...(s.acks || []), { person: ack.trim(), v: s.version, date: isoDate(new Date()) }] }); setAck(''); }}>Lu et compris</Button>
+            </div>
+          </div>
+          <div className="space-y-1.5 sm:col-span-2">
             <SubTitle>Versions</SubTitle>
             <ul className="space-y-0.5 text-[11px] text-slate-700">
               {(s.history.length ? s.history : [{ v: s.version, date: s.versionDate, reason: 'Création' }]).map(h => <li key={h.v}><span className="font-mono font-semibold">{sopVersion({ version: h.v })}</span> · {frDate(h.date)} · {h.reason}</li>)}
@@ -200,7 +224,7 @@ function SopSheet({ initial, onClose, onPrint }: { initial: Sop; onClose(): void
 }
 
 // The A4 sheet posted at the workstation
-function SopPrint({ s, company }: { s: Sop; company: string }) {
+function SopPrint({ s, company, state }: { s: Sop; company: string; state: State }) {
   return (
     <div className="space-y-3 p-2 text-[10pt]">
       <header className="flex items-end justify-between border-b-2 border-delacour-primary pb-1.5">
@@ -208,7 +232,7 @@ function SopPrint({ s, company }: { s: Sop; company: string }) {
           <div className="text-[8pt] font-semibold text-slate-500">{company ? `${company} · ` : ''}Instruction de poste</div>
           <h1 className="text-[16pt] font-bold text-delacour-primary">{s.poste} · {s.operation}</h1>
         </div>
-        <div className="text-right text-[8pt] text-slate-600">{sopVersion(s)} du {frDate(s.versionDate)}<br />Rédigée avec {s.author || '—'} · validée par {s.validatedBy || '—'}</div>
+        <div className="text-right text-[8pt] text-slate-600"><span className="block rounded border-2 border-delacour-primary px-2 font-mono text-[20pt] font-black text-delacour-primary">{sopVersion(s)}</span>du {frDate(s.versionDate)}<br />Rédigée avec {s.author || '—'} · validée par {s.validatedBy || '—'}</div>
       </header>
       <ol className="grid grid-cols-2 gap-2">
         {s.steps.map((st, i) => (
@@ -234,9 +258,15 @@ function SopPrint({ s, company }: { s: Sop; company: string }) {
         </div>
       </div>
       <footer className="flex justify-between border-t border-slate-300 pt-1 text-[9pt]">
-        <span><strong>Protections obligatoires :</strong> {s.ppe.join(', ') || '—'}</span>
-        <span>Habilités : {s.habilitations.map(h => h.person).join(', ') || '—'}</span>
+        <span className="flex flex-wrap items-center gap-1.5"><strong>Protections obligatoires :</strong> {s.ppe.map(x => <span key={x} className="inline-flex items-center gap-1"><PpeIcon label={x} size={26} />{x}</span>)}</span>
+        <span>Habilités : {[...new Set([...habilitedFromSkill(state, s), ...s.habilitations.map(h => h.person)])].join(', ') || '—'}</span>
       </footer>
     </div>
   );
+}
+
+// People at level 2 or more on the skill linked to the workstation (versatility matrix, 4.2)
+function habilitedFromSkill(s: State, sop: Sop): string[] {
+  const k = sop.skillId ? s.skills[sop.skillId] : undefined;
+  return k ? Object.entries(k.levels).filter(([id, l]) => l >= 2 && s.people[id]?.active).map(([id]) => s.people[id].name) : [];
 }

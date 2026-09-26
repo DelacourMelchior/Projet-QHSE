@@ -11,7 +11,9 @@ export const COLORS = {
   line: [203, 213, 225] as Rgb, pale: [241, 245, 249] as Rgb, white: [255, 255, 255] as Rgb, amber: [180, 83, 9] as Rgb,
 };
 
-export interface DocMeta { company: string; title: string; date: Date }
+export interface DocMeta { company: string; title: string; date: Date; coords?: string }
+// Company details printed under the title of the documents sent outside
+export const coordsOf = (p: { company?: { address: string; siret: string; phone: string; email: string } }) => { const c = p.company; return c ? [c.address, c.siret && `SIRET ${c.siret}`, c.phone, c.email].filter(Boolean).join(' · ') : ''; };
 
 export class DocWriter {
   doc = new PdfDoc();
@@ -31,6 +33,7 @@ export class DocWriter {
     lines.forEach((l, i) => this.doc.text(l, M, A4.h - 52 - i * 22, 18, { bold: true, color: COLORS.white }));
     if (sub) this.doc.text(wrap(sub, WIDTH, 10)[0], M, A4.h - 52 - lines.length * 22 + 4, 10, { color: [220, 232, 226] });
     this.y = A4.h - h - 8;
+    if (this.meta.coords) this.para(`${this.meta.company} · ${this.meta.coords}`, 8.5, { color: COLORS.gray, gap: 2 });
   }
 
   para(t: string, size = 10.5, o: { bold?: boolean; color?: Rgb; x?: number; width?: number; gap?: number } = {}) {

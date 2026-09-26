@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { FileDown, Plus, Printer, Star, Trash2 } from 'lucide-react';
 import type { Debit, Supplier, SupplierRating } from '../../domain/types';
 import {
-  categoryLabel, CLASS_INFO, classOf, DEBIT_STATE, debitAmount, debitState, lastRating, newDebit, newSupplier, ratingDue, ratingScore, SUPPLIER_CATEGORIES,
+  categoryLabel, CLASS_INFO, classOf, lateReceipts, proposedRating, DEBIT_STATE, debitAmount, debitState, lastRating, newDebit, newSupplier, ratingDue, ratingScore, SUPPLIER_CATEGORIES,
   supplierInsights, supplierStats, supplierSummary,
 } from '../../domain/operations';
 import { applyOperationsExample } from '../../domain/operationsExamples';
@@ -13,7 +13,11 @@ import { daysBetween } from '../../domain/base';
 import { formatValue } from '../../domain/numbers';
 import { frDate, isoDate } from '../../domain/periods';
 import { useStore } from '../../store/StoreContext';
-import { Button, DeleteButton, Card, Chips, Empty, Field, inputCls, Method, Modal, NumInput, Row, StatusBadge, SubTitle, Summary, Tile, ToolHeader } from '../common';
+import { PhotoBox } from '../PhotoBox';
+import { PasteImport } from '../PasteImport';
+import { newRisk } from '../../domain/risk';
+import { contactLabel } from '../../domain/contacts';
+import { Button, DeleteButton, YesNo, Card, Chips, Empty, Field, inputCls, Method, Modal, NumInput, Row, StatusBadge, SubTitle, Summary, Tile, ToolHeader } from '../common';
 import { downloadFile, fileSlug } from '../download';
 import type { ScreenProps } from '../screens';
 import type { Nav } from '../tools';
@@ -60,6 +64,8 @@ export function Fournisseurs({ nav, focus, clearFocus }: ScreenProps) {
       <Card className="space-y-3 p-3 sm:p-4">
         <ToolHeader title={view === 'debits' ? 'Fiches de débit' : 'Fournisseurs'} text={view === 'debits' ? 'Une fiche par défaut constaté à la réception. Réclamer sous 48 h, suivre jusqu\'à l\'avoir.' : 'Note sur 100 une fois par an : A à partir de 85, B de 70 à 84, C en dessous.'}>
           {view === 'debits' ? <Button kind="primary" onClick={() => setDebit(newDebit(state))}><Plus size={14} />Réclamer</Button> : <Button kind="primary" onClick={() => setSupplier(newSupplier())}><Plus size={14} />Ajouter un fournisseur</Button>}
+          {view === 'suppliers' && <PasteImport title="Importer des fournisseurs (Excel ou logiciel de gestion)" cols={[{ key: 'name', label: 'Nom', aliases: ['fournisseur', 'raison sociale', 'societe'] }, { key: 'supplies', label: 'Fournit', aliases: ['famille', 'produit', 'activite'] }, { key: 'contact', label: 'Contact', aliases: ['telephone', 'tel', 'email'] }]}
+            onImport={rows => { let n = 0; update(d => { rows.filter(r => r.name && !Object.values(d.suppliers).some(s => s.name.toLowerCase() === r.name.toLowerCase())).forEach(r => { const s = newSupplier(); d.suppliers[s.id] = { ...s, name: r.name, supplies: r.supplies, contact: r.contact }; n++; }); }); return n; }} />}
           <Button kind="ghost" onClick={() => window.print()}><Printer size={14} />Imprimer</Button>
         </ToolHeader>
         <Chips value={view} onChange={setView} items={[['debits', 'Fiches de débit', debits.length], ['suppliers', 'Fournisseurs', suppliers.length]]} />
@@ -152,9 +158,11 @@ function DebitSheet({ initial, onClose, nav }: { initial: Debit; onClose(): void
             </Field>
             {!d.supplierId ? <Field label="Nom du nouveau fournisseur"><input className={inputCls} value={newName} onChange={e => setNewName(e.target.value)} /></Field>
               : <Field label="Bon de livraison n°"><input className={inputCls} value={d.bl} onChange={e => set({ bl: e.target.value })} /></Field>}
+            <Field label="Commande n°"><input className={inputCls} value={d.orderRef || ''} onChange={e => set({ orderRef: e.target.value })} /></Field>
             <Field label="Reçu le"><input type="date" className={inputCls} value={d.date} onChange={e => set({ date: e.target.value })} /></Field>
             <label className="flex items-center gap-2 pt-5 text-[11px] text-slate-700"><input type="checkbox" checked={d.reserveOnBl} onChange={e => set({ reserveOnBl: e.target.checked })} />Réserve précise écrite sur le bon de livraison, devant le livreur</label>
             <div className="sm:col-span-2"><Field label="Défaut constaté"><input className={inputCls} value={d.defect} onChange={e => set({ defect: e.target.value })} /></Field></div>
+            <div className="max-w-xs"><PhotoBox value={d.photo || ''} label="Photo du défaut" onChange={v => set({ photo: v })} /></div>
           </div>
           {!d.reserveOnBl && <p className="rounded-lg bg-amber-50 px-2.5 py-1.5 text-[11px] font-semibold text-amber-900">Sans réserve écrite sur le bon de livraison, le recours contre le transporteur ou le fournisseur est fragile.</p>}
           {nc && <button type="button" className="text-[11px] font-semibold text-delacour-primary hover:underline" onClick={() => { update(x => { x.debits[d.id] = d; }); onClose(); nav.tool('5.1', nc.id); }}>Fiche du bac rouge {nc.ref}</button>}
@@ -181,7 +189,12 @@ function DebitSheet({ initial, onClose, nav }: { initial: Debit; onClose(): void
             </Field>
             <Field label="Montant récupéré (€ HT)"><NumInput value={d.recovered} onChange={v => set({ recovered: v, recoveredAt: v ? d.recoveredAt || today : '' })} /></Field>
             <Field label="Reçu le"><input type="date" className={inputCls} value={d.recoveredAt} onChange={e => set({ recoveredAt: e.target.value })} /></Field>
+            {d.sentAt && !d.recovered && <Field label="Relancé le"><span className="flex gap-1.5"><input type="date" className={inputCls} value={d.followAt || ''} onChange={e => set({ followAt: e.target.value })} /><Button className="shrink-0 !px-2" onClick={() => set({ followAt: today })}>Auj.</Button></span></Field>}
           </div>
+          {(() => { const sp = state.suppliers[d.supplierId]; const ct = sp?.contactId ? state.contacts[sp.contactId] : undefined; const body = `Bonjour, nous avons constaté à la réception du ${frDate(d.date)}${d.bl ? ` (${d.bl})` : ''}${d.orderRef ? `, commande ${d.orderRef}` : ''} : ${d.defect}. Préjudice chiffré : ${formatValue(debitAmount(d, state.params), '€')} HT (détail dans la fiche jointe). Merci de nous confirmer un avoir sous 48 heures. ${state.settings.companyName}`; return (
+            <a href={`mailto:${ct?.email || ''}?subject=${encodeURIComponent(`Réclamation ${d.ref}`)}&body=${encodeURIComponent(body)}`} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">E-mail au fournisseur{ct?.email ? ` (${ct.email})` : ''}</a>
+          ); })()}
+          <p className="text-[11px] text-slate-500">Joignez la fiche PDF et les photos à l'e-mail.</p>
         </section>
       </div>
     </Modal>
@@ -230,8 +243,36 @@ function SupplierSheet({ initial, onClose, nav }: { initial: Supplier; onClose()
             <select className={inputCls} value={x.category} onChange={e => set({ category: e.target.value as Supplier['category'] })}>{SUPPLIER_CATEGORIES.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}</select>
           </Field>
           <Field label="Ce qu'il fournit"><input className={inputCls} value={x.supplies} onChange={e => set({ supplies: e.target.value })} /></Field>
-          <Field label="Contact"><input className={inputCls} value={x.contact} onChange={e => set({ contact: e.target.value })} /></Field>
+          <Field label="Contact dans l'annuaire (1.3)">
+            <select className={inputCls} value={x.contactId || ''} onChange={e => set({ contactId: e.target.value || undefined })}>
+              <option value="">{x.contact || 'Aucun'}</option>
+              {Object.values(state.contacts).sort((a, b) => contactLabel(a).localeCompare(contactLabel(b))).map(c => <option key={c.id} value={c.id}>{contactLabel(c)} · {c.phone}</option>)}
+            </select>
+          </Field>
           <label className="flex items-center gap-2 text-[11px] text-slate-700 sm:col-span-2"><input type="checkbox" checked={x.strategic} onChange={e => set({ strategic: e.target.checked })} />Fournisseur unique ou difficile à remplacer (son arrêt est un risque de l'outil 1.2)</label>
+          <label className="flex items-center gap-2 text-[11px] text-slate-700 sm:col-span-2"><input type="checkbox" checked={!!x.certRequired} onChange={e => set({ certRequired: e.target.checked })} />Certificat matière exigé à chaque réception (matière critique)</label>
+          {x.strategic && !Object.values(state.risks).some(r => r.resource.includes(x.name)) && (
+            <p className="flex flex-wrap items-center gap-2 text-[11px] text-slate-700 sm:col-span-2">Pas encore de Plan B pour ce fournisseur.
+              <button type="button" className="font-semibold text-delacour-primary hover:underline" onClick={() => { if (!x.name.trim()) return; const r = { ...newRisk('P3'), title: `Rupture du fournisseur ${x.name}`, resource: `Fournisseur unique : ${x.name}${x.supplies ? ` (${x.supplies})` : ''}`, family: 'relais' as const, cause: 'Fournisseur unique, sans second fournisseur référencé' }; update(d => { d.suppliers[x.id] = x; d.risks[r.id] = r; }); onClose(); nav.openRisk(r.id); }}>Créer le risque dans les Plans B (1.2)</button>
+            </p>
+          )}
+        </section>
+        <section className="space-y-2">
+          <SubTitle>Réceptions suivies (délais et certificats)</SubTitle>
+          <p className="text-[11px] text-slate-600">Notez les réceptions importantes : date promise, date réelle, certificat reçu. La note « délais » se calcule dessus. {lateReceipts(x).length ? <strong className="text-red-700">{lateReceipts(x).length} en retard.</strong> : ''}</p>
+          <ul className="space-y-1">
+            {(x.receipts || []).map((r, i) => (
+              <li key={r.id} className="grid items-center gap-1.5 sm:grid-cols-[1fr_1fr_1fr_auto_2fr_auto]">
+                <input type="date" className={inputCls} value={r.date} aria-label="Reçu le" onChange={e => set({ receipts: x.receipts!.map((y, j) => (j === i ? { ...y, date: e.target.value, received: e.target.value } : y)) })} />
+                <input type="date" className={inputCls} value={r.promised} aria-label="Promis pour le" title="Promis pour le" onChange={e => set({ receipts: x.receipts!.map((y, j) => (j === i ? { ...y, promised: e.target.value } : y)) })} />
+                <span className={`text-[11px] ${r.promised && r.received > r.promised ? 'font-semibold text-red-700' : 'text-slate-600'}`}>{r.promised ? (r.received > r.promised ? 'en retard' : 'à l\'heure') : 'date promise ?'}</span>
+                {x.certRequired ? <YesNo label="Certificat reçu" labels={['Certif. OK', 'Sans certif.']} value={r.certOk} onChange={v => set({ receipts: x.receipts!.map((y, j) => (j === i ? { ...y, certOk: v } : y)) })} /> : <span />}
+                <input className={inputCls} value={r.note} placeholder="Remarque" aria-label="Remarque" onChange={e => set({ receipts: x.receipts!.map((y, j) => (j === i ? { ...y, note: e.target.value } : y)) })} />
+                <button type="button" aria-label="Retirer" onClick={() => set({ receipts: x.receipts!.filter((_, j) => j !== i) })} className="rounded p-1 text-slate-400 hover:text-red-600">×</button>
+              </li>
+            ))}
+          </ul>
+          <Button className="!px-2 !py-1" onClick={() => set({ receipts: [...(x.receipts || []), { id: `rc_${Date.now().toString(36)}`, date: isoDate(new Date()), promised: '', received: isoDate(new Date()), certOk: null, note: '' }] })}><Plus size={13} />Réception</Button>
         </section>
         <section className="space-y-2">
           <SubTitle>Notation annuelle</SubTitle>
@@ -248,7 +289,7 @@ function SupplierSheet({ initial, onClose, nav }: { initial: Supplier; onClose()
               ))}
             </ul>
           )}
-          {!rating ? <Button onClick={() => setRating(emptyRating(author))}><Star size={14} />Noter ce fournisseur</Button> : (
+          {!rating ? <Button onClick={() => { const pr = proposedRating(state, x); setRating({ ...emptyRating(author), quality: pr.quality, delay: pr.delay ?? 0, service: pr.service, note: `Proposée d'après : ${pr.basis}` }); }}><Star size={14} />Noter ce fournisseur (note proposée d'après les faits)</Button> : (
             <div className="grid gap-2 rounded-lg border border-slate-200 p-2.5 sm:grid-cols-5">
               <Field label="Qualité (sur 40)"><NumInput value={rating.quality} onChange={v => setRating({ ...rating, quality: cap(v, 40) })} /></Field>
               <Field label="Délais (sur 40)"><NumInput value={rating.delay} onChange={v => setRating({ ...rating, delay: cap(v, 40) })} /></Field>

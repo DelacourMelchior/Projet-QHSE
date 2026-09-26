@@ -8,6 +8,7 @@ import { QuickButton } from '../QuickForm';
 import { PhotoBox } from '../PhotoBox';
 import { applyCommercialExample } from '../../domain/commercialExamples';
 import { changePdf } from '../../domain/commercialPdf';
+import { coordsOf } from '../../domain/docPdf';
 import { formatValue } from '../../domain/numbers';
 import { frDate, isoDate } from '../../domain/periods';
 import { useStore } from '../../store/StoreContext';
@@ -98,7 +99,7 @@ function ChangeSheet({ initial, onClose }: { initial: Change; onClose(): void })
   const remove = () => { if (window.confirm(`Supprimer l'avenant ${c.ref} ?`)) { update(d => { delete d.changes[c.id]; }); onClose(); } };
   const sent = (via: Change['via']) => set({ sentAt: c.sentAt || today, via });
   const copy = async () => { try { await navigator.clipboard.writeText(msg); setCopied(true); sent(c.via || 'sms'); } catch { setError('Copie impossible : sélectionnez le texte à la main.'); } };
-  const pdf = () => downloadFile(`Avenant-${fileSlug(c.ref)}.pdf`, changePdf(c, { company: state.settings.companyName, date: new Date() }), 'application/pdf');
+  const pdf = () => downloadFile(`Avenant-${fileSlug(c.ref)}.pdf`, changePdf(c, { company: state.settings.companyName, date: new Date(), coords: coordsOf(state.params) }), 'application/pdf');
 
   return (
     <Modal wide onClose={close} title={isNew ? 'Nouvelle demande du client' : `Avenant ${c.ref}`}

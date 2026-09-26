@@ -6,15 +6,19 @@ import { categoryLabel, CLAIM_DAYS, debitAmount, LIFT_DAYS, liftDue, MAX_RETENTI
 import { frDate } from './periods';
 import { formatValue } from './numbers';
 
-interface Opts { company: string; date: Date }
+interface Opts { company: string; date: Date; coords?: string }
 
 export function debitPdf(s: State, d: Debit, o: Opts): string {
   const sup = s.suppliers[d.supplierId];
   const w = new DocWriter({ company: o.company, title: `Fiche de débit ${d.ref}`, date: o.date }, COLORS.red);
   w.band('Réclamation fournisseur et demande d\'avoir', `${d.ref} · ${sup?.name || 'Fournisseur'}`, sup ? categoryLabel(sup.category) : '');
+  const co = s.params.company;
+  const ct = sup?.contactId ? s.contacts[sup.contactId] : undefined;
   w.fields([
-    ['Réception du', frDate(d.date)], ['Bon de livraison', d.bl], ['Réserve écrite sur le BL', d.reserveOnBl ? 'Oui' : 'Non'],
-    ['Défaut constaté', d.defect],
+    ['Émetteur', [o.company, co?.address, co?.siret && `SIRET ${co.siret}`, co?.phone, co?.email].filter(Boolean).join(' · ')],
+    ['Destinataire', [sup?.name, ct ? `${ct.name}, ${ct.phone}${ct.email ? `, ${ct.email}` : ''}` : sup?.contact].filter(Boolean).join(' · ')],
+    ['Réception du', frDate(d.date)], ['Commande', d.orderRef || ''], ['Bon de livraison', d.bl], ['Réserve écrite sur le BL', d.reserveOnBl ? 'Oui' : 'Non'],
+    ['Défaut constaté', d.defect], ['Photos', d.photo ? 'jointes à l\'envoi' : ''],
   ]);
   w.heading('Préjudice chiffré');
   w.table(['Poste', 'Détail', 'Montant HT'], [
@@ -43,7 +47,7 @@ export function routinePdf(e: Equipment, o: Opts): string {
 
 export function pvPdf(dl: Delivery, o: Opts): string {
   const r = dl.reception;
-  const w = new DocWriter({ company: o.company, title: `PV de réception ${dl.ref}`, date: o.date });
+  const w = new DocWriter({ company: o.company, title: `PV de réception ${dl.ref}`, date: o.date, coords: o.coords });
   w.band('Procès-verbal de réception contradictoire', `${dl.ref} · ${dl.client || 'Client'}`, [dl.item, dl.qty !== null ? `${dl.qty} pièce(s)` : ''].filter(Boolean).join(' · '));
   w.heading('Autocontrôle aux jalons');
   w.table(['Jalon', 'Point contrôlé', 'Exigence', 'Mesuré', 'Conforme', 'Visa'], dl.milestones.map(m => [m.label, m.point, m.requirement, m.measured, m.ok === null ? '' : m.ok ? 'Oui' : 'Non', m.by]), [0.15, 0.22, 0.2, 0.17, 0.11, 0.15], { size: 9 });

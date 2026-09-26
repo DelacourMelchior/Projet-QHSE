@@ -8,6 +8,7 @@ import { emptyTools } from './base';
 import { applyQualityExample } from './qualityExamples';
 import { applyCommercialExample } from './commercialExamples';
 import { applyOperationsExample } from './operationsExamples';
+import { applyTeamExample } from './teamExamples';
 
 export const PROFILES = {
   industrie: 'Industrie, usinage & atelier',
@@ -27,6 +28,7 @@ export function demoState(today = new Date()): State {
   applyQualityExample(s, today);
   applyCommercialExample(s, today);
   applyOperationsExample(s, today);
+  applyTeamExample(s, today);
   return s;
 }
 

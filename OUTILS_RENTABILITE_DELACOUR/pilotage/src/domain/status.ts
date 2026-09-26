@@ -7,6 +7,7 @@ import { toCheck } from './contacts';
 import { cnqMonth, ncState, pokaState, analysisState } from './quality';
 import { formatValue } from './numbers';
 import { changeState, changeSummary, complaintState, feedbackState, quoteState } from './commercial';
+import { chronoSummary, envelopeState, keyPeople, newcomerState, powerState, skillRisk } from './team';
 import { anomalies, debitState, deliveryState, inspectionState, lowParts, ncsSinceVersion, supplierSummary } from './operations';
 
 export interface ToolStatus { n: number; tone: 'ok' | 'warn' | 'alert' | 'pending'; text: string }
@@ -133,6 +134,36 @@ export function toolBadge(s: State, tool: string, p: Period, now = new Date()): 
       const todo = st.filter(x => x === 'to_release' || x === 'released' || x === 'reserve').length;
       if (bad) return { n: bad, tone: 'alert', text: `${plural(bad, 'commande')} bloquée(s) ou réserve en retard` };
       return todo ? { n: todo, tone: 'warn', text: `${plural(todo, 'commande')} à libérer, faire signer ou lever` } : ok('Réceptions à jour');
+    }
+    case '4.1': {
+      const all = Object.values(s.powers);
+      if (!all.length) return empty();
+      const st = all.map(p => powerState(p, now));
+      const none = st.filter(x => x === 'no_deputy').length;
+      const todo = st.filter(x => x !== 'ok' && x !== 'no_deputy').length + (envelopeState(s.envelope, now) === 'ok' ? 0 : 1);
+      if (none) return { n: none, tone: 'alert', text: `${plural(none, 'pouvoir')} sans suppléant` };
+      return todo ? { n: todo, tone: 'warn', text: `${plural(todo, 'suppléance')} à compléter ou entraîner` } : ok('Suppléances prêtes');
+    }
+    case '4.2': {
+      const ks = Object.values(s.skills);
+      if (!ks.length) return empty();
+      const keys = keyPeople(s).length, bad = ks.filter(k => skillRisk(s, k) !== 'ok').length;
+      return bad ? { n: bad, tone: 'alert', text: `${plural(bad, 'compétence')} non doublée(s)${keys ? `, ${plural(keys, 'homme-clé', 'hommes-clés')}` : ''}` } : ok('Toutes les compétences doublées');
+    }
+    case '4.3': {
+      const ns = Object.values(s.newcomers);
+      if (!ns.length) return empty();
+      const st = ns.map(n => newcomerState(n, now));
+      const bad = st.filter(x => x === 'failed').length + ns.filter(n => !n.authorizedAt && !n.tutor.trim()).length;
+      const todo = st.filter(x => ['welcome', 'test_due', 'to_authorize'].includes(x)).length;
+      if (bad) return { n: bad, tone: 'alert', text: `${plural(bad, 'recrue')} sans tuteur ou test à repasser` };
+      return todo ? { n: todo, tone: 'warn', text: `${plural(todo, 'étape')} d'accueil à faire` } : ok('Recrues autonomes');
+    }
+    case '4.4': {
+      const c = chronoSummary(s, now);
+      if (!c.count && !s.ged.owner) return empty('Plan de classement à adopter');
+      if (c.obsolete) return { n: c.obsolete, tone: 'alert', text: `${plural(c.obsolete, 'version')} périmée(s) trouvée(s)` };
+      return c.monthDone ? ok(`Tests réussis : ${c.okPct ?? 0} %`) : { n: 1, tone: 'warn', text: 'Test des 30 secondes du mois à faire' };
     }
     default:
       return empty();

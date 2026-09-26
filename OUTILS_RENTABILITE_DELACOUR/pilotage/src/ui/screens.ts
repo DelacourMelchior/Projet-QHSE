@@ -9,6 +9,10 @@ import { Fournisseurs } from './operations/Fournisseurs';
 import { Instructions } from './operations/Instructions';
 import { Maintenance } from './operations/Maintenance';
 import { Receptions } from './operations/Receptions';
+import { Suppleances } from './team/Suppleances';
+import { Polyvalence } from './team/Polyvalence';
+import { Accueil } from './team/Accueil';
+import { Classement } from './team/Classement';
 import { BacRouge } from './quality/BacRouge';
 import { NonQualite } from './quality/NonQualite';
 import { Ateliers } from './quality/Ateliers';
@@ -25,6 +29,10 @@ export const SCREENS: Partial<Record<ToolId, ComponentType<ScreenProps>>> = {
   '3.2': Instructions,
   '3.3': Maintenance,
   '3.4': Receptions,
+  '4.1': Suppleances,
+  '4.2': Polyvalence,
+  '4.3': Accueil,
+  '4.4': Classement,
   '5.1': BacRouge,
   '5.2': NonQualite,
   '5.3': Ateliers,

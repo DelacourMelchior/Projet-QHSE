@@ -9,7 +9,8 @@ Un outil par question de l'audit des 5 processus (plus l'annuaire de crise), dan
 | **P3 Opérations** | 3.1 Fournisseurs (fiche de débit sous 48 h, note A/B/C) · 3.2 Instructions visuelles (photos, versions, habilitations) · 3.3 Maintenance (routine du lundi, armoire de survie) · 3.4 Réceptions (jalons, PV, règle 95/5) | `#3.1` à `#3.4` |
 | **P4 RH** | 4.1 Suppléances (2 suppléants entraînés, enveloppe des accès) · 4.2 Polyvalence (0 à 4, homme-clé) · 4.3 Accueil (parcours 15 jours, test en 3 questions) · 4.4 Classement (nommage, plan, test des 30 s) | `#4.1` à `#4.4` |
 | **P5 Qualité** | 5.1 Bac rouge (décision sous 24 h) · 5.2 Non-qualité (coût par processus) · 5.3 Ateliers 5 Pourquoi · 5.4 Détrompeurs (contrôle à J+30) | `#5.1` à `#5.4` |
-| | Accueil : les 19 outils et ce qui demande attention | `#accueil` |
+| | Accueil : les 19 outils et ce qui demande attention, rapport mensuel (PDF), glossaire | `#accueil` |
+| | Mes tâches : tout ce qu'il y a à faire, par personne et par échéance, agenda (.ics) et semaine (PDF) | bouton de l'en-tête |
 
 Livré comme **un seul fichier HTML** (`dist/index.html`, copié en `../livrable/pilotage.html`), sans aucune requête réseau (règle de sécurité CSP intégrée), qui enregistre dans le navigateur ou dans le dossier OneDrive / SharePoint du client.
 
@@ -45,6 +46,13 @@ python3 ../../execution/build_outils_app.py   # construit puis met à jour ../li
 - **Photos** (instructions de poste) : prises ou choisies sur l'appareil, réduites à 800 px en JPEG avant d'être enregistrées.
 - Règles visuelles : `../app/DESIGN_OUTILS.md`.
 
+## Pour les équipes
+
+- **Saisie rapide** (3 champs et une photo) pour le bac rouge, les réclamations et les avenants ; sur un téléphone, les saisies restent sur l'appareil : exporter la sauvegarde, puis **Réglages, Fusionner un fichier de saisies** sur un poste connecté.
+- **Import par copier-coller** depuis Excel ou le logiciel de gestion : devis, fournisseurs, réponses aux bilans.
+- **Journal** des créations, modifications et suppressions (Réglages) ; suppression réservée à la direction sauf réglage contraire ; outils réservables à la direction.
+- **Photos** annotables (flèche verte, croix rouge, cercle), rangées dans `donnees/photos` ; **signatures** au doigt sur le PV de réception, redessinées dans le PDF.
+
 ## Format des fichiers partagés
 
 `donnees/equipe/pilotage-<auteur>.json` et `donnees/direction/pilotage-<auteur>.json` :
@@ -53,4 +61,4 @@ python3 ../../execution/build_outils_app.py   # construit puis met à jour ../li
 { "version": 2, "author": "Sandrine", "updatedAt": "…", "entries": { "nc|nc_abc": { "ts": "2026-12-05T09:12:00Z", "v": { … } } } }
 ```
 
-Clés : `settings`, `timeline`, `params`, `process|<id>`, `kpi|<id>`, `value|<kpi>|<AAAA-MM>`, `action|<id>`, `risk|<id>` et `riskcost|<id>` (dossier `direction`), `contact|<id>`, `scale`, et une clé par enregistrement des outils 2 à 5 : `quote|` (et `quotecost|` dans `direction`), `change|`, `complaint|`, `feedback|`, `supplier|`, `debit|`, `sop|`, `equipment|`, `delivery|`, `power|`, `person|`, `skill|`, `newcomer|`, `chrono|`, `nc|`, `analysis|`, `poka|`, plus `envelope` et `ged`. À la lecture, toutes les entrées de tous les fichiers sont fusionnées : la plus récente gagne. Les données de l'ancienne version (outils 1.1 et 1.2, et tableaux des outils 2.1 à 5.3 restés dans le navigateur) sont proposées à la reprise : 1.1 au premier lancement, 1.2 sur la cartographie vide, 2.1 à 5.3 dans Réglages.
+Clés : `settings`, `timeline`, `params`, `process|<id>`, `kpi|<id>`, `value|<kpi>|<AAAA-MM>`, `action|<id>`, `risk|<id>` et `riskcost|<id>` (dossier `direction`), `contact|<id>`, `scale`, et une clé par enregistrement des outils 2 à 5 : `quote|` (et `quotecost|` dans `direction`), `change|`, `complaint|`, `feedback|`, `supplier|`, `debit|`, `sop|`, `equipment|`, `delivery|`, `power|`, `person|`, `skill|`, `newcomer|`, `chrono|`, `nc|`, `analysis|`, `poka|`, `log|` (journal), `poweraccess|` et `envelope` (dossier `direction`), plus `ged`. Les photos sont des fichiers `donnees/photos/<empreinte>.jpg`, référencées `photo:<empreinte>` dans les enregistrements. À la lecture, toutes les entrées de tous les fichiers sont fusionnées : la plus récente gagne. Les données de l'ancienne version (outils 1.1 et 1.2, et tableaux des outils 2.1 à 5.3 restés dans le navigateur) sont proposées à la reprise : 1.1 au premier lancement, 1.2 sur la cartographie vide, 2.1 à 5.3 dans Réglages.

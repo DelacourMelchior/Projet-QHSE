@@ -46,7 +46,9 @@ Pilotage Delacour/
 └─ donnees/
    ├─ equipe/      fichiers lisibles par tous (indicateurs, valeurs non confidentielles, actions, risques, annuaire,
    │               devis sans leurs coûts, réclamations, bac rouge, fournisseurs, instructions de poste, compétences…)
-   └─ direction/   fichiers réservés : CA, marge, trésorerie, hypothèses financières, coût des arrêts, coûts et marges des devis
+   ├─ direction/   fichiers réservés : CA, marge, trésorerie, hypothèses financières, coût des arrêts, coûts et marges des devis,
+   │               emplacement des codes d'accès et de l'enveloppe scellée (suppléances)
+   └─ photos/      les photos des fiches (une image par fichier)
 ```
 
 ## 5. Protéger le dossier direction (recommandé)
@@ -76,6 +78,10 @@ Conseil : sur chaque poste, faites un clic droit sur le dossier `donnees`, puis 
   - **Opérations** : **Fournisseurs** (fiche de débit sous 48 h, note annuelle A, B, C), **Instructions** (fiche A4 avec photos, versions, personnes habilitées), **Maintenance** (routine du lundi, armoire de survie), **Réceptions** (jalons, PV de réception, retenue de 5 % au plus) ;
   - **RH** : **Suppléances** (2 suppléants entraînés, enveloppe des accès), **Polyvalence** (matrice 0 à 4, homme-clé), **Accueil** (parcours de 15 jours, test en 3 questions), **Classement** (nom des fichiers, plan de classement, test des 30 secondes) ;
   - **Qualité** : **Bac rouge** (étiquette, décision sous 24 h), **Non-qualité** (coût du mois par processus), **5 Pourquoi** (cause racine sans coupable), **Détrompeurs** (contrôle sur le terrain à J+30).
+- **Mes tâches** (en haut à droite) : tout ce que chacun a à faire dans les 19 outils, par échéance. **Agenda** produit un fichier à ouvrir dans Outlook ou Google Agenda ; **Semaine (PDF)** une liste à imprimer.
+- **Rapport du mois** (accueil) : chiffres clés et état de chaque outil pour la réunion de direction.
+- **Saisie depuis un téléphone** : les saisies restent sur le téléphone ; exportez la sauvegarde dans OneDrive, puis sur un poste connecté : **Réglages, Fusionner un fichier de saisies**.
+- **Droits** : dans Réglages, choisir les outils réservés à la direction et si l'équipe peut supprimer des fiches ; le journal montre qui a modifié quoi.
 - **Un seul plan d'actions** : l'onglet Actions de chaque processus montre les actions créées depuis ses outils ; le filtre permet de tout afficher.
 - **Les outils se complètent** : une réclamation ouvre une fiche du bac rouge et un atelier 5 Pourquoi, un défaut fournisseur devient une fiche de débit, le coût de chaque fiche remonte dans la non-qualité. Les chiffres calculés (coût de non-qualité, réclamations, devis, postes doublés) sont proposés dans l'écran **Saisie** du tableau de pilotage : un clic sur **Reprendre** les recopie.
 - **Imprimer** : chaque outil produit ses documents (PDF ou impression A4) : étiquettes du bac rouge, fiche de débit, bon pour accord d'un avenant, PV de réception, instruction de poste, feuille de routine d'une machine, parcours d'accueil, charte de classement.

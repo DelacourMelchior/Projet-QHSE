@@ -7,8 +7,9 @@ import { demoState } from '../domain/templates';
 class MemFile {
   kind = 'file' as const;
   constructor(public name: string, public data = '') {}
-  async getFile() { return { text: async () => this.data }; }
-  async createWritable() { let buf = ''; return { write: async (s: string) => { buf += s; }, close: async () => { this.data = buf; } }; }
+  bytes: Uint8Array | null = null;
+  async getFile() { return { text: async () => this.data, arrayBuffer: async () => (this.bytes || new TextEncoder().encode(this.data)).buffer }; }
+  async createWritable() { let buf = ''; return { write: async (s: string | Uint8Array) => { if (typeof s === 'string') buf += s; else this.bytes = s; }, close: async () => { this.data = buf; } }; }
 }
 class MemDir {
   kind = 'directory' as const;
@@ -93,5 +94,24 @@ describe('shared folder', () => {
     expect(st.kpis.kpi_otif.role).toBe('otif');
     await s.save(st);
     expect([...equipe.children.keys()]).toContain('pilotage-nouveau.json');
+  });
+  it('stores photos as separate files and the codes of the vital powers in direction/', async () => {
+    const root = new MemDir('donnees');
+    await initDataFolder(asDir(root));
+    const a = new FolderSession(asDir(root), 'Jean-Marc');
+    const s = demoState();
+    const img = 'data:image/jpeg;base64,' + btoa('fake-jpeg-bytes');
+    s.sops.sop_demo_1.goodPhoto = img;
+    await a.load();
+    await a.save(s);
+    const photos = root.children.get('photos') as MemDir;
+    expect([...photos.children.keys()]).toHaveLength(1);
+    const equipe = (root.children.get('equipe') as MemDir).children.get('pilotage-jean-marc.json') as MemFile;
+    expect(equipe.data).not.toContain('fake');
+    expect(equipe.data).not.toContain('codes sous pli');
+    expect(equipe.data).not.toContain('enveloppe scellée signée');
+    const back = await new FolderSession(asDir(root), 'Sophie').load();
+    expect(back!.sops.sop_demo_1.goodPhoto).toBe(img);
+    expect(back!.powers.pw_demo_1.access).toMatch(/coffre/);
   });
 });

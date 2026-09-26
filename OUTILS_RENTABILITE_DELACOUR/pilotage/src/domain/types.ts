@@ -109,6 +109,7 @@ export interface State {
   ncs: Record<string, Nc>;                // 5.1, costed by 5.2
   analyses: Record<string, Analysis>;     // 5.3
   pokas: Record<string, Poka>;            // 5.4
+  logs: Record<string, LogEntry>;         // who created, changed or deleted what
 }
 
 // Operating assumptions of tools 2.1 to 5.4, visible to the whole team (not money of the company)
@@ -117,11 +118,29 @@ export interface Params {
   marginFloorPct: number;  // minimum gross margin of a quote (%)
   depositPct: number;      // deposit asked on an order (%)
   visaThreshold: number;   // quote amount above which the 3 visas are required (€ HT)
+  rates?: { name: string; rate: number }[];     // hourly cost per workstation or machine (else hourlyRate)
+  overheadPct?: number;    // overheads added to the direct cost of a quote (%)
+  teamCanDelete?: boolean; // in team view, delete buttons shown
+  restricted?: string[];   // tools reserved to management (hidden in team view)
+  businessHours?: boolean; // 48 h and 24 h counted on working days (Monday to Friday)
+  reviewLink?: string;     // online review page of the company (2.4)
+  questions?: string[];    // wording of the 3 end-of-job questions (2.4)
+  company?: { address: string; siret: string; phone: string; email: string };   // printed on the documents
+  monthDeliveries?: Record<string, number>;     // deliveries per month, for the complaint rate (2.3)
+  cnqIndirect?: Record<string, number>;         // indirect non-quality costs per month (5.2)
+  welcome?: { key: string; stage: string; label: string; legal?: boolean }[];  // welcome checklist (4.3)
+  milestoneTemplates?: { name: string; milestones: { label: string; point: string; requirement: string }[] }[];   // 3.4
+  cnqTrigger?: number;     // cost from which a five whys workshop is expected (5.3)
+  variableMarginPct?: number;   // margin on variable costs (%), second reading of the revenue to make up (5.2)
 }
+
+// Signature drawn with the finger: strokes of points in a 300 x 100 box
+export type Strokes = [number, number][][];
+export interface LogEntry { id: string; at: string; by: string; kind: string; ref: string; what: 'création' | 'modification' | 'suppression' }
 
 // ---- 2.1 feasibility and margin of a quote
 export type LockState = '' | 'ok' | 'reserve' | 'ko';
-export interface Lock { state: LockState; note: string }
+export interface Lock { state: LockState; note: string; by?: string }
 export interface Visa { by: string; date: string }
 export type QuoteStatus = 'draft' | 'sent' | 'won' | 'lost' | 'dropped';
 export interface Quote {
@@ -142,8 +161,17 @@ export interface Quote {
   decidedAt: string;
   lostReason: string;
   cost?: QuoteCost;        // direction folder
+  contact?: string;        // person and phone on the customer side
+  followUps?: { date: string; note: string; by: string }[];
+  nextFollowAt?: string;
+  lostCategory?: '' | 'prix' | 'delai' | 'technique' | 'relation' | 'concurrent' | 'autre';
+  probability?: number | null;   // chance to win (%)
+  revisions?: { v: number; date: string; amount: number | null; marginPct: number | null; note: string }[];
+  depositAmount?: number | null;
+  depositAt?: string;
+  startedAt?: string;      // manufacturing launched
 }
-export interface QuoteCost { material: number | null; hours: number | null; subcontract: number | null; other: number | null }
+export interface QuoteCost { material: number | null; hours: number | null; subcontract: number | null; other: number | null; rate?: string }
 
 // ---- 2.2 change order (avenant)
 export interface Change {
@@ -163,6 +191,12 @@ export interface Change {
   startedAt: string;       // date the extra work started
   invoiceRef: string;
   invoicedAt: string;
+  quoteId?: string;
+  proof?: string;          // photo or screenshot of the written agreement
+  offered?: boolean;       // extra offered as a commercial gesture
+  newDate?: string;        // new delivery date promised
+  hours?: number | null;   // pricing aid
+  material?: number | null;
 }
 
 // ---- 2.3 customer complaint
@@ -185,6 +219,8 @@ export interface Complaint {
   courtesyAt: string;      // courtesy call, closes the complaint
   ncId?: string;
   analysisId?: string;
+  category?: '' | 'delai' | 'qualite' | 'facture' | 'comportement' | 'emballage' | 'autre';
+  blockedInvoice?: number | null;   // invoice amount the customer holds
 }
 
 // ---- 2.4 end-of-job flash review
@@ -204,6 +240,10 @@ export interface Feedback {
   invoicedAt: string;      // final invoice sent
   reviewAsked: boolean;
   complaintId?: string;
+  paidAt?: string;
+  quoteId?: string;
+  deliveryId?: string;
+  promisedWeeks?: number | null;   // copied from the quote
 }
 
 // ---- 3.1 suppliers and debit notes
@@ -217,6 +257,9 @@ export interface Supplier {
   strategic: boolean;      // sole source, hard to replace
   contact: string;
   ratings: SupplierRating[];
+  contactId?: string;      // crisis directory (1.3)
+  certRequired?: boolean;  // material certificate required at reception
+  receipts?: { id: string; date: string; promised: string; received: string; certOk: boolean | null; note: string }[];
 }
 export interface Debit {
   id: string;
@@ -233,6 +276,9 @@ export interface Debit {
   recovered: number | null;
   recoveredAt: string;
   ncId?: string;
+  orderRef?: string;
+  photo?: string;
+  followAt?: string;       // reminder sent
 }
 
 // ---- 3.2 visual work instruction
@@ -254,12 +300,15 @@ export interface Sop {
   trapPhoto: string;
   ppe: string[];
   habilitations: { person: string; tutor: string; date: string }[];
+  skillId?: string;        // skill of the versatility matrix (4.2): its level 2+ people are allowed
+  displayedAt?: string;    // printed sheet posted at the workstation
+  acks?: { person: string; v: number; date: string }[];   // read and understood
 }
 
 // ---- 3.3 weekly sensory routine and survival cabinet
-export interface Checkpoint { label: string; criterion: string }
-export interface Inspection { date: string; by: string; results: ('ok' | 'ko')[]; note: string }
-export interface SparePart { name: string; ref: string; supplier: string; leadTime: string; min: number; stock: number }
+export interface Checkpoint { label: string; criterion: string; id?: string }
+export interface Inspection { date: string; by: string; results: ('ok' | 'ko')[]; note: string; ids?: string[] }
+export interface SparePart { name: string; ref: string; supplier: string; leadTime: string; min: number; stock: number; orderedAt?: string; expectedAt?: string }
 export interface Equipment {
   id: string;
   name: string;
@@ -270,6 +319,12 @@ export interface Equipment {
   checkpoints: Checkpoint[];
   inspections: Inspection[];
   parts: SparePart[];
+  tasks?: { id: string; label: string; everyDays: number; lastDone: string; legal: boolean }[];
+  breakdowns?: { id: string; date: string; hours: number | null; cost: number | null; cause: string }[];
+  anomalies?: { id: string; label: string; date: string; note: string; closedAt: string }[];
+  contactId?: string;      // after-sales service (1.3)
+  manual?: string;         // where the manual is
+  lastRevision?: string;
 }
 
 // ---- 3.4 self-inspection at milestones and acceptance report
@@ -293,6 +348,13 @@ export interface Delivery {
     amount: number | null; // invoice amount € HT
     liftedAt: string;
   };
+  quoteId?: string;
+  template?: string;
+  signCompany?: Strokes;
+  signClient?: Strokes;
+  pvPhoto?: string;
+  liftPhoto?: string;
+  liftSignedBy?: string;
 }
 
 // ---- 4.1 emergency deputies
@@ -303,19 +365,28 @@ export interface Power {
   holder: string;
   deputies: [string, string];
   practiced: [string, string]; // date of the last real practice of each deputy
-  access: string;          // codes and access, and where they are
+  access: string;          // codes and access, and where they are (direction folder)
+  extra?: string[];        // more deputies, external included
+  extraPracticed?: string[];
+  periodDays?: number;     // practice required every … days (365 by default)
+  nextPracticeAt?: string;
+  delegationSigned?: boolean;
+  bankInformed?: boolean;
 }
 export interface Envelope { location: string; checkedAt: string; by: string }
 
 // ---- 4.2 versatility matrix
 export type SkillLevel = 0 | 1 | 2 | 3 | 4;
-export interface Person { id: string; name: string; role: string; active: boolean }
+export interface Person { id: string; name: string; role: string; active: boolean; team?: string; absences?: { from: string; to: string }[] }
 export interface Skill {
   id: string;
   name: string;
   processId: string;
   levels: Record<string, SkillLevel>;   // personId -> level
-  plan: { tutor: string; learner: string; slot: string; target: string; sessions: number } | null;   // person ids
+  plan: { tutor: string; learner: string; slot: string; target: string; sessions: number; hoursPerSession?: number; cost?: number | null } | null;   // person ids
+  required?: number;       // people autonomous required (2 by default)
+  critical?: boolean;
+  levelDates?: Record<string, string>;   // personId -> date of the last assessment
 }
 
 // ---- 4.3 welcome and autonomy test
@@ -333,6 +404,11 @@ export interface Newcomer {
   authorizedAt: string;
   sopId: string;
   skillId: string;
+  testDays?: number;       // length of the path (15 by default)
+  testPiece?: string;      // part or task made during the test
+  retestAt?: string;
+  docs?: Record<string, string>;   // document key -> date given
+  feedback?: string;       // what surprised the newcomer (day 30)
 }
 
 // ---- 4.4 naming charter and filing plan
@@ -343,11 +419,13 @@ export interface Ged {
   procCodes: { code: string; label: string }[];
   typeCodes: { code: string; label: string }[];
   archive: string;         // name of the archive folder
+  migration?: { label: string; done: string }[];
+  rightsCheckedAt?: string;
 }
 export interface ChronoTest { id: string; date: string; person: string; asked: string; seconds: number | null; found: boolean; obsolete: boolean }
 
 // ---- 5.1 quarantine (red bin), costed by 5.2
-export type NcDecision = 'rebut' | 'retouche' | 'derogation' | 'retour';
+export type NcDecision = 'rebut' | 'retouche' | 'derogation' | 'retour' | 'tri' | 'declassement' | 'attente';
 export type NcCause = 'outillage' | 'reglage' | 'plan' | 'matiere' | 'manipulation' | 'methode' | 'autre';
 export interface NcCost { scrap: number | null; lostHours: number | null; reworkHours: number | null; logistics: number | null }
 export interface Nc {
@@ -370,6 +448,8 @@ export interface Nc {
   supplierId?: string;
   complaintId?: string;
   analysisId?: string;
+  photo?: string;
+  qtyScrapped?: number | null;
 }
 
 // ---- 5.3 five whys workshop
@@ -385,11 +465,13 @@ export interface Analysis {
   rootCause: string;
   backCheck: boolean;      // "since cause 5, therefore cause 4… therefore the problem" holds
   pilot: string;
+  branches?: { title: string; whys: string[]; rootCause: string }[];   // other chains of causes
+  ishikawa?: Partial<Record<Dim5M, string>>;
 }
 
 // ---- 5.4 mistake-proofing and 30-day check
 export type PokaLevel = 'supprimer' | 'detromper' | 'detecter' | 'consigne';
-export interface PokaCheck { date: string; produced: number | null; defects: number | null; inPlace: boolean; cadenceOk: boolean; note: string; by: string }
+export interface PokaCheck { date: string; produced: number | null; defects: number | null; inPlace: boolean; cadenceOk: boolean; note: string; by: string; seen?: boolean | null }
 export interface Poka {
   id: string;
   analysisId: string;
@@ -405,6 +487,9 @@ export interface Poka {
   trained: boolean;        // every operator trained on the device
   bypassTested: boolean;   // someone tried to fool it on purpose
   check: PokaCheck | null;
+  operatorOk?: boolean;    // validated by the operators (ergonomics)
+  later?: PokaCheck[];     // checks at day 90 and every year
+  office?: boolean;        // software or office device: no parts counted
 }
 
 // ---- business continuity (tool 1.2)

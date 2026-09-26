@@ -44,7 +44,7 @@ export const askPermission = async (d: FileSystemDirectoryHandle) => (await (d a
 export const pickFolder = () => (window as unknown as { showDirectoryPicker(o: object): Promise<FileSystemDirectoryHandle> })
   .showDirectoryPicker({ id: 'delacour-donnees', mode: 'readwrite' });
 
-async function sub(dir: FileSystemDirectoryHandle, name: Bucket, create = false) {
+async function sub(dir: FileSystemDirectoryHandle, name: Bucket | 'photos', create = false) {
   try { return await dir.getDirectoryHandle(name, { create }); } catch { return null; }
 }
 
@@ -94,7 +94,7 @@ export class FolderSession {
       Object.entries(f.entries).forEach(([k, e]) => { if (!merged[k] || e.ts > merged[k].ts) merged[k] = e; });
     });
     this.contributors = [...new Set(files.map(f => f.author).filter((a): a is string => !!a))];
-    const map: FlatMap = {};
+    const map: FlatMap = await readPhotos(this.dir);
     Object.entries(merged).forEach(([k, e]) => { if (e.v !== null) map[k] = e.v; });
     const state = unflatten(map);
     this.baseline = flatten(state);
@@ -120,6 +120,7 @@ export class FolderSession {
     const ts = new Date().toISOString();
     const touched = new Set<Bucket>();
     for (const k of diffKeys(cur, this.baseline)) {
+      if (k.startsWith('photo|')) { if (cur[k]) await writePhoto(this.dir, k.slice(6), cur[k] as string); continue; }
       const b = bucketOf(k, state);
       if (b === 'direction' && !this.hasDirection) continue;   // no rights: never write amounts into the team folder
       this.own[b][k] = { ts, v: cur[k] ?? null };
@@ -136,4 +137,31 @@ export class FolderSession {
     this.baseline = cur;
     return touched.size > 0;
   }
+}
+
+// Photos: one .jpg file per picture in donnees/photos, named by its hash (written once, never changed)
+async function readPhotos(dir: FileSystemDirectoryHandle): Promise<FlatMap> {
+  const out: FlatMap = {};
+  const d = await sub(dir, 'photos');
+  if (!d) return out;
+  for await (const [name, h] of (d as PermHandle).entries()) {
+    if (h.kind !== 'file' || !name.endsWith('.jpg')) continue;
+    try {
+      const bytes = new Uint8Array(await (await (h as FileSystemFileHandle).getFile()).arrayBuffer());
+      let bin = '';
+      for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+      out[`photo|${name.slice(0, -4)}`] = `data:image/jpeg;base64,${btoa(bin)}`;
+    } catch { /* being synced: read next time */ }
+  }
+  return out;
+}
+async function writePhoto(dir: FileSystemDirectoryHandle, hash: string, dataUrl: string) {
+  const d = await sub(dir, 'photos', true);
+  if (!d) return;
+  try { await d.getFileHandle(`${hash}.jpg`); return; } catch { /* not written yet */ }
+  const bin = atob(dataUrl.slice(dataUrl.indexOf(',') + 1));
+  const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+  const w = await (await d.getFileHandle(`${hash}.jpg`, { create: true })).createWritable();
+  await w.write(bytes as unknown as string);
+  await w.close();
 }

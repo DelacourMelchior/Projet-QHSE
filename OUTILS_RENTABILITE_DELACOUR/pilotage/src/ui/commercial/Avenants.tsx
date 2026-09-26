@@ -9,7 +9,7 @@ import { changePdf } from '../../domain/commercialPdf';
 import { formatValue } from '../../domain/numbers';
 import { frDate, isoDate } from '../../domain/periods';
 import { useStore } from '../../store/StoreContext';
-import { Button, Card, Chips, Empty, Field, inputCls, Method, Modal, NumInput, Row, StatusBadge, SubTitle, Summary, Tile, ToolHeader } from '../common';
+import { Button, DeleteButton, Card, Chips, Empty, Field, inputCls, Method, Modal, NumInput, Row, StatusBadge, SubTitle, Summary, Tile, ToolHeader } from '../common';
 import { downloadFile, fileSlug } from '../download';
 import type { ScreenProps } from '../screens';
 import { clientsOf } from './Devis';
@@ -49,7 +49,6 @@ export function Avenants({ focus, clearFocus }: ScreenProps) {
       <Card className="space-y-3 p-3 sm:p-4">
         <ToolHeader title="Avenants" text="Une ligne par demande du client. Le travail ne commence qu'avec l'accord écrit.">
           <Button kind="primary" onClick={() => setOpen(newChange(state))}><Plus size={14} />Nouvelle demande</Button>
-          <Button kind="ghost" onClick={() => { if (window.confirm('Remplacer les devis, avenants, réclamations et bilans par des exemples ?')) update(d => applyCommercialExample(d)); }}>Remplir avec des exemples</Button>
           <Button kind="ghost" onClick={() => window.print()}><Printer size={14} />Imprimer</Button>
         </ToolHeader>
         <Chips value={filter} onChange={setFilter} items={[['open', 'En cours', all.filter(x => match('open', x.st)).length], ['invoiced', 'Facturés', all.filter(x => x.st === 'invoiced').length], ['refused', 'Refusés', all.filter(x => x.st === 'refused').length], ['all', 'Tous', all.length]]} />
@@ -99,7 +98,7 @@ function ChangeSheet({ initial, onClose }: { initial: Change; onClose(): void })
     <Modal wide onClose={close} title={isNew ? 'Nouvelle demande du client' : `Avenant ${c.ref}`}
       subtitle={<span className="flex flex-wrap items-center gap-1.5">{c.client || 'Client à saisir'} <StatusBadge level={CHANGE_STATE[st].tone} text={CHANGE_STATE[st].label} /></span>}
       footer={<>
-        {!isNew && <Button kind="danger" onClick={remove} className="mr-auto"><Trash2 size={14} />Supprimer</Button>}
+        {!isNew && <DeleteButton onClick={remove} className="mr-auto"><Trash2 size={14} />Supprimer</DeleteButton>}
         {error && <span role="alert" className="mr-2 text-[11px] font-semibold text-red-700">{error}</span>}
         <Button onClick={pdf}><FileDown size={14} />Bon pour accord</Button>
         <Button onClick={close}>Annuler</Button>

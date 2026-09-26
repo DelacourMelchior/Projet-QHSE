@@ -10,7 +10,7 @@ import { formatHours, frStamp, hoursBetween, nowLocal, PROCESS_IDS, processLabel
 import { formatValue } from '../../domain/numbers';
 import { frDate, isoDate, periodLabel, periodOfDate } from '../../domain/periods';
 import { useStore } from '../../store/StoreContext';
-import { Button, Card, Chips, Empty, Field, inputCls, Method, Modal, NumInput, Row, StatusBadge, SubTitle, Summary, Tile, ToolHeader } from '../common';
+import { Button, DeleteButton, Card, Chips, Empty, Field, inputCls, Method, Modal, NumInput, Row, StatusBadge, SubTitle, Summary, Tile, ToolHeader } from '../common';
 import { FeedBox } from '../Feed';
 import type { ScreenProps } from '../screens';
 import type { Nav } from '../tools';
@@ -65,7 +65,6 @@ export function Reclamations({ nav, focus, clearFocus }: ScreenProps) {
       <Card className="space-y-3 p-3 sm:p-4">
         <ToolHeader title="Registre des réclamations" text="Une ligne par plainte, quel que soit le canal. Elle est close après l'appel de courtoisie.">
           <Button kind="primary" onClick={() => setOpen(newComplaint(state, author))}><Plus size={14} />Enregistrer une réclamation</Button>
-          <Button kind="ghost" onClick={() => { if (window.confirm('Remplacer les devis, avenants, réclamations et bilans par des exemples ?')) update(d => applyCommercialExample(d)); }}>Remplir avec des exemples</Button>
           <Button kind="ghost" onClick={() => window.print()}><Printer size={14} />Imprimer</Button>
         </ToolHeader>
         <Chips value={filter} onChange={setFilter} items={(['call', 'open', 'closed', 'all'] as Filter[]).map(f => [f, { call: 'À rappeler', open: 'En traitement', closed: 'Closes', all: 'Toutes' }[f], all.filter(x => groups[f].includes(x.st)).length])} />
@@ -131,7 +130,7 @@ export function ComplaintSheet({ initial, onClose, nav }: { initial: Complaint; 
     <Modal wide onClose={close} title={isNew ? 'Nouvelle réclamation' : `Réclamation ${c.ref}`}
       subtitle={<span className="flex flex-wrap items-center gap-1.5">Reçue le {frStamp(c.at)} <StatusBadge level={COMPLAINT_STATE[st].tone} text={COMPLAINT_STATE[st].label} /></span>}
       footer={<>
-        {!isNew && <Button kind="danger" onClick={remove} className="mr-auto"><Trash2 size={14} />Supprimer</Button>}
+        {!isNew && <DeleteButton onClick={remove} className="mr-auto"><Trash2 size={14} />Supprimer</DeleteButton>}
         {error && <span role="alert" className="mr-2 text-[11px] font-semibold text-red-700">{error}</span>}
         <Button onClick={close}>Annuler</Button>
         <Button kind="primary" onClick={save}>Enregistrer</Button>

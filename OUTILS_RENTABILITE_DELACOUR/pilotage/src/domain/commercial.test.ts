@@ -19,7 +19,7 @@ const st = (over: Partial<State> = {}): State => ({
 });
 const P = st().params;
 const ready = (over: Partial<Quote> = {}): Quote => ({
-  ...newQuote(st(), now), client: 'A', amount: 8000, locks: Array.from({ length: 5 }, () => ({ state: 'ok' as const, note: '' })),
+  ...newQuote(st(), now), client: 'A', amount: 8000, locks: Array.from({ length: 5 }, () => ({ state: 'ok' as const, note: '', by: 'David' })),
   cost: { material: 3000, hours: 20, subcontract: 500, other: null }, ...over,
 });
 
@@ -34,7 +34,7 @@ describe('2.1 quotes', () => {
     expect(quoteIssues(ready(), P)).toEqual([]);
     expect(quoteState(ready(), P, now)).toBe('ready');
     const q = ready({ locks: [{ state: '', note: '' }, { state: 'ko', note: 'Plieuse saturée' }, { state: 'reserve', note: '' }, { state: 'ok', note: '' }, { state: 'ok', note: '' }] });
-    expect(quoteIssues(q, P)).toHaveLength(3);
+    expect(quoteIssues(q, P)).toHaveLength(5);                          // + P3 and P5 locks without 'checked with'
     const low = ready({ amount: 5000 });
     expect(quoteIssues(low, P)[0]).toMatch(/plancher/);
     expect(quoteIssues({ ...low, derogation: 'Jean-Marc, client stratégique' }, P)).toEqual([]);

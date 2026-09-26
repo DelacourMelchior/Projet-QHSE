@@ -10,7 +10,7 @@ import { applyOperationsExample } from '../../domain/operationsExamples';
 import { routinePdf } from '../../domain/operationsPdf';
 import { frDate, isoDate } from '../../domain/periods';
 import { useStore } from '../../store/StoreContext';
-import { Button, Card, Empty, Field, inputCls, Method, Modal, NumInput, Row, StatusBadge, SubTitle, Summary, Tile, ToolHeader } from '../common';
+import { Button, DeleteButton, Card, Empty, Field, inputCls, Method, Modal, NumInput, Row, StatusBadge, SubTitle, Summary, Tile, ToolHeader } from '../common';
 import { downloadFile, fileSlug } from '../download';
 import type { ScreenProps } from '../screens';
 import type { Nav } from '../tools';
@@ -47,7 +47,6 @@ export function Maintenance({ nav, focus, clearFocus }: ScreenProps) {
       <Card className="space-y-3 p-3 sm:p-4">
         <ToolHeader title="Machines goulets" text="Celles dont l'arrêt bloque l'atelier. L'opérateur nettoie, surveille, graisse ; la maintenance spécialisée fait les révisions lourdes.">
           <Button kind="primary" onClick={() => setOpen(newEquipment())}><Plus size={14} />Ajouter une machine</Button>
-          <Button kind="ghost" onClick={() => { if (window.confirm('Remplacer les fournisseurs, fiches de débit, instructions, équipements et réceptions par des exemples ?')) update(d => applyOperationsExample(d)); }}>Remplir avec des exemples</Button>
         </ToolHeader>
         <ul className="divide-y divide-slate-100">
           {all.map(e => {
@@ -102,7 +101,7 @@ function EquipmentSheet({ initial, onClose, nav }: { initial: Equipment; onClose
     <Modal xwide onClose={close} title={isNew ? 'Nouvelle machine goulet' : e.name}
       subtitle={<StatusBadge level={INSPECTION_STATE[inspectionState(e)].tone} text={INSPECTION_STATE[inspectionState(e)].label} />}
       footer={<>
-        {!isNew && <Button kind="danger" onClick={remove} className="mr-auto"><Trash2 size={14} />Supprimer</Button>}
+        {!isNew && <DeleteButton onClick={remove} className="mr-auto"><Trash2 size={14} />Supprimer</DeleteButton>}
         {error && <span role="alert" className="mr-2 text-[11px] font-semibold text-red-700">{error}</span>}
         {info && !error && <span role="status" className="mr-2 text-[11px] font-semibold text-emerald-700">{info}</span>}
         <Button onClick={pdf}><FileDown size={14} />Feuille à afficher</Button>

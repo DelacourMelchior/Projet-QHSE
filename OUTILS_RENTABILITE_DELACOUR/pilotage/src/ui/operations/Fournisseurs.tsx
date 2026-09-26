@@ -13,7 +13,7 @@ import { daysBetween } from '../../domain/base';
 import { formatValue } from '../../domain/numbers';
 import { frDate, isoDate } from '../../domain/periods';
 import { useStore } from '../../store/StoreContext';
-import { Button, Card, Chips, Empty, Field, inputCls, Method, Modal, NumInput, Row, StatusBadge, SubTitle, Summary, Tile, ToolHeader } from '../common';
+import { Button, DeleteButton, Card, Chips, Empty, Field, inputCls, Method, Modal, NumInput, Row, StatusBadge, SubTitle, Summary, Tile, ToolHeader } from '../common';
 import { downloadFile, fileSlug } from '../download';
 import type { ScreenProps } from '../screens';
 import type { Nav } from '../tools';
@@ -60,7 +60,6 @@ export function Fournisseurs({ nav, focus, clearFocus }: ScreenProps) {
       <Card className="space-y-3 p-3 sm:p-4">
         <ToolHeader title={view === 'debits' ? 'Fiches de débit' : 'Fournisseurs'} text={view === 'debits' ? 'Une fiche par défaut constaté à la réception. Réclamer sous 48 h, suivre jusqu\'à l\'avoir.' : 'Note sur 100 une fois par an : A à partir de 85, B de 70 à 84, C en dessous.'}>
           {view === 'debits' ? <Button kind="primary" onClick={() => setDebit(newDebit(state))}><Plus size={14} />Réclamer</Button> : <Button kind="primary" onClick={() => setSupplier(newSupplier())}><Plus size={14} />Ajouter un fournisseur</Button>}
-          <Button kind="ghost" onClick={() => { if (window.confirm('Remplacer les fournisseurs, fiches de débit, instructions, équipements et réceptions par des exemples ?')) update(d => applyOperationsExample(d)); }}>Remplir avec des exemples</Button>
           <Button kind="ghost" onClick={() => window.print()}><Printer size={14} />Imprimer</Button>
         </ToolHeader>
         <Chips value={view} onChange={setView} items={[['debits', 'Fiches de débit', debits.length], ['suppliers', 'Fournisseurs', suppliers.length]]} />
@@ -135,7 +134,7 @@ function DebitSheet({ initial, onClose, nav }: { initial: Debit; onClose(): void
     <Modal wide onClose={close} title={isNew ? 'Réclamer à un fournisseur' : `Fiche de débit ${d.ref}`}
       subtitle={<span className="flex flex-wrap items-center gap-1.5">{state.suppliers[d.supplierId]?.name || 'Fournisseur à choisir'} <StatusBadge level={DEBIT_STATE[st].tone} text={DEBIT_STATE[st].label} /></span>}
       footer={<>
-        {!isNew && <Button kind="danger" onClick={remove} className="mr-auto"><Trash2 size={14} />Supprimer</Button>}
+        {!isNew && <DeleteButton onClick={remove} className="mr-auto"><Trash2 size={14} />Supprimer</DeleteButton>}
         {error && <span role="alert" className="mr-2 text-[11px] font-semibold text-red-700">{error}</span>}
         <Button onClick={pdf} disabled={!d.supplierId}><FileDown size={14} />Fiche à envoyer</Button>
         <Button onClick={close}>Annuler</Button>
@@ -219,7 +218,7 @@ function SupplierSheet({ initial, onClose, nav }: { initial: Supplier; onClose()
     <Modal wide onClose={close} title={isNew ? 'Nouveau fournisseur' : x.name}
       subtitle={r ? <StatusBadge level={CLASS_INFO[classOf(ratingScore(r))].tone} text={`${ratingScore(r)} / 100 · ${CLASS_INFO[classOf(ratingScore(r))].label}`} /> : 'Pas encore noté'}
       footer={<>
-        {!isNew && <Button kind="danger" onClick={remove} className="mr-auto"><Trash2 size={14} />Supprimer</Button>}
+        {!isNew && <DeleteButton onClick={remove} className="mr-auto"><Trash2 size={14} />Supprimer</DeleteButton>}
         {error && <span role="alert" className="mr-2 text-[11px] font-semibold text-red-700">{error}</span>}
         <Button onClick={close}>Annuler</Button>
         <Button kind="primary" onClick={save}>Enregistrer</Button>

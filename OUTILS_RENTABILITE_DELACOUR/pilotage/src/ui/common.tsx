@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { X } from 'lucide-react';
 import type { Level } from '../domain/types';
 import type { Insight } from '../domain/base';
+import { useStore } from '../store/StoreContext';
 
 export const LEVEL_STYLE: Record<Level, { dot: string; badge: string; hex: string }> = {
   ok: { dot: 'bg-emerald-600', badge: 'bg-emerald-50 text-emerald-800 border-emerald-200', hex: '#059669' },
@@ -218,3 +219,10 @@ export function Row({ onClick, lead, title, sub, right, badge }: { onClick(): vo
 }
 
 export const SubTitle = ({ children }: { children: ReactNode }) => <h3 className="text-xs font-bold text-slate-900">{children}</h3>;
+
+// Delete button of a sheet: hidden in team view unless the settings allow the team to delete
+export function DeleteButton({ onClick, className = '', children }: { onClick(): void; className?: string; children: ReactNode }) {
+  const { teamView, state } = useStore();
+  if (teamView && !state?.params.teamCanDelete) return null;
+  return <Button kind="danger" onClick={onClick} className={className}>{children}</Button>;
+}

@@ -10,7 +10,7 @@ import { applyTeamExample } from '../../domain/teamExamples';
 import { PROCESS_IDS, processLabel } from '../../domain/base';
 import { frDate, periodOfDate } from '../../domain/periods';
 import { useStore } from '../../store/StoreContext';
-import { Button, Card, Empty, Field, inputCls, Method, Modal, NumInput, StatusBadge, SubTitle, Summary, Tile, ToolHeader } from '../common';
+import { Button, DeleteButton, Card, Empty, Field, inputCls, Method, Modal, NumInput, StatusBadge, SubTitle, Summary, Tile, ToolHeader } from '../common';
 import { FeedBox } from '../Feed';
 import type { ScreenProps } from '../screens';
 import type { Nav } from '../tools';
@@ -54,7 +54,6 @@ export function Polyvalence({ nav, focus, clearFocus }: ScreenProps) {
         <ToolHeader title="Matrice de polyvalence" text="Cliquez sur une case pour changer le niveau ; sur une compétence pour organiser sa doublure.">
           <Button kind="primary" onClick={() => setOpen(newSkill())}><Plus size={14} />Ajouter une compétence</Button>
           <Button onClick={() => setTeam(true)}><UserPlus size={14} />Équipe</Button>
-          <Button kind="ghost" onClick={() => { if (window.confirm('Remplacer les suppléances, l\'équipe, la polyvalence, les recrues et les tests de classement par des exemples ?')) update(d => applyTeamExample(d)); }}>Remplir avec des exemples</Button>
           <Button kind="ghost" onClick={() => window.print()}><Printer size={14} />Imprimer</Button>
         </ToolHeader>
         <div className="overflow-x-auto">
@@ -163,7 +162,7 @@ function SkillSheet({ initial, onClose, nav }: { initial: Skill; onClose(): void
   return (
     <Modal wide onClose={close} title={isNew ? 'Nouvelle compétence clé' : k.name} subtitle={<StatusBadge level={SKILL_RISK[risk].tone} text={`${SKILL_RISK[risk].label} · ${autonomous(withK, k).length} autonome(s)`} />}
       footer={<>
-        {!isNew && <Button kind="danger" onClick={remove} className="mr-auto"><Trash2 size={14} />Supprimer</Button>}
+        {!isNew && <DeleteButton onClick={remove} className="mr-auto"><Trash2 size={14} />Supprimer</DeleteButton>}
         {error && <span role="alert" className="mr-2 text-[11px] font-semibold text-red-700">{error}</span>}
         <Button onClick={close}>Annuler</Button>
         <Button kind="primary" onClick={save}>Enregistrer</Button>

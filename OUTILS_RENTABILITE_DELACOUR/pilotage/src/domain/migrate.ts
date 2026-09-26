@@ -139,7 +139,13 @@ export function normalize(s: State): State {
   Object.values(contacts).forEach(c => { c.category ||= 'autre'; c.email ??= EMAILS[c.id] || ''; });   // example contacts filled before e-mails existed
   const tools = emptyTools();
   const withTools = Object.fromEntries(Object.entries(tools).map(([k, v]) => [k, (s as any)[k] ?? v])) as typeof tools;
-  return { ...s, ...withTools, params: { ...tools.params, ...(s.params || {}) }, risks, contacts, scale: s.scale || DEFAULT_SCALE };
+  // checkpoints get an id, and past inspections remember which point each result belongs to
+  const equipments = Object.fromEntries(Object.entries(withTools.equipments).map(([id, e0]) => {
+    const e = { ...e0, checkpoints: e0.checkpoints.map((c, i) => ({ ...c, id: c.id || `cp${i}` })) };
+    e.inspections = e.inspections.map(i => (i.ids ? i : { ...i, ids: e.checkpoints.slice(0, i.results.length).map(c => c.id!) }));
+    return [id, e];
+  }));
+  return { ...s, ...withTools, equipments, params: { ...tools.params, ...(s.params || {}) }, risks, contacts, scale: s.scale || DEFAULT_SCALE };
 }
 
 // "Nom, rôle : 06 00 00 00 00" lines -> crisis directory entries (same line = same id, whoever converts it)

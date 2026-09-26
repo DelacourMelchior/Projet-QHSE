@@ -13,7 +13,7 @@ import { frDate, isoDate } from '../domain/periods';
 import { formatDuration, hoursOf, UNITS } from '../domain/duration';
 import { cardPdf } from '../domain/reflexPdf';
 import { useStore } from '../store/StoreContext';
-import { Button, Field, inputCls, Modal, StatusBadge } from './common';
+import { Button, DeleteButton, Field, inputCls, Modal, StatusBadge } from './common';
 import { STATUS_LABEL } from './ActionSheet';
 import { ReflexCard } from './ReflexCard';
 import { downloadFile, fileSlug } from './download';
@@ -101,7 +101,7 @@ export function RiskSheet({ initial, startStep = 0, onClose, onNewAction, onOpen
       title={isNew ? 'Nouveau risque' : r.title || 'Risque'}
       subtitle={<span className="flex flex-wrap items-center gap-1.5"><ScoreBadge r={r} className="!h-5 !w-5 !text-[11px]" />{zone ? `Criticité ${score(r)} / 16` : 'À coter'} · <StatusBadge level={st.tone} text={st.label} /></span>}
       footer={<>
-        {!isNew && <Button kind="danger" onClick={remove} className="mr-auto"><Trash2 size={14} />Supprimer</Button>}
+        {!isNew && <DeleteButton onClick={remove} className="mr-auto"><Trash2 size={14} />Supprimer</DeleteButton>}
         {error && <span role="alert" className="mr-2 text-[11px] font-semibold text-red-700">{error}</span>}
         {info && !error && <span role="status" className="mr-2 text-[11px] font-semibold text-emerald-700">{info}</span>}
         {step > 0 && <Button kind="ghost" onClick={() => setStep(step - 1)}>Précédent</Button>}

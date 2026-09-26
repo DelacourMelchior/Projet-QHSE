@@ -10,7 +10,10 @@ import { formatValue } from '../domain/numbers';
 import { legacyToolRecords } from '../domain/legacyTools';
 import { legacyLocalTools } from '../store/local';
 import { useStore } from '../store/StoreContext';
-import { toolDef, type ToolId } from './tools';
+import { TOOLS, toolDef, type ToolId } from './tools';
+import { QUESTIONS } from '../domain/commercial';
+import { flatten, unflatten } from '../store/flat';
+import { frStamp } from '../domain/base';
 import { Button, Field, inputCls, Modal } from './common';
 
 export function Settings({ onClose }: { onClose(): void }) {
@@ -23,6 +26,7 @@ export function Settings({ onClose }: { onClose(): void }) {
   const legacy = useMemo(() => legacyToolRecords(legacyLocalTools(), state!), []); // eslint-disable-line react-hooks/exhaustive-deps
   const legacyTotal = Object.values(legacy.counts).reduce((a, b) => a + b, 0);
   const fileRef = useRef<HTMLInputElement>(null);
+  const mergeRef = useRef<HTMLInputElement>(null);
   if (!state) return null;
 
   const saveSettings = () => { update(d => { d.settings = { ...s, gravityThresholds: d.settings.gravityThresholds }; }); setMsg('Hypothèses enregistrées.'); };
@@ -60,6 +64,21 @@ export function Settings({ onClose }: { onClose(): void }) {
       if (!window.confirm('Restaurer cette sauvegarde ? Les données actuelles seront remplacées.')) return;
       replace(next);
       setMsg('Sauvegarde restaurée.');
+    } catch { setMsg('Fichier illisible.'); }
+  };
+
+  // Records of another device added to this one: new or changed records win, nothing is removed
+  const mergeJson = async (f: File) => {
+    try {
+      const j = JSON.parse(await f.text());
+      if (j?.app !== 'delacour-pilotage' || !j.state) return setMsg("Ce fichier n'est pas une sauvegarde des outils.");
+      const mine = flatten(state), theirs = flatten(j.state as State);
+      const keys = Object.keys(theirs).filter(k => k !== 'settings' && k !== 'timeline' && k !== 'params' && JSON.stringify(mine[k]) !== JSON.stringify(theirs[k]));
+      if (!keys.length) return setMsg('Rien de nouveau dans ce fichier.');
+      if (!window.confirm(`Ajouter ou mettre à jour ${keys.length} élément(s) venant de ce fichier ?`)) return;
+      const merged = unflatten({ ...mine, ...Object.fromEntries(keys.map(k => [k, theirs[k]])) });
+      update(d => { Object.assign(d, merged, { settings: d.settings, timeline: d.timeline, params: d.params }); });
+      setMsg(`${keys.length} élément(s) fusionné(s).`);
     } catch { setMsg('Fichier illisible.'); }
   };
 
@@ -108,7 +127,54 @@ export function Settings({ onClose }: { onClose(): void }) {
             <Field label="Acompte à la commande (%)"><input className={inputCls} inputMode="decimal" value={params.depositPct} onChange={e => setParams({ ...params, depositPct: parseNumber(e.target.value) ?? 0 })} /></Field>
             <Field label="Visas obligatoires dès (€ HT)" hint="Commercial, technique et direction (2.1)."><input className={inputCls} inputMode="decimal" value={params.visaThreshold} onChange={e => setParams({ ...params, visaThreshold: parseNumber(e.target.value) ?? 0 })} /></Field>
           </div>
+          <div className="grid gap-3 sm:grid-cols-4">
+            <Field label="Frais généraux (%)" hint="Ajoutés au coût direct d'un devis pour le résultat après frais (2.1)."><input className={inputCls} inputMode="decimal" value={params.overheadPct ?? 0} onChange={e => setParams({ ...params, overheadPct: parseNumber(e.target.value) ?? 0 })} /></Field>
+            <Field label="Marge sur coûts variables (%)" hint="Seconde lecture du CA à refaire (5.2)."><input className={inputCls} inputMode="decimal" value={params.variableMarginPct ?? ''} onChange={e => setParams({ ...params, variableMarginPct: parseNumber(e.target.value) ?? undefined })} /></Field>
+            <Field label="Atelier 5 Pourquoi dès (€)" hint="Coût d'un défaut qui déclenche un atelier (5.3)."><input className={inputCls} inputMode="decimal" value={params.cnqTrigger ?? 500} onChange={e => setParams({ ...params, cnqTrigger: parseNumber(e.target.value) ?? 500 })} /></Field>
+            <label className="flex items-center gap-2 pt-5 text-[11px] text-slate-700"><input type="checkbox" checked={!!params.businessHours} onChange={e => setParams({ ...params, businessHours: e.target.checked })} />Délais de 24 h et 48 h comptés du lundi au vendredi</label>
+          </div>
+          <div className="space-y-1.5">
+            <span className="block text-[11px] font-semibold text-slate-700">Coût horaire par poste ou machine (sinon le coût horaire général)</span>
+            {(params.rates || []).map((r, i) => (
+              <div key={i} className="flex gap-1.5">
+                <input className={inputCls} value={r.name} placeholder="Poste ou machine (ex. : CNC 5 axes)" aria-label="Poste" onChange={e => setParams({ ...params, rates: params.rates!.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)) })} />
+                <input className={`${inputCls} w-28`} inputMode="decimal" value={r.rate} aria-label="Coût horaire" onChange={e => setParams({ ...params, rates: params.rates!.map((x, j) => (j === i ? { ...x, rate: parseNumber(e.target.value) ?? 0 } : x)) })} />
+                <Button kind="ghost" onClick={() => setParams({ ...params, rates: params.rates!.filter((_, j) => j !== i) })} aria-label="Retirer ce poste">Retirer</Button>
+              </div>
+            ))}
+            <Button onClick={() => setParams({ ...params, rates: [...(params.rates || []), { name: '', rate: params.hourlyRate }] })}><Plus size={14} />Ajouter un poste</Button>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Page d'avis en ligne (Google…)" hint="Proposée aux clients qui vous recommandent (2.4)."><input className={inputCls} value={params.reviewLink || ''} onChange={e => setParams({ ...params, reviewLink: e.target.value })} /></Field>
+            <Field label="Coordonnées imprimées sur les documents" hint="Adresse, SIRET, téléphone, e-mail (fiches de débit, PV, avenants).">
+              <input className={inputCls} value={params.company?.address || ''} placeholder="Adresse" onChange={e => setParams({ ...params, company: { address: e.target.value, siret: params.company?.siret || '', phone: params.company?.phone || '', email: params.company?.email || '' } })} />
+            </Field>
+            <Field label="SIRET"><input className={inputCls} value={params.company?.siret || ''} onChange={e => setParams({ ...params, company: { address: params.company?.address || '', siret: e.target.value, phone: params.company?.phone || '', email: params.company?.email || '' } })} /></Field>
+            <div className="grid grid-cols-2 gap-2">
+              <Field label="Téléphone"><input className={inputCls} value={params.company?.phone || ''} onChange={e => setParams({ ...params, company: { address: params.company?.address || '', siret: params.company?.siret || '', phone: e.target.value, email: params.company?.email || '' } })} /></Field>
+              <Field label="E-mail"><input className={inputCls} value={params.company?.email || ''} onChange={e => setParams({ ...params, company: { address: params.company?.address || '', siret: params.company?.siret || '', phone: params.company?.phone || '', email: e.target.value } })} /></Field>
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <span className="block text-[11px] font-semibold text-slate-700">Les 3 questions du bilan de fin d'affaire (vide = questions d'origine)</span>
+            {[0, 1, 2].map(i => <input key={i} className={inputCls} value={params.questions?.[i] || ''} placeholder={QUESTIONS[i]} aria-label={`Question ${i + 1}`} onChange={e => { const q = [...(params.questions || ['', '', ''])]; q[i] = e.target.value; setParams({ ...params, questions: q }); }} />)}
+          </div>
           <Button kind="primary" onClick={() => { if (params.hourlyRate <= 0) return setMsg('Le coût horaire doit être positif.'); update(d => { d.params = params; }); setMsg('Hypothèses des outils enregistrées.'); }}>Enregistrer les hypothèses des outils</Button>
+        </section>
+
+        <section className="space-y-2">
+          <h3 className="text-xs font-bold text-slate-900">Droits dans les outils</h3>
+          <label className="flex items-center gap-2 text-[11px] text-slate-700"><input type="checkbox" checked={!!params.teamCanDelete} onChange={e => setParams({ ...params, teamCanDelete: e.target.checked })} />En vue équipe, autoriser la suppression des fiches (sinon réservée à la direction)</label>
+          <span className="block text-[11px] font-semibold text-slate-700">Outils réservés à la direction (masqués en vue équipe)</span>
+          <div className="flex flex-wrap gap-1.5">
+            {TOOLS.map(x => {
+              const on = (params.restricted || []).includes(x.id);
+              return <button key={x.id} type="button" aria-pressed={on} onClick={() => setParams({ ...params, restricted: on ? params.restricted!.filter(y => y !== x.id) : [...(params.restricted || []), x.id] })}
+                className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${on ? 'border-delacour-primary bg-delacour-primary text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'}`}>{x.id} {x.label}</button>;
+            })}
+          </div>
+          <p className="text-[11px] text-slate-500">Données personnelles (RGPD) : noms, niveaux de compétence, résultats des tests d'autonomie et réclamations nominatives sont des données personnelles. Réservez 4.2 et 4.3 à la direction si besoin, informez les salariés de l'usage de ces outils (présentation au CSE), et supprimez les fiches des personnes parties après la durée utile. La protection réelle vient des droits du dossier partagé (dossier direction).</p>
+          <Button kind="primary" onClick={() => { update(d => { d.params = params; }); setMsg('Droits enregistrés.'); }}>Enregistrer les droits</Button>
         </section>
 
         <section className="space-y-3">
@@ -172,6 +238,24 @@ export function Settings({ onClose }: { onClose(): void }) {
           <p className="text-[11px] text-slate-500">Les sauvegardes de l'ancienne version de l'outil sont acceptées.</p>
         </section>
 
+        <section className="space-y-2">
+          <h3 className="text-xs font-bold text-slate-900">Saisies faites sur un téléphone ou un autre poste</h3>
+          <p className="text-[11px] text-slate-600">Sur un téléphone, les saisies restent sur l'appareil : exportez-les (Sauvegarde ci-dessus), déposez le fichier dans OneDrive, puis fusionnez-le ici depuis un poste connecté au dossier partagé. Les fiches nouvelles ou modifiées s'ajoutent ; rien n'est effacé.</p>
+          <Button onClick={() => mergeRef.current?.click()}><Upload size={14} />Fusionner un fichier de saisies</Button>
+          <input ref={mergeRef} type="file" accept=".json,application/json" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) mergeJson(f); e.target.value = ''; }} />
+        </section>
+
+        <section className="space-y-2">
+          <h3 className="text-xs font-bold text-slate-900">Journal des modifications</h3>
+          <p className="text-[11px] text-slate-600">Qui a créé, modifié ou supprimé quoi (400 dernières opérations).</p>
+          <ul className="max-h-60 divide-y divide-slate-100 overflow-y-auto rounded-lg border border-slate-200 text-[11px]">
+            {Object.values(state.logs || {}).sort((a, b) => (a.at < b.at ? 1 : -1)).slice(0, 150).map(l => (
+              <li key={l.id} className="flex gap-2 px-2 py-1"><span className="w-32 shrink-0 font-mono text-slate-500">{frStamp(`${l.at.slice(0, 10)}T${new Date(l.at).toTimeString().slice(0, 5)}`)}</span><span className="w-24 shrink-0 font-semibold text-slate-800">{l.by}</span><span className="min-w-0 flex-1 truncate text-slate-700">{l.what} · {KIND_NAMES[l.kind] || l.kind} {recordName(state, l.kind, l.ref)}</span></li>
+            ))}
+            {!Object.keys(state.logs || {}).length && <li className="px-2 py-2 text-slate-500">Aucune modification enregistrée.</li>}
+          </ul>
+        </section>
+
         {legacyTotal > 0 && (
           <section className="space-y-2">
             <h3 className="text-xs font-bold text-slate-900">Ancienne version des outils 2 à 5</h3>
@@ -190,4 +274,15 @@ export function Settings({ onClose }: { onClose(): void }) {
       </div>
     </Modal>
   );
+}
+
+const KIND_NAMES: Record<string, string> = {
+  action: 'action', risk: 'risque', contact: 'contact', quote: 'devis', change: 'avenant', complaint: 'réclamation', feedback: 'bilan', supplier: 'fournisseur',
+  debit: 'fiche de débit', sop: 'instruction', equipment: 'machine', delivery: 'réception', power: 'pouvoir', person: 'personne', skill: 'compétence',
+  newcomer: 'arrivant', chrono: 'test 30 s', nc: 'fiche bac rouge', analysis: 'atelier 5P', poka: 'détrompeur', kpi: 'indicateur', process: 'processus',
+};
+function recordName(s: State, kind: string, id: string): string {
+  const col: Record<string, Record<string, unknown> | undefined> = { action: s.actions, risk: s.risks, contact: s.contacts, quote: s.quotes, change: s.changes, complaint: s.complaints, feedback: s.feedbacks, supplier: s.suppliers, debit: s.debits, sop: s.sops, equipment: s.equipments, delivery: s.deliveries, power: s.powers, person: s.people, skill: s.skills, newcomer: s.newcomers, nc: s.ncs, analysis: s.analyses, poka: s.pokas, kpi: s.kpis };
+  const x = col[kind]?.[id] as Record<string, string> | undefined;
+  return x ? (x.ref || x.title || x.name || x.power || x.client || x.poste || x.defect || '') : '(supprimé)';
 }

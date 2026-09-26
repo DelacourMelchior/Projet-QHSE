@@ -8,7 +8,7 @@ import { applyOperationsExample } from '../../domain/operationsExamples';
 import { PROCESS_IDS, processLabel } from '../../domain/base';
 import { frDate, isoDate } from '../../domain/periods';
 import { useStore } from '../../store/StoreContext';
-import { Button, Card, Empty, Field, inputCls, Method, Modal, Row, StatusBadge, SubTitle, Summary, Tile, ToolHeader } from '../common';
+import { Button, DeleteButton, Card, Empty, Field, inputCls, Method, Modal, Row, StatusBadge, SubTitle, Summary, Tile, ToolHeader } from '../common';
 import { readPhoto } from '../photo';
 import { usePrintOne } from '../PrintOne';
 import type { ScreenProps } from '../screens';
@@ -47,7 +47,6 @@ export function Instructions({ focus, clearFocus }: ScreenProps) {
       <Card className="space-y-3 p-3 sm:p-4">
         <ToolHeader title="Instructions de poste" text="Une fiche A4 par poste sensible, plastifiée face à l'opérateur. Elle change dans les 48 h qui suivent un défaut au poste.">
           <Button kind="primary" onClick={() => setOpen(newSop())}><Plus size={14} />Nouvelle instruction</Button>
-          <Button kind="ghost" onClick={() => { if (window.confirm('Remplacer les fournisseurs, fiches de débit, instructions, équipements et réceptions par des exemples ?')) update(d => applyOperationsExample(d)); }}>Remplir avec des exemples</Button>
         </ToolHeader>
         <ul className="divide-y divide-slate-100">
           {all.map(x => {
@@ -123,7 +122,7 @@ function SopSheet({ initial, onClose, onPrint }: { initial: Sop; onClose(): void
     <Modal xwide onClose={close} title={isNew ? 'Nouvelle instruction de poste' : `Instruction · ${s.poste}`}
       subtitle={`${sopVersion(s)} du ${frDate(s.versionDate)} · ${processLabel(s.processId)}`}
       footer={<>
-        {!isNew && <Button kind="danger" onClick={remove} className="mr-auto"><Trash2 size={14} />Supprimer</Button>}
+        {!isNew && <DeleteButton onClick={remove} className="mr-auto"><Trash2 size={14} />Supprimer</DeleteButton>}
         {error && <span role="alert" className="mr-2 text-[11px] font-semibold text-red-700">{error}</span>}
         <Button onClick={() => valid() && onPrint(s)}><Printer size={14} />Fiche A4</Button>
         <Button onClick={close}>Annuler</Button>

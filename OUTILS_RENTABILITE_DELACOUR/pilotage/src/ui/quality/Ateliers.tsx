@@ -11,7 +11,7 @@ import { analysisPdf } from '../../domain/qualityPdf';
 import { addDays, PROCESS_IDS, processLabel } from '../../domain/base';
 import { frDate } from '../../domain/periods';
 import { useStore } from '../../store/StoreContext';
-import { Button, Card, Chips, Empty, Field, inputCls, Method, Modal, Row, StatusBadge, SubTitle, Summary, Tile, ToolHeader } from '../common';
+import { Button, DeleteButton, Card, Chips, Empty, Field, inputCls, Method, Modal, Row, StatusBadge, SubTitle, Summary, Tile, ToolHeader } from '../common';
 import { STATUS_LABEL } from '../ActionSheet';
 import { downloadFile, fileSlug } from '../download';
 import type { ScreenProps } from '../screens';
@@ -63,7 +63,6 @@ export function Ateliers({ nav, focus, clearFocus }: ScreenProps) {
       <Card className="space-y-3 p-3 sm:p-4">
         <ToolHeader title="Ateliers" text="Un atelier par problème récurrent ou coûteux. Il est clos quand le défaut ne revient plus.">
           <Button kind="primary" onClick={start}><Plus size={14} />Nouvel atelier</Button>
-          <Button kind="ghost" onClick={() => { if (window.confirm('Remplacer les fiches du bac rouge, les ateliers 5 Pourquoi et les détrompeurs par des exemples ?')) update(d => applyQualityExample(d)); }}>Remplir avec des exemples</Button>
           <Button kind="ghost" onClick={() => window.print()}><Printer size={14} />Imprimer</Button>
         </ToolHeader>
         <Chips value={filter} onChange={setFilter} items={[['open', 'En cours', openOnes.length], ['done', 'Efficaces', count('effective')], ['all', 'Tous', all.length]]} />
@@ -122,7 +121,7 @@ export function AnalysisSheet({ initial, onClose, nav }: { initial: Analysis; on
     <Modal xwide onClose={close} title={isNew ? 'Nouvel atelier 5 Pourquoi' : `Atelier ${a.ref}`}
       subtitle={<span className="flex flex-wrap items-center gap-1.5">{sourceText(state, a)} · {frDate(a.date)} <StatusBadge level={ANALYSIS_STATE[st].tone} text={ANALYSIS_STATE[st].label} /></span>}
       footer={<>
-        {!isNew && <Button kind="danger" onClick={remove} className="mr-auto"><Trash2 size={14} />Supprimer</Button>}
+        {!isNew && <DeleteButton onClick={remove} className="mr-auto"><Trash2 size={14} />Supprimer</DeleteButton>}
         {error && <span role="alert" className="mr-2 text-[11px] font-semibold text-red-700">{error}</span>}
         <Button onClick={pdf}><FileDown size={14} />Trame (PDF)</Button>
         <Button onClick={close}>Annuler</Button>

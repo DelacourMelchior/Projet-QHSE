@@ -69,7 +69,6 @@ export function Risques({ onOpenRisk, onNewRisk, onOpenDirectory }: { onOpenRisk
         <span className="mx-1 hidden h-5 w-px bg-slate-300 sm:block" />
         <Button onClick={onOpenDirectory}><BookUser size={14} />Annuaire</Button>
         <Button onClick={cardsPdf}><FileDown size={14} />Fiches réflexes (PDF)</Button>
-        <Button kind="ghost" onClick={() => { if (window.confirm('Remplacer vos risques par 9 risques d\'exemple entièrement traités ? Vos indicateurs ne changent pas.')) update(d => applyPlansBExample(d)); }} className="sm:ml-auto">Remplir avec des exemples</Button>
         <Button kind="ghost" onClick={() => window.print()} aria-label="Imprimer la cartographie"><Printer size={14} />Imprimer</Button>
       </div>
 

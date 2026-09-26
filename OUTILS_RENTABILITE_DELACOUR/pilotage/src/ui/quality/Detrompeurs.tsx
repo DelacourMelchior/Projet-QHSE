@@ -10,7 +10,7 @@ import { daysBetween, PROCESS_IDS, processLabel, sum, type Insight } from '../..
 import { formatValue } from '../../domain/numbers';
 import { frDate, isoDate } from '../../domain/periods';
 import { useStore } from '../../store/StoreContext';
-import { Button, Card, Chips, Empty, Field, inputCls, Method, Modal, NumInput, Row, StatusBadge, SubTitle, Summary, Tile, ToolHeader, YesNo } from '../common';
+import { Button, DeleteButton, Card, Chips, Empty, Field, inputCls, Method, Modal, NumInput, Row, StatusBadge, SubTitle, Summary, Tile, ToolHeader, YesNo } from '../common';
 import { downloadFile, fileSlug } from '../download';
 import type { ScreenProps } from '../screens';
 import type { Nav } from '../tools';
@@ -58,7 +58,6 @@ export function Detrompeurs({ nav, focus, clearFocus }: ScreenProps) {
       <Card className="space-y-3 p-3 sm:p-4">
         <ToolHeader title="Détrompeurs" text="Aucun dossier d'amélioration n'est clos sans le constat signé à J+30.">
           <Button kind="primary" onClick={() => setOpen(newPoka(null))}><Plus size={14} />Nouveau détrompeur</Button>
-          <Button kind="ghost" onClick={() => { if (window.confirm('Remplacer les fiches du bac rouge, les ateliers 5 Pourquoi et les détrompeurs par des exemples ?')) update(d => applyQualityExample(d)); }}>Remplir avec des exemples</Button>
           <Button kind="ghost" onClick={() => window.print()}><Printer size={14} />Imprimer</Button>
         </ToolHeader>
         <Chips value={filter} onChange={setFilter} items={[['todo', 'À suivre', all.length - c('effective')], ['effective', 'Efficaces', c('effective')], ['all', 'Tous', all.length]]} />
@@ -111,7 +110,7 @@ export function PokaSheet({ initial, onClose, nav }: { initial: Poka; onClose():
     <Modal wide onClose={close} title={isNew ? 'Nouveau détrompeur' : p.poste ? `Détrompeur · ${p.poste}` : 'Détrompeur'}
       subtitle={<span className="flex flex-wrap items-center gap-1.5">{processLabel(p.processId)} <StatusBadge level={POKA_STATE[st].tone} text={POKA_STATE[st].label} /></span>}
       footer={<>
-        {!isNew && <Button kind="danger" onClick={remove} className="mr-auto"><Trash2 size={14} />Supprimer</Button>}
+        {!isNew && <DeleteButton onClick={remove} className="mr-auto"><Trash2 size={14} />Supprimer</DeleteButton>}
         {error && <span role="alert" className="mr-2 text-[11px] font-semibold text-red-700">{error}</span>}
         <Button onClick={pdf}><FileDown size={14} />Fiche (PDF)</Button>
         <Button onClick={close}>Annuler</Button>

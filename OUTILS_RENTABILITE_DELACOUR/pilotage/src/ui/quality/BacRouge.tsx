@@ -13,7 +13,7 @@ import { formatValue } from '../../domain/numbers';
 import { periodOfDate } from '../../domain/periods';
 import { newDebit } from '../../domain/operations';
 import { useStore } from '../../store/StoreContext';
-import { Button, Card, Chips, Empty, Field, inputCls, Method, Modal, NumInput, Row, StatusBadge, SubTitle, Summary, Tile, ToolHeader } from '../common';
+import { Button, DeleteButton, Card, Chips, Empty, Field, inputCls, Method, Modal, NumInput, Row, StatusBadge, SubTitle, Summary, Tile, ToolHeader } from '../common';
 import { downloadFile } from '../download';
 import type { ScreenProps } from '../screens';
 import type { Nav } from '../tools';
@@ -65,7 +65,6 @@ export function BacRouge({ nav, focus, clearFocus }: ScreenProps) {
         <ToolHeader title="Fiches de non-conformité" text="Une fiche par défaut. La quarantaine se termine par une décision datée et visée.">
           <Button kind="primary" onClick={declare}><Plus size={14} />Déclarer un défaut</Button>
           <Button onClick={() => labels(inBin.length ? inBin : all.slice(0, 2))} title="Étiquettes des pièces en quarantaine, deux par page"><FileDown size={14} />Étiquettes (PDF)</Button>
-          <Button kind="ghost" onClick={() => { if (window.confirm('Remplacer les fiches du bac rouge, les ateliers 5 Pourquoi et les détrompeurs par des exemples ?')) update(d => applyQualityExample(d)); }}>Remplir avec des exemples</Button>
           <Button kind="ghost" onClick={() => window.print()}><Printer size={14} />Imprimer</Button>
         </ToolHeader>
         <Chips value={filter} onChange={setFilter} items={[['open', 'En quarantaine', inBin.length], ['decided', 'Décidées', all.length - inBin.length], ['all', 'Toutes', all.length]]} />
@@ -147,7 +146,7 @@ export function NcSheet({ initial, onClose, nav }: { initial: Nc; onClose(): voi
     <Modal wide onClose={close} title={isNew ? 'Déclarer un défaut' : `Fiche ${n.ref}`}
       subtitle={<span className="flex flex-wrap items-center gap-1.5">{n.ref} · isolé le {frStamp(n.at)} <StatusBadge level={NC_STATE[st].tone} text={NC_STATE[st].label} /></span>}
       footer={<>
-        {!isNew && <Button kind="danger" onClick={remove} className="mr-auto"><Trash2 size={14} />Supprimer</Button>}
+        {!isNew && <DeleteButton onClick={remove} className="mr-auto"><Trash2 size={14} />Supprimer</DeleteButton>}
         {error && <span role="alert" className="mr-2 text-[11px] font-semibold text-red-700">{error}</span>}
         <Button onClick={label}><FileDown size={14} />Étiquette</Button>
         <Button onClick={close}>Annuler</Button>

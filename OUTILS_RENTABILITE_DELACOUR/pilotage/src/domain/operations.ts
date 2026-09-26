@@ -1,6 +1,7 @@
 // Tools 3.1 to 3.4: supplier rating and 48 h debit notes, visual work instructions, weekly sensory routine
 // and survival cabinet, self-inspection at milestones and acceptance report (95/5 rule). Pure functions, covered by operations.test.ts.
 import type { Debit, Delivery, Equipment, Params, Sop, State, Supplier, SupplierCategory, SupplierRating } from './types';
+import { changeState } from './commercial';
 import { addDays, daysBetween, hoursCost, nextRef, sum, type Insight } from './base';
 import { isoDate } from './periods';
 import { formatValue } from './numbers';
@@ -57,6 +58,23 @@ export const newDebit = (s: State, supplierId = '', today = new Date()): Debit =
   reworkHours: null, otherCost: null, sentAt: '', answer: '', recovered: null, recoveredAt: '',
 });
 
+// Yearly score proposed from the facts of the last 12 months: debit notes (quality), late receptions (delays), answers (service)
+export function proposedRating(s: State, sup: Supplier, today = new Date()): { quality: number; delay: number | null; service: number; basis: string } {
+  const since = isoDate(new Date(today.getFullYear() - 1, today.getMonth(), today.getDate()));
+  const ds = Object.values(s.debits).filter(d => d.supplierId === sup.id && d.date >= since);
+  const rc = (sup.receipts || []).filter(r => r.date >= since);
+  const late = rc.filter(r => r.promised && r.received && r.received > r.promised).length;
+  const refused = ds.filter(d => d.answer === 'refused').length;
+  const slow = ds.filter(d => d.sentAt && !d.answer && (daysBetween(d.sentAt, today) ?? 0) > 15).length;
+  return {
+    quality: Math.max(0, 40 - 8 * ds.length),
+    delay: rc.length ? Math.round(40 * (rc.length - late) / rc.length) : null,
+    service: Math.max(0, 20 - 5 * refused - 3 * slow),
+    basis: `${ds.length} fiche(s) de débit, ${rc.length ? `${late} réception(s) en retard sur ${rc.length}` : 'aucune réception suivie'}, ${refused} refus d'avoir sur 12 mois`,
+  };
+}
+export const lateReceipts = (sup: Supplier) => (sup.receipts || []).filter(r => r.promised && r.received && r.received > r.promised);
+
 export function supplierSummary(s: State, today = new Date()) {
   const y = String(today.getFullYear());
   const debits = Object.values(s.debits).filter(d => d.date.startsWith(y));
@@ -83,6 +101,10 @@ export function supplierInsights(s: State, today = new Date()): Insight[] {
   if (c.length) out.push({ key: 'c', tone: 'bad', title: 'Fournisseur en classe C', text: `${names(c, x => x.name)} : plan de progrès à exiger, ou second fournisseur à référencer${c.some(x => x.strategic) ? ' (fournisseur unique : voir les Plans B, outil 1.2)' : ''}.` });
   const acc = Object.values(s.debits).filter(d => debitState(d, today) === 'accepted');
   if (acc.length) out.push({ key: 'acc', tone: 'warn', title: 'Avoir à recevoir', text: `${names(acc, d => d.ref)} : accepté mais pas encore reçu. Vérifier la prochaine facture.` });
+  const cert = Object.values(s.suppliers).filter(x => x.certRequired && (x.receipts || []).some(r => r.certOk === false));
+  if (cert.length) out.push({ key: 'cert', tone: 'bad', title: 'Certificat matière manquant', text: `${names(cert, x => x.name)} : matière critique reçue sans certificat. La bloquer jusqu'à réception du certificat.` });
+  const nofollow = Object.values(s.debits).filter(d => debitState(d, today) === 'accepted' && (daysBetween(d.followAt || d.sentAt, today) ?? 0) > 30);
+  if (nofollow.length) out.push({ key: 'follow', tone: 'warn', title: 'Avoir à relancer', text: `${names(nofollow, d => d.ref)} : accepté depuis plus de 30 jours, toujours pas reçu.` });
   const due = Object.values(s.suppliers).filter(x => ratingDue(x, today));
   if (due.length) out.push({ key: 'due', tone: 'warn', title: 'Notation annuelle à faire', text: `${names(due, x => x.name)}.` });
   return out;
@@ -124,6 +146,21 @@ export const DEFAULT_CHECKPOINTS = [
   { label: 'Copeaux et fuites au sol', criterion: 'Bacs vidés, aucun suintement' },
   { label: 'Arrêts d\'urgence et carters', criterion: "Coupure immédiate à l'ouverture de la porte" },
 ];
+// Periodic and regulatory checks (the regulatory ones engage the manager)
+export const LEGAL_TASKS: { label: string; everyDays: number }[] = [
+  { label: 'Vérification générale périodique des appareils de levage', everyDays: 182 },
+  { label: 'Vérification périodique des installations électriques', everyDays: 365 },
+  { label: 'Vérification des extincteurs', everyDays: 365 },
+  { label: 'Vérification des compresseurs et équipements sous pression', everyDays: 365 },
+  { label: 'Contrôle des portes et portails automatiques', everyDays: 182 },
+];
+export const taskDue = (t: { everyDays: number; lastDone: string }) => (t.lastDone ? addDays(t.lastDone, t.everyDays) : isoDate(new Date()));
+// Breakdowns of the last 12 months
+export function downtime(e: Equipment, today = new Date()) {
+  const since = isoDate(new Date(today.getFullYear() - 1, today.getMonth(), today.getDate()));
+  const bs = (e.breakdowns || []).filter(b => b.date >= since);
+  return { count: bs.length, hours: sum(bs.map(b => b.hours)), cost: sum(bs.map(b => b.cost)) };
+}
 export const newEquipment = (): Equipment => ({
   id: uid('eq'), name: '', location: '', operator: '', manager: '', riskId: '', checkpoints: DEFAULT_CHECKPOINTS.map(c => ({ ...c })), inspections: [], parts: [],
 });
@@ -140,7 +177,18 @@ export function inspectionState(e: Equipment, today = new Date()): InspectionSta
   return age < 7 ? 'ok' : age <= 14 ? 'due' : 'late';
 }
 // Points found out of order at the last inspection (fixed when the next inspection finds them in order)
-export const anomalies = (e: Equipment) => { const l = lastInspection(e); return l ? e.checkpoints.filter((_, i) => l.results[i] === 'ko') : []; };
+// Open anomalies: written at an inspection, closed explicitly once repaired (older data: those of the last inspection)
+export const anomalies = (e: Equipment): { label: string; id?: string; date?: string }[] => {
+  if (e.anomalies) return e.anomalies.filter(a => !a.closedAt);
+  const l = lastInspection(e);
+  return l ? e.checkpoints.filter((_, i) => l.results[i] === 'ko') : [];
+};
+// Result of a checkpoint at an inspection, found by the checkpoint id (so removing a point does not shift the history)
+export function resultOf(e: Equipment, i: { results: ('ok' | 'ko')[]; ids?: string[] }, cpIndex: number): 'ok' | 'ko' | undefined {
+  const cp = e.checkpoints[cpIndex];
+  if (i.ids && cp.id) { const j = i.ids.indexOf(cp.id); return j < 0 ? undefined : i.results[j]; }
+  return i.results[cpIndex];
+}
 export const lowParts = (e: Equipment) => e.parts.filter(p => p.stock < p.min);
 // Share of the last 12 weeks with an inspection
 export function routineRate(e: Equipment, today = new Date()): number {
@@ -151,9 +199,13 @@ export function equipmentInsights(s: State, today = new Date()): Insight[] {
   const out: Insight[] = [];
   const eqs = Object.values(s.equipments);
   const low = eqs.flatMap(e => lowParts(e).map(p => ({ e, p })));
-  if (low.length) out.push({ key: 'low', tone: 'bad', title: 'Armoire de survie incomplète', text: `${names(low, x => `${x.p.name} (${x.e.name}, ${x.p.stock} pour ${x.p.min})`)} : commander tout de suite, le délai compte.` });
+  if (low.some(x => !x.p.orderedAt)) out.push({ key: 'low', tone: 'bad', title: 'Armoire de survie incomplète', text: `${names(low.filter(x => !x.p.orderedAt), x => `${x.p.name} (${x.e.name}, ${x.p.stock} pour ${x.p.min})`)} : commander tout de suite, le délai compte.` });
   const ano = eqs.filter(e => anomalies(e).length);
   if (ano.length) out.push({ key: 'ano', tone: 'bad', title: 'Anomalie relevée', text: `${names(ano, e => `${e.name} : ${anomalies(e).map(c => c.label.toLowerCase()).join(', ')}`)}. Traiter avant la casse.` });
+  const legal = eqs.flatMap(e => (e.tasks || []).filter(t => (daysBetween(taskDue(t), today) ?? -1) >= 0).map(t => ({ e, t })));
+  if (legal.length) out.push({ key: 'tasks', tone: legal.some(x => x.t.legal) ? 'bad' : 'warn', title: 'Contrôles périodiques échus', text: `${names(legal, x => `${x.t.label} (${x.e.name})`)}${legal.some(x => x.t.legal) ? ' : obligation réglementaire.' : '.'}` });
+  const down = eqs.map(e => ({ e, d: downtime(e, today) })).filter(x => x.d.count);
+  if (down.length) out.push({ key: 'down', tone: 'warn', title: 'Pannes sur 12 mois', text: `${names(down, x => `${x.e.name} : ${x.d.count} panne(s), ${x.d.hours} h d'arrêt${x.d.cost ? `, ${formatValue(x.d.cost, '€')}` : ''}`)}.` });
   const late = eqs.filter(e => ['late', 'never'].includes(inspectionState(e, today)));
   if (late.length) out.push({ key: 'late', tone: 'warn', title: 'Routine du lundi manquée', text: `${names(late, e => e.name)} : pas d'inspection depuis plus de 2 semaines.` });
   const noRisk = eqs.filter(e => !s.risks[e.riskId]);
@@ -168,6 +220,28 @@ export const DEFAULT_MILESTONES = [
   { label: 'Finition', point: 'Épaisseur et adhérence de la peinture', requirement: 'Épaisseur au moins 80 microns' },
   { label: 'Libération finale', point: 'Propreté, accessoires, emballage', requirement: 'Notice jointe, aucune rayure' },
 ];
+export const MILESTONE_TEMPLATES: { name: string; milestones: { label: string; point: string; requirement: string }[] }[] = [
+  { name: 'Fabrication', milestones: DEFAULT_MILESTONES },
+  { name: 'Chantier', milestones: [
+    { label: 'Implantation', point: 'Cotes, alignements, niveaux', requirement: 'Conformes au plan d\'exécution' },
+    { label: 'Pose', point: 'Fixations, aplomb, étanchéité', requirement: 'Selon notice et DTU' },
+    { label: 'Finitions', point: 'Aspect, joints, retouches', requirement: 'Aucun défaut visible à 1 m' },
+    { label: 'Nettoyage et réception', point: 'Chantier propre, notices remises', requirement: 'Zone libérée, déchets évacués' },
+  ] },
+  { name: 'Prestation', milestones: [
+    { label: 'Cadrage', point: 'Besoin et livrables validés', requirement: 'Compte rendu signé' },
+    { label: 'Réalisation', point: 'Travaux conformes au cahier des charges', requirement: 'Revue à mi-parcours' },
+    { label: 'Relecture', point: 'Contrôle par un second intervenant', requirement: 'Aucune remarque bloquante' },
+    { label: 'Livraison', point: 'Livrables remis et expliqués', requirement: 'Accusé de réception du client' },
+  ] },
+];
+export const templatesOf = (p: Params) => [...MILESTONE_TEMPLATES, ...(p.milestoneTemplates || [])];
+// Invoice amount: the quote plus its accepted change orders
+export function amountFromQuote(s: State, quoteId: string): number | null {
+  const q = s.quotes[quoteId];
+  if (!q) return null;
+  return (q.amount || 0) + sum(Object.values(s.changes).filter(c => c.quoteId === quoteId && ['accepted', 'invoiced'].includes(changeState(c))).map(c => c.price));
+}
 export const MAX_RETENTION = 5;
 export const LIFT_DAYS = 7;
 export const newDelivery = (): Delivery => ({

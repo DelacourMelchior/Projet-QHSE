@@ -2,7 +2,7 @@
 // 19 tools in 5 processes (see tools.ts). Actions is the single action register, filtered on the current process.
 // Tool 1.1 has two screens (Indicateurs, Saisie); every other tool is one screen with its own sheets.
 import { useEffect, useState } from 'react';
-import { ChevronLeft, ChevronRight, Eye, EyeOff, FolderSync, House, ListChecks, SlidersHorizontal } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Eye, EyeOff, FolderSync, House, ListChecks, ListTodo, Lock, SlidersHorizontal } from 'lucide-react';
 import type { Action, Risk } from '../domain/types';
 import { newRisk } from '../domain/risk';
 import { isoDate } from '../domain/periods';
@@ -22,10 +22,13 @@ import { Risques } from './Risques';
 import { RiskSheet } from './RiskSheet';
 import { Annuaire } from './Annuaire';
 import { Home } from './Home';
+import { MesTaches } from './MesTaches';
+import { allTasks } from '../domain/tasks';
+import { daysBetween } from '../domain/base';
 import { SCREENS } from './screens';
 import { actionTool, hashOf, PROCESSES, toolDef, toolOfHash, toolsOf, type Nav, type NewActionInit, type ProcessKey, type ToolId } from './tools';
 
-type View = ToolId | 'home' | 'saisir' | 'actions';
+type View = ToolId | 'home' | 'saisir' | 'actions' | 'taches';
 const MONTHLY: View[] = ['1.1', '5.2'];
 
 export function App() {
@@ -39,7 +42,7 @@ export function App() {
   const [settings, setSettings] = useState(false);
   const [focus, setFocus] = useState('');
 
-  const title = view === 'home' ? 'Outils' : view === 'saisir' ? 'Saisie du mois' : view === 'actions' ? 'Actions' : toolDef(view).title;
+  const title = view === 'home' ? 'Outils' : view === 'saisir' ? 'Saisie du mois' : view === 'actions' ? 'Actions' : view === 'taches' ? 'Mes tâches' : toolDef(view).title;
   useEffect(() => { document.title = `Delacour · ${title}`; }, [title]);
   // back and forward buttons of the browser, links between tools
   useEffect(() => {
@@ -53,8 +56,8 @@ export function App() {
   const go = (v: View, p = proc) => {
     setViewState(v);
     setProc(p);
-    const hash = v === 'home' ? '#accueil' : v === 'saisir' || v === 'actions' ? '' : hashOf(v);
-    if (v !== 'saisir' && v !== 'actions') window.history.pushState(null, '', hash || window.location.pathname + window.location.search);
+    const hash = v === 'home' ? '#accueil' : v === 'saisir' || v === 'actions' || v === 'taches' ? '' : hashOf(v);
+    if (v !== 'saisir' && v !== 'actions' && v !== 'taches') window.history.pushState(null, '', hash || window.location.pathname + window.location.search);
     window.scrollTo(0, 0);
   };
   const openAction = (id: string) => { setKpiOpen(null); setRisk(null); setAction(state.actions[id]); };
@@ -67,7 +70,9 @@ export function App() {
   const forcedTeam = folder.status === 'connected' && !folder.hasDirection;
   const late = Object.values(state.actions).filter(a => isOverdue(a) && toolDef(actionTool(a)).process === proc).length;
 
-  const tabs: { id: View; label: string; badge?: { n: number; tone: string } }[] = view === 'home' ? [] : [
+  const myLate = allTasks(state).filter(t => t.who.toLowerCase() === store.author.trim().toLowerCase() && t.due && (daysBetween(t.due, new Date()) ?? 0) > 0).length;
+  const restricted = (id: string) => teamView && (state.params.restricted || []).includes(id);
+  const tabs: { id: View; label: string; badge?: { n: number; tone: string } }[] = view === 'home' || view === 'taches' ? [] : [
     ...toolsOf(proc).flatMap(t => {
       const b = toolBadge(state, t.id, period);
       const tab = { id: t.id as View, label: t.label, badge: b.n ? { n: b.n, tone: b.tone === 'alert' ? 'bg-red-600' : b.tone === 'warn' ? 'bg-amber-500' : 'bg-slate-500' } : undefined };
@@ -77,7 +82,7 @@ export function App() {
     }),
     { id: 'actions', label: 'Actions', badge: late ? { n: late, tone: 'bg-red-600' } : undefined },
   ];
-  const Screen = view !== 'home' && view !== 'saisir' && view !== 'actions' ? SCREENS[view] : undefined;
+  const Screen = view !== 'home' && view !== 'saisir' && view !== 'actions' && view !== 'taches' && !restricted(view) ? SCREENS[view] : undefined;
 
   return (
     <div className="min-h-screen">
@@ -114,6 +119,11 @@ export function App() {
           </div>
 
           <div className={`flex items-center gap-1.5 print:hidden ${MONTHLY.includes(view) ? '' : 'ml-auto'}`}>
+            <button type="button" onClick={() => go('taches')} aria-pressed={view === 'taches'} title="Mes tâches : tout ce qu'il y a à faire, par échéance"
+              className={`relative flex items-center gap-1.5 rounded-md border border-white/20 px-2 py-1.5 text-xs font-semibold hover:bg-white/10 ${view === 'taches' ? 'bg-white/15' : ''}`}>
+              <ListTodo size={15} /><span className="hidden md:inline">Mes tâches</span>
+              {myLate > 0 && <span className="rounded-full bg-red-600 px-1.5 text-[11px] font-bold text-white">{myLate}</span>}
+            </button>
             <button type="button" disabled={forcedTeam} onClick={() => setTeamView(!teamView)} aria-pressed={teamView}
               title={forcedTeam ? "Vous n'avez pas accès au dossier direction" : teamView ? 'Vue équipe : montants confidentiels masqués' : 'Vue direction : tout est visible'}
               className="flex items-center gap-1.5 rounded-md border border-white/20 px-2 py-1.5 text-xs font-semibold hover:bg-white/10 disabled:opacity-60">
@@ -145,13 +155,15 @@ export function App() {
       </header>
 
       <main className="mx-auto max-w-7xl px-3 py-4 sm:px-6">
-        {teamView && view !== 'home' && view !== '1.3' && <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-900 print:hidden">Vue équipe : les montants confidentiels (chiffre d'affaires, marge, trésorerie, coûts des devis et des arrêts…) sont masqués.</p>}
+        {teamView && view !== 'home' && view !== 'taches' && view !== '1.3' && <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-900 print:hidden">Vue équipe : les montants confidentiels (chiffre d'affaires, marge, trésorerie, coûts des devis et des arrêts…) sont masqués.</p>}
         {view === 'home' && <Home nav={nav} />}
-        {view === '1.1' && <Piloter onOpenKpi={setKpiOpen} onNewAction={kpiId => startAction({ kpiId })} onOpenAction={openAction} goSaisir={() => go('saisir')} />}
+        {view === 'taches' && <MesTaches nav={nav} />}
+        {view !== 'home' && view !== 'taches' && restricted(view) && <p className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white p-6 text-xs text-slate-600"><Lock size={16} />Outil réservé à la direction (Réglages, droits des outils).</p>}
+        {view === '1.1' && !restricted('1.1') && <Piloter onOpenKpi={setKpiOpen} onNewAction={kpiId => startAction({ kpiId })} onOpenAction={openAction} goSaisir={() => go('saisir')} />}
         {view === 'saisir' && <Saisir done={() => go('1.1')} />}
         {view === 'actions' && <Agir key={proc} onOpenAction={openAction} onNewAction={startAction} onOpenRisk={id => openRisk(id, 2)} defaultScope={proc} />}
-        {view === '1.2' && <Risques onOpenRisk={openRisk} onNewRisk={() => setRisk({ r: newRisk(state.processes[0]?.id || 'P1'), step: 0 })} onOpenDirectory={() => go('1.3')} />}
-        {view === '1.3' && <Annuaire />}
+        {view === '1.2' && !restricted('1.2') && <Risques onOpenRisk={openRisk} onNewRisk={() => setRisk({ r: newRisk(state.processes[0]?.id || 'P1'), step: 0 })} onOpenDirectory={() => go('1.3')} />}
+        {view === '1.3' && !restricted('1.3') && <Annuaire />}
         {Screen && <Screen key={view} nav={nav} focus={focus} clearFocus={() => setFocus('')} />}
       </main>
 

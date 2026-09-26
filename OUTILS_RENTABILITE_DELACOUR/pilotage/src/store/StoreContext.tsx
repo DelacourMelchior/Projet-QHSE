@@ -4,6 +4,7 @@ import type { Period, State } from '../domain/types';
 import { lastFilledPeriod, timelinePeriods } from '../domain/engine';
 import { normalize } from '../domain/migrate';
 import { clearLocal, loadLocal, pref, saveLocal } from './local';
+import { changedRecords, flatten } from './flat';
 import {
   askPermission, folderSupported, forgetFolder, FolderSession, hasPermission, initDataFolder, isDataFolder,
   pickFolder, rememberFolder, rememberedFolder,
@@ -174,11 +175,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
   }, [saveToFolder]);
 
+  const authorRef = useRef(author);
+  authorRef.current = author;
   const update = useCallback((fn: (d: State) => void) => {
     setState(prev => {
       if (!prev) return prev;
       const next = structuredClone(prev);
       fn(next);
+      logChanges(prev, next, authorRef.current || 'anonyme');
       persist(next);
       return next;
     });
@@ -196,4 +200,20 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     folder, connectFolder, reconnectFolder, disconnectFolder, refresh,
   };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
+}
+
+// Journal: one line per record created, changed or deleted, the 400 most recent kept
+const MAX_LOG = 400;
+function logChanges(prev: State, next: State, by: string) {
+  const changes = changedRecords(flatten(prev), flatten(next));
+  if (!changes.length) return;
+  const at = new Date().toISOString();
+  next.logs ||= {};
+  changes.forEach((c, i) => {
+    const [kind, ref] = c.key.split('|');
+    const id = `log_${Date.now().toString(36)}${i}${Math.random().toString(36).slice(2, 5)}`;
+    next.logs[id] = { id, at, by, kind, ref, what: c.what };
+  });
+  const all = Object.values(next.logs).sort((x, y) => (x.at < y.at ? 1 : -1));
+  all.slice(MAX_LOG).forEach(x => { delete next.logs[x.id]; });
 }

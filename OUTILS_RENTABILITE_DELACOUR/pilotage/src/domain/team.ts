@@ -26,13 +26,25 @@ export const POWER_STATE: Record<PowerState, { label: string; tone: 'ok' | 'warn
   unpracticed: { label: 'Pratique à refaire', tone: 'warn' }, soon: { label: 'Pratique à planifier', tone: 'warn' }, ok: { label: 'Suppléance prête', tone: 'ok' },
 };
 // Days before the practice of a deputy expires (negative when expired, null when never practised)
-export const practiceLeft = (date: string, today = new Date()) => { const d = daysBetween(date, today); return d === null ? null : PRACTICE_DAYS - d; };
+export const practiceLeft = (date: string, today = new Date(), period = PRACTICE_DAYS) => { const d = daysBetween(date, today); return d === null ? null : period - d; };
+// Every deputy of a power: the two main ones, then the others (external people included)
+export const powerDeputies = (p: Power) => [...p.deputies.map((name, i) => ({ name, practiced: p.practiced[i] || '' })), ...(p.extra || []).map((name, i) => ({ name, practiced: p.extraPracticed?.[i] || '' }))].filter(x => x.name.trim());
 export function powerState(p: Power, today = new Date()): PowerState {
-  const deps = p.deputies.map((d, i) => ({ d: d.trim(), left: practiceLeft(p.practiced[i], today) })).filter(x => x.d);
+  const deps = powerDeputies(p).map(x => ({ d: x.name.trim(), left: practiceLeft(x.practiced, today, p.periodDays || PRACTICE_DAYS) }));
   if (!deps.length) return 'no_deputy';
   if (deps.length < 2) return 'one_deputy';
-  if (deps.some(x => x.left === null || x.left < 0)) return 'unpracticed';
+  // two deputies practised in time are enough, even with more listed
+  const fresh = deps.filter(x => x.left !== null && x.left >= 0);
+  if (fresh.length < 2) return 'unpracticed';
+  if (deps.length > 2) return fresh.filter(x => x.left! > 30).length >= 2 ? 'ok' : 'soon';
   return deps.some(x => x.left! <= 30) ? 'soon' : 'ok';
+}
+// The day X is absent: the powers X holds and who can do them
+export function absenceView(s: State, name: string, today = new Date()) {
+  const n = name.trim().toLowerCase();
+  return Object.values(s.powers).filter(p => p.holder.trim().toLowerCase() === n).map(p => ({
+    power: p, ready: powerDeputies(p).filter(d => { const l = practiceLeft(d.practiced, today, p.periodDays || PRACTICE_DAYS); return l !== null && l >= 0 && d.name.trim().toLowerCase() !== n; }),
+  }));
 }
 export const envelopeState = (e: Envelope, today = new Date()): 'never' | 'due' | 'ok' => {
   if (!e.checkedAt) return 'never';
@@ -55,6 +67,8 @@ export function powerInsights(s: State, today = new Date()): Insight[] {
   if (prac.length) out.push({ key: 'prac', tone: 'warn', title: 'Suppléant à entraîner', text: `${names(prac, p => p.power)} : une demi-journée par an où le suppléant fait réellement l'acte.` });
   const env = envelopeState(s.envelope, today);
   if (env !== 'ok') out.push({ key: 'env', tone: 'warn', title: 'Enveloppe des accès', text: env === 'never' ? "Aucune vérification enregistrée : codes et mots de passe sous pli scellé, à vérifier chaque semestre." : "Vérification de plus de 6 mois : codes à jour ? suppléants toujours à l'aise avec les outils ?" });
+  const deleg = ps.filter(p => p.processId === 'P1' && !(p.delegationSigned && p.bankInformed));
+  if (deleg.length) out.push({ key: 'deleg', tone: 'warn', title: 'Délégation écrite à faire', text: `${names(deleg, p => p.power)} : délégation de signature signée et banque informée, sinon le suppléant ne pourra pas agir.` });
   const ov = overloaded(s);
   if (ov.length) out.push({ key: 'over', tone: 'warn', title: 'Titulaire de plusieurs pouvoirs', text: `${ov.map(x => `${x.name} (${x.n})`).join(', ')} : son absence arrête plusieurs processus à la fois.` });
   return out;
@@ -67,13 +81,37 @@ export const LEVELS: { level: SkillLevel; label: string; short: string }[] = [
 ];
 export const activePeople = (s: State) => Object.values(s.people).filter(p => p.active).sort((a, b) => a.name.localeCompare(b.name));
 export const autonomous = (s: State, k: Skill) => activePeople(s).filter(p => (k.levels[p.id] ?? 0) >= 3);
-export type SkillRisk = 'none' | 'single' | 'ok';
-export const SKILL_RISK: Record<SkillRisk, { label: string; tone: 'ok' | 'alert' }> = {
-  none: { label: 'Personne d\'autonome', tone: 'alert' }, single: { label: 'Homme-clé', tone: 'alert' }, ok: { label: 'Doublé', tone: 'ok' },
+export type SkillRisk = 'none' | 'single' | 'short' | 'ok';
+export const SKILL_RISK: Record<SkillRisk, { label: string; tone: 'ok' | 'warn' | 'alert' }> = {
+  none: { label: 'Personne d\'autonome', tone: 'alert' }, single: { label: 'Homme-clé', tone: 'alert' }, short: { label: 'Doublure insuffisante', tone: 'warn' }, ok: { label: 'Doublé', tone: 'ok' },
 };
-export const skillRisk = (s: State, k: Skill): SkillRisk => { const n = autonomous(s, k).length; return n === 0 ? 'none' : n === 1 ? 'single' : 'ok'; };
+export const skillRisk = (s: State, k: Skill): SkillRisk => { const n = autonomous(s, k).length; return n === 0 ? 'none' : n === 1 ? 'single' : n < (k.required || 2) ? 'short' : 'ok'; };
+export const LEVEL_CRITERIA = [
+  'N\'a jamais pratiqué, ou seulement observé.',
+  'Fait les tâches simples avec quelqu\'un à côté.',
+  'Fait seul le travail courant ; appelle pour les cas difficiles.',
+  'Fait seul tout le travail du poste, y compris les réglages et les cas difficiles.',
+  'Forme les autres et fait évoluer la méthode.',
+];
+// People absent on a date (holidays, leave)
+const absentOn = (p: Person, day: string) => (p.absences || []).some(a => a.from <= day && day <= a.to);
+// Planned absences that leave a skill under its required number of autonomous people, within 120 days
+export function absenceGaps(s: State, today = new Date()) {
+  const out: { skill: Skill; from: string; available: number }[] = [];
+  Object.values(s.skills).forEach(k => {
+    const aut = autonomous(s, k);
+    for (let i = 0; i < 120; i++) {
+      const day = addDays(isoDate(today), i);
+      const n = aut.filter(p => !absentOn(p, day)).length;
+      if (aut.length >= (k.required || 2) && n < (k.required || 2)) { out.push({ skill: k, from: day, available: n }); break; }
+    }
+  });
+  return out;
+}
+export const staleLevels = (s: State, today = new Date()) => Object.values(s.skills).filter(k => Object.entries(k.levels).some(([id, l]) => l >= 3 && s.people[id]?.active && (daysBetween(k.levelDates?.[id] || '', today) ?? 9999) > 365));
 export const coveragePct = (s: State) => {
-  const ks = Object.values(s.skills);
+  const all = Object.values(s.skills);
+  const ks = all.some(k => k.critical) ? all.filter(k => k.critical) : all;   // the critical skills when some are flagged
   return ks.length ? Math.round(ks.filter(k => skillRisk(s, k) === 'ok').length / ks.length * 100) : null;
 };
 // People who are the only autonomous one on at least one skill
@@ -103,6 +141,10 @@ export function skillInsights(s: State): Insight[] {
   if (noPlan.length) out.push({ key: 'plan', tone: 'warn', title: 'Doublure à organiser', text: `${names(noPlan, k => k.name)} : choisir un tuteur, un apprenant et un créneau fixe.` });
   const late = ks.filter(k => k.plan?.target && (daysBetween(k.plan.target, new Date()) ?? -1) > 0 && skillRisk(s, k) !== 'ok');
   if (late.length) out.push({ key: 'late', tone: 'warn', title: 'Doublure en retard', text: `${names(late, k => k.name)} : date cible dépassée sans passage au niveau 3.` });
+  const gaps = absenceGaps(s);
+  if (gaps.length) out.push({ key: 'gaps', tone: 'warn', title: 'Absences prévues', text: `${names(gaps, g => `${g.skill.name} le ${g.from.slice(8, 10)}/${g.from.slice(5, 7)} (${g.available} autonome(s))`)} : décaler une absence ou accélérer une doublure.` });
+  const stale = staleLevels(s);
+  if (stale.length) out.push({ key: 'stale', tone: 'warn', title: 'Niveaux à réévaluer', text: `${names(stale, k => k.name)} : évaluation de plus d'un an.` });
   const noRisk = single.filter(k => !Object.values(s.risks).some(r => r.resource.includes(k.name)));
   if (noRisk.length && single.length) out.push({ key: 'risk', tone: 'warn', title: 'Risque à inscrire dans les Plans B', text: `${names(noRisk, k => k.name)} : l'absence de la personne clé est un risque vital (outil 1.2).` });
   return out;
@@ -118,6 +160,15 @@ export const CHECKLIST: { key: string; stage: string; label: string }[] = [
   { key: 'practice', stage: 'Semaine 2 : prise en main', label: 'Tâches courantes sous supervision légère' },
   { key: 'review', stage: 'Semaine 2 : prise en main', label: 'Questions et retouches revues avec le tuteur' },
 ];
+// Legal and practical steps the company can add to its checklist (settings)
+export const EXTRA_STEPS: { key: string; stage: string; label: string; legal?: boolean }[] = [
+  { key: 'dpae', stage: 'Avant l\'arrivée', label: 'Déclaration préalable à l\'embauche faite (sauf intérim)', legal: true },
+  { key: 'vip', stage: 'Avant l\'arrivée', label: 'Visite d\'information et de prévention planifiée', legal: true },
+  { key: 'renforcee', stage: 'Jour 1 : accueil et sécurité', label: 'Formation renforcée à la sécurité (intérimaire ou CDD sur poste à risques)', legal: true },
+  { key: 'acces', stage: 'Jour 1 : accueil et sécurité', label: 'Badge, clés, accès informatique remis' },
+];
+export const DOCS = ['Règlement intérieur', 'Livret sécurité', 'Instruction du poste (3.2)', 'Organigramme et contacts'];
+export const checklistOf = (s: Pick<State, 'params'>) => s.params.welcome?.length ? s.params.welcome : CHECKLIST;
 export const TEST = [
   'Montre-moi la fiche du poste et explique-moi les points de contrôle et de sécurité.',
   'Montre-moi le piège à éviter qui donne un rebut ou une non-conformité.',
@@ -125,7 +176,7 @@ export const TEST = [
 ];
 export const TEST_DAYS = 15;
 export const KIND_LABEL: Record<Newcomer['kind'], string> = { cdi: 'CDI', cdd: 'CDD', interim: 'Intérim', alternance: 'Alternance' };
-export const testDate = (n: Newcomer) => (n.arrival ? addDays(n.arrival, TEST_DAYS) : '');
+export const testDate = (n: Newcomer) => (n.arrival ? addDays(n.arrival, n.testDays || TEST_DAYS) : '');
 export const testPassed = (n: Newcomer) => n.test.answers.length === 3 && n.test.answers.every(a => a === true);
 export type NewcomerState = 'welcome' | 'tutoring' | 'test_due' | 'failed' | 'to_authorize' | 'autonomous';
 export const NEWCOMER_STATE: Record<NewcomerState, { label: string; tone: 'ok' | 'warn' | 'alert' | 'pending' }> = {
@@ -133,11 +184,11 @@ export const NEWCOMER_STATE: Record<NewcomerState, { label: string; tone: 'ok' |
   test_due: { label: 'Test d\'autonomie à faire', tone: 'warn' }, failed: { label: 'Test à repasser', tone: 'alert' },
   to_authorize: { label: 'Autorisation à signer', tone: 'warn' }, autonomous: { label: 'Autonome', tone: 'ok' },
 };
-export function newcomerState(n: Newcomer, today = new Date()): NewcomerState {
+export function newcomerState(n: Newcomer, today = new Date(), list = CHECKLIST): NewcomerState {
   if (n.authorizedAt) return 'autonomous';
   if (testPassed(n)) return 'to_authorize';
   if (n.test.answers.some(a => a === false)) return 'failed';
-  if (CHECKLIST.filter(c => c.stage.startsWith('Jour 1')).some(c => !n.done[c.key])) return 'welcome';
+  if (list.filter(c => c.stage.startsWith('Jour 1') || c.stage.startsWith('Avant')).some(c => !n.done[c.key])) return 'welcome';
   return (daysBetween(testDate(n), today) ?? -1) >= 0 ? 'test_due' : 'tutoring';
 }
 export const newNewcomer = (today = new Date()): Newcomer => ({
@@ -153,6 +204,12 @@ export function newcomerInsights(s: State, today = new Date()): Insight[] {
   if (due.length) out.push({ key: 'due', tone: 'warn', title: 'Test d\'autonomie à faire', text: `${names(due, n => `${n.name} (tuteur : ${n.tutor || 'à désigner'})`)}.` });
   const welcome = ns.filter(n => newcomerState(n, today) === 'welcome');
   if (welcome.length) out.push({ key: 'welcome', tone: 'warn', title: 'Accueil incomplet', text: `${names(welcome, n => n.name)} : sécurité et équipements du jour 1 à terminer.` });
+  const load: Record<string, number> = {};
+  ns.filter(n => !n.authorizedAt && n.tutor.trim()).forEach(n => { load[n.tutor.trim()] = (load[n.tutor.trim()] || 0) + 1; });
+  const heavy = Object.entries(load).filter(([, x]) => x > 2);
+  if (heavy.length) out.push({ key: 'load', tone: 'warn', title: 'Tuteur surchargé', text: `${heavy.map(([t, x]) => `${t} (${x} recrues)`).join(', ')} : répartir le tutorat.` });
+  const noFb = ns.filter(n => n.authorizedAt && !n.feedback?.trim() && (daysBetween(n.arrival, today) ?? 0) >= 30 && (daysBetween(n.arrival, today) ?? 0) <= 120);
+  if (noFb.length) out.push({ key: 'fb', tone: 'warn', title: 'Rapport d\'étonnement', text: `${names(noFb, n => n.name)} : demander ce qui l'a surpris en arrivant (J+30).` });
   const noTutor = ns.filter(n => !n.authorizedAt && !n.tutor.trim());
   if (noTutor.length) out.push({ key: 'tutor', tone: 'bad', title: 'Recrue sans tuteur', text: `${names(noTutor, n => n.name)} : le tuteur répond des premières pièces de la recrue.` });
   return out;
@@ -189,6 +246,15 @@ export function checkName(name: string, g: Ged): string[] {
   if (words.length) out.push(`Mot interdit : ${words.join(', ')} (la version se lit dans l'indice Vxx)`);
   return out;
 }
+// Audit of a real folder: file names off the charter, several versions of the same document in the same folder
+export function auditFiles(files: { folder: string; name: string }[], g: Ged) {
+  const bad = files.filter(f => checkName(f.name, g).length);
+  const groups: Record<string, string[]> = {};
+  files.forEach(f => { const m = f.name.replace(/\.[a-z0-9]{1,5}$/i, '').match(/^(.*)_[Vv]\d{2}$/); if (m) (groups[`${f.folder}/${m[1]}`] ||= []).push(f.name); });
+  const versions = Object.entries(groups).filter(([, xs]) => xs.length > 1).map(([k, xs]) => ({ folder: k.slice(0, k.lastIndexOf('/')), names: xs.sort() }));
+  return { total: files.length, bad, versions, okPct: files.length ? Math.round((files.length - bad.length) / files.length * 100) : null };
+}
+export const MIGRATION_STEPS = ['Nouveaux fichiers nommés selon la charte', 'Dossiers des affaires en cours renommés', 'Plans de fabrication : une seule version active', 'Bureaux des ordinateurs vidés', 'Anciens dossiers archivés tels quels'];
 export const CHRONO_SECONDS = 30;
 export const chronoOk = (c: ChronoTest) => c.found && !c.obsolete && c.seconds !== null && c.seconds <= CHRONO_SECONDS;
 export const newChrono = (today = new Date()): ChronoTest => ({ id: uid('ch'), date: isoDate(today), person: '', asked: '', seconds: null, found: true, obsolete: false });
@@ -208,6 +274,7 @@ export function gedInsights(s: State, today = new Date()): Insight[] {
   if (c.obsolete) out.push({ key: 'obs', tone: 'bad', title: 'Version périmée trouvée', text: `${c.obsolete} test(s) sur 6 mois ont fait ouvrir une ancienne version : la déplacer dans ${s.ged.archive}.` });
   const failed = Object.values(s.chronos).filter(x => x.date.slice(0, 7) === isoDate(today).slice(0, 7) && !chronoOk(x));
   if (failed.length) out.push({ key: 'fail', tone: 'warn', title: 'Document trop long à trouver', text: `${names(failed, x => `${x.asked} (${x.seconds ?? '?'} s)`)} : revoir le classement ou le nom.` });
+  if ((daysBetween(s.ged.rightsCheckedAt || '', today) ?? 999) > 183) out.push({ key: 'rights', tone: 'warn', title: 'Droits d\'accès à vérifier', text: 'Revoir chaque semestre qui a accès à chaque dossier (direction, RH).' });
   if (!s.ged.owner.trim()) out.push({ key: 'owner', tone: 'warn', title: 'Responsable du classement', text: 'Nommer la personne qui fait respecter la charte et le plan de classement.' });
   return out;
 }

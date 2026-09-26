@@ -8,7 +8,7 @@ import { applyTeamExample } from '../../domain/teamExamples';
 import { addDays, PROCESS_IDS, processLabel } from '../../domain/base';
 import { frDate, isoDate } from '../../domain/periods';
 import { useStore } from '../../store/StoreContext';
-import { Button, Card, Empty, Field, inputCls, Method, Modal, StatusBadge, SubTitle, Summary, Tile, ToolHeader } from '../common';
+import { Button, DeleteButton, Card, Empty, Field, inputCls, Method, Modal, StatusBadge, SubTitle, Summary, Tile, ToolHeader } from '../common';
 import type { ScreenProps } from '../screens';
 import type { Nav } from '../tools';
 
@@ -52,7 +52,6 @@ export function Suppleances({ nav, focus, clearFocus }: ScreenProps) {
       <Card className="space-y-3 p-3 sm:p-4">
         <ToolHeader title="Matrice des suppléances" text={`Un suppléant n'est prêt que s'il a fait l'acte lui-même depuis moins de ${Math.round(PRACTICE_DAYS / 30)} mois.`}>
           <Button kind="primary" onClick={() => setOpen(newPower())}><Plus size={14} />Ajouter un pouvoir</Button>
-          <Button kind="ghost" onClick={() => { if (window.confirm('Remplacer les suppléances, l\'équipe, la polyvalence, les recrues et les tests de classement par des exemples ?')) update(d => applyTeamExample(d)); }}>Remplir avec des exemples</Button>
           <Button kind="ghost" onClick={() => window.print()}><Printer size={14} />Imprimer</Button>
         </ToolHeader>
         <div className="overflow-x-auto">
@@ -107,7 +106,7 @@ function PowerSheet({ initial, onClose, nav }: { initial: Power; onClose(): void
   return (
     <Modal wide onClose={close} title={isNew ? 'Nouveau pouvoir vital' : p.power} subtitle={<StatusBadge level={POWER_STATE[st].tone} text={POWER_STATE[st].label} />}
       footer={<>
-        {!isNew && <Button kind="danger" onClick={remove} className="mr-auto"><Trash2 size={14} />Supprimer</Button>}
+        {!isNew && <DeleteButton onClick={remove} className="mr-auto"><Trash2 size={14} />Supprimer</DeleteButton>}
         {error && <span role="alert" className="mr-2 text-[11px] font-semibold text-red-700">{error}</span>}
         <Button onClick={close}>Annuler</Button>
         <Button kind="primary" onClick={save}>Enregistrer</Button>

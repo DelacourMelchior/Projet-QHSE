@@ -11,7 +11,7 @@ import { frDate, isoDate, periodLabel } from '../domain/periods';
 import { KIND_LABEL, refLabel } from '../domain/refs';
 import { analysisActionEffectiveness } from '../domain/quality';
 import { useStore } from '../store/StoreContext';
-import { Button, Field, inputCls, Modal, StatusBadge } from './common';
+import { Button, DeleteButton, Field, inputCls, Modal, StatusBadge } from './common';
 
 export const DIMS: { key: Dim5M; label: string; hint: string; ideas: string[] }[] = [
   { key: 'main_oeuvre', label: "Main-d'œuvre", hint: 'compétences, charge, relais', ideas: ['Former la personne concernée (tutorat de 2 h)', 'Nommer un binôme de relais sur le poste', "Rééquilibrer la charge de l'équipe sur 2 semaines", 'Point hebdo de 10 min avec le pilote'] },
@@ -75,7 +75,7 @@ export function ActionSheet({ initial, onClose }: { initial: Action; onClose(): 
       title={r ? (isNew ? 'Nouvelle action de préparation' : 'Action de préparation du Plan B') : isNew ? 'Nouvelle action corrective' : 'Action corrective'}
       subtitle={a.ref ? <span>{KIND_LABEL[a.ref.kind]} : {refLabel(state, a.ref)}</span> : r ? <span>Risque : {r.title || 'sans titre'} {rst && <StatusBadge level={rst.tone} text={rst.label} />}</span> : k && <span>{k.name} · {periodLabel(a.period)} : <strong className="font-mono">{formatValue(v, k.unit)}</strong> (cible {k.target}) {st && <StatusBadge level={st.level} text={st.text} />}</span>}
       footer={<>
-        {!isNew && <Button kind="danger" onClick={remove} className="mr-auto"><Trash2 size={14} />Supprimer</Button>}
+        {!isNew && <DeleteButton onClick={remove} className="mr-auto"><Trash2 size={14} />Supprimer</DeleteButton>}
         {error && <span role="alert" className="mr-2 text-[11px] font-semibold text-red-700">{error}</span>}
         <Button onClick={close}>Annuler</Button>
         <Button kind="primary" onClick={save}>Enregistrer</Button>

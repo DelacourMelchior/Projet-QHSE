@@ -11,7 +11,7 @@ import { sum } from '../../domain/base';
 import { formatValue } from '../../domain/numbers';
 import { frDate, isoDate } from '../../domain/periods';
 import { useStore } from '../../store/StoreContext';
-import { Button, Card, Chips, Empty, Field, inputCls, Method, Modal, NumInput, Row, StatusBadge, SubTitle, Summary, Tile, ToolHeader } from '../common';
+import { Button, DeleteButton, Card, Chips, Empty, Field, inputCls, Method, Modal, NumInput, Row, StatusBadge, SubTitle, Summary, Tile, ToolHeader } from '../common';
 import { downloadFile, fileSlug } from '../download';
 import type { ScreenProps } from '../screens';
 import type { Nav } from '../tools';
@@ -55,7 +55,6 @@ export function Receptions({ nav, focus, clearFocus }: ScreenProps) {
       <Card className="space-y-3 p-3 sm:p-4">
         <ToolHeader title="Commandes suivies" text="Un contrôle à chaque jalon, une libération signée, un PV de réception émargé sur place.">
           <Button kind="primary" onClick={() => setOpen(newDelivery())}><Plus size={14} />Nouvelle commande</Button>
-          <Button kind="ghost" onClick={() => { if (window.confirm('Remplacer les fournisseurs, fiches de débit, instructions, équipements et réceptions par des exemples ?')) update(d => applyOperationsExample(d)); }}>Remplir avec des exemples</Button>
           <Button kind="ghost" onClick={() => window.print()}><Printer size={14} />Imprimer</Button>
         </ToolHeader>
         <Chips value={filter} onChange={setFilter} items={[['open', 'En cours', all.filter(x => !DONE.includes(x.st)).length], ['done', 'Réceptionnées', all.filter(x => DONE.includes(x.st)).length], ['all', 'Toutes', all.length]]} />
@@ -108,7 +107,7 @@ function DeliverySheet({ initial, onClose, nav }: { initial: Delivery; onClose()
     <Modal xwide onClose={close} title={isNew ? 'Nouvelle commande à suivre' : `${d.ref} · ${d.client}`}
       subtitle={<StatusBadge level={DELIVERY_STATE[st].tone} text={DELIVERY_STATE[st].label} />}
       footer={<>
-        {!isNew && <Button kind="danger" onClick={remove} className="mr-auto"><Trash2 size={14} />Supprimer</Button>}
+        {!isNew && <DeleteButton onClick={remove} className="mr-auto"><Trash2 size={14} />Supprimer</DeleteButton>}
         {error && <span role="alert" className="mr-2 text-[11px] font-semibold text-red-700">{error}</span>}
         <Button onClick={pdf}><FileDown size={14} />PV de réception</Button>
         <Button onClick={close}>Annuler</Button>

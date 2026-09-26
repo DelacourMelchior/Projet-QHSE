@@ -5,7 +5,7 @@ import { isoDate, parseDate } from './periods';
 // Message of a summary card
 export interface Insight { key: string; tone: 'good' | 'warn' | 'bad'; title: string; text: string }
 
-export const DEFAULT_PARAMS: Params = { hourlyRate: 55, marginFloorPct: 30, depositPct: 30, visaThreshold: 10000 };
+export const DEFAULT_PARAMS: Params = { hourlyRate: 55, marginFloorPct: 30, depositPct: 30, visaThreshold: 10000, overheadPct: 0, cnqTrigger: 500, variableMarginPct: 35 };
 
 export const PROCESS_NAMES: Record<string, string> = {
   P1: 'Direction et pilotage',
@@ -19,11 +19,11 @@ export const processLabel = (id: string) => (PROCESS_NAMES[id] ? `${id} · ${PRO
 
 // The collections added by tools 2.1 to 5.4, empty
 export const emptyTools = (): Pick<State, 'params' | 'quotes' | 'changes' | 'complaints' | 'feedbacks' | 'suppliers' | 'debits' | 'sops'
-  | 'equipments' | 'deliveries' | 'powers' | 'envelope' | 'people' | 'skills' | 'newcomers' | 'ged' | 'chronos' | 'ncs' | 'analyses' | 'pokas'> => ({
+  | 'equipments' | 'deliveries' | 'powers' | 'envelope' | 'people' | 'skills' | 'newcomers' | 'ged' | 'chronos' | 'ncs' | 'analyses' | 'pokas' | 'logs'> => ({
   params: { ...DEFAULT_PARAMS },
   quotes: {}, changes: {}, complaints: {}, feedbacks: {}, suppliers: {}, debits: {}, sops: {}, equipments: {}, deliveries: {},
   powers: {}, envelope: { location: '', checkedAt: '', by: '' }, people: {}, skills: {}, newcomers: {}, ged: defaultGed(), chronos: {},
-  ncs: {}, analyses: {}, pokas: {},
+  ncs: {}, analyses: {}, pokas: {}, logs: {},
 });
 
 // Filing plan in 5 processes (tool 4.4)
@@ -101,3 +101,39 @@ export function knownPeople(s: State): string[] {
   ];
   return [...new Set(names.map(n => (n || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b));
 }
+
+// Hours between two moments, counting only Monday to Friday when business is true (48 h rule of 2.3, 24 h rule of 5.1)
+export function workHoursBetween(a: string, b: Date | string, business = false): number | null {
+  const x = parseStamp(a), y = typeof b === 'string' ? parseStamp(b) : b;
+  if (!x || !y) return null;
+  if (!business) return (y.getTime() - x.getTime()) / 3600000;
+  let h = 0;
+  for (let t = x.getTime(); t < y.getTime();) {
+    const d = new Date(t);
+    const next = Math.min(y.getTime(), new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1).getTime());
+    if (d.getDay() !== 0 && d.getDay() !== 6) h += (next - t) / 3600000;
+    t = next;
+  }
+  return h;
+}
+
+// Hourly cost of a workstation or machine when the settings give one, else the general hourly cost
+export function rateFor(p: Params, name = ''): number {
+  const n = name.trim().toLowerCase();
+  const r = n && (p.rates || []).find(x => x.name.trim().toLowerCase() === n || n.includes(x.name.trim().toLowerCase()));
+  return r ? r.rate : p.hourlyRate;
+}
+
+// Words of the tools, explained to the team (glossary of the home screen)
+export const GLOSSARY: [string, string][] = [
+  ['P1 à P5', 'Les 5 grandes familles de travail : direction, commercial, réalisation, ressources humaines, qualité.'],
+  ['Processus en cause', 'La famille de travail qui a rendu le problème possible (pas la personne qui l\'a vu).'],
+  ['Non-qualité', 'Ce que coûtent les défauts : matière jetée, heures refaites, transport en urgence, avoirs.'],
+  ['5 Pourquoi', 'Demander « pourquoi ? » plusieurs fois pour trouver la vraie cause, sans chercher de coupable.'],
+  ['5M', 'Les 5 pistes de solution : main-d\'œuvre, méthode, matériel, matière, milieu.'],
+  ['Détrompeur (poka-yoke)', 'Une butée, un gabarit, un blocage qui rend l\'erreur impossible.'],
+  ['Bac rouge', 'Le bac fermé où l\'on isole toute pièce douteuse en attendant une décision.'],
+  ['Homme-clé', 'La seule personne qui sait faire une tâche : si elle manque, la tâche s\'arrête.'],
+  ['Plan B', 'La solution de secours prête et testée quand une ressource vitale s\'arrête.'],
+  ['Recommandation (NPS)', 'Notes de 9-10 moins notes de 0 à 6, sur la question « nous recommanderiez-vous ? ».'],
+];

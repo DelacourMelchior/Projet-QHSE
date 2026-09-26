@@ -9,7 +9,7 @@ import { newcomerPdf } from '../../domain/teamPdf';
 import { daysBetween } from '../../domain/base';
 import { frDate, isoDate } from '../../domain/periods';
 import { useStore } from '../../store/StoreContext';
-import { Button, Card, Chips, Empty, Field, inputCls, Method, Modal, Row, StatusBadge, SubTitle, Summary, Tile, ToolHeader, YesNo } from '../common';
+import { Button, DeleteButton, Card, Chips, Empty, Field, inputCls, Method, Modal, Row, StatusBadge, SubTitle, Summary, Tile, ToolHeader, YesNo } from '../common';
 import { downloadFile, fileSlug } from '../download';
 import type { ScreenProps } from '../screens';
 
@@ -49,7 +49,6 @@ export function Accueil({ focus, clearFocus }: ScreenProps) {
       <Card className="space-y-3 p-3 sm:p-4">
         <ToolHeader title="Parcours d'accueil" text="Un parcours par arrivée, du jour 1 à l'autorisation de travailler seul.">
           <Button kind="primary" onClick={() => setOpen(newNewcomer())}><Plus size={14} />Nouvel arrivant</Button>
-          <Button kind="ghost" onClick={() => { if (window.confirm('Remplacer les suppléances, l\'équipe, la polyvalence, les recrues et les tests de classement par des exemples ?')) update(d => applyTeamExample(d)); }}>Remplir avec des exemples</Button>
         </ToolHeader>
         <Chips value={filter} onChange={setFilter} items={[['open', 'En cours', openOnes.length], ['done', 'Autonomes', all.length - openOnes.length], ['all', 'Tous', all.length]]} />
         {shown.length === 0 ? <p className="py-6 text-center text-xs text-slate-500">Aucun arrivant dans ce filtre.</p> : (
@@ -111,7 +110,7 @@ function NewcomerSheet({ initial, onClose }: { initial: Newcomer; onClose(): voi
   return (
     <Modal wide onClose={close} title={isNew ? 'Nouvel arrivant' : n.name} subtitle={<span className="flex flex-wrap items-center gap-1.5">{n.poste} <StatusBadge level={NEWCOMER_STATE[st].tone} text={NEWCOMER_STATE[st].label} /></span>}
       footer={<>
-        {!isNew && <Button kind="danger" onClick={remove} className="mr-auto"><Trash2 size={14} />Supprimer</Button>}
+        {!isNew && <DeleteButton onClick={remove} className="mr-auto"><Trash2 size={14} />Supprimer</DeleteButton>}
         {error && <span role="alert" className="mr-2 text-[11px] font-semibold text-red-700">{error}</span>}
         <Button onClick={pdf}><FileDown size={14} />Fiche de parcours</Button>
         <Button onClick={close}>Annuler</Button>

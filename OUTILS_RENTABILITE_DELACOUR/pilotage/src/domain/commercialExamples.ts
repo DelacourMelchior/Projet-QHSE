@@ -9,7 +9,7 @@ export function commercialExamples(today = new Date()) {
   const hoursAgo = (h: number) => { const d = new Date(today.getTime() - h * 3600000); return `${isoDate(d)}T${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
   const at = (n: number, h: number) => `${ago(n)}T${String(h).padStart(2, '0')}:00`;
   const y = today.getFullYear();
-  const ok = () => LOCKS.map(() => ({ state: 'ok' as const, note: '' }));
+  const ok = () => LOCKS.map(() => ({ state: 'ok' as const, note: '', by: 'David K.' }));
   const visas = (n: number) => ({ commercial: { by: 'Laurent B.', date: ago(n) }, technical: { by: 'David K.', date: ago(n) }, direction: { by: 'Jean-Marc', date: ago(n) } });
   const none = { commercial: { by: '', date: '' }, technical: { by: '', date: '' }, direction: { by: '', date: '' } };
   const q = (n: number, p: Partial<Quote>): Quote => ({
@@ -22,7 +22,7 @@ export function commercialExamples(today = new Date()) {
     q(3, { client: 'Client C', object: 'Platines inox découpées et pliées (300 pièces)', date: ago(5), amount: 48000, weeks: 5, visas: visas(4), status: 'sent', sentAt: ago(3), cost: { material: 18000, hours: 200, subcontract: 3200, other: 400 } }),
     q(4, {
       client: 'Agencement Morel', object: 'Garde-corps acier pour une mezzanine', date: ago(2), amount: 8400, weeks: 3,
-      locks: [{ state: 'ok', note: '' }, { state: 'ok', note: '' }, { state: 'ko', note: 'Plieuse saturée jusqu\'à la semaine S+5' }, { state: 'reserve', note: '' }, { state: '', note: '' }],
+      locks: [{ state: 'ok', note: '' }, { state: 'ok', note: '' }, { state: 'ko', note: 'Plieuse saturée jusqu\'à la semaine S+5', by: 'David K.' }, { state: 'reserve', note: '' }, { state: '', note: '' }],
       cost: { material: 2100, hours: 60, subcontract: 900, other: null },
     }),
     q(5, { client: 'BâtiPro', object: 'Escalier hélicoïdal extérieur', date: ago(75), amount: 22000, weeks: 8, visas: visas(74), status: 'lost', sentAt: ago(74), decidedAt: ago(60), lostReason: 'Prix : concurrent 12 % moins cher', cost: { material: 7800, hours: 150, subcontract: 1200, other: null } }),

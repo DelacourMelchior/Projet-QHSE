@@ -1,7 +1,7 @@
 // Tools 5.1 to 5.4: red bin (quarantine and 24 h decision), cost of non-quality by process,
 // five whys workshop, mistake-proofing checked at day 30. Pure functions, covered by quality.test.ts.
 import type { Action, Analysis, Nc, NcCause, NcDecision, Params, Period, Poka, PokaLevel, State } from './types';
-import { addDays, daysBetween, hoursBetween, hoursCost, nextRef, nowLocal, PROCESS_IDS, sum, type Insight } from './base';
+import { addDays, daysBetween, hoursCost, nextRef, nowLocal, PROCESS_IDS, rateFor, sum, workHoursBetween, type Insight } from './base';
 import { addMonths, isoDate } from './periods';
 import { formatValue } from './numbers';
 
@@ -22,14 +22,18 @@ export const DECISIONS: { key: NcDecision; label: string; text: string; visa: st
   { key: 'retouche', label: 'Retouche', text: 'Reprise selon une gamme définie ; heures et matière chiffrées.', visa: 'Méthodes' },
   { key: 'derogation', label: 'Dérogation client', text: "Défaut sans impact technique accepté par écrit par le client.", visa: 'Direction' },
   { key: 'retour', label: 'Retour fournisseur', text: 'Pièce renvoyée au fournisseur, fiche de débit sous 48 h (outil 3.1).', visa: 'Achats' },
+  { key: 'tri', label: 'Tri à 100 %', text: 'Tout le lot est contrôlé pièce par pièce ; les bonnes sont libérées.', visa: 'Qualité' },
+  { key: 'declassement', label: 'Déclassement', text: 'Pièce utilisée pour un usage moins exigeant, ou vendue en second choix.', visa: 'Direction' },
+  { key: 'attente', label: 'Attente de l\'avis client', text: 'Le client est consulté ; la pièce reste isolée jusqu\'à sa réponse.', visa: 'Commercial' },
 ];
 export const decisionLabel = (d: NcDecision | '') => DECISIONS.find(x => x.key === d)?.label || '';
 
 export const DECISION_HOURS = 24;
 export type NcState = 'quarantine' | 'late' | 'decided';
-export function ncState(n: Nc, now = new Date()): NcState {
-  if (n.decision) return 'decided';
-  const age = hoursBetween(n.at, now);
+export function ncState(n: Nc, now = new Date(), business = false): NcState {
+  if (n.decision && n.decision !== 'attente') return 'decided';
+  if (n.decision === 'attente') return 'quarantine';
+  const age = workHoursBetween(n.at, now, business);
   return age !== null && age >= DECISION_HOURS ? 'late' : 'quarantine';
 }
 export const NC_STATE: Record<NcState, { label: string; tone: 'ok' | 'warn' | 'alert' }> = {
@@ -41,7 +45,7 @@ export const NC_STATE: Record<NcState, { label: string; tone: 'ok' | 'warn' | 'a
 // Direct cost of a non-conformity: scrapped material, wasted and rework hours at the hourly cost, exceptional logistics
 export function ncCost(n: Nc, p: Params): number {
   const c = n.cost;
-  return sum([c.scrap, c.logistics]) + hoursCost(sum([c.lostHours, c.reworkHours]), p);
+  return sum([c.scrap, c.logistics]) + sum([c.lostHours, c.reworkHours]) * rateFor(p, n.where);
 }
 export const ncHours = (n: Nc) => sum([n.cost.lostHours, n.cost.reworkHours]);
 
@@ -78,16 +82,34 @@ export function cnqMonth(s: State, p: Period) {
   const items = cnqItems(s, p);
   const byProcess = Object.fromEntries([...PROCESS_IDS, ''].map(id => [id, sum(items.filter(i => (i.processId || '') === id).map(i => i.amount))])) as Record<string, number>;
   const recovered = sum(Object.values(s.debits).filter(d => d.recoveredAt.slice(0, 7) === p).map(d => d.recovered));
+  const total = sum(items.map(i => i.amount));
+  const indirect = s.params.cnqIndirect?.[p] || 0;
   return {
-    items, byProcess, recovered,
-    total: sum(items.map(i => i.amount)),
+    items, byProcess, recovered, indirect,
+    net: total + indirect - recovered,      // after the credit notes received from suppliers
+    total,
     hours: sum(items.map(i => i.hours)),
     unqualified: items.filter(i => !i.processId).length,
   };
 }
 
-// Revenue to make again to pay a loss back: loss x 100 / net margin
+// Revenue to make again to pay a loss back: loss x 100 / net margin (strict reading: every euro lost comes out of the profit)
 export const compensatingRevenue = (loss: number, netMarginPct: number) => (netMarginPct > 0 ? loss * 100 / netMarginPct : loss * 20);
+// Second reading, the one an accountant uses: extra revenue whose margin on variable costs covers the loss
+export const compensatingRevenueVariable = (loss: number, variableMarginPct: number) => (variableMarginPct > 0 ? loss * 100 / variableMarginPct : null);
+
+// Red-bin records per week over the last 8 weeks: a cost of non-quality is only as good as the declarations behind it
+export function declarationsPerWeek(s: State, now = new Date()): number[] {
+  return Array.from({ length: 8 }, (_, i) => Object.values(s.ncs).filter(n => { const d = daysBetween(n.at.slice(0, 10), now); return d !== null && d >= (7 - i) * 7 && d < (8 - i) * 7; }).length);
+}
+
+// Pareto of the last 90 days: which causes and which workstations give the most defects
+export function pareto(s: State, by: 'cause' | 'where', now = new Date()): { key: string; n: number; cost: number }[] {
+  const recent = Object.values(s.ncs).filter(n => (daysBetween(n.at.slice(0, 10), now) ?? 999) <= 90);
+  const groups: Record<string, { n: number; cost: number }> = {};
+  recent.forEach(n => { const k = (by === 'cause' ? causeLabel(n.cause) : n.where.trim() || 'Poste non précisé'); groups[k] ||= { n: 0, cost: 0 }; groups[k].n++; groups[k].cost += ncCost(n, s.params); });
+  return Object.entries(groups).map(([key, v]) => ({ key, ...v })).sort((a, b) => b.n - a.n || b.cost - a.cost);
+}
 
 // Twelve months ending with p
 export const cnqSeries = (s: State, p: Period) => Array.from({ length: 12 }, (_, i) => addMonths(p, i - 11)).map(m => ({ period: m, total: cnqMonth(s, m).total }));
@@ -112,13 +134,22 @@ export const actionsOfAnalysis = (s: State, id: string): Action[] =>
 export const pokasOfAnalysis = (s: State, id: string): Poka[] => Object.values(s.pokas).filter(p => p.analysisId === id);
 const open = (a: Action) => a.status === 'to_start' || a.status === 'in_progress';
 
+// The same defect declared again at the same workstation after the countermeasures were done
+export function recurrences(s: State, a: Analysis) {
+  const src = a.source.kind === 'nc' ? s.ncs[a.source.id] : undefined;
+  const acts = actionsOfAnalysis(s, a.id);
+  if (!src || !src.where.trim() || !acts.length || acts.some(open)) return [];
+  const closed = acts.map(x => x.closedAt).filter(Boolean).sort().pop() || a.date;
+  return Object.values(s.ncs).filter(n => n.id !== src.id && n.at.slice(0, 10) > closed && n.where.trim().toLowerCase() === src.where.trim().toLowerCase() && (!src.cause || n.cause === src.cause));
+}
+
 export function analysisState(s: State, a: Analysis, today = new Date()): AnalysisState {
   if (!a.rootCause.trim()) return 'draft';
   const acts = actionsOfAnalysis(s, a.id);
   const pokas = pokasOfAnalysis(s, a.id);
   if (!acts.length && !pokas.length) return 'to_act';
   const ps = pokas.map(p => pokaState(p, today));
-  if (ps.includes('failed')) return 'failed';
+  if (ps.includes('failed') || recurrences(s, a).length) return 'failed';
   if (acts.some(open) || ps.includes('to_install')) return 'running';
   if (ps.includes('effective') || (acts.length && acts.every(x => x.status === 'effective'))) return 'effective';
   return 'to_check';
@@ -127,6 +158,21 @@ export function analysisState(s: State, a: Analysis, today = new Date()): Analys
 // A countermeasure should be in place within 7 working days (9 calendar days)
 export const slowActions = (s: State, a: Analysis) =>
   actionsOfAnalysis(s, a.id).filter(x => (daysBetween(a.date, x.deadline) ?? 0) > 9);
+
+// Problems that deserve a workshop and have none: costly, customer, or repeated defects
+export function workshopsToOpen(s: State, now = new Date()): { kind: 'nc' | 'complaint'; id: string; ref: string; why: string }[] {
+  const trigger = s.params.cnqTrigger ?? 500;
+  const out: { kind: 'nc' | 'complaint'; id: string; ref: string; why: string }[] = [];
+  Object.values(s.ncs).filter(n => !n.analysisId).forEach(n => {
+    const cost = ncCost(n, s.params);
+    const repeats = Object.values(s.ncs).filter(m => m.where.trim() && m.where.trim().toLowerCase() === n.where.trim().toLowerCase() && m.cause === n.cause && Math.abs(daysBetween(m.at.slice(0, 10), n.at.slice(0, 10)) ?? 999) <= 90).length;
+    if (cost >= trigger) out.push({ kind: 'nc', id: n.id, ref: n.ref, why: `coût de ${Math.round(cost)} € (seuil ${trigger} €)` });
+    else if (repeats >= 3) out.push({ kind: 'nc', id: n.id, ref: n.ref, why: `${repeats} défauts semblables au même poste en 90 jours` });
+    else if (n.origin === 'client') out.push({ kind: 'nc', id: n.id, ref: n.ref, why: 'défaut vu par le client' });
+  });
+  Object.values(s.complaints).filter(c => c.severity === 'majeure' && !c.analysisId && (daysBetween(c.at.slice(0, 10), now) ?? 0) <= 180).forEach(c => out.push({ kind: 'complaint', id: c.id, ref: c.ref, why: 'réclamation majeure' }));
+  return out;
+}
 
 export function newAnalysis(s: State, source: Analysis['source'], problem: string, processId: string, today = new Date()): Analysis {
   return {
@@ -144,6 +190,26 @@ export const POKA_LEVELS: { key: PokaLevel; label: string; text: string; rank: n
 ];
 export const levelLabel = (l: PokaLevel) => POKA_LEVELS.find(x => x.key === l)?.label || l;
 
+// Catalogue by type of defect
+export const POKA_CATALOGUE: { defect: string; ideas: string[] }[] = [
+  { defect: 'Montage inversé ou à l\'envers', ideas: ['Téton ou ergot asymétrique', 'Gabarit qui n\'accepte la pièce que dans un sens', 'Connecteurs de formes ou de couleurs différentes'] },
+  { defect: 'Oubli d\'une pièce ou d\'une étape', ideas: ['Kit préparé à l\'avance avec un emplacement par pièce', 'Compteur de vis relié à la visseuse', 'Check-list bloquante dans le logiciel avant l\'étape suivante'] },
+  { defect: 'Mauvaise cote ou mauvais réglage', ideas: ['Butée crantée ou indexée', 'Gabarit « passe / passe pas » au poste', 'Programme machine verrouillé par référence'] },
+  { defect: 'Mauvaise référence ou mauvais lot', ideas: ['Scan du code-barre qui bloque la mauvaise référence', 'Bacs de couleur par référence', 'Détrompage des outillages par forme'] },
+  { defect: 'Erreur administrative', ideas: ['Champ obligatoire dans le devis ou l\'ERP', 'Blocage de la commande sans acompte', 'Double validation au-dessus d\'un montant'] },
+];
+// Yearly cost of the defect before the device (red-bin records of the workshop over the 12 months before installation) and payback
+export function pokaPayback(s: State, p: Poka): { yearly: number; months: number | null } | null {
+  const an = p.analysisId ? s.analyses[p.analysisId] : undefined;
+  const src = an?.source.kind === 'nc' ? s.ncs[an.source.id] : undefined;
+  const where = (p.poste || src?.where || '').trim().toLowerCase();
+  const end = p.installedAt || isoDate(new Date());
+  const ncs = Object.values(s.ncs).filter(n => (where && n.where.trim().toLowerCase() === where) || n.analysisId === p.analysisId).filter(n => n.at.slice(0, 10) <= end && (daysBetween(n.at.slice(0, 10), end) ?? 999) <= 365);
+  const yearly = sum(ncs.map(n => ncCost(n, s.params)));
+  if (!yearly) return null;
+  return { yearly, months: p.cost ? Math.max(0.1, p.cost / (yearly / 12)) : null };
+}
+
 export const POKA_IDEAS: Record<string, string[]> = {
   P1: ['Blocage dans le logiciel de devis si la marge est sous le plancher', 'Double signature bancaire obligatoire au-delà d\'un montant'],
   P2: ['Pas d\'ordre de fabrication sans acompte encaissé', 'Devis type avec cases obligatoires (délai, acompte, tolérances)'],
@@ -153,20 +219,31 @@ export const POKA_IDEAS: Record<string, string[]> = {
 };
 
 export const CHECK_DAYS = 30;
-export type PokaState = 'to_install' | 'running' | 'due' | 'effective' | 'failed';
+export type PokaState = 'to_install' | 'running' | 'due' | 'effective' | 'recheck' | 'failed';
 export const POKA_STATE: Record<PokaState, { label: string; tone: 'ok' | 'warn' | 'alert' | 'pending' }> = {
   to_install: { label: 'À installer', tone: 'pending' },
   running: { label: 'En service, contrôle J+30 à venir', tone: 'pending' },
   due: { label: 'Contrôle J+30 à faire', tone: 'warn' },
   effective: { label: 'Efficace', tone: 'ok' },
+  recheck: { label: 'Contrôle de suivi à faire', tone: 'warn' },
   failed: { label: 'Récidive', tone: 'alert' },
 };
+// After day 30: checks at day 90, then every year (devices disappear after a few months)
+export function nextFollowCheck(p: Poka): string {
+  if (!p.installedAt || !p.check) return '';
+  const n = (p.later || []).length;
+  return addDays(p.installedAt, n === 0 ? 90 : 90 + 365 * n);
+}
 export const checkDate = (p: Poka) => (p.installedAt ? addDays(p.installedAt, CHECK_DAYS) : '');
-export const checkPassed = (c: NonNullable<Poka['check']>) => c.inPlace && (c.defects ?? 0) === 0;
+export const checkPassed = (c: NonNullable<Poka['check']>) => c.inPlace && (c.seen === undefined || c.seen === null ? (c.defects ?? 0) === 0 : !c.seen && (c.defects ?? 0) === 0);
 
 export function pokaState(p: Poka, today = new Date()): PokaState {
   if (!p.installedAt) return 'to_install';
-  if (p.check) return checkPassed(p.check) ? 'effective' : 'failed';
+  if (p.check) {
+    const checks = [p.check, ...(p.later || [])];
+    if (!checks.every(checkPassed)) return 'failed';
+    return (daysBetween(nextFollowCheck(p), today) ?? -1) >= 0 ? 'recheck' : 'effective';
+  }
   return (daysBetween(checkDate(p), today) ?? -1) >= 0 ? 'due' : 'running';
 }
 
@@ -198,16 +275,18 @@ export function analysisActionEffectiveness(s: State, a: Action, today = new Dat
 export function qualityInsights(s: State, p: Period, now = new Date()): Insight[] {
   const out: Insight[] = [];
   const names = <T,>(xs: T[], f: (x: T) => string) => xs.slice(0, 3).map(f).join(', ') + (xs.length > 3 ? ` et ${xs.length - 3} autre(s)` : '');
-  const late = Object.values(s.ncs).filter(n => ncState(n, now) === 'late');
+  const late = Object.values(s.ncs).filter(n => ncState(n, now, !!s.params.businessHours) === 'late');
   if (late.length) out.push({ key: 'late', tone: 'bad', title: 'Bac rouge : décision en retard', text: `${names(late, n => n.ref)} : en quarantaine depuis plus de ${DECISION_HOURS} h. Rebut, retouche ou dérogation ?` });
   const m = cnqMonth(s, p);
   if (m.unqualified) out.push({ key: 'unq', tone: 'warn', title: 'Processus à qualifier', text: `${m.unqualified} coût(s) du mois sans processus d'origine : la répartition est incomplète.` });
   const top = Object.entries(m.byProcess).filter(([k]) => k).sort((a, b) => b[1] - a[1])[0];
   if (top && top[1] > 0 && m.total > 0) out.push({ key: 'top', tone: 'warn', title: 'Processus le plus coûteux', text: `${top[0]} : ${formatValue(top[1], '€')}, soit ${Math.round(top[1] / m.total * 100)} % de la non-qualité du mois.` });
-  const noAnalysis = Object.values(s.ncs).filter(n => n.decision && ncCost(n, s.params) >= 500 && !n.analysisId);
-  if (noAnalysis.length) out.push({ key: '5p', tone: 'warn', title: 'Atelier 5 Pourquoi à mener', text: `${names(noAnalysis, n => n.ref)} : coût de 500 € ou plus sans analyse de la cause racine.` });
+  const toOpen = workshopsToOpen(s, now);
+  if (toOpen.length) out.push({ key: '5p', tone: 'warn', title: 'Atelier 5 Pourquoi à mener', text: `${names(toOpen, x => `${x.ref} (${x.why})`)}.` });
   const due = Object.values(s.pokas).filter(x => pokaState(x, now) === 'due');
   if (due.length) out.push({ key: 'j30', tone: 'warn', title: 'Contrôle J+30 à faire', text: `${names(due, x => x.poste || x.defect)} : vérifier sur le terrain que le défaut ne revient pas.` });
+  const re = Object.values(s.pokas).filter(x => pokaState(x, now) === 'recheck');
+  if (re.length) out.push({ key: 'recheck', tone: 'warn', title: 'Détrompeur à revérifier', text: `${names(re, x => x.poste || x.defect)} : est-il toujours en place et utilisé ?` });
   const failed = Object.values(s.pokas).filter(x => pokaState(x, now) === 'failed');
   if (failed.length) out.push({ key: 'failed', tone: 'bad', title: 'Récidive après détrompeur', text: `${names(failed, x => x.poste || x.defect)} : reprendre l'analyse de la cause.` });
   return out;
@@ -220,7 +299,7 @@ export function analysisInsights(s: State, today = new Date()): Insight[] {
   const out: Insight[] = [];
   const all = Object.values(s.analyses);
   const blame = all.filter(a => blamesPerson(a.rootCause));
-  if (blame.length) out.push({ key: 'blame', tone: 'bad', title: 'Cause racine qui désigne une personne', text: `${blame.map(a => a.ref).join(', ')} : si une personne a pu se tromper, c'est que le processus l'a permis. Continuer à demander pourquoi.` });
+  if (blame.length) out.push({ key: 'blame', tone: 'bad', title: 'Cause racine à vérifier', text: `${blame.map(a => a.ref).join(', ')} : la cause semble viser une personne. Qu'est-ce qui, dans le poste, la méthode ou l'outil, a rendu l'erreur possible ?` });
   const toAct = all.filter(a => analysisState(s, a, today) === 'to_act');
   if (toAct.length) out.push({ key: 'act', tone: 'bad', title: 'Contre-mesure à décider', text: `${toAct.map(a => a.ref).join(', ')} : cause trouvée, aucune action. Une action physique sous 7 jours ouvrés.` });
   const slow = all.filter(a => slowActions(s, a).length);
@@ -228,7 +307,9 @@ export function analysisInsights(s: State, today = new Date()): Insight[] {
   const weak = all.filter(a => actionsOfAnalysis(s, a.id).some(x => x.plan.some(p => weakAction(p.text))));
   if (weak.length) out.push({ key: 'weak', tone: 'warn', title: 'Contre-mesure fragile', text: `${weak.map(a => a.ref).join(', ')} : un rappel ou une consigne n'empêche pas l'erreur. Préférer une butée, un gabarit, un blocage (outil 5.4).` });
   const failed = all.filter(a => analysisState(s, a, today) === 'failed');
-  if (failed.length) out.push({ key: 'failed', tone: 'bad', title: 'Récidive', text: `${failed.map(a => a.ref).join(', ')} : le contrôle à J+30 a montré que le défaut revient. Reprendre l'analyse.` });
+  if (failed.length) out.push({ key: 'failed', tone: 'bad', title: 'Récidive', text: `${failed.map(a => a.ref).join(', ')} : le défaut est revenu (contrôle J+30 ou nouvelle fiche au même poste). Reprendre l'analyse.` });
+  const toOpen = workshopsToOpen(s, today);
+  if (toOpen.length) out.push({ key: 'open', tone: 'warn', title: 'Ateliers à ouvrir', text: `${toOpen.slice(0, 3).map(x => `${x.ref} (${x.why})`).join(', ')}${toOpen.length > 3 ? ` et ${toOpen.length - 3} autre(s)` : ''}.` });
   return out;
 }
 

@@ -7,7 +7,7 @@ import { FEEDBACK_STATE, feedbackInsights, feedbackState, feedbackSummary, invoi
 import { applyCommercialExample } from '../../domain/commercialExamples';
 import { frDate, isoDate } from '../../domain/periods';
 import { useStore } from '../../store/StoreContext';
-import { Button, Card, Chips, Empty, Field, inputCls, Method, Modal, Row, StatusBadge, SubTitle, Summary, Tile, ToolHeader, YesNo } from '../common';
+import { Button, DeleteButton, Card, Chips, Empty, Field, inputCls, Method, Modal, Row, StatusBadge, SubTitle, Summary, Tile, ToolHeader, YesNo } from '../common';
 import type { ScreenProps } from '../screens';
 import type { Nav } from '../tools';
 import { clientsOf } from './Devis';
@@ -47,7 +47,6 @@ export function BilanFin({ nav, focus, clearFocus }: ScreenProps) {
       <Card className="space-y-3 p-3 sm:p-4">
         <ToolHeader title="Bilans de fin d'affaire" text="Un bilan par livraison ou réception. Pas de questionnaire de 15 questions : 3 suffisent.">
           <Button kind="primary" onClick={() => setOpen(newFeedback())}><Plus size={14} />Nouveau bilan</Button>
-          <Button kind="ghost" onClick={() => { if (window.confirm('Remplacer les devis, avenants, réclamations et bilans par des exemples ?')) update(d => applyCommercialExample(d)); }}>Remplir avec des exemples</Button>
           <Button kind="ghost" onClick={() => window.print()}><Printer size={14} />Imprimer</Button>
         </ToolHeader>
         <Chips value={filter} onChange={setFilter} items={[['todo', 'À traiter', todo.length], ['done', 'Facturés', all.length - todo.length], ['all', 'Tous', all.length]]} />
@@ -100,7 +99,7 @@ function FeedbackSheet({ initial, onClose, nav }: { initial: Feedback; onClose()
     <Modal wide onClose={close} title={isNew ? "Nouveau bilan de fin d'affaire" : `Bilan · ${f.client}`}
       subtitle={<StatusBadge level={FEEDBACK_STATE[st].tone} text={FEEDBACK_STATE[st].label} />}
       footer={<>
-        {!isNew && <Button kind="danger" onClick={remove} className="mr-auto"><Trash2 size={14} />Supprimer</Button>}
+        {!isNew && <DeleteButton onClick={remove} className="mr-auto"><Trash2 size={14} />Supprimer</DeleteButton>}
         {error && <span role="alert" className="mr-2 text-[11px] font-semibold text-red-700">{error}</span>}
         <Button onClick={close}>Annuler</Button>
         <Button kind="primary" onClick={save}>Enregistrer</Button>

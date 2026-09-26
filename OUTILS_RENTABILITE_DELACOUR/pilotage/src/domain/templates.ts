@@ -6,6 +6,7 @@ import legacy from './legacy-templates.json';
 import { demoRisks } from './riskTemplates';
 import { emptyTools } from './base';
 import { applyQualityExample } from './qualityExamples';
+import { applyCommercialExample } from './commercialExamples';
 
 export const PROFILES = {
   industrie: 'Industrie, usinage & atelier',
@@ -23,6 +24,7 @@ export function demoState(today = new Date()): State {
   s.contacts = d.contacts;
   Object.assign(s.actions, d.actions);
   applyQualityExample(s, today);
+  applyCommercialExample(s, today);
   return s;
 }
 

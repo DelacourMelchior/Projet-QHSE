@@ -6,6 +6,7 @@ import { riskSummary, staleContacts } from './risk';
 import { toCheck } from './contacts';
 import { cnqMonth, ncState, pokaState, analysisState } from './quality';
 import { formatValue } from './numbers';
+import { changeState, changeSummary, complaintState, feedbackState, quoteState } from './commercial';
 
 export interface ToolStatus { n: number; tone: 'ok' | 'warn' | 'alert' | 'pending'; text: string }
 const ok = (text: string): ToolStatus => ({ n: 0, tone: 'ok', text });
@@ -67,6 +68,38 @@ export function toolBadge(s: State, tool: string, p: Period, now = new Date()): 
       if (failed) return { n: failed, tone: 'alert', text: `${plural(failed, 'récidive')}` };
       if (due) return { n: due, tone: 'warn', text: `${plural(due, 'contrôle')} J+30 à faire` };
       return ok(`${plural(st.filter(x => x === 'effective').length, 'détrompeur')} efficace(s)`);
+    }
+    case '2.1': {
+      const all = Object.values(s.quotes);
+      if (!all.length) return empty();
+      const st = all.map(q => quoteState(q, s.params, now));
+      const follow = st.filter(x => x === 'to_follow').length, draft = st.filter(x => x === 'draft').length;
+      if (follow) return { n: follow, tone: 'alert', text: `${plural(follow, 'devis', 'devis')} à relancer` };
+      return draft ? { n: draft, tone: 'warn', text: `${plural(draft, 'devis', 'devis')} à valider avant envoi` } : ok('Devis à jour');
+    }
+    case '2.2': {
+      const all = Object.values(s.changes);
+      if (!all.length) return empty();
+      const sm = changeSummary(s, now);
+      if (sm.risky) return { n: sm.risky, tone: 'alert', text: `${plural(sm.risky, 'avenant')} commencé(s) sans accord` };
+      const todo = all.filter(c => ['to_price', 'to_send', 'accepted'].includes(changeState(c))).length;
+      return todo ? { n: todo, tone: 'warn', text: `${plural(todo, 'avenant')} à chiffrer, envoyer ou facturer` } : ok('Avenants à jour');
+    }
+    case '2.3': {
+      const all = Object.values(s.complaints);
+      if (!all.length) return empty();
+      const st = all.map(c => complaintState(c, now));
+      const late = st.filter(x => x === 'late').length, call = st.filter(x => x === 'to_contact').length;
+      if (late) return { n: late, tone: 'alert', text: `${plural(late, 'client')} pas rappelé(s) sous 48 h` };
+      return call ? { n: call, tone: 'warn', text: `${plural(call, 'client')} à rappeler` } : ok('Clients rappelés');
+    }
+    case '2.4': {
+      const all = Object.values(s.feedbacks);
+      if (!all.length) return empty();
+      const st = all.map(f => feedbackState(f, s));
+      const doubt = st.filter(x => x === 'doubt' || x === 'unhappy').length, inv = st.filter(x => x === 'to_invoice' || x === 'to_ask').length;
+      if (doubt) return { n: doubt, tone: 'alert', text: `${plural(doubt, 'client')} insatisfait(s) ou réserve(s) à régler` };
+      return inv ? { n: inv, tone: 'warn', text: `${plural(inv, 'bilan')} à finir ou facturer` } : ok('Bilans facturés');
     }
     default:
       return empty();

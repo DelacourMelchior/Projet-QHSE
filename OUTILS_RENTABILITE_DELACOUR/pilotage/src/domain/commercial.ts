@@ -33,12 +33,10 @@ export const needsVisas = (q: Quote, p: Params) => (q.amount ?? 0) >= p.visaThre
 // What still stops the offer from leaving (empty = ready to send)
 export function quoteIssues(q: Quote, p: Params, money = true): string[] {
   const out: string[] = [];
+  q.locks.forEach((l, i) => { if (l.state === 'ko') out.push(`Verrou ${LOCKS[i].process} bloquant : ${l.note || LOCKS[i].label.toLowerCase()}`); });
   const unset = q.locks.filter(l => !l.state).length;
   if (unset) out.push(`${unset} verrou(s) à vérifier`);
-  q.locks.forEach((l, i) => {
-    if (l.state === 'ko') out.push(`Verrou ${LOCKS[i].process} bloquant : ${l.note || LOCKS[i].label.toLowerCase()}`);
-    if (l.state === 'reserve' && !l.note.trim()) out.push(`Réserve ${LOCKS[i].process} à écrire`);
-  });
+  q.locks.forEach((l, i) => { if (l.state === 'reserve' && !l.note.trim()) out.push(`Réserve ${LOCKS[i].process} à écrire`); });
   if (!q.amount) out.push('Prix de vente à saisir');
   const m = quoteMargin(q, p);
   if (money && m && m.pct < p.marginFloorPct && !q.derogation.trim()) out.push(`Marge de ${Math.round(m.pct)} % sous le plancher de ${p.marginFloorPct} % : dérogation de la direction nécessaire`);
@@ -91,8 +89,8 @@ export function quoteInsights(s: State, today = new Date(), money = true): Insig
   const follow = qs.filter(q => quoteState(q, s.params, today) === 'to_follow');
   if (follow.length) out.push({ key: 'follow', tone: 'bad', title: 'Devis à relancer', text: `${names(follow, q => `${q.ref} (${q.client})`)} : sans nouvelle depuis plus de ${FOLLOW_DAYS} jours${money ? `, ${formatValue(sum(follow.map(q => q.amount)), '€')} en jeu` : ''}.` });
   if (money) {
-    const low = qs.filter(q => q.status !== 'lost' && q.status !== 'dropped' && (quoteMargin(q, s.params)?.pct ?? 100) < s.params.marginFloorPct);
-    if (low.length) out.push({ key: 'low', tone: 'warn', title: 'Marge sous le plancher', text: `${names(low, q => `${q.ref} (${Math.round(quoteMargin(q, s.params)!.pct)} %)`)} : plancher de ${s.params.marginFloorPct} %. Revoir le prix ou justifier la dérogation.` });
+    const low = qs.filter(q => q.status !== 'lost' && q.status !== 'dropped' && !q.derogation.trim() && (quoteMargin(q, s.params)?.pct ?? 100) < s.params.marginFloorPct);
+    if (low.length) out.push({ key: 'low', tone: 'warn', title: 'Marge sous le plancher', text: `${names(low, q => `${q.ref} à ${Math.round(quoteMargin(q, s.params)!.pct)} %`)} pour un plancher de ${s.params.marginFloorPct} % : revoir le prix, ou dérogation écrite de la direction.` });
   }
   const noDeposit = qs.filter(q => q.status === 'won' && !q.depositReceived);
   if (noDeposit.length) out.push({ key: 'deposit', tone: 'warn', title: 'Acompte non encaissé', text: `${names(noDeposit, q => `${q.ref} (${q.client})`)} : ne pas commander la matière ni lancer la fabrication avant l'acompte de ${s.params.depositPct} %.` });
@@ -170,14 +168,15 @@ export const newComplaint = (s: State, receivedBy = '', now = new Date()): Compl
   id: uid('cp'), ref: nextRef('R', Object.values(s.complaints), now), at: nowLocal(now), client: '', affaire: '', channel: '', receivedBy, description: '',
   severity: 'mineure', processId: '', contactedAt: '', immediate: '', pilot: '', cost: null, resolvedAt: '', courtesyAt: '',
 });
-export function complaintStats(s: State, period: string) {
+export function complaintStats(s: State, period: string, now = new Date()) {
   const cs = Object.values(s.complaints).filter(c => c.at.slice(0, 7) === period);
   const delays = cs.map(contactDelay).filter((d): d is number => d !== null);
   const byProcess = PROCESS_IDS.map(p => ({ p, n: cs.filter(c => c.processId === p).length })).sort((a, b) => b.n - a.n);
   return {
     count: cs.length, cost: sum(cs.map(c => c.cost)),
     avgDelay: delays.length ? delays.reduce((a, b) => a + b, 0) / delays.length : null,
-    within48Pct: cs.length ? Math.round(cs.filter(c => (contactDelay(c) ?? Infinity) <= CONTACT_HOURS).length / cs.length * 100) : null,
+    // only complaints already called back, or whose 48 h have passed
+    within48Pct: (() => { const due = cs.filter(c => c.contactedAt || (hoursBetween(c.at, now) ?? 0) >= CONTACT_HOURS); return due.length ? Math.round(due.filter(c => (contactDelay(c) ?? Infinity) <= CONTACT_HOURS).length / due.length * 100) : null; })(),
     top: byProcess[0]?.n ? byProcess[0] : null,
   };
 }
@@ -204,13 +203,15 @@ export const QUESTIONS = [
   'Sur une échelle de 0 à 10, recommanderiez-vous notre entreprise à un confrère ?',
 ];
 export const isNegative = (f: Feedback) => f.q1 === false || f.q2 === false || (f.q3 !== null && f.q3 <= 6);
-export type FeedbackState = 'to_ask' | 'doubt' | 'to_invoice' | 'done';
+export type FeedbackState = 'to_ask' | 'unhappy' | 'doubt' | 'to_invoice' | 'done';
 export const FEEDBACK_STATE: Record<FeedbackState, { label: string; tone: 'ok' | 'warn' | 'alert' | 'pending' }> = {
-  to_ask: { label: 'Questions à poser', tone: 'pending' }, doubt: { label: 'Réserve à régler', tone: 'alert' },
+  to_ask: { label: 'Questions à poser', tone: 'pending' }, unhappy: { label: 'Insatisfaction à traiter', tone: 'alert' }, doubt: { label: 'Réserve à régler', tone: 'alert' },
   to_invoice: { label: 'Facture de solde à émettre', tone: 'warn' }, done: { label: 'Facturé', tone: 'ok' },
 };
-export function feedbackState(f: Feedback): FeedbackState {
+// A dissatisfied customer is handled as a complaint (2.3) before the final invoice
+export function feedbackState(f: Feedback, s?: Pick<State, 'complaints'>): FeedbackState {
   if (f.q1 === null || f.q2 === null || f.q3 === null) return 'to_ask';
+  if (!f.invoicedAt && isNegative(f) && !(f.complaintId && s?.complaints[f.complaintId]?.courtesyAt)) return 'unhappy';
   if (f.doubt.trim() && !f.doubtSolvedAt) return 'doubt';
   return f.invoicedAt ? 'done' : 'to_invoice';
 }
@@ -237,17 +238,17 @@ export function feedbackSummary(s: State, today = new Date()) {
     count: fs.length, nps: nps(complete),
     satisfiedPct: complete.length ? Math.round(complete.filter(f => f.q1 && f.q2).length / complete.length * 100) : null,
     avgInvoiceDays: delays.length ? delays.reduce((a, b) => a + b, 0) / delays.length : null,
-    toInvoice: fs.filter(f => feedbackState(f) === 'to_invoice').length,
+    toInvoice: fs.filter(f => feedbackState(f, s) === 'to_invoice').length,
   };
 }
 export function feedbackInsights(s: State, today = new Date()): Insight[] {
   const out: Insight[] = [];
   const fs = Object.values(s.feedbacks);
-  const doubt = fs.filter(f => feedbackState(f) === 'doubt');
+  const doubt = fs.filter(f => feedbackState(f, s) === 'doubt');
   if (doubt.length) out.push({ key: 'doubt', tone: 'bad', title: 'Réserve du client à régler', text: `${names(doubt, f => `${f.client} : ${f.doubt}`)}. La régler dans la journée, avant qu'elle ne devienne un motif d'impayé.` });
-  const neg = fs.filter(f => isNegative(f) && !f.complaintId);
-  if (neg.length) out.push({ key: 'neg', tone: 'warn', title: 'Client insatisfait', text: `${names(neg, f => f.client)} : enregistrer une réclamation (outil 2.3) pour traiter la cause.` });
-  const inv = fs.filter(f => feedbackState(f) === 'to_invoice' && (daysBetween(f.date, today) ?? 0) > 1);
+  const neg = fs.filter(f => feedbackState(f, s) === 'unhappy');
+  if (neg.length) out.push({ key: 'neg', tone: 'bad', title: 'Client insatisfait', text: `${names(neg, f => f.client)} : traiter comme une réclamation (outil 2.3) avant la facture de solde.` });
+  const inv = fs.filter(f => feedbackState(f, s) === 'to_invoice' && (daysBetween(f.date, today) ?? 0) > 1);
   if (inv.length) out.push({ key: 'inv', tone: 'warn', title: 'Facture de solde en attente', text: `${names(inv, f => f.client)} : bilan validé, facturer sous 24 h sans attendre la fin du mois.` });
   const prom = fs.filter(f => (f.q3 ?? 0) >= 9 && !f.reviewAsked);
   if (prom.length) out.push({ key: 'review', tone: 'good', title: 'Clients prêts à recommander', text: `${names(prom, f => f.client)} : note de 9 ou 10, demander un avis ou une mise en relation.` });

@@ -39,3 +39,13 @@ Règles appliquées à l'outil 1.1 et à la fiche action (5 Pourquoi + 5M). Les 
 
 - Boutons d'icône : `aria-label` et `title`. Les éléments visibles au survol le sont aussi au focus clavier (`focus:opacity-100`).
 - Aucune information portée par la couleur seule : chaque statut a aussi un libellé (« Dérive (−4 %) »).
+
+## Outils 2.1 à 5.4 : une même forme
+
+- **En-tête** : les 5 processus sous le nom de l'entreprise, puis les outils du processus en onglets (numéro en or, libellé court), avec un compteur rouge (alerte) ou orange (à faire), et l'onglet Actions du processus.
+- **Écran d'un outil**, dans cet ordre : la synthèse (une question en titre, 4 chiffres clés, messages d'analyse, 4 visibles puis « Voir les autres »), le registre (filtres en pastilles avec leur nombre, une ligne par enregistrement : référence en police à chasse fixe, titre, détail, responsable et échéance à droite, statut en badge), les chiffres proposés au tableau de pilotage quand l'outil en calcule, puis « Méthode en 3 étapes », fermée par défaut.
+- **Outil vide** : une carte qui explique l'outil en deux phrases, le bouton principal, et « Voir un exemple traité ».
+- **Fiche d'un enregistrement** : sections numérotées dans l'ordre du travail réel (constat, décision, coût, suite) ; les boutons vers un autre outil portent son numéro (« Ouvrir un atelier 5 Pourquoi », « Réclamer au fournisseur ») ; les documents à imprimer sont dans le pied de la fiche.
+- **Délais** : le temps restant en orange (« reste 12 h »), le retard en rouge (« en retard de 12 h »), toujours en toutes lettres.
+- **Couleurs de choix** : vert pour conforme ou oui, rouge pour non conforme ou non, orange pour une réserve ; texte blanc seulement sur les teintes foncées (700 et plus), texte foncé sur les teintes claires.
+- **Documents imprimés** : PDF écrits par l'application (bande de titre colorée, tableaux, cases de signature) ; instruction de poste et charte de classement en impression A4 portrait du navigateur, seules sur la page.

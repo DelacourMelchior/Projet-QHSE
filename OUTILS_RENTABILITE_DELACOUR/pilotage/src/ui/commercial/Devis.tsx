@@ -4,8 +4,10 @@ import { useEffect, useState } from 'react';
 import { Check, FileDown, Lightbulb, Plus, Printer, Send, Trash2 } from 'lucide-react';
 import type { Quote, QuoteCost, State } from '../../domain/types';
 import {
-  FOLLOW_DAYS, LOCK_STATE, LOCKS, needsVisas, newQuote, QUOTE_STATE, quoteCost, quoteInsights, quoteIssues, quoteMargin, quoteState, quoteStats,
+  FOLLOW_DAYS, forecast, LOCK_STATE, LOCKS, LOST_CATEGORIES, lostStats, needsVisas, newQuote, QUOTE_STATE, quoteCost, quoteFullCost, quoteInsights, quoteIssues, quoteMargin, quoteState, quoteStats,
 } from '../../domain/commercial';
+import { parseNumber } from '../../domain/numbers';
+import { PasteImport } from '../PasteImport';
 import { applyCommercialExample } from '../../domain/commercialExamples';
 import { quotePdf } from '../../domain/commercialPdf';
 import { daysBetween } from '../../domain/base';
@@ -56,6 +58,10 @@ export function Devis({ focus, clearFocus }: ScreenProps) {
       <Card className="space-y-3 p-3 sm:p-4">
         <ToolHeader title="Devis" text="Un devis ne part pas tant que les verrous ne sont pas vérifiés et que la marge n'est pas au-dessus du plancher (ou validée par la direction).">
           <Button kind="primary" onClick={() => setOpen(newQuote(state))}><Plus size={14} />Nouveau devis</Button>
+          <PasteImport title="Importer des devis depuis Excel ou le logiciel de devis" label="Importer"
+            cols={[{ key: 'ref', label: 'Numéro', aliases: ['devis', 'ref', 'n°'] }, { key: 'client', label: 'Client', aliases: ['societe', 'raison sociale'] }, { key: 'object', label: 'Objet', aliases: ['designation', 'libelle'] },
+              { key: 'date', label: 'Date', aliases: [] }, { key: 'amount', label: 'Montant HT', aliases: ['montant', 'total ht', 'prix'] }, { key: 'cost', label: 'Coût', aliases: ['cout de revient', 'debourse', 'prix de revient'] }]}
+            onImport={rows => { let n = 0; update(d => { rows.forEach(r => { if (!r.client && !r.ref) return; const q = newQuote(d); const date = (r.date.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/) || []); d.quotes[q.id] = { ...q, ref: r.ref || q.ref, client: r.client, object: r.object, date: date.length ? `${date[3]}-${date[2].padStart(2, '0')}-${date[1].padStart(2, '0')}` : q.date, amount: parseNumber(r.amount), cost: r.cost ? { material: null, hours: null, subcontract: null, other: parseNumber(r.cost) } : undefined }; n++; }); }); return n; }} />
           <Button kind="ghost" onClick={() => window.print()}><Printer size={14} />Imprimer</Button>
         </ToolHeader>
         <Chips value={filter} onChange={setFilter} items={[['open', 'En cours', count('open')], ['won', 'Gagnés', count('won')], ['lost', 'Perdus', count('lost')], ['all', 'Tous', count('all')]]} />
@@ -67,7 +73,7 @@ export function Devis({ focus, clearFocus }: ScreenProps) {
                 <Row key={q.id} onClick={() => setOpen(q)}
                   lead={<span className="w-[92px] shrink-0 font-mono text-[11px] font-semibold text-slate-700">{q.ref}</span>}
                   title={`${q.client || 'Client à saisir'}${q.object ? ` · ${q.object}` : ''}`}
-                  sub={st === 'draft' ? quoteIssues(q, state.params, money)[0] : st === 'lost' ? q.lostReason : [q.weeks ? `${q.weeks} semaine(s)` : '', q.sentAt ? `envoyé le ${frDate(q.sentAt)}` : '', st === 'won' && !q.depositReceived ? 'acompte non encaissé' : ''].filter(Boolean).join(' · ')}
+                  sub={st === 'draft' ? quoteIssues(q, state.params, money)[0] : st === 'lost' ? [q.lostCategory ? LOST_CATEGORIES[q.lostCategory] : '', q.lostReason].filter(Boolean).join(' : ') : [q.weeks ? `${q.weeks} semaine(s)` : '', q.sentAt ? `envoyé le ${frDate(q.sentAt)}` : '', st === 'won' && !q.depositReceived ? 'acompte non encaissé' : ''].filter(Boolean).join(' · ')}
                   right={<><span className="block font-mono font-semibold text-slate-800">{formatValue(q.amount, '€')}</span>{m ? <span className={m.pct < state.params.marginFloorPct ? 'font-semibold text-red-700' : ''}>marge {Math.round(m.pct)} %</span> : frDate(q.date)}</>}
                   badge={<StatusBadge level={QUOTE_STATE[st].tone} text={QUOTE_STATE[st].label} />} />
               );
@@ -75,6 +81,18 @@ export function Devis({ focus, clearFocus }: ScreenProps) {
           </ul>
         )}
       </Card>
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card className="space-y-2 p-3 sm:p-4">
+          <h2 className="text-xs font-bold text-slate-900">Carnet de commandes à venir</h2>
+          {(() => { const f = forecast(state); return money ? (
+            <p className="text-[11px] text-slate-700">Devis en cours : <strong className="font-mono">{formatValue(f.pending, '€')}</strong>, dont <strong className="font-mono">{formatValue(f.weighted, '€')}</strong> probables (chance de gagner saisie dans chaque devis, 50 % sinon), pour un objectif de CA de <strong className="font-mono">{formatValue(f.objective3m, '€')}</strong> par trimestre{f.weighted < f.objective3m ? ' : le portefeuille ne couvre pas le prochain trimestre, prospecter.' : '.'}</p>
+          ) : <p className="text-[11px] text-slate-500">Réservé à la direction.</p>; })()}
+        </Card>
+        <Card className="space-y-2 p-3 sm:p-4">
+          <h2 className="text-xs font-bold text-slate-900">Pourquoi on perd (12 mois)</h2>
+          {lostStats(state).length ? <ul className="space-y-0.5 text-[11px] text-slate-700">{lostStats(state).map(x => <li key={x.key}><strong>{x.label}</strong> : {x.n} devis{money ? `, ${formatValue(x.amount, '€')}` : ''}</li>)}</ul> : <p className="text-[11px] text-slate-500">Aucun devis perdu classé.</p>}
+        </Card>
+      </div>
       <FeedBox tool="2.1" period={month} />
       <Method rule="Mieux vaut perdre un devis que signer une affaire qui détruit la marge. 5 verrous cochés en 3 minutes protègent l'entreprise."
         steps={[['5 verrous en 3 minutes', "Avant d'envoyer, le commercial vérifie les 5 points avec le responsable technique."], ['Marge au-dessus du plancher', 'En dessous, le devis ne part qu\'avec une dérogation écrite de la direction.'], ['Acompte avant de lancer', `Ni matière commandée ni fabrication lancée avant l'acompte de ${state.params.depositPct} % encaissé.`]]}
@@ -91,6 +109,8 @@ function QuoteSheet({ initial, onClose }: { initial: Quote; onClose(): void }) {
   const [q, setQ] = useState<Quote>(() => structuredClone(initial));
   const [ideas, setIdeas] = useState<number | null>(null);
   const [error, setError] = useState('');
+  const [express, setExpress] = useState(() => !!initial.cost && initial.cost.material === null && initial.cost.hours === null && initial.cost.subcontract === null && initial.cost.other !== null);
+  const [note, setNote] = useState('');
   if (!state) return null;
   const money = !teamView;
   const p = state.params;
@@ -143,6 +163,8 @@ function QuoteSheet({ initial, onClose }: { initial: Quote; onClose(): void }) {
             <Field label="Date"><input type="date" className={inputCls} value={q.date} onChange={e => set({ date: e.target.value })} /></Field>
             <div className="sm:col-span-2"><Field label="Prix de vente (€ HT)"><NumInput value={q.amount} onChange={v => set({ amount: v })} /></Field></div>
             <div className="sm:col-span-2"><Field label="Délai promis (semaines)"><NumInput value={q.weeks} onChange={v => set({ weeks: v })} /></Field></div>
+            <div className="sm:col-span-4"><Field label="Interlocuteur client (nom, téléphone)"><input className={inputCls} value={q.contact || ''} onChange={e => set({ contact: e.target.value })} /></Field></div>
+            <div className="sm:col-span-2"><Field label="Chance de gagner (%)" hint="Sert à la prévision du carnet."><NumInput value={q.probability ?? null} onChange={v => set({ probability: v === null ? null : Math.max(0, Math.min(100, v)) })} /></Field></div>
           </div>
         </section>
 
@@ -167,6 +189,7 @@ function QuoteSheet({ initial, onClose }: { initial: Quote; onClose(): void }) {
                     </div>
                   </div>
                   {ideas === i && <p className="pl-10 text-[11px] text-slate-600">À vérifier : {l.ideas.join(' · ')}.</p>}
+                  {lk.state && <input className={`${inputCls} ml-10 !w-[calc(100%-2.5rem)]`} value={lk.by || ''} list="people" placeholder={i === 2 || i === 4 ? 'Vérifié avec (obligatoire)' : 'Vérifié avec'} aria-label={`Verrou ${l.process} vérifié avec`} onChange={e => setLock(i, { by: e.target.value })} />}
                   {(lk.state === 'reserve' || lk.state === 'ko' || lk.note) && <input className={`${inputCls} ml-10 !w-[calc(100%-2.5rem)]`} value={lk.note} placeholder={lk.state === 'ko' ? 'Ce qui bloque' : 'La réserve, écrite'} aria-label={`Réserve ${l.process}`} onChange={e => setLock(i, { note: e.target.value })} />}
                 </li>
               );
@@ -178,15 +201,26 @@ function QuoteSheet({ initial, onClose }: { initial: Quote; onClose(): void }) {
           <SubTitle>3. Marge</SubTitle>
           {!money ? <p className="text-[11px] text-slate-500">Coûts et marge réservés à la direction.</p> : (
             <>
-              <div className="grid gap-2 sm:grid-cols-4">
-                <Field label="Matière et fournitures (€)"><NumInput value={cost.material} onChange={v => setCost({ material: v })} /></Field>
-                <Field label="Heures de main-d'œuvre" hint={`à ${formatValue(p.hourlyRate, '€')} de l'heure`}><NumInput value={cost.hours} onChange={v => setCost({ hours: v })} /></Field>
-                <Field label="Sous-traitance (€)" hint="Peinture, galvanisation, transport dédié…"><NumInput value={cost.subcontract} onChange={v => setCost({ subcontract: v })} /></Field>
-                <Field label="Autres frais directs (€)"><NumInput value={cost.other} onChange={v => setCost({ other: v })} /></Field>
-              </div>
+              <label className="flex items-center gap-2 text-[11px] text-slate-700"><input type="checkbox" checked={express} onChange={e => { setExpress(e.target.checked); if (e.target.checked) setCost({ material: null, hours: null, subcontract: null, other: total }); }} />Contrôle express : je saisis seulement le coût de revient total calculé par mon logiciel de devis</label>
+              {express ? (
+                <div className="grid gap-2 sm:grid-cols-4"><Field label="Coût de revient total (€ HT)"><NumInput value={cost.other} onChange={v => setCost({ other: v })} /></Field></div>
+              ) : (
+                <div className="grid gap-2 sm:grid-cols-5">
+                  <Field label="Matière et fournitures (€)"><NumInput value={cost.material} onChange={v => setCost({ material: v })} /></Field>
+                  <Field label="Heures de main-d'œuvre"><NumInput value={cost.hours} onChange={v => setCost({ hours: v })} /></Field>
+                  <Field label="Au taux de">
+                    <select className={inputCls} value={cost.rate || ''} onChange={e => setCost({ rate: e.target.value })}>
+                      <option value="">Général ({formatValue(p.hourlyRate, '€')}/h)</option>
+                      {(p.rates || []).map(r => <option key={r.name} value={r.name}>{r.name} ({formatValue(r.rate, '€')}/h)</option>)}
+                    </select>
+                  </Field>
+                  <Field label="Sous-traitance (€)" hint="Peinture, galvanisation, transport dédié…"><NumInput value={cost.subcontract} onChange={v => setCost({ subcontract: v })} /></Field>
+                  <Field label="Autres frais directs (€)"><NumInput value={cost.other} onChange={v => setCost({ other: v })} /></Field>
+                </div>
+              )}
               <p className="rounded-lg bg-slate-50 px-3 py-2 text-[11px] text-slate-700">
                 {total === null || !m ? 'Saisissez le prix et les coûts pour calculer la marge.'
-                  : <>Coût de revient <strong className="font-mono">{formatValue(total, '€')}</strong>, marge brute <strong className={`font-mono ${m.pct < p.marginFloorPct ? 'text-red-700' : 'text-emerald-800'}`}>{formatValue(m.value, '€')} ({Math.round(m.pct)} %)</strong> pour un plancher de {p.marginFloorPct} %.</>}
+                  : <>Coût direct <strong className="font-mono">{formatValue(total, '€')}</strong>, marge brute <strong className={`font-mono ${m.pct < p.marginFloorPct ? 'text-red-700' : 'text-emerald-800'}`}>{formatValue(m.value, '€')} ({Math.round(m.pct)} %)</strong> pour un plancher de {p.marginFloorPct} % (marge brute = prix moins coûts directs : matière, heures, sous-traitance).{p.overheadPct ? <> Après {p.overheadPct} % de frais généraux : <strong className="font-mono">{formatValue((q.amount || 0) - (quoteFullCost(q, p) || 0), '€')}</strong>.</> : ''}</>}
               </p>
               {m && m.pct < p.marginFloorPct && (
                 <Field label="Dérogation de la direction (qui, pourquoi)"><input className={inputCls} value={q.derogation} placeholder="Ex. : Jean-Marc, client stratégique, première commande" onChange={e => set({ derogation: e.target.value })} /></Field>
@@ -209,6 +243,18 @@ function QuoteSheet({ initial, onClose }: { initial: Quote; onClose(): void }) {
           </section>
         )}
 
+        {money && !isNew && (
+          <section className="space-y-1.5">
+            <SubTitle>Révisions du devis</SubTitle>
+            {(q.revisions || []).length > 0 && <ul className="space-y-0.5 text-[11px] text-slate-700">{q.revisions!.map(r => <li key={r.v}><span className="font-mono">V{r.v}</span> · {frDate(r.date)} · {formatValue(r.amount, '€')}{r.marginPct !== null ? ` · marge ${Math.round(r.marginPct)} %` : ''}{r.note ? ` · ${r.note}` : ''}</li>)}</ul>}
+            <div className="flex gap-1.5">
+              <input className={inputCls} value={note} placeholder="Ce qui change (ex. : remise de 5 % demandée par l'acheteur)" aria-label="Motif de la révision" onChange={e => setNote(e.target.value)} />
+              <Button className="shrink-0" onClick={() => { const prev = state.quotes[q.id]; const pm = quoteMargin(prev, p); set({ revisions: [...(q.revisions || []), { v: (q.revisions || []).length + 1, date: today, amount: prev.amount, marginPct: pm ? pm.pct : null, note: note.trim() }], status: q.status === 'sent' ? 'draft' : q.status }); setNote(''); }}>Garder la version actuelle et réviser</Button>
+            </div>
+            <p className="text-[11px] text-slate-500">Une remise ou une modification repasse le devis en préparation : la marge et les verrous sont revus avant le nouvel envoi.</p>
+          </section>
+        )}
+
         <section className="space-y-2">
           <SubTitle>{needsVisas(q, p) ? '5' : '4'}. Suivi</SubTitle>
           <div className="flex flex-wrap items-center gap-1.5" role="radiogroup" aria-label="Issue du devis">
@@ -220,17 +266,28 @@ function QuoteSheet({ initial, onClose }: { initial: Quote; onClose(): void }) {
           <div className="grid gap-2 sm:grid-cols-4">
             {q.status !== 'draft' && <Field label="Envoyé le"><input type="date" className={inputCls} value={q.sentAt} onChange={e => set({ sentAt: e.target.value })} /></Field>}
             {q.status === 'sent' && (
-              <Field label="Dernière relance" hint={q.followedAt || q.sentAt ? `Sans nouvelle depuis ${daysBetween(q.followedAt || q.sentAt, new Date())} jour(s).` : undefined}>
-                <span className="flex gap-1.5"><input type="date" className={inputCls} value={q.followedAt} onChange={e => set({ followedAt: e.target.value })} /><Button className="shrink-0 !px-2" onClick={() => set({ followedAt: today })}>Aujourd'hui</Button></span>
-              </Field>
+              <div className="space-y-1.5 sm:col-span-4">
+                <span className="block text-[11px] font-semibold text-slate-700">Relances {q.followedAt || q.sentAt ? `(sans nouvelle depuis ${daysBetween([q.followedAt, ...(q.followUps || []).map(f => f.date)].filter(Boolean).sort().pop() || q.sentAt, new Date())} jour(s))` : ''}</span>
+                {(q.followUps || []).length > 0 && <ul className="space-y-0.5 text-[11px] text-slate-700">{q.followUps!.map((f, i) => <li key={i}><span className="font-mono">{frDate(f.date)}</span> · {f.note || 'relance'} ({f.by})</li>)}</ul>}
+                <div className="flex flex-wrap gap-1.5">
+                  <input className={`${inputCls} min-w-[200px] flex-1`} value={note} placeholder="Ce que dit le client" aria-label="Compte rendu de la relance" onChange={e => setNote(e.target.value)} />
+                  <Button className="shrink-0" onClick={() => { set({ followUps: [...(q.followUps || []), { date: today, note: note.trim(), by: author }], followedAt: today }); setNote(''); }}>Relancé aujourd'hui</Button>
+                </div>
+                <Field label="Prochaine relance le"><input type="date" className={`${inputCls} sm:w-48`} value={q.nextFollowAt || ''} onChange={e => set({ nextFollowAt: e.target.value })} /></Field>
+              </div>
             )}
             {['won', 'lost', 'dropped'].includes(q.status) && <Field label="Décidé le"><input type="date" className={inputCls} value={q.decidedAt} onChange={e => set({ decidedAt: e.target.value })} /></Field>}
-            {q.status === 'lost' && <div className="sm:col-span-2"><Field label="Pourquoi perdu"><input className={inputCls} value={q.lostReason} placeholder="Prix, délai, technique, relation…" onChange={e => set({ lostReason: e.target.value })} /></Field></div>}
+            {q.status === 'lost' && <Field label="Raison principale"><select className={inputCls} value={q.lostCategory || ''} onChange={e => set({ lostCategory: e.target.value as Quote['lostCategory'] })}><option value="">À choisir</option>{Object.entries(LOST_CATEGORIES).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></Field>}
+            {q.status === 'lost' && <div className="sm:col-span-2"><Field label="Précision"><input className={inputCls} value={q.lostReason} placeholder="Ex. : concurrent 12 % moins cher" onChange={e => set({ lostReason: e.target.value })} /></Field></div>}
             {q.status === 'won' && (
               <label className="flex items-center gap-2 pt-5 text-[11px] text-slate-700 sm:col-span-2">
-                <input type="checkbox" checked={q.depositReceived} onChange={e => set({ depositReceived: e.target.checked })} />Acompte de {p.depositPct} % encaissé (sinon : ni matière ni fabrication)
+                <input type="checkbox" checked={q.depositReceived} onChange={e => set({ depositReceived: e.target.checked, depositAt: e.target.checked ? q.depositAt || today : '' })} />Acompte de {p.depositPct} % encaissé (sinon : ni matière ni fabrication)
               </label>
             )}
+            {q.status === 'won' && <Field label="Acompte (€)"><NumInput value={q.depositAmount ?? (q.amount ? Math.round(q.amount * p.depositPct / 100) : null)} onChange={v => set({ depositAmount: v })} /></Field>}
+            {q.status === 'won' && <Field label="Encaissé le"><input type="date" className={inputCls} value={q.depositAt || ''} onChange={e => set({ depositAt: e.target.value, depositReceived: !!e.target.value })} /></Field>}
+            {q.status === 'won' && <Field label="Fabrication lancée le"><input type="date" className={inputCls} value={q.startedAt || ''} onChange={e => set({ startedAt: e.target.value })} /></Field>}
+            {q.status === 'won' && q.startedAt && !q.depositReceived && <p className="text-[11px] font-semibold text-red-700 sm:col-span-4">Fabrication lancée sans acompte encaissé.</p>}
           </div>
         </section>
       </div>

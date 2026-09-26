@@ -1,7 +1,7 @@
 // Tool 3.2 "Instructions visuelles au poste": the 4 standard steps of a workstation, the right gesture and the trap in pictures,
 // protective equipment, the people allowed to work alone (3-question test), a version that follows every defect (living standard).
-import { useEffect, useRef, useState } from 'react';
-import { ArrowUp, Camera, Plus, Printer, Trash2, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { ArrowUp, Plus, Printer, Trash2, X } from 'lucide-react';
 import type { Sop, SopStep } from '../../domain/types';
 import { DEFAULT_PPE, ncsSinceVersion, newSop, photoCount, sopInsights, sopVersion } from '../../domain/operations';
 import { applyOperationsExample } from '../../domain/operationsExamples';
@@ -9,7 +9,7 @@ import { PROCESS_IDS, processLabel } from '../../domain/base';
 import { frDate, isoDate } from '../../domain/periods';
 import { useStore } from '../../store/StoreContext';
 import { Button, DeleteButton, Card, Empty, Field, inputCls, Method, Modal, Row, StatusBadge, SubTitle, Summary, Tile, ToolHeader } from '../common';
-import { readPhoto } from '../photo';
+import { PhotoBox } from '../PhotoBox';
 import { usePrintOne } from '../PrintOne';
 import type { ScreenProps } from '../screens';
 
@@ -68,28 +68,6 @@ export function Instructions({ focus, clearFocus }: ScreenProps) {
         tips={['Une photo avec une flèche verte et une croix rouge vaut mieux qu\'un paragraphe.', 'Standard vivant : un défaut au poste, la fiche change sous 48 h.']} />
       {open && <SopSheet initial={open} onClose={() => setOpen(null)} onPrint={s => print(<SopPrint s={s} company={state.settings.companyName} />)} />}
       {printNode}
-    </div>
-  );
-}
-
-function PhotoBox({ value, onChange, label }: { value: string; onChange(v: string): void; label: string }) {
-  const ref = useRef<HTMLInputElement>(null);
-  const [error, setError] = useState('');
-  return (
-    <div className="space-y-1">
-      {value ? (
-        <div className="relative">
-          <img src={value} alt={label} className="h-28 w-full rounded-lg border border-slate-200 object-cover" />
-          <button type="button" aria-label={`Retirer la photo : ${label}`} onClick={() => onChange('')} className="absolute right-1 top-1 rounded-md bg-white/90 p-1 text-slate-600 hover:text-red-600"><X size={14} /></button>
-        </div>
-      ) : (
-        <button type="button" onClick={() => ref.current?.click()} className="flex h-28 w-full flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-slate-300 text-[11px] text-slate-500 hover:border-delacour-gold hover:text-delacour-primary">
-          <Camera size={18} />Photo
-        </button>
-      )}
-      <input ref={ref} type="file" accept="image/*" capture="environment" className="hidden" aria-label={label}
-        onChange={async e => { const f = e.target.files?.[0]; e.target.value = ''; if (!f) return; try { onChange(await readPhoto(f)); setError(''); } catch { setError('Image illisible.'); } }} />
-      {error && <span className="text-[11px] text-red-700">{error}</span>}
     </div>
   );
 }

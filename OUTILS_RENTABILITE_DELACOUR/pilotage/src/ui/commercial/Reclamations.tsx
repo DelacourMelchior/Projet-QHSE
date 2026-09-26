@@ -3,10 +3,12 @@
 import { useEffect, useState } from 'react';
 import { PhoneCall, Plus, Printer, SearchCheck, Trash2 } from 'lucide-react';
 import type { Complaint, State } from '../../domain/types';
-import { COMPLAINT_STATE, complaintInsights, complaintState, complaintStats, CONTACT_HOURS, contactDelay, courtesyDue, newComplaint } from '../../domain/commercial';
+import { COMPLAINT_CATEGORIES, COMPLAINT_STATE, complaintInsights, complaintLetter, complaintState, complaintStats, CONTACT_HOURS, contactDelay, courtesyDue, deliveriesOf, newComplaint } from '../../domain/commercial';
+import { QuickButton } from '../QuickForm';
+import { Copy, Mail } from 'lucide-react';
 import { applyCommercialExample } from '../../domain/commercialExamples';
 import { newAnalysis, newNc } from '../../domain/quality';
-import { formatHours, frStamp, hoursBetween, nowLocal, PROCESS_IDS, processLabel } from '../../domain/base';
+import { formatHours, frStamp, nowLocal, PROCESS_IDS, processLabel, workHoursBetween } from '../../domain/base';
 import { formatValue } from '../../domain/numbers';
 import { frDate, isoDate, periodLabel, periodOfDate } from '../../domain/periods';
 import { useStore } from '../../store/StoreContext';
@@ -26,8 +28,8 @@ const TYPICAL: Record<string, string> = {
 };
 
 // Time left before 48 h, or late by
-function clock(c: Complaint, now: Date) {
-  const h = hoursBetween(c.at, now) ?? 0;
+function clock(c: Complaint, now: Date, business = false) {
+  const h = workHoursBetween(c.at, now, business) ?? 0;
   return h < CONTACT_HOURS ? { late: false, text: `reste ${formatHours(CONTACT_HOURS - h)}` } : { late: true, text: `en retard de ${formatHours(h - CONTACT_HOURS)}` };
 }
 
@@ -38,7 +40,7 @@ export function Reclamations({ nav, focus, clearFocus }: ScreenProps) {
   useEffect(() => { if (focus && state?.complaints[focus]) { setOpen(state.complaints[focus]); clearFocus(); } }, [focus]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!state) return null;
   const now = new Date();
-  const all = Object.values(state.complaints).sort((a, b) => (a.at < b.at ? 1 : -1)).map(c => ({ c, st: complaintState(c, now) }));
+  const all = Object.values(state.complaints).sort((a, b) => (a.at < b.at ? 1 : -1)).map(c => ({ c, st: complaintState(c, now, !!state.params.businessHours) }));
   if (!all.length) {
     return (
       <div className="space-y-4">
@@ -57,21 +59,23 @@ export function Reclamations({ nav, focus, clearFocus }: ScreenProps) {
   return (
     <div className="space-y-4">
       <Summary title="Les clients mécontents sont-ils rappelés sous 48 h ?" insights={complaintInsights(state, now)} tiles={<>
-        <Tile title={`Reçues en ${periodLabel(month)}`} value={String(s.count)} sub={s.top ? `surtout ${processLabel(s.top.p)}` : 'processus à qualifier'} />
+        <Tile title={`Reçues en ${periodLabel(month)}`} value={String(s.count)} sub={s.ratePct !== null ? `${s.ratePct.toFixed(1).replace('.', ',')} % des ${s.deliveries} livraisons` : s.top ? `surtout ${processLabel(s.top.p)}` : 'processus à qualifier'} />
         <Tile title="Rappelées sous 48 h" value={s.within48Pct === null ? '—' : `${s.within48Pct} %`} sub="objectif : toutes" tone={s.within48Pct === null ? undefined : s.within48Pct === 100 ? 'ok' : 'alert'} />
         <Tile title="Délai moyen de rappel" value={s.avgDelay === null ? '—' : formatHours(s.avgDelay)} sub="entre la réception et l'appel" />
-        <Tile title="Coût des litiges du mois" value={formatValue(s.cost, '€')} sub="avoirs, transport, reprise (5.2)" />
+        <Tile title="Coût des litiges du mois" value={formatValue(s.cost, '€')} sub={s.blocked ? `et ${formatValue(s.blocked, '€')} de factures bloquées` : 'avoirs, transport, reprise (5.2)'} tone={s.blocked ? 'alert' : undefined} />
       </>} />
       <Card className="space-y-3 p-3 sm:p-4">
         <ToolHeader title="Registre des réclamations" text="Une ligne par plainte, quel que soit le canal. Elle est close après l'appel de courtoisie.">
           <Button kind="primary" onClick={() => setOpen(newComplaint(state, author))}><Plus size={14} />Enregistrer une réclamation</Button>
+          <QuickButton label="Saisie rapide" title="Réclamation reçue" fields={[{ key: 'client', label: 'Client', required: true }, { key: 'description', label: 'Ce qu\'il reproche', required: true }, { key: 'channel', label: 'Reçue comment (téléphone, e-mail, chantier)' }]}
+            onSave={v => update(d => { const c = newComplaint(d, author); d.complaints[c.id] = { ...c, client: v.client, description: v.description, channel: /mail/i.test(v.channel || '') ? 'mail' : /chantier|site|place/i.test(v.channel || '') ? 'site' : 'tel' }; })} />
           <Button kind="ghost" onClick={() => window.print()}><Printer size={14} />Imprimer</Button>
         </ToolHeader>
         <Chips value={filter} onChange={setFilter} items={(['call', 'open', 'closed', 'all'] as Filter[]).map(f => [f, { call: 'À rappeler', open: 'En traitement', closed: 'Closes', all: 'Toutes' }[f], all.filter(x => groups[f].includes(x.st)).length])} />
         {shown.length === 0 ? <p className="py-6 text-center text-xs text-slate-500">{filter === 'call' ? 'Aucun client à rappeler.' : 'Aucune réclamation dans ce filtre.'}</p> : (
           <ul className="divide-y divide-slate-100">
             {shown.map(({ c, st }) => {
-              const k = clock(c, now);
+              const k = clock(c, now, !!state.params.businessHours);
               return (
                 <Row key={c.id} onClick={() => setOpen(c)}
                   lead={<span className="w-[92px] shrink-0 font-mono text-[11px] font-semibold text-slate-700">{c.ref}</span>}
@@ -84,6 +88,20 @@ export function Reclamations({ nav, focus, clearFocus }: ScreenProps) {
           </ul>
         )}
       </Card>
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card className="space-y-2 p-3 sm:p-4">
+          <h2 className="text-xs font-bold text-slate-900">Motifs de {periodLabel(month)}</h2>
+          {s.byCategory.length ? <ul className="space-y-0.5 text-[11px] text-slate-700">{s.byCategory.map(x => <li key={x.key}><strong>{x.label}</strong> : {x.n}</li>)}</ul> : <p className="text-[11px] text-slate-500">Classez le motif de chaque réclamation pour voir ce qui revient.</p>}
+        </Card>
+        <Card className="space-y-2 p-3 sm:p-4">
+          <h2 className="text-xs font-bold text-slate-900">Taux de réclamation</h2>
+          <label className="flex flex-wrap items-center gap-2 text-[11px] text-slate-700">Livraisons en {periodLabel(month)}
+            <NumInput className="!w-20 !py-1 text-right" value={deliveriesOf(state, month)} aria-label="Nombre de livraisons du mois" onChange={v => update(d => { d.params.monthDeliveries = { ...(d.params.monthDeliveries || {}), [month]: v ?? 0 }; })} />
+            <span className="text-slate-500">(compté depuis les PV de réception 3.4 si non saisi)</span>
+          </label>
+          <p className="text-[11px] text-slate-700">{s.ratePct === null ? 'Saisissez le nombre de livraisons.' : `${s.count} réclamation(s) pour ${s.deliveries} livraison(s) : ${s.ratePct.toFixed(1).replace('.', ',')} %.`}</p>
+        </Card>
+      </div>
       <FeedBox tool="2.3" period={month} />
       <Method rule="Un client mécontent rappelé sous 48 h est un client gardé ; un client ignoré bloque la facture. Trouver le processus en cause supprime la cause."
         steps={[['Inscrire dans l\'heure', 'Toute personne qui reçoit une plainte (téléphone, e-mail, chantier) l\'inscrit ici.'], ['Rappeler sous 48 h', 'Écouter sans se justifier, s\'excuser, proposer une solution de dépannage.'], ['Qualifier et clore', 'Trouver le processus en cause, lancer la correction, appeler le client 15 jours plus tard.']]} />
@@ -100,8 +118,9 @@ export function ComplaintSheet({ initial, onClose, nav }: { initial: Complaint; 
   const now = new Date();
   const isNew = !state.complaints[c.id];
   const set = (x: Partial<Complaint>) => setC(y => ({ ...y, ...x }));
-  const st = complaintState(c, now);
-  const k = clock(c, now);
+  const biz = !!state.params.businessHours;
+  const st = complaintState(c, now, biz);
+  const k = clock(c, now, biz);
   const delay = contactDelay(c);
   const valid = () => { if (!c.client.trim() || !c.description.trim()) { setError('Indiquez le client et le motif.'); return false; } return true; };
   const close = () => { if (JSON.stringify(c) === JSON.stringify(initial) || window.confirm('Fermer sans enregistrer ? Vos modifications seront perdues.')) onClose(); };
@@ -184,12 +203,39 @@ export function ComplaintSheet({ initial, onClose, nav }: { initial: Complaint; 
               </select>
             </Field>
             <Field label="Coût direct du litige (€ HT)" hint="Avoir, transport express, reprise."><NumInput value={c.cost} onChange={v => set({ cost: v })} /></Field>
+            <Field label="Motif">
+              <select className={inputCls} value={c.category || ''} onChange={e => set({ category: e.target.value as Complaint['category'] })}>
+                <option value="">À classer</option>{Object.entries(COMPLAINT_CATEGORIES).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+              </select>
+            </Field>
+            <Field label="Facture bloquée par le client (€ HT)" hint="Montant qu'il ne paie pas tant que le litige dure."><NumInput value={c.blockedInvoice ?? null} onChange={v => set({ blockedInvoice: v })} /></Field>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button onClick={toNc}>{linkedNc ? `Fiche du bac rouge ${linkedNc.ref}` : 'Déclarer au bac rouge (5.1)'}</Button>
             <Button onClick={toAnalysis}><SearchCheck size={14} />{linkedAn ? `Atelier ${linkedAn.ref}` : 'Ouvrir un atelier 5 Pourquoi'}</Button>
           </div>
         </section>
+
+        <section className="space-y-2">
+          <SubTitle>Écrire au client</SubTitle>
+          {(['ack', 'close'] as const).map(kind => { const text = complaintLetter(c, kind, state.settings.companyName); return (
+            <div key={kind} className="space-y-1 rounded-lg bg-slate-50 p-2">
+              <div className="text-[11px] font-semibold text-slate-700">{kind === 'ack' ? 'Accusé de réception (dès la réception)' : 'Clôture (après la solution)'}</div>
+              <p className="text-[11px] text-slate-700">{text}</p>
+              <div className="flex gap-2">
+                <Button className="!px-2 !py-1" onClick={() => navigator.clipboard?.writeText(text).catch(() => setError('Copie impossible : sélectionnez le texte à la main.'))}><Copy size={13} />Copier</Button>
+                <a href={`mailto:?subject=${encodeURIComponent(`Votre réclamation ${c.ref}`)}&body=${encodeURIComponent(text)}`} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"><Mail size={13} />E-mail</a>
+              </div>
+            </div>
+          ); })}
+        </section>
+
+        {(() => { const others = Object.values(state.complaints).filter(x => x.id !== c.id && c.client.trim() && x.client.trim().toLowerCase() === c.client.trim().toLowerCase()).sort((a, b) => (a.at < b.at ? 1 : -1)); return others.length > 0 && (
+          <section className="space-y-1">
+            <SubTitle>Historique de ce client ({others.length})</SubTitle>
+            <ul className="space-y-0.5 text-[11px] text-slate-700">{others.slice(0, 6).map(x => <li key={x.id}><span className="font-mono">{frDate(x.at.slice(0, 10))}</span> · {x.ref} · {x.description}</li>)}</ul>
+          </section>
+        ); })()}
 
         <section className="space-y-2">
           <SubTitle>4. Clôture</SubTitle>

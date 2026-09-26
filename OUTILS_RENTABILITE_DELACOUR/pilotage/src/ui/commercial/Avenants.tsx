@@ -3,7 +3,9 @@
 import { useEffect, useState } from 'react';
 import { Copy, FileDown, Mail, MessageSquare, Plus, Printer, Trash2 } from 'lucide-react';
 import type { Change } from '../../domain/types';
-import { agreementMessage, CHANGE_STATE, changeInsights, changeState, changeSummary, newChange, startedWithout } from '../../domain/commercial';
+import { agreementMessage, CHANGE_STATE, changeInsights, changePriceHint, changeState, changeSummary, newChange, startedWithout, toInvoiceCsv } from '../../domain/commercial';
+import { QuickButton } from '../QuickForm';
+import { PhotoBox } from '../PhotoBox';
 import { applyCommercialExample } from '../../domain/commercialExamples';
 import { changePdf } from '../../domain/commercialPdf';
 import { formatValue } from '../../domain/numbers';
@@ -44,11 +46,15 @@ export function Avenants({ focus, clearFocus }: ScreenProps) {
         <Tile title="Facturés cette année" value={formatValue(sum.invoiced, '€')} sub="suppléments qui auraient pu être offerts" tone={sum.invoiced ? 'ok' : undefined} />
         <Tile title="Acceptés, à facturer" value={formatValue(sum.toInvoice, '€')} sub="à mettre sur la prochaine facture" tone={sum.toInvoice ? 'warn' : undefined} />
         <Tile title="Accord attendu" value={String(sum.waiting)} sub={`${formatValue(sum.waitingAmount, '€')} en jeu`} />
-        <Tile title="Commencés sans accord" value={String(sum.risky)} sub="supplément difficile à facturer" tone={sum.risky ? 'alert' : undefined} />
+        <Tile title="Commencés sans accord" value={String(sum.risky)} sub={sum.offered ? `et ${formatValue(sum.offered, '€')} offerts cette année` : 'supplément difficile à facturer'} tone={sum.risky ? 'alert' : undefined} />
       </>} />
       <Card className="space-y-3 p-3 sm:p-4">
         <ToolHeader title="Avenants" text="Une ligne par demande du client. Le travail ne commence qu'avec l'accord écrit.">
           <Button kind="primary" onClick={() => setOpen(newChange(state))}><Plus size={14} />Nouvelle demande</Button>
+          <QuickButton label="Saisie rapide (chantier)" title="Demande du client sur le chantier" photo
+            fields={[{ key: 'client', label: 'Client', list: 'clients-av', required: true }, { key: 'description', label: 'Ce qu\'il demande', required: true }, { key: 'askedBy', label: 'Qui demande (côté client)' }]}
+            onSave={(v, photo) => update(d => { const c = newChange(d); d.changes[c.id] = { ...c, client: v.client, description: v.description, askedBy: v.askedBy || '', proof: photo || undefined }; })} />
+          {sum.toInvoice > 0 && <Button kind="ghost" onClick={() => downloadFile('Avenants-a-facturer.csv', '\ufeff' + toInvoiceCsv(state), 'text/csv')} title="Liste pour la comptabilité (Excel)"><FileDown size={14} />À facturer (Excel)</Button>}
           <Button kind="ghost" onClick={() => window.print()}><Printer size={14} />Imprimer</Button>
         </ToolHeader>
         <Chips value={filter} onChange={setFilter} items={[['open', 'En cours', all.filter(x => match('open', x.st)).length], ['invoiced', 'Facturés', all.filter(x => x.st === 'invoiced').length], ['refused', 'Refusés', all.filter(x => x.st === 'refused').length], ['all', 'Tous', all.length]]} />
@@ -117,10 +123,21 @@ function ChangeSheet({ initial, onClose }: { initial: Change; onClose(): void })
         </section>
         <section className="space-y-2">
           <SubTitle>2. Le chiffrage</SubTitle>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid items-end gap-3 sm:grid-cols-4">
+            <Field label="Heures estimées"><NumInput value={c.hours ?? null} onChange={v => set({ hours: v })} /></Field>
+            <Field label="Matière et sous-traitance (€)"><NumInput value={c.material ?? null} onChange={v => set({ material: v })} /></Field>
+            <div className="text-[11px] text-slate-600 sm:col-span-2">{changePriceHint(c, state.params) ? <>Prix conseillé (marge plancher de {state.params.marginFloorPct} %) : <strong className="font-mono">{formatValue(changePriceHint(c, state.params), '€')}</strong> <button type="button" className="font-semibold text-delacour-primary hover:underline" onClick={() => set({ price: changePriceHint(c, state.params) })}>Appliquer</button></> : 'Aide au chiffrage : heures au coût horaire, plus matière.'}</div>
             <Field label="Supplément ferme (€ HT)"><NumInput value={c.price} onChange={v => set({ price: v })} /></Field>
             <Field label="Effet sur le délai (jours)"><NumInput value={c.delayDays} onChange={v => set({ delayDays: v })} /></Field>
+            <Field label="Nouvelle date de livraison promise"><input type="date" className={inputCls} value={c.newDate || ''} onChange={e => set({ newDate: e.target.value })} /></Field>
+            <Field label="Devis d'origine (2.1)">
+              <select className={inputCls} value={c.quoteId || ''} onChange={e => set({ quoteId: e.target.value || undefined })}>
+                <option value="">Aucun</option>
+                {Object.values(state.quotes).filter(q => !c.client || q.client === c.client || q.id === c.quoteId).map(q => <option key={q.id} value={q.id}>{q.ref} · {q.client}</option>)}
+              </select>
+            </Field>
           </div>
+          {c.quoteId && state.quotes[c.quoteId] && <p className="text-[11px] text-slate-600">Affaire complète : devis {formatValue(state.quotes[c.quoteId].amount, '€')} + avenants acceptés {formatValue(Object.values(state.changes).filter(x => x.quoteId === c.quoteId && x.id !== c.id && ['accepted', 'invoiced'].includes(changeState(x))).reduce((a, x) => a + (x.price || 0), 0) + (c.answer === 'accepted' ? c.price || 0 : 0), '€')}.</p>}
         </section>
         <section className="space-y-2">
           <SubTitle>3. L'accord écrit, avant de commencer</SubTitle>
@@ -142,6 +159,11 @@ function ChangeSheet({ initial, onClose }: { initial: Change; onClose(): void })
                 ))}
               </div>
             </div>
+            <div className="space-y-1 sm:col-span-3">
+              <span className="block text-[11px] font-semibold text-slate-700">Preuve de l'accord (capture du SMS ou de l'e-mail, bon signé)</span>
+              <div className="max-w-xs"><PhotoBox value={c.proof || ''} label="Preuve de l'accord" onChange={v => set({ proof: v })} /></div>
+            </div>
+            <label className="flex items-center gap-2 text-[11px] text-slate-700 sm:col-span-3"><input type="checkbox" checked={!!c.offered} onChange={e => set({ offered: e.target.checked })} />Offert au client (geste commercial décidé par la direction) : non facturé, compté à part</label>
             {c.answer && <Field label="Réponse reçue le"><input type="date" className={inputCls} value={c.answeredAt} onChange={e => set({ answeredAt: e.target.value })} /></Field>}
           </div>
         </section>

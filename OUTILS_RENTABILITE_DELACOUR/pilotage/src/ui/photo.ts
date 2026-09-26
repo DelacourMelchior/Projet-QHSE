@@ -16,3 +16,30 @@ export function readPhoto(file: File, max = 800): Promise<string> {
     img.src = url;
   });
 }
+
+export type Mark = 'arrow' | 'cross' | 'circle';
+// Draws a mark on the photo at (x, y) given as a share of its width and height, returns the new picture
+export function annotate(src: string, mark: Mark, x: number, y: number): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const c = document.createElement('canvas');
+      c.width = img.width; c.height = img.height;
+      const g = c.getContext('2d')!;
+      g.drawImage(img, 0, 0);
+      const px = x * c.width, py = y * c.height, s = Math.max(24, c.width / 10);
+      g.lineWidth = Math.max(4, c.width / 90); g.lineCap = 'round';
+      if (mark === 'arrow') {
+        g.strokeStyle = '#16a34a'; g.beginPath(); g.moveTo(px - s, py + s); g.lineTo(px, py); g.stroke();
+        g.beginPath(); g.moveTo(px, py); g.lineTo(px - s * 0.45, py + s * 0.05); g.moveTo(px, py); g.lineTo(px - s * 0.05, py + s * 0.45); g.stroke();
+      } else if (mark === 'cross') {
+        g.strokeStyle = '#dc2626'; g.beginPath(); g.moveTo(px - s / 2, py - s / 2); g.lineTo(px + s / 2, py + s / 2); g.moveTo(px + s / 2, py - s / 2); g.lineTo(px - s / 2, py + s / 2); g.stroke();
+      } else {
+        g.strokeStyle = '#f59e0b'; g.beginPath(); g.arc(px, py, s * 0.6, 0, Math.PI * 2); g.stroke();
+      }
+      resolve(c.toDataURL('image/jpeg', 0.8));
+    };
+    img.onerror = () => reject(new Error('Image illisible'));
+    img.src = src;
+  });
+}

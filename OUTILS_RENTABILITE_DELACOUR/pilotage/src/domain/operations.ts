@@ -110,7 +110,7 @@ export function sopInsights(s: State): Insight[] {
   const noPhoto = sops.filter(x => !photoCount(x));
   if (noPhoto.length) out.push({ key: 'photo', tone: 'warn', title: 'Instruction sans photo', text: `${names(noPhoto, x => x.poste || 'Sans titre')} : une photo avec le bon geste et le piège vaut mieux qu'un paragraphe.` });
   const noHab = sops.filter(x => !x.habilitations.length);
-  if (noHab.length) out.push({ key: 'hab', tone: 'warn', title: 'Personne habilitée', text: `${names(noHab, x => x.poste || 'Sans titre')} : aucune habilitation enregistrée (test en 3 questions, outil 4.3).` });
+  if (noHab.length) out.push({ key: 'hab', tone: 'warn', title: 'Aucune personne habilitée', text: `${names(noHab, x => x.poste || 'Sans titre')} : aucune habilitation enregistrée (test en 3 questions, outil 4.3).` });
   const noVal = sops.filter(x => !x.validatedBy.trim());
   if (noVal.length) out.push({ key: 'val', tone: 'warn', title: 'Instruction non validée', text: `${names(noVal, x => x.poste || 'Sans titre')} : à faire valider par le responsable du poste.` });
   return out;

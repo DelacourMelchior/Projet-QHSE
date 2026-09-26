@@ -7,6 +7,7 @@ import { toCheck } from './contacts';
 import { cnqMonth, ncState, pokaState, analysisState } from './quality';
 import { formatValue } from './numbers';
 import { changeState, changeSummary, complaintState, feedbackState, quoteState } from './commercial';
+import { anomalies, debitState, deliveryState, inspectionState, lowParts, ncsSinceVersion, supplierSummary } from './operations';
 
 export interface ToolStatus { n: number; tone: 'ok' | 'warn' | 'alert' | 'pending'; text: string }
 const ok = (text: string): ToolStatus => ({ n: 0, tone: 'ok', text });
@@ -100,6 +101,38 @@ export function toolBadge(s: State, tool: string, p: Period, now = new Date()): 
       const doubt = st.filter(x => x === 'doubt' || x === 'unhappy').length, inv = st.filter(x => x === 'to_invoice' || x === 'to_ask').length;
       if (doubt) return { n: doubt, tone: 'alert', text: `${plural(doubt, 'client')} insatisfait(s) ou réserve(s) à régler` };
       return inv ? { n: inv, tone: 'warn', text: `${plural(inv, 'bilan')} à finir ou facturer` } : ok('Bilans facturés');
+    }
+    case '3.1': {
+      if (!Object.keys(s.suppliers).length && !Object.keys(s.debits).length) return empty();
+      const sm = supplierSummary(s, now);
+      if (sm.late) return { n: sm.late, tone: 'alert', text: `${plural(sm.late, 'réclamation')} hors délai de 48 h` };
+      if (sm.inC) return { n: sm.inC, tone: 'alert', text: `${plural(sm.inC, 'fournisseur')} en classe C` };
+      const todo = Object.values(s.debits).filter(d => ['to_send', 'accepted'].includes(debitState(d, now))).length + sm.due;
+      return todo ? { n: todo, tone: 'warn', text: `${plural(todo, 'point')} à traiter (envoi, avoir, notation)` } : ok(`${formatValue(sm.recovered, '€')} récupérés cette année`);
+    }
+    case '3.2': {
+      const all = Object.values(s.sops);
+      if (!all.length) return empty();
+      const stale = all.filter(x => ncsSinceVersion(s, x).length).length, noVal = all.filter(x => !x.validatedBy.trim()).length;
+      if (stale) return { n: stale, tone: 'alert', text: `${plural(stale, 'instruction')} à mettre à jour` };
+      return noVal ? { n: noVal, tone: 'warn', text: `${plural(noVal, 'instruction')} à valider` } : ok(`${plural(all.length, 'poste')} couvert(s)`);
+    }
+    case '3.3': {
+      const all = Object.values(s.equipments);
+      if (!all.length) return empty();
+      const bad = all.filter(e => anomalies(e).length || lowParts(e).length).length;
+      const late = all.filter(e => inspectionState(e, now) !== 'ok').length;
+      if (bad) return { n: bad, tone: 'alert', text: `${plural(bad, 'machine')} avec anomalie ou pièce à commander` };
+      return late ? { n: late, tone: 'warn', text: `${plural(late, 'inspection')} du lundi à faire` } : ok('Machines inspectées cette semaine');
+    }
+    case '3.4': {
+      const all = Object.values(s.deliveries);
+      if (!all.length) return empty();
+      const st = all.map(d => deliveryState(d, now));
+      const bad = st.filter(x => x === 'blocked' || x === 'reserve_late' || x === 'refused').length;
+      const todo = st.filter(x => x === 'to_release' || x === 'released' || x === 'reserve').length;
+      if (bad) return { n: bad, tone: 'alert', text: `${plural(bad, 'commande')} bloquée(s) ou réserve en retard` };
+      return todo ? { n: todo, tone: 'warn', text: `${plural(todo, 'commande')} à libérer, faire signer ou lever` } : ok('Réceptions à jour');
     }
     default:
       return empty();

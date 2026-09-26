@@ -104,7 +104,7 @@ export function Summary({ title, tiles, insights }: { title: string; tiles: Reac
       )}
       {insights.length > MAX && (
         <button type="button" onClick={() => setAll(!all)} aria-expanded={all} className="text-[11px] font-semibold text-delacour-primary hover:underline print:hidden">
-          {all ? 'Afficher moins de messages' : `Voir les ${insights.length - MAX} autres messages`}
+          {all ? 'Afficher moins de messages' : insights.length - MAX === 1 ? 'Voir 1 autre message' : `Voir les ${insights.length - MAX} autres messages`}
         </button>
       )}
     </Card>

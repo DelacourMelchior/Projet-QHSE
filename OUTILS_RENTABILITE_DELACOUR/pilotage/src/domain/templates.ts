@@ -7,6 +7,7 @@ import { demoRisks } from './riskTemplates';
 import { emptyTools } from './base';
 import { applyQualityExample } from './qualityExamples';
 import { applyCommercialExample } from './commercialExamples';
+import { applyOperationsExample } from './operationsExamples';
 
 export const PROFILES = {
   industrie: 'Industrie, usinage & atelier',
@@ -25,6 +26,7 @@ export function demoState(today = new Date()): State {
   Object.assign(s.actions, d.actions);
   applyQualityExample(s, today);
   applyCommercialExample(s, today);
+  applyOperationsExample(s, today);
   return s;
 }
 

@@ -12,3 +12,10 @@ input, select, textarea { caret-color: #1B4D3E; }
   body { background: #fff; }
   @page { size: A4 landscape; margin: 10mm; }
 }
+
+/* One document printed alone (usePrintOne) */
+.print-one { display: none; }
+@media print {
+  body.printing-one > *:not(.print-one) { display: none !important; }
+  body.printing-one .print-one { display: block; }
+}

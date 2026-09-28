@@ -2,7 +2,7 @@
 //   settings | timeline | process|<id> | kpi|<id> | value|<kpiId>|<YYYY-MM> | action|<id>
 //   risk|<id> (without money) | riskcost|<id> (money figures of a risk, direction folder) | contact|<id> | scale
 //   tools 2.1 to 5.4: one key per record (<kind>|<id>, see COLLECTIONS), quotecost|<id> (direction folder),
-//   and the single records params, envelope, ged
+//   contactsecret|<id> (what to say when calling, direction folder), and the single records params, envelope, ged
 import type { Power, Quote, QuoteCost, Risk, RiskCost, State } from '../domain/types';
 import { DEFAULT_SCALE } from '../domain/risk';
 import { DEFAULT_SETTINGS } from '../domain/migrate';
@@ -39,8 +39,13 @@ export function flatten(s: State): FlatMap {
     m[`power|${p.id}`] = p;
     if (access) m[`poweraccess|${p.id}`] = access;
   });
+  // what to say when calling a contact (password, instruction): direction folder
+  Object.values(s.contacts || {}).forEach(({ secret, id }) => { if (secret) m[`contactsecret|${id}`] = secret; });
   for (const [kind, key] of Object.entries(COLLECTIONS)) {
-    Object.values((s[key] || {}) as Record<string, { id: string }>).forEach(x => { m[`${kind}|${x.id}`] = extractPhotos(x, m); });
+    Object.values((s[key] || {}) as Record<string, { id: string; secret?: string }>).forEach(x => {
+      const rec = kind === 'contact' ? (({ secret: _, ...c }) => c)(x) : x;
+      m[`${kind}|${x.id}`] = extractPhotos(rec, m);
+    });
   }
   SINGLES.forEach(k => { if (s[k]) m[k] = s[k]; });
   if (s.scale) m.scale = s.scale;
@@ -62,6 +67,7 @@ export function unflatten(m: FlatMap): State {
   const riskCosts: Record<string, RiskCost> = {};
   const quoteCosts: Record<string, QuoteCost> = {};
   const accesses: Record<string, string> = {};
+  const secrets: Record<string, string> = {};
   for (const [k, v] of Object.entries(m)) {
     if (v === null || v === undefined) continue;
     const [kind, id, period] = k.split('|');
@@ -75,11 +81,13 @@ export function unflatten(m: FlatMap): State {
     else if (kind === 'quotecost') quoteCosts[id] = v as QuoteCost;
     else if (kind === 'power') s.powers[id] = { ...(v as Power), access: (v as Power).access || '' };
     else if (kind === 'poweraccess') accesses[id] = v as string;
+    else if (kind === 'contactsecret') secrets[id] = v as string;
     else if (COLLECTIONS[kind]) (s[COLLECTIONS[kind]] as Record<string, unknown>)[id] = restorePhotos(v, m);
   }
   Object.entries(riskCosts).forEach(([id, c]) => { if (s.risks[id]) s.risks[id].cost = c; });
   Object.entries(quoteCosts).forEach(([id, c]) => { if (s.quotes[id]) s.quotes[id].cost = c; });
   Object.entries(accesses).forEach(([id, a]) => { if (s.powers[id]) s.powers[id].access = a; });
+  Object.entries(secrets).forEach(([id, a]) => { if (s.contacts[id]) s.contacts[id] = { ...s.contacts[id], secret: a }; });
   s.processes.sort((a, b) => a.order - b.order);
   s.processes.forEach(p => { p.kpiIds = p.kpiIds.filter(id => s.kpis[id]); });
   return s;
@@ -87,7 +95,7 @@ export function unflatten(m: FlatMap): State {
 
 // Confidential values and the financial settings live in the "direction" folder
 export function bucketOf(key: string, s: State): 'equipe' | 'direction' {
-  if (key === 'settings' || key.startsWith('riskcost|') || key.startsWith('quotecost|') || key.startsWith('poweraccess|') || key === 'envelope') return 'direction';
+  if (key === 'settings' || key.startsWith('riskcost|') || key.startsWith('quotecost|') || key.startsWith('poweraccess|') || key.startsWith('contactsecret|') || key === 'envelope') return 'direction';
   if (key.startsWith('value|')) return s.kpis[key.split('|')[1]]?.confidential ? 'direction' : 'equipe';
   return 'equipe';
 }

@@ -163,7 +163,7 @@ export function App() {
         {view === 'saisir' && <Saisir done={() => go('1.1')} />}
         {view === 'actions' && <Agir key={proc} onOpenAction={openAction} onNewAction={startAction} onOpenRisk={id => openRisk(id, 2)} defaultScope={proc} />}
         {view === '1.2' && !restricted('1.2') && <Risques onOpenRisk={openRisk} onNewRisk={() => setRisk({ r: newRisk(state.processes[0]?.id || 'P1'), step: 0 })} onOpenDirectory={() => go('1.3')} />}
-        {view === '1.3' && !restricted('1.3') && <Annuaire />}
+        {view === '1.3' && !restricted('1.3') && <Annuaire key={focus} focus={focus} />}
         {Screen && <Screen key={view} nav={nav} focus={focus} clearFocus={() => setFocus('')} />}
       </main>
 

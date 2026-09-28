@@ -132,6 +132,7 @@ export interface Params {
   milestoneTemplates?: { name: string; milestones: { label: string; point: string; requirement: string }[] }[];   // 3.4
   cnqTrigger?: number;     // cost from which a five whys workshop is expected (5.3)
   variableMarginPct?: number;   // margin on variable costs (%), second reading of the revenue to make up (5.2)
+  siteAccess?: string;     // how the emergency services find and enter the site (1.3)
 }
 
 // Signature drawn with the finger: strokes of points in a 300 x 100 box
@@ -525,6 +526,14 @@ export interface Contact {
   email: string;
   always: boolean;        // reachable 24 h a day
   verifiedAt: string;     // ISO date of the last check of the number
+  verifiedBy?: string;
+  phone2?: string;        // second number: switchboard, on-call line
+  hours?: string;         // when it answers ("lun-ven 8 h-18 h")
+  reference?: string;     // what to give when calling: contract, customer number
+  secret?: string;        // password or instruction to say (direction folder)
+  vital?: boolean;        // pinned at the top and on the pocket card
+  reportsTo?: string;     // internal: contact id of the manager (org chart)
+  backupId?: string;      // contact to call when this one does not answer (call chain)
 }
 
 export interface RiskScale { gravity: string[]; likelihood: string[] }  // 4 texts each

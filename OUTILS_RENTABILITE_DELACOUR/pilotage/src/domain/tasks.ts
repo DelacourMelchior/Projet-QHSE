@@ -8,6 +8,7 @@ import { riskState, testDueDate } from './risk';
 import { ncState, pokaState, checkDate, DECISION_HOURS } from './quality';
 import { complaintState, courtesyDue, changeState, feedbackState, quoteState, FOLLOW_DAYS, CONTACT_HOURS } from './commercial';
 import { debitState, inspectionState, lowParts, liftDue, deliveryState, ncsSinceVersion, ratingDue, CLAIM_DAYS, taskDue } from './operations';
+import { contactLabel, toCallThisMonth } from './contacts';
 import { checklistOf, newcomerState, powerDeputies, powerState, testDate, chronoSummary } from './team';
 
 export interface Task { id: string; who: string; due: string; text: string; tool: string; focus: string }
@@ -72,7 +73,9 @@ export function allTasks(s: State, now = new Date()): Task[] {
     if (st === 'test_due' || st === 'failed' || st === 'tutoring') add(`nw${n.id}`, n.tutor, n.retestAt || testDate(n), `Test d'autonomie de ${n.name}`, '4.3', n.id);
     if (st === 'to_authorize') add(`nwa${n.id}`, '', isoDate(now), `Signer l'autorisation de ${n.name}`, '4.3', n.id);
   });
-  if (!chronoSummary(s, now).monthDone && (Object.keys(s.chronos).length || s.ged.owner)) add('ged', s.ged.owner, isoDate(new Date(now.getFullYear(), now.getMonth() + 1, 0)), 'Test des 30 secondes du mois', '4.4');
+  const monthEnd = isoDate(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+  toCallThisMonth(s, now).forEach(c => add(`ct${c.id}`, c.verifiedBy || '', monthEnd, `Vérifier le numéro de ${contactLabel(c)} (${c.phone})`, '1.3', c.id));
+  if (!chronoSummary(s, now).monthDone && (Object.keys(s.chronos).length || s.ged.owner)) add('ged', s.ged.owner, monthEnd, 'Test des 30 secondes du mois', '4.4');
   Object.values(s.pokas).forEach(p => {
     const st = pokaState(p, now);
     if (st === 'running' || st === 'due') add(`pk${p.id}`, p.owner, checkDate(p), `Contrôle J+30 : ${p.poste || p.defect}`, '5.4', p.id);

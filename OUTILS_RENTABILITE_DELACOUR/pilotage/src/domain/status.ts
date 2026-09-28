@@ -3,7 +3,7 @@
 import type { Period, State } from './types';
 import { synthesis } from './engine';
 import { riskSummary, staleContacts } from './risk';
-import { toCheck } from './contacts';
+import { chainIssues, duplicates, toCheck } from './contacts';
 import { cnqMonth, ncState, pokaState, analysisState } from './quality';
 import { formatValue } from './numbers';
 import { isoDate } from './periods';
@@ -38,7 +38,10 @@ export function toolBadge(s: State, tool: string, p: Period, now = new Date()): 
     case '1.3': {
       const all = Object.values(s.contacts);
       if (!all.length) return empty();
+      const loops = chainIssues(s, now).loops.length, dup = duplicates(s).length;
+      if (loops) return { n: loops, tone: 'alert', text: `${plural(loops, 'chaîne')} d'appel qui boucle${loops > 1 ? 'nt' : ''}` };
       const stale = staleContacts(s, now).length || all.filter(c => toCheck(c, now)).length;
+      if (!stale && dup) return { n: dup, tone: 'warn', text: `${plural(dup, 'doublon')} à fusionner` };
       return stale ? { n: stale, tone: 'warn', text: `${plural(stale, 'numéro')} à vérifier` } : ok(`${plural(all.length, 'contact')} à jour`);
     }
     case '5.1': {

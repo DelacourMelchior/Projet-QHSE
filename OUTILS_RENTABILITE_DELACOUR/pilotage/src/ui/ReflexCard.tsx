@@ -5,7 +5,7 @@ import type { Contact, Risk, State } from '../domain/types';
 import { familyLabel } from '../domain/riskTemplates';
 import { formatDuration } from '../domain/duration';
 import { noDot, sentence } from '../domain/reflexPdf';
-import { contactLabel } from '../domain/contacts';
+import { chainOf, contactLabel, telOf } from '../domain/contacts';
 
 export function ReflexCard({ r, s }: { r: Risk; s: State }) {
   const who = (ids: string[]) => ids.map(id => s.contacts[id]).filter(Boolean);
@@ -53,7 +53,7 @@ export function ReflexCard({ r, s }: { r: Risk; s: State }) {
         </>}
         {(r.contactIds.length > 0 || r.notifyIds.length > 0 || r.clientMessage) && (
           <Block title="4. Prévenir">
-            {r.contactIds.length > 0 && <><p className="font-semibold">Qui appeler</p><ContactList list={who(r.contactIds)} /></>}
+            {r.contactIds.length > 0 && <><p className="font-semibold">Qui appeler</p><ContactList list={who(r.contactIds)} s={s} /></>}
             {r.notifyIds.length > 0 && <><p className="mt-1 font-semibold">Qui informer</p><ContactList list={who(r.notifyIds)} /></>}
             {r.clientMessage && <p className="mt-1 rounded-lg border border-slate-200 px-2.5 py-1.5 italic text-slate-700">« {r.clientMessage} »</p>}
           </Block>
@@ -69,19 +69,28 @@ function Block({ title, children }: { title: string; children: React.ReactNode }
   return <section><h4 className="mb-0.5 text-[11px] font-bold uppercase tracking-wide text-red-800">{title}</h4>{children}</section>;
 }
 
-// Phone numbers and e-mails are links: one tap to call or write
-export function ContactList({ list }: { list: Contact[] }) {
+// Phone numbers and e-mails are links: one tap to call or write. With the state, the call chain follows each contact.
+export function ContactList({ list, s }: { list: Contact[]; s?: State }) {
   return (
     <ul className="space-y-1">
-      {list.map(c => (
-        <li key={c.id} className="flex flex-wrap items-baseline justify-between gap-x-2">
-          <span><strong>{contactLabel(c)}</strong>{c.role ? <span className="text-slate-600"> · {c.role}</span> : ''}{c.always ? <span className="text-slate-600"> · 24 h/24</span> : ''}</span>
-          <span className="flex flex-wrap items-baseline gap-x-3">
-            {c.email && <a href={`mailto:${c.email}`} className="inline-flex items-center gap-1 text-delacour-primary hover:underline"><Mail size={12} />{c.email}</a>}
-            {c.phone && <a href={`tel:${c.phone.replace(/[ .]/g, '')}`} className="inline-flex items-center gap-1 font-mono font-semibold text-delacour-primary hover:underline"><Phone size={12} />{c.phone}</a>}
-          </span>
-        </li>
-      ))}
+      {list.map(c => {
+        const next = s ? chainOf(s, c).chain.slice(1) : [];
+        return (
+          <li key={c.id}>
+            <div className="flex flex-wrap items-baseline justify-between gap-x-2">
+              <span><strong>{contactLabel(c)}</strong>{c.role ? <span className="text-slate-600"> · {c.role}</span> : ''}{(c.always || c.hours) ? <span className="text-slate-600"> · {c.always ? '24 h/24' : c.hours}</span> : ''}{c.reference ? <span className="text-slate-600"> · donner : {c.reference}</span> : ''}</span>
+              <span className="flex flex-wrap items-baseline gap-x-3">
+                {c.email && <a href={`mailto:${c.email}`} className="inline-flex items-center gap-1 text-delacour-primary hover:underline"><Mail size={12} />{c.email}</a>}
+                {c.phone && <a href={`tel:${telOf(c.phone)}`} className="inline-flex items-center gap-1 font-mono font-semibold text-delacour-primary hover:underline"><Phone size={12} />{c.phone}</a>}
+                {c.phone2 && <a href={`tel:${telOf(c.phone2)}`} className="font-mono text-delacour-primary hover:underline">{c.phone2}</a>}
+              </span>
+            </div>
+            {next.length > 0 && (
+              <p className="text-[11px] font-semibold text-red-800">Sans réponse : {next.map((x, i) => <span key={x.id}>{i ? ', puis ' : ''}{contactLabel(x)} <a href={`tel:${telOf(x.phone)}`} className="font-mono hover:underline">{x.phone}</a></span>)}</p>
+            )}
+          </li>
+        );
+      })}
     </ul>
   );
 }

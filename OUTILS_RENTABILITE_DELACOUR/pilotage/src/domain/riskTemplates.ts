@@ -91,7 +91,7 @@ export function exampleContacts(today = new Date()): Contact[] {
   const ago = (days: number) => isoDate(new Date(today.getFullYear(), today.getMonth(), today.getDate() - days));
   const contact = (id: string, category: Contact['category'], name: string, role: string, company: string, phone: string, always: boolean, verified: number): Contact =>
     ({ id, category, name, role, company, phone, email: EMAILS[id] || '', always, verifiedAt: ago(verified) });
-  return [
+  const list = [
     contact('ct_demo_it', 'prestataire', 'Support informatique', 'Intervention et restauration', 'Prestataire IT', '04 00 00 00 01', true, 40),
     contact('ct_demo_thomas', 'interne', 'Thomas M.', 'Informatique', 'Interne', '06 00 00 00 01', false, 40),
     contact('ct_demo_cyber', 'finance', 'Assistance cyber', 'Déclaration de sinistre', 'Assureur', '0 800 000 000', true, 40),
@@ -118,7 +118,28 @@ export function exampleContacts(today = new Date()): Contact[] {
     contact('ct_demo_transport', 'fournisseur', 'Exploitation', 'Transport express', 'Transports Rapides', '04 00 00 00 25', false, 90),
     contact('ct_demo_clientB', 'client', 'Acheteur', 'Client B', 'Client B', '04 00 00 00 26', false, 180),
     contact('ct_demo_expert', 'finance', 'Cabinet comptable', 'Expert-comptable', 'Cabinet Comptable', '04 00 00 00 27', false, 60),
+    contact('ct_demo_itboss', 'prestataire', 'Gérant', 'Si la hotline ne répond pas', 'Prestataire IT', '06 00 00 00 30', false, 90),
+    contact('ct_demo_helene', 'interne', 'Hélène R.', 'Administration et finances', 'Interne', '06 00 00 00 13', false, 60),
   ];
+  // what makes the directory usable in a crisis: chains, org chart, references, hours, vital numbers
+  const more: Record<string, Partial<Contact>> = {
+    ct_demo_it: { vital: true, backupId: 'ct_demo_itboss', reference: 'Contrat d\'infogérance n° IT-2291', phone2: '04 00 00 00 31' },
+    ct_demo_itboss: { hours: 'lun-sam 7 h-20 h' },
+    ct_demo_cyber: { vital: true, reference: 'Police cyber n° CY-448812' },
+    ct_demo_banque1: { backupId: 'ct_demo_banque2', hours: 'lun-ven 9 h-17 h', reference: 'Compte pro n° client 778 201' },
+    ct_demo_maint: { vital: true, reference: 'Contrat maintenance CNC n° M-5520', hours: 'astreinte 24 h/24' },
+    ct_demo_distrib: { hours: 'lun-ven 7 h 30-17 h' },
+    ct_demo_acier: { backupId: 'ct_demo_distrib', hours: 'lun-ven 8 h-17 h', reference: 'Compte client 10442' },
+    ct_demo_18: { vital: true }, ct_demo_15: { vital: true }, ct_demo_112: { vital: true },
+    ct_demo_elec: { vital: true, reference: 'PDL 1234 5678 9012 34' },
+    ct_demo_dirigeant: { vital: true, backupId: 'ct_demo_helene' },
+    ct_demo_helene: { reportsTo: 'ct_demo_dirigeant', backupId: 'ct_demo_dirigeant' },
+    ct_demo_qualite: { reportsTo: 'ct_demo_dirigeant', backupId: 'ct_demo_atelier' },
+    ct_demo_atelier: { reportsTo: 'ct_demo_dirigeant', backupId: 'ct_demo_qualite' },
+    ct_demo_thomas: { reportsTo: 'ct_demo_helene', backupId: 'ct_demo_it' },
+    ct_demo_expert: { hours: 'lun-ven 9 h-18 h' },
+  };
+  return list.map(c => ({ ...c, ...more[c.id] }));
 }
 
 // ---- fictitious company: the 7 risks of the previous version, completed, with tests at various ages

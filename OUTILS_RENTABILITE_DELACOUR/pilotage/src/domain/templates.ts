@@ -29,6 +29,8 @@ export function demoState(today = new Date()): State {
   applyCommercialExample(s, today);
   applyOperationsExample(s, today);
   applyTeamExample(s, today);
+  s.params.company ||= { address: '12 rue de l\'Industrie, 69000 Lyon (exemple)', siret: '', phone: '04 00 00 00 00', email: '' };
+  s.params.siteAccess = 'Portail côté parking, code 1234 ; atelier au fond, bâtiment B';
   return s;
 }
 

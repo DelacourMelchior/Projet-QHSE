@@ -4,7 +4,7 @@ import type { Contact, Risk, State } from './types';
 import { A4, PdfDoc, textWidth, wrap, type Rgb } from './pdf';
 import { score, zoneOf, ZONE_LABEL } from './risk';
 import { familyLabel } from './riskTemplates';
-import { contactLabel } from './contacts';
+import { chainOf, contactLabel } from './contacts';
 import { formatDuration } from './duration';
 
 const M = 42;
@@ -38,14 +38,16 @@ class Writer {
     this.y -= 10;
     this.para(t.toUpperCase(), 9, { bold: true, color: RED, gap: 2 });
   }
-  contact(c: Contact) {
-    this.ensure(34);
+  // the number, what to give when calling, then who next if nobody answers
+  contact(c: Contact, next: Contact[] = []) {
+    this.ensure(34 + (next.length ? 12 : 0));
     this.y -= 14;
     const phoneW = textWidth(c.phone, 12.5, true);
     this.doc.text(c.phone, A4.w - M - phoneW, this.y, 12.5, { bold: true, color: DARK });
     this.doc.text(wrap(contactLabel(c), WIDTH - phoneW - 16, 11, true)[0], M, this.y, 11, { bold: true });
-    const sub = [c.role, c.always ? 'joignable 24 h/24' : '', c.email].filter(Boolean).join(' · ');
-    if (sub) { this.y -= 12; this.doc.text(wrap(sub, WIDTH - phoneW - 16, 9)[0], M, this.y, 9, { color: GRAY }); }
+    const sub = [c.role, c.always ? 'joignable 24 h/24' : c.hours, c.phone2 && `autre n° ${c.phone2}`, c.reference && `donner : ${c.reference}`, c.email].filter(Boolean).join(' · ');
+    if (sub) { this.y -= 12; this.doc.text(wrap(sub, WIDTH, 9)[0], M, this.y, 9, { color: GRAY }); }
+    if (next.length) { this.y -= 12; this.doc.text(wrap(`Sans réponse : ${next.map(x => `${contactLabel(x)} ${x.phone}`).join(', puis ')}`, WIDTH, 9, true)[0], M, this.y, 9, { bold: true, color: RED }); }
     this.y -= 5;
   }
 }
@@ -99,7 +101,7 @@ function drawCard(w: Writer, s: State, r: Risk, o: Opts) {
   }
   if (r.contactIds.length || r.notifyIds.length || r.clientMessage) {
     w.heading('4. Prévenir');
-    if (r.contactIds.length) { w.para('Qui appeler', 10, { bold: true, gap: 0 }); who(r.contactIds).forEach(c => w.contact(c)); }
+    if (r.contactIds.length) { w.para('Qui appeler', 10, { bold: true, gap: 0 }); who(r.contactIds).forEach(c => w.contact(c, chainOf(s, c).chain.slice(1))); }
     if (r.notifyIds.length) { w.para('Qui informer', 10, { bold: true, gap: 0 }); who(r.notifyIds).forEach(c => w.contact(c)); }
     if (r.clientMessage) w.para(`Message aux clients : « ${r.clientMessage} »`, 10.5, { color: GRAY });
   }

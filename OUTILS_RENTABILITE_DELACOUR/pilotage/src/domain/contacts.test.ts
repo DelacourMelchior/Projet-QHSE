@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Contact, State } from './types';
-import { callChains, candidates, chainIssues, chainOf, duplicates, orgTree, toCallThisMonth, vcardOf, vitalContacts } from './contacts';
+import { callChains, candidates, chainIssues, chainOf, duplicates, isUnder, orgGroups, orgTree, toCallThisMonth, vcardOf, vitalContacts } from './contacts';
 import { flatten, unflatten, bucketOf } from '../store/flat';
 import { demoState } from './templates';
 import { allTasks } from './tasks';
@@ -83,5 +83,22 @@ describe('annuaire de démonstration', () => {
     const claire = chainOf(s, s.contacts.ct_demo_claire);
     expect(claire.cycle).toBe(2);
     expect(duplicates(s)).toEqual([]);
+  });
+});
+
+describe('organigrammes externes', () => {
+  it('groups each outside organisation with its own hierarchy', () => {
+    const s = demoState(now);
+    const clients = orgGroups(s, 'client');
+    const a = clients.find(g => g.company.startsWith('Client A'))!;
+    expect(a.roots.map(n => n.c.id)).toEqual(['ct_demo_clientA_dir']);
+    expect(a.roots[0].children.map(n => n.c.id).sort()).toEqual(['ct_demo_clientA', 'ct_demo_clientA_qual']);
+    expect(orgGroups(s, 'sante')[0].roots[0].children.length).toBe(2);
+    expect(orgGroups(s, 'administration').map(g => g.company)).toEqual(['CARSAT', 'Inspection du travail (DREETS)', 'URSSAF']);
+  });
+  it('refuses a manager placed under the person', () => {
+    const s = demoState(now);
+    expect(isUnder(s, 'ct_demo_clientA_asst', 'ct_demo_clientA_dir')).toBe(true);
+    expect(isUnder(s, 'ct_demo_clientA_dir', 'ct_demo_clientA_asst')).toBe(false);
   });
 });

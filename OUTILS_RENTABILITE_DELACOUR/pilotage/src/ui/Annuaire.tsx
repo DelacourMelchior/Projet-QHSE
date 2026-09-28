@@ -1,20 +1,20 @@
 // Tool 1.3 "Annuaire": the numbers to call when something breaks.
-// Two views: "En cas de crise" (internal org chart and call chains: who next when nobody answers) and "Liste et saisie".
+// Two views: "Organigramme" (the company and each outside organisation, as trees, edited by drag and drop) and "Liste".
 // The reflex cards of the Plans B (tool 1.2) take their contacts and chains from here.
 import { useEffect, useState } from 'react';
-import { AlertTriangle, ArrowRight, CheckCircle2, Contact2, CreditCard, Download, Mail, Phone, Pin, Plus, Printer, Search, Trash2 } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Contact2, CreditCard, Download, Mail, Phone, Pin, Plus, Printer, Search, Trash2 } from 'lucide-react';
 import type { Contact, ContactCategory, State } from '../domain/types';
-import { CATEGORIES, badLoop, callChains, candidates, chainIssues, chainOf, contactLabel, deputiesFromPowers, duplicates, orgTree, telOf, toCallThisMonth, toCheck, vcardOf, vitalContacts, type OrgNode } from '../domain/contacts';
+import { CATEGORIES, badLoop, candidates, categoryLabel, chainIssues, chainOf, contactLabel, deputiesFromPowers, duplicates, isUnder, orgGroups, orgTree, telOf, toCallThisMonth, toCheck, vcardOf, vitalContacts, type OrgNode } from '../domain/contacts';
 import { pocketCardPdf } from '../domain/directoryPdf';
 import { exampleContacts } from '../domain/riskTemplates';
 import { frDate, isoDate } from '../domain/periods';
 import { useStore } from '../store/StoreContext';
-import { Button, Card, Modal, inputCls } from './common';
+import { Button, Card, Field, Modal, inputCls } from './common';
 import { PasteImport, type Column } from './PasteImport';
 import { downloadFile, fileSlug } from './download';
 
 type Filter = 'all' | 'vital' | 'always' | 'check' | 'dup';
-type View = 'crise' | 'liste';
+type View = 'org' | 'liste';
 const norm = (t: string) => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 const newId = () => `ct_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`;
 const blank = (p: Partial<Contact> = {}): Contact => ({ id: newId(), category: 'autre', name: '', role: '', company: '', phone: '', email: '', always: false, verifiedAt: '', ...p });
@@ -40,7 +40,9 @@ export function Annuaire({ focus = '' }: { focus?: string }) {
   const { state, update, author, teamView } = useStore();
   const [q, setQ] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
-  const [view, setView] = useState<View>(() => (focus || !Object.keys(state?.contacts || {}).length ? 'liste' : 'crise'));
+  const [view, setView] = useState<View>(() => (focus || !Object.keys(state?.contacts || {}).length ? 'liste' : 'org'));
+  const [cat, setCat] = useState<ContactCategory>('interne');
+  const [edit, setEdit] = useState('');
   const [pick, setPick] = useState(false);
   // order fixed when the screen opens, so a row does not move while it is being typed
   const [order, setOrder] = useState<string[]>(() => sortIds(Object.values(state?.contacts || {})));
@@ -51,10 +53,29 @@ export function Annuaire({ focus = '' }: { focus?: string }) {
   const set = (id: string, patch: Partial<Contact>) => update(d => { d.contacts[id] = { ...d.contacts[id], ...patch }; });
   const verify = (id: string) => set(id, { verifiedAt: isoDate(new Date()), verifiedBy: author });
   const add = (p: Partial<Contact> = {}) => {
+    if (view === 'org') return addInChart({ category: cat, company: cat === 'interne' ? 'Interne' : '', ...p });
     const c = blank(p);
     update(d => { d.contacts[c.id] = c; });
     setOrder([c.id, ...order]);
     setQ(''); setFilter('all'); setView('liste');
+  };
+  // from the org chart: the new card appears at its place and its sheet opens
+  const addInChart = (p: Partial<Contact>) => {
+    const c = blank(p);
+    update(d => { d.contacts[c.id] = c; });
+    setOrder([c.id, ...order]);
+    setEdit(c.id);
+  };
+  // drop of a card onto its manager (or onto the top zone): the person follows the manager's category and organisation
+  const linkTo = (id: string, bossId: string | undefined) => {
+    const boss = bossId ? state.contacts[bossId] : undefined;
+    if (bossId && isUnder(state, bossId, id)) { window.alert(`${contactLabel(state.contacts[bossId])} est déjà sous ${contactLabel(state.contacts[id])} : impossible de l'en faire le responsable.`); return; }
+    update(d => {
+      const c = d.contacts[id];
+      if (!c) return;
+      c.reportsTo = boss?.id;
+      if (boss) { c.category = boss.category; if (boss.category !== 'interne' && boss.company) c.company = boss.company; }
+    });
   };
   const remove = (c: Contact) => {
     const uses = usedBy(c.id).length;
@@ -94,7 +115,7 @@ export function Annuaire({ focus = '' }: { focus?: string }) {
 
   return (
     <div className="space-y-4">
-      {view === 'crise' && <style>{'@media print { @page { size: A4 landscape; margin: 10mm; } }'}</style>}
+      {view === 'org' && <style>{'@media print { @page { size: A4 landscape; margin: 10mm; } }'}</style>}
       <Card className="space-y-3 p-3 sm:p-4">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
@@ -110,7 +131,7 @@ export function Annuaire({ focus = '' }: { focus?: string }) {
         <div className="flex flex-wrap gap-2 print:hidden">
           <Button onClick={vcf} disabled={!all.length} title="Fichier .vcf : ouvrez-le sur le téléphone, tous les numéros entrent dans les contacts"><Download size={14} />Vers les contacts du téléphone</Button>
           <Button onClick={pocket} disabled={!all.length} title="4 cartes A6 sur une page A4 : les numéros épinglés comme vitaux, à découper et plastifier"><CreditCard size={14} />Carte de poche (PDF)</Button>
-          <Button onClick={() => window.print()}><Printer size={14} />{view === 'crise' ? 'Imprimer les chaînes (A4 paysage)' : 'Imprimer la liste'}</Button>
+          <Button onClick={() => window.print()}><Printer size={14} />{view === 'org' ? 'Imprimer l\'organigramme (A4 paysage)' : 'Imprimer la liste'}</Button>
         </div>
 
         <SiteBlock state={state} update={update} />
@@ -123,12 +144,12 @@ export function Annuaire({ focus = '' }: { focus?: string }) {
         ) : <>
           <Checks state={state} dups={dups} onVerify={verify} onShow={id => { setView('liste'); setFilter('all'); setQ(''); setTimeout(() => document.getElementById(`ct-${id}`)?.scrollIntoView({ block: 'center', behavior: 'smooth' }), 50); }} />
           <div role="tablist" className="flex gap-1 border-b border-slate-200 print:hidden">
-            {([['crise', 'En cas de crise'], ['liste', 'Liste et saisie']] as [View, string][]).map(([v, l]) => (
+            {([['org', 'Organigramme'], ['liste', 'Liste']] as [View, string][]).map(([v, l]) => (
               <button key={v} role="tab" type="button" aria-selected={view === v} onClick={() => setView(v)}
                 className={`-mb-px border-b-2 px-3 py-1.5 text-xs font-semibold ${view === v ? 'border-delacour-primary text-delacour-primary' : 'border-transparent text-slate-500 hover:text-slate-800'}`}>{l}</button>
             ))}
           </div>
-          {view === 'crise' ? <CrisisView state={state} /> : <>
+          {view === 'org' ? <OrgView state={state} cat={cat} setCat={setCat} onEdit={setEdit} onAdd={addInChart} onLink={linkTo} /> : <>
             <div className="flex flex-wrap items-center gap-2 print:hidden">
               <div className="relative min-w-[200px] flex-1">
                 <Search size={14} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -167,6 +188,10 @@ export function Annuaire({ focus = '' }: { focus?: string }) {
         </>}
         <p className="text-[11px] text-slate-500 print:hidden">Préférez les numéros professionnels et prévenez les personnes concernées (RGPD). Un numéro se vérifie en l'appelant : 4 numéros par mois arrivent dans « Mes tâches ».</p>
       </Card>
+      {edit && state.contacts[edit] && (
+        <ContactSheet c={state.contacts[edit]} state={state} teamView={teamView} onClose={() => setEdit('')}
+          set={p => set(edit, p)} verify={() => verify(edit)} remove={() => remove(state.contacts[edit])} />
+      )}
       {pick && <PickCandidates state={state} onClose={() => setPick(false)} onAdd={xs => {
         const made = xs.map(x => ({ x, c: blank({ category: x.category, company: x.company, name: x.name }) }));
         update(d => made.forEach(({ x, c }) => { d.contacts[c.id] = c; if (x.supplierId && d.suppliers[x.supplierId]) d.suppliers[x.supplierId].contactId = c.id; }));
@@ -252,19 +277,17 @@ function Row({ c, state, all, uses, focused, dup, teamView, set, verify, remove 
         <input className={inputCls} value={c.secret || ''} placeholder="Mot de passe ou consigne à dire à l'appel (réservé à la direction)" aria-label="Mot de passe ou consigne (direction)" onChange={e => set({ secret: e.target.value })} />
       )}
       <div className="grid gap-1.5 text-[11px] sm:grid-cols-3">
-        <select className={inputCls} value={c.category} aria-label="Catégorie" onChange={e => set({ category: e.target.value as ContactCategory, reportsTo: e.target.value === 'interne' ? c.reportsTo : undefined })}>
+        <select className={inputCls} value={c.category} aria-label="Catégorie" onChange={e => set({ category: e.target.value as ContactCategory, reportsTo: undefined })}>
           {CATEGORIES.map(x => <option key={x.key} value={x.key}>{x.label}</option>)}
         </select>
         <select className={inputCls} value={c.backupId || ''} aria-label="Si pas de réponse, appeler" onChange={e => set({ backupId: e.target.value || undefined })}>
           <option value="">Si pas de réponse : personne</option>
           {others.map(x => <option key={x.id} value={x.id}>Si pas de réponse : {contactLabel(x)}</option>)}
         </select>
-        {c.category === 'interne' ? (
-          <select className={inputCls} value={c.reportsTo || ''} aria-label="Rattaché à" onChange={e => set({ reportsTo: e.target.value || undefined })}>
-            <option value="">Rattaché à : personne (en haut de l'organigramme)</option>
-            {others.filter(x => x.category === 'interne').map(x => <option key={x.id} value={x.id}>Rattaché à : {contactLabel(x)}</option>)}
-          </select>
-        ) : <span />}
+        <select className={inputCls} value={c.reportsTo || ''} aria-label="Rattaché à" onChange={e => set({ reportsTo: e.target.value || undefined })}>
+          <option value="">Rattaché à : personne (en haut de l'organigramme)</option>
+          {others.filter(x => x.category === c.category && !isUnder(state, x.id, c.id)).map(x => <option key={x.id} value={x.id}>Rattaché à : {contactLabel(x)}</option>)}
+        </select>
       </div>
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-slate-600">
         <label className="flex items-center gap-1.5 font-semibold text-red-800"><input type="checkbox" checked={!!c.vital} onChange={e => set({ vital: e.target.checked })} /><Pin size={12} />Vital</label>
@@ -285,108 +308,158 @@ function Row({ c, state, all, uses, focused, dup, teamView, set, verify, remove 
   );
 }
 
-// "En cas de crise": internal org chart with "if absent", then the call chains of the outside contacts
-function CrisisView({ state }: { state: State }) {
-  const tree = orgTree(state);
-  const chains = callChains(state).filter(x => x.chain[0].category !== 'interne' || x.chain.some(c => c.category !== 'interne'));
-  const inChain = new Set(chains.flatMap(x => x.chain.map(c => c.id)));
-  const alone = Object.values(state.contacts).filter(c => c.category !== 'interne' && !inChain.has(c.id) && c.phone.trim())
-    .sort((a, b) => (b.vital ? 1 : 0) - (a.vital ? 1 : 0) || CATEGORIES.findIndex(x => x.key === a.category) - CATEGORIES.findIndex(x => x.key === b.category));
+// "Organigramme": one tree per category. Inside the company, one tree; outside, one tree per organisation
+// (Client A: director, then buyer, then assistant). Links are made by dragging a card onto its manager,
+// by the + of a card (adds someone under it), or in the card sheet ("Rattaché à").
+function OrgView({ state, cat, setCat, onEdit, onAdd, onLink }: {
+  state: State; cat: ContactCategory; setCat(c: ContactCategory): void; onEdit(id: string): void;
+  onAdd(p: Partial<Contact>): void; onLink(id: string, bossId: string | undefined): void;
+}) {
+  const [drag, setDrag] = useState('');
+  const count = (k: ContactCategory) => Object.values(state.contacts).filter(c => c.category === k).length;
+  const inside = cat === 'interne';
+  const groups = inside ? [{ company: state.settings.companyName || 'Interne', roots: orgTree(state, 'interne') }] : orgGroups(state, cat);
+  const ctx: TreeCtx = { state, drag, setDrag, onEdit, onAdd, onLink };
+  const addOrg = () => {
+    const company = window.prompt(`Nom de l'organisation (${categoryLabel(cat).toLowerCase()}) :`)?.trim();
+    if (company) onAdd({ category: cat, company });
+  };
   return (
-    <div className="space-y-4">
-      <p className="hidden text-xs font-bold print:block">{state.settings.companyName ? `${state.settings.companyName} · ` : ''}Annuaire de crise, imprimé le {new Date().toLocaleDateString('fr-FR')}{state.params.company?.address ? ` · ${state.params.company.address}` : ''}{state.params.siteAccess ? ` · accès secours : ${state.params.siteAccess}` : ''}</p>
-      <section className="space-y-2 break-inside-avoid">
-        <h3 className="text-xs font-bold text-slate-900">Interne : qui fait quoi, et qui appeler si la personne est absente</h3>
-        {tree.length ? (
-          <div className="space-y-4">{tree.map(n => <OrgRoot key={n.c.id} n={n} state={state} />)}</div>
-        ) : <p className="text-[11px] text-slate-500">Aucun contact interne. Ajoutez le dirigeant, les responsables et les personnes clés (catégorie Interne), puis indiquez à qui chacun est rattaché.</p>}
-      </section>
-      <section className="space-y-2">
-        <h3 className="text-xs font-bold text-slate-900">Extérieur : dans quel ordre appeler</h3>
-        {chains.length ? (
-          <div className="grid gap-2 lg:grid-cols-2 print:grid-cols-2">
-            {chains.map(x => (
-              <div key={x.chain[0].id} className="break-inside-avoid rounded-lg border border-slate-200 p-2">
-                <p className="mb-1 text-[11px] font-semibold text-slate-500">{CATEGORIES.find(k => k.key === x.chain[0].category)?.label}</p>
-                <ol className="flex flex-wrap items-stretch gap-1">
-                  {x.chain.map((c, i) => (
-                    <li key={c.id} className="flex items-center gap-1">
-                      {i > 0 && <span className="flex flex-col items-center text-[11px] text-slate-500"><ArrowRight size={14} />sinon</span>}
-                      <Box c={c} step={i + 1} />
-                    </li>
-                  ))}
-                  {badLoop(x) && <li className="self-center text-[11px] font-semibold text-red-800">puis retour au début : à corriger</li>}
-                </ol>
-              </div>
-            ))}
-          </div>
-        ) : <p className="text-[11px] text-slate-500">Aucune chaîne. Dans « Liste et saisie », choisissez pour chaque contact qui appeler si ça ne répond pas (le standard, puis l'astreinte, puis le responsable).</p>}
-      </section>
-      {alone.length > 0 && (
-        <section className="space-y-2">
-          <h3 className="text-xs font-bold text-slate-900">Autres numéros, sans relais</h3>
-          <ul className="grid gap-1.5 sm:grid-cols-2 lg:grid-cols-3 print:grid-cols-3">{alone.map(c => <li key={c.id}><Box c={c} /></li>)}</ul>
-        </section>
+    <div className="space-y-3">
+      <div className="flex flex-wrap gap-1.5 print:hidden">
+        {CATEGORIES.map(k => (
+          <button key={k.key} type="button" onClick={() => setCat(k.key)} aria-pressed={cat === k.key}
+            className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${cat === k.key ? 'border-delacour-primary bg-delacour-primary text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'}`}>
+            {k.label} <span className="opacity-75">{count(k.key)}</span>
+          </button>
+        ))}
+      </div>
+      <p className="hidden text-xs font-bold print:block">{state.settings.companyName ? `${state.settings.companyName} · ` : ''}Organigramme : {categoryLabel(cat)}, imprimé le {new Date().toLocaleDateString('fr-FR')}</p>
+      <div className="flex flex-wrap items-center justify-between gap-2 print:hidden">
+        <p className="text-[11px] text-slate-500">Pour rattacher une personne à son responsable, glissez sa carte sur celle du responsable. Le + d'une carte ajoute quelqu'un en dessous ; un clic sur la carte ouvre sa fiche.</p>
+        {inside
+          ? <Button onClick={() => onAdd({ category: 'interne', company: 'Interne' })}><Plus size={14} />Ajouter une personne</Button>
+          : <Button onClick={addOrg}><Plus size={14} />Ajouter une organisation</Button>}
+      </div>
+      {drag && (
+        <div onDragOver={e => e.preventDefault()} onDrop={e => { e.preventDefault(); onLink(drag, undefined); setDrag(''); }}
+          className="rounded-lg border-2 border-dashed border-delacour-gold bg-amber-50/50 px-3 py-2 text-center text-[11px] font-semibold text-slate-700 print:hidden">
+          Déposer ici pour mettre la personne en haut, sans responsable
+        </div>
       )}
+      {!groups.some(g => g.roots.length) && <p className="py-6 text-center text-[11px] text-slate-500">Personne dans cette catégorie pour l'instant.</p>}
+      {groups.filter(g => g.roots.length).map(g => (
+        <section key={g.company} className="break-inside-avoid rounded-lg border border-slate-200 p-2">
+          {!inside && (
+            <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
+              <h4 className="text-xs font-bold text-slate-900">{g.company}</h4>
+              <button type="button" className={`${link} text-[11px] print:hidden`} onClick={() => onAdd({ category: cat, company: g.company === 'Sans société' ? '' : g.company })}><Plus size={13} />Personne chez {g.company}</button>
+            </div>
+          )}
+          <div className="overflow-x-auto pb-2">
+            <ul className="org mx-auto w-max">{g.roots.map(n => <Node key={n.c.id} n={n} ctx={ctx} />)}</ul>
+          </div>
+        </section>
+      ))}
     </div>
   );
 }
 
-// Top of the chart centred, one column per manager under it, then each team listed below its manager:
-// readable with 20 people or more, on a phone and on an A4 landscape page
-function OrgRoot({ n, state }: { n: OrgNode; state: State }) {
+interface TreeCtx {
+  state: State; drag: string; setDrag(id: string): void; onEdit(id: string): void;
+  onAdd(p: Partial<Contact>): void; onLink(id: string, bossId: string | undefined): void;
+}
+
+// A person and the people under them. Leaves are stacked in one column so that a team of 10 stays narrow.
+function Node({ n, ctx }: { n: OrgNode; ctx: TreeCtx }) {
+  const branches = n.children.filter(k => k.children.length);
+  const leaves = n.children.filter(k => !k.children.length);
+  const stack = leaves.length >= 2;
   return (
-    <div className="flex flex-col items-center">
-      <div className="w-56"><Person c={n.c} state={state} /></div>
-      {n.children.length > 0 && <>
-        <span className="h-4 w-px bg-slate-300" />
-        <ul className={`grid w-full gap-3 border-t border-slate-300 pt-3 sm:grid-cols-2 ${n.children.length >= 4 ? 'lg:grid-cols-4 print:grid-cols-4' : n.children.length === 3 ? 'lg:grid-cols-3 print:grid-cols-3' : 'print:grid-cols-2'}`}>
-          {n.children.map(k => (
-            <li key={k.c.id} className="break-inside-avoid space-y-1.5 rounded-lg bg-slate-50 p-2">
-              <Person c={k.c} state={state} />
-              <Team list={k.children} state={state} />
-            </li>
-          ))}
+    <li>
+      <OrgCard c={n.c} ctx={ctx} />
+      {n.children.length > 0 && (
+        <ul>
+          {branches.map(k => <Node key={k.c.id} n={k} ctx={ctx} />)}
+          {stack
+            ? <li><div className="space-y-1.5 border-l-2 border-slate-300 pl-2">{leaves.map(k => <OrgCard key={k.c.id} c={k.c} ctx={ctx} />)}</div></li>
+            : leaves.map(k => <Node key={k.c.id} n={k} ctx={ctx} />)}
         </ul>
-      </>}
-    </div>
+      )}
+    </li>
   );
 }
 
-function Team({ list, state }: { list: OrgNode[]; state: State }) {
-  if (!list.length) return null;
+function OrgCard({ c, ctx }: { c: Contact; ctx: TreeCtx }) {
+  const [over, setOver] = useState(false);
+  const backup = c.backupId ? ctx.state.contacts[c.backupId] : undefined;
+  // same organisation: the name is enough
+  const absent = backup ? (backup.company === c.company && backup.name ? backup.name : short(backup)) : deputiesFromPowers(ctx.state, c)[0];
   return (
-    <ul className="ml-2 space-y-1.5 border-l-2 border-slate-300 pl-2.5">
-      {list.map(k => <li key={k.c.id} className="space-y-1.5"><Person c={k.c} state={state} /><Team list={k.children} state={state} /></li>)}
-    </ul>
-  );
-}
-
-// A person of the chart: the card, then who to call if the person is away (backup, else deputy of tool 4.1)
-function Person({ c, state }: { c: Contact; state: State }) {
-  const backup = c.backupId ? state.contacts[c.backupId] : undefined;
-  const absent = backup ? short(backup) : deputiesFromPowers(state, c)[0];
-  return (
-    <div>
-      <Box c={c} full />
-      <p className={`mt-0.5 rounded px-1.5 py-0.5 text-[11px] ${absent ? 'text-slate-600' : 'bg-amber-50 font-semibold text-amber-900'}`}>
-        Si absent : {absent ? <><strong className="text-slate-800">{absent}</strong>{backup?.phone && <> <a href={`tel:${telOf(backup.phone)}`} className="whitespace-nowrap font-mono font-semibold text-delacour-primary">{backup.phone}</a></>}</> : 'personne'}
-      </p>
-    </div>
-  );
-}
-
-// One contact as a card: who, what for, the number to tap, when it answers, what to give
-function Box({ c, step, full }: { c: Contact; step?: number; full?: boolean }) {
-  return (
-    <div className={`${full ? 'w-full' : 'min-w-[150px] max-w-[220px]'} rounded-lg border bg-white px-2 py-1.5 text-[11px] ${c.vital ? 'border-2 border-red-400' : 'border-slate-300'}`}>
-      <p className="font-bold leading-tight text-slate-900">{step ? `${step}. ` : ''}{short(c)}</p>
-      {c.role && <p className="leading-tight text-slate-600">{c.role}</p>}
+    <div draggable onDragStart={e => { e.dataTransfer.setData('text/plain', c.id); e.dataTransfer.effectAllowed = 'move'; ctx.setDrag(c.id); }} onDragEnd={() => { ctx.setDrag(''); setOver(false); }}
+      onDragOver={e => { if (ctx.drag && ctx.drag !== c.id) { e.preventDefault(); setOver(true); } }} onDragLeave={() => setOver(false)}
+      onDrop={e => { e.preventDefault(); setOver(false); if (ctx.drag && ctx.drag !== c.id) ctx.onLink(ctx.drag, c.id); ctx.setDrag(''); }}
+      className={`group relative w-44 cursor-grab rounded-lg border bg-white px-2 py-1.5 text-left text-[11px] shadow-sm active:cursor-grabbing ${c.vital ? 'border-2 border-red-400' : 'border-slate-300'} ${over ? 'ring-2 ring-delacour-gold' : ''} ${ctx.drag === c.id ? 'opacity-40' : ''}`}>
+      <button type="button" onClick={() => ctx.onEdit(c.id)} className="block w-full text-left" aria-label={`Ouvrir la fiche de ${contactLabel(c)}`}>
+        <p className="pr-5 font-bold leading-tight text-slate-900">{c.name || c.company || 'Sans nom'}</p>
+        {c.role && <p className="leading-tight text-slate-600">{c.role}</p>}
+      </button>
       {c.phone && <a href={`tel:${telOf(c.phone)}`} className="block whitespace-nowrap font-mono text-xs font-bold text-delacour-primary hover:underline">{c.phone}</a>}
-      {c.phone2 && <a href={`tel:${telOf(c.phone2)}`} className="block font-mono text-delacour-primary hover:underline">{c.phone2}</a>}
-      <p className="leading-tight text-slate-600">{[c.always ? '24 h/24' : c.hours, c.reference && `donner : ${c.reference}`].filter(Boolean).join(' · ')}</p>
-      {toCheck(c) && <p className="font-semibold text-amber-800">À vérifier</p>}
+      {(c.always || c.hours) && <p className="leading-tight text-slate-500">{c.always ? '24 h/24' : c.hours}</p>}
+      <p className={`mt-0.5 border-t border-slate-100 pt-0.5 leading-tight ${absent ? 'text-slate-600' : 'text-amber-800'}`}>Si absent : {absent ? <strong className="text-slate-800">{absent}</strong> : 'personne'}</p>
+      {toCheck(c) && <p className="font-semibold leading-tight text-amber-800">Numéro à vérifier</p>}
+      <button type="button" title="Ajouter une personne sous elle" aria-label={`Ajouter une personne sous ${contactLabel(c)}`}
+        onClick={() => ctx.onAdd({ category: c.category, company: c.company, reportsTo: c.id })}
+        className="absolute right-1 top-1 rounded p-0.5 text-slate-400 hover:bg-slate-100 hover:text-delacour-primary print:hidden"><Plus size={14} /></button>
     </div>
+  );
+}
+
+// The sheet of one contact, opened from the org chart
+function ContactSheet({ c, state, teamView, onClose, set, verify, remove }: {
+  c: Contact; state: State; teamView: boolean; onClose(): void; set(p: Partial<Contact>): void; verify(): void; remove(): void;
+}) {
+  const others = Object.values(state.contacts).filter(x => x.id !== c.id).sort((a, b) => contactLabel(a).localeCompare(contactLabel(b)));
+  const bosses = others.filter(x => x.category === c.category && !isUnder(state, x.id, c.id));
+  const canDelete = !teamView || state.params.teamCanDelete;
+  return (
+    <Modal title={contactLabel(c)} subtitle={categoryLabel(c.category)} onClose={onClose}
+      footer={<>{canDelete && <Button kind="danger" className="mr-auto" onClick={remove}><Trash2 size={14} />Supprimer</Button>}<Button kind="primary" onClick={onClose}>Fermer</Button></>}>
+      <div className="grid gap-2.5 sm:grid-cols-2">
+        <Field label="Nom"><input className={inputCls} autoFocus={!c.name} value={c.name} onChange={e => set({ name: e.target.value })} /></Field>
+        <Field label="Fonction"><input className={inputCls} value={c.role} onChange={e => set({ role: e.target.value })} /></Field>
+        <Field label="Société ou organisation"><input className={inputCls} value={c.company} onChange={e => set({ company: e.target.value })} /></Field>
+        <Field label="Catégorie">
+          <select className={inputCls} value={c.category} onChange={e => set({ category: e.target.value as ContactCategory, reportsTo: undefined })}>{CATEGORIES.map(x => <option key={x.key} value={x.key}>{x.label}</option>)}</select>
+        </Field>
+        <Field label="Rattaché à (son responsable)">
+          <select className={inputCls} value={c.reportsTo || ''} onChange={e => set({ reportsTo: e.target.value || undefined })}>
+            <option value="">Personne : en haut de l'organigramme</option>
+            {bosses.map(x => <option key={x.id} value={x.id}>{contactLabel(x)}{x.role ? ` (${x.role})` : ''}</option>)}
+          </select>
+        </Field>
+        <Field label="Si absent ou sans réponse, appeler">
+          <select className={inputCls} value={c.backupId || ''} onChange={e => set({ backupId: e.target.value || undefined })}>
+            <option value="">Personne</option>
+            {others.map(x => <option key={x.id} value={x.id}>{contactLabel(x)}</option>)}
+          </select>
+        </Field>
+        <Field label="Téléphone"><input className={`${inputCls} font-mono`} inputMode="tel" value={c.phone} onChange={e => set({ phone: e.target.value })} /></Field>
+        <Field label="Autre numéro (standard, astreinte)"><input className={`${inputCls} font-mono`} inputMode="tel" value={c.phone2 || ''} onChange={e => set({ phone2: e.target.value })} /></Field>
+        <Field label="E-mail"><input className={inputCls} type="email" inputMode="email" value={c.email} onChange={e => set({ email: e.target.value })} /></Field>
+        <Field label="Horaires"><input className={inputCls} disabled={c.always} placeholder="lun-ven 8 h-18 h" value={c.always ? '24 h/24' : c.hours || ''} onChange={e => set({ hours: e.target.value })} /></Field>
+        <div className="sm:col-span-2"><Field label="Référence à donner à l'appel"><input className={inputCls} placeholder="N° de contrat, n° client" value={c.reference || ''} onChange={e => set({ reference: e.target.value })} /></Field></div>
+        {!teamView && <div className="sm:col-span-2"><Field label="Mot de passe ou consigne à dire (réservé à la direction)"><input className={inputCls} value={c.secret || ''} onChange={e => set({ secret: e.target.value })} /></Field></div>}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-slate-700 sm:col-span-2">
+          <label className="flex items-center gap-1.5 font-semibold text-red-800"><input type="checkbox" checked={!!c.vital} onChange={e => set({ vital: e.target.checked })} /><Pin size={12} />Vital</label>
+          <label className="flex items-center gap-1.5"><input type="checkbox" checked={c.always} onChange={e => set({ always: e.target.checked })} />Joignable 24 h/24</label>
+          <span>{c.verifiedAt ? `Vérifié le ${frDate(c.verifiedAt)}${c.verifiedBy ? ` par ${c.verifiedBy}` : ''}` : 'Jamais vérifié'}</span>
+          <button type="button" className={link} onClick={verify}><CheckCircle2 size={13} />Vérifié aujourd'hui</button>
+          {c.phone && <a href={`tel:${telOf(c.phone)}`} className={link}><Phone size={13} />Appeler</a>}
+          {c.email && <a href={`mailto:${c.email}`} className={link}><Mail size={13} />Écrire</a>}
+        </div>
+      </div>
+    </Modal>
   );
 }
 

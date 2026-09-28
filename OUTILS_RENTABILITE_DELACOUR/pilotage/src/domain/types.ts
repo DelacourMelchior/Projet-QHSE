@@ -510,7 +510,7 @@ export interface RiskTest {
   contactsChecked?: boolean;    // the numbers of the card were called during the test
 }
 
-export type ContactCategory = 'secours' | 'interne' | 'prestataire' | 'fournisseur' | 'client' | 'finance' | 'autre';
+export type ContactCategory = 'secours' | 'interne' | 'client' | 'fournisseur' | 'prestataire' | 'finance' | 'conseil' | 'sante' | 'administration' | 'autre';
 
 // Crisis directory (tool 1.3), used by the reflex cards of the Plans B
 // One line of the reflex card: when, what, who
@@ -532,7 +532,7 @@ export interface Contact {
   reference?: string;     // what to give when calling: contract, customer number
   secret?: string;        // password or instruction to say (direction folder)
   vital?: boolean;        // pinned at the top and on the pocket card
-  reportsTo?: string;     // internal: contact id of the manager (org chart)
+  reportsTo?: string;     // contact id of the manager, in the same category (org chart of the company or of the organisation)
   backupId?: string;      // contact to call when this one does not answer (call chain)
 }
 

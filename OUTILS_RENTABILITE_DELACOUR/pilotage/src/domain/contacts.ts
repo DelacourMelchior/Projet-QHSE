@@ -1,17 +1,21 @@
-// Crisis directory (tool 1.3): categories, labels, numbers to check, call chains (who next when nobody answers),
-// the internal org chart, duplicates, the monthly check campaign and the export to the phone contacts (vCard).
+// Directory (tool 1.3): categories, labels, numbers to check, call chains (who next when nobody answers),
+// the org charts (the company, and each outside organisation: customer, supplier, occupational health…), duplicates, the monthly check campaign and the export to the phone contacts (vCard).
 import type { Contact, ContactCategory, State } from './types';
 import { parseDate } from './periods';
 
 export const CATEGORIES: { key: ContactCategory; label: string }[] = [
   { key: 'secours', label: 'Secours et sécurité' },
   { key: 'interne', label: 'Interne' },
-  { key: 'prestataire', label: 'Prestataires, confrères et maintenance' },
-  { key: 'fournisseur', label: 'Fournisseurs' },
   { key: 'client', label: 'Clients' },
-  { key: 'finance', label: 'Banque et assurance' },
+  { key: 'fournisseur', label: 'Fournisseurs' },
+  { key: 'prestataire', label: 'Prestataires et sous-traitants' },
+  { key: 'finance', label: 'Banques et assurances' },
+  { key: 'conseil', label: 'Expert-comptable, avocat et conseils' },
+  { key: 'sante', label: 'Médecine du travail' },
+  { key: 'administration', label: 'Inspection du travail et administrations' },
   { key: 'autre', label: 'Autres' },
 ];
+export const categoryLabel = (k: ContactCategory) => CATEGORIES.find(c => c.key === k)?.label || 'Autres';
 
 // "Banque B · Conseiller entreprises": the company first, it is what people look for
 export const contactLabel = (c: Contact) => [c.company, c.name].filter(Boolean).join(' · ') || 'Sans nom';
@@ -51,15 +55,26 @@ export function callChains(s: Pick<State, 'contacts'>): ReturnType<typeof chainO
   return out.sort((a, b) => contactLabel(a.chain[0]).localeCompare(contactLabel(b.chain[0])));
 }
 
-// Org chart of the internal contacts: roots are those without a manager (or whose manager is not internal)
+// Org chart of one category: roots are those without a manager in the same category (or caught in a loop of managers)
 export interface OrgNode { c: Contact; children: OrgNode[] }
-export function orgTree(s: Pick<State, 'contacts'>): OrgNode[] {
-  const inside = Object.values(s.contacts).filter(c => c.category === 'interne');
+export function orgTree(s: Pick<State, 'contacts'>, category: ContactCategory = 'interne'): OrgNode[] {
+  const inside = Object.values(s.contacts).filter(c => c.category === category);
   const ids = new Set(inside.map(c => c.id));
   const roots = inside.filter(c => !c.reportsTo || !ids.has(c.reportsTo) || reportsLoop(s, c));
   const rootIds = new Set(roots.map(c => c.id));
   const build = (c: Contact): OrgNode => ({ c, children: inside.filter(x => x.reportsTo === c.id && !rootIds.has(x.id)).sort(byLabel).map(build) });
   return roots.sort(byLabel).map(build);
+}
+// Outside the company: one org chart per organisation (Client A, Fournisseur B…), grouped by the company of the top person
+export function orgGroups(s: Pick<State, 'contacts'>, category: ContactCategory): { company: string; roots: OrgNode[] }[] {
+  const groups = new Map<string, { company: string; roots: OrgNode[] }>();
+  orgTree(s, category).forEach(n => {
+    const company = n.c.company.trim() || 'Sans société';
+    const k = company.toLowerCase();
+    if (!groups.has(k)) groups.set(k, { company, roots: [] });
+    groups.get(k)!.roots.push(n);
+  });
+  return [...groups.values()].sort((a, b) => a.company.localeCompare(b.company));
 }
 const byLabel = (a: Contact, b: Contact) => (b.vital ? 1 : 0) - (a.vital ? 1 : 0) || contactLabel(a).localeCompare(contactLabel(b));
 // A manager chain that comes back to the contact: the contact is drawn as a root, not lost
@@ -67,6 +82,13 @@ function reportsLoop(s: Pick<State, 'contacts'>, c: Contact): boolean {
   const seen = new Set<string>();
   let m = c.reportsTo ? s.contacts[c.reportsTo] : undefined;
   while (m) { if (m.id === c.id) return true; if (seen.has(m.id)) return false; seen.add(m.id); m = m.reportsTo ? s.contacts[m.reportsTo] : undefined; }
+  return false;
+}
+// True when "who" is "boss" or somewhere under "boss": putting boss under who would close a loop
+export function isUnder(s: Pick<State, 'contacts'>, who: string, boss: string): boolean {
+  const seen = new Set<string>();
+  let id: string | undefined = who;
+  while (id && !seen.has(id)) { if (id === boss) return true; seen.add(id); id = s.contacts[id]?.reportsTo; }
   return false;
 }
 

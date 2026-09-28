@@ -110,6 +110,7 @@ export interface State {
   analyses: Record<string, Analysis>;     // 5.3
   pokas: Record<string, Poka>;            // 5.4
   logs: Record<string, LogEntry>;         // who created, changed or deleted what
+  orgs: Record<string, Org>;              // outside organisations of the directory (1.3)
 }
 
 // Operating assumptions of tools 2.1 to 5.4, visible to the whole team (not money of the company)
@@ -538,6 +539,18 @@ export interface Contact {
   personId?: string;      // internal: the same person in the staff list of tools 4.1 to 4.3
   vacant?: boolean;       // post to fill: drawn in the org chart without anybody
   contract?: '' | 'cdd' | 'interim' | 'alternance' | 'stage';
+}
+
+// An outside organisation of the directory (customer, supplier, health service…): its people carry its name in "company"
+export interface Org {
+  id: string;
+  name: string;
+  category: ContactCategory;
+  phone: string;           // switchboard
+  email: string;
+  address: string;
+  reference: string;       // our customer or contract number there
+  note?: string;
 }
 
 export interface RiskScale { gravity: string[]; likelihood: string[] }  // 4 texts each

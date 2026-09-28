@@ -11,12 +11,12 @@ import { emptyTools } from '../domain/base';
 export type FlatMap = Record<string, unknown>;
 
 type CollectionKey = 'contacts' | 'changes' | 'complaints' | 'feedbacks' | 'suppliers' | 'debits' | 'sops' | 'equipments' | 'deliveries'
-  | 'people' | 'skills' | 'newcomers' | 'chronos' | 'ncs' | 'analyses' | 'pokas' | 'logs';
+  | 'people' | 'skills' | 'newcomers' | 'chronos' | 'ncs' | 'analyses' | 'pokas' | 'logs' | 'orgs';
 // key prefix -> collection of the state (records stored whole, readable by the team)
 export const COLLECTIONS: Record<string, CollectionKey> = {
   contact: 'contacts', change: 'changes', complaint: 'complaints', feedback: 'feedbacks', supplier: 'suppliers', debit: 'debits',
   sop: 'sops', equipment: 'equipments', delivery: 'deliveries', person: 'people', skill: 'skills',
-  newcomer: 'newcomers', chrono: 'chronos', nc: 'ncs', analysis: 'analyses', poka: 'pokas', log: 'logs',
+  newcomer: 'newcomers', chrono: 'chronos', nc: 'ncs', analysis: 'analyses', poka: 'pokas', log: 'logs', org: 'orgs',
 };
 const SINGLES = ['params', 'envelope', 'ged'] as const;
 
@@ -123,7 +123,7 @@ function restorePhotos<T>(x: T, m: FlatMap): T {
 }
 
 // Records created, changed or deleted between two states (the journal, not the figures of the month)
-const LOGGED = /^(action|risk|contact|quote|change|complaint|feedback|supplier|debit|sop|equipment|delivery|power|person|skill|newcomer|chrono|nc|analysis|poka|kpi|process)\|/;
+const LOGGED = /^(action|risk|contact|org|quote|change|complaint|feedback|supplier|debit|sop|equipment|delivery|power|person|skill|newcomer|chrono|nc|analysis|poka|kpi|process)\|/;
 export function changedRecords(a: FlatMap, b: FlatMap): { key: string; what: 'création' | 'modification' | 'suppression' }[] {
   return diffKeys(a, b).filter(k => LOGGED.test(k)).map(k => ({ key: k, what: a[k] === undefined ? 'création' as const : b[k] === undefined ? 'suppression' as const : 'modification' as const }));
 }

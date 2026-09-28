@@ -3,10 +3,10 @@
 // The reflex cards of the Plans B (tool 1.2) take their contacts and chains from here.
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AlertTriangle, CheckCircle2, HelpCircle, Contact2, CreditCard, Download, Mail, Phone, Pin, Plus, Printer, Search, Trash2, UserRound, MoreHorizontal } from 'lucide-react';
-import type { Contact, ContactCategory, State } from '../domain/types';
-import { CATEGORIES, CONTRACTS, candidates, managersOf, orgKey, staffInfo, syncStaff, categoryLabel, chainIssues, chainOf, contactLabel, deputiesFromPowers, duplicates, isUnder, orgGroups, orgTree, pendingOf, telOf,  toCheck, vcardOf, vitalContacts, type OrgNode } from '../domain/contacts';
+import type { Contact, ContactCategory, Org, State } from '../domain/types';
+import { CATEGORIES, CONTRACTS, orgNames, orgOf, candidates, managersOf, orgKey, staffInfo, syncStaff, categoryLabel, chainIssues, chainOf, contactLabel, deputiesFromPowers, duplicates, isUnder, orgGroups, orgTree, pendingOf, telOf,  toCheck, vcardOf, vitalContacts, type OrgNode } from '../domain/contacts';
 import { pocketCardPdf } from '../domain/directoryPdf';
-import { exampleContacts } from '../domain/riskTemplates';
+import { exampleContacts, exampleOrgs } from '../domain/riskTemplates';
 import { frDate, isoDate } from '../domain/periods';
 import { useStore } from '../store/StoreContext';
 import { Button, Card, Field, Modal, inputCls } from './common';
@@ -45,6 +45,7 @@ export function Annuaire({ focus = '', nav }: { focus?: string; nav?: Nav }) {
   const [cat, setCat] = useState<ContactCategory>('interne');
   const [edit, setEdit] = useState('');
   const [move, setMove] = useState(false);
+  const [orgEdit, setOrgEdit] = useState('');
   const [pick, setPick] = useState(false);
   // order fixed when the screen opens, so a row does not move while it is being typed
   const [order, setOrder] = useState<string[]>(() => sortIds(Object.values(state?.contacts || {})));
@@ -64,7 +65,7 @@ export function Annuaire({ focus = '', nav }: { focus?: string; nav?: Nav }) {
   const openSheet = (id: string, moving = false) => { setMove(moving); setEdit(id); };
   const verify = (id: string) => set(id, { verifiedAt: isoDate(new Date()), verifiedBy: author });
   const add = (p: Partial<Contact> = {}) => {
-    if (view === 'org') return addInChart({ category: cat, company: cat === 'interne' ? 'Interne' : '', ...p });
+    if (view === 'org') return cat === 'interne' ? addInChart({ category: 'interne', company: 'Interne', ...p }) : newOrg(cat);
     const c = blank(p);
     update(d => { d.contacts[c.id] = c; });
     setOrder([c.id, ...order]);
@@ -91,6 +92,7 @@ export function Annuaire({ focus = '', nav }: { focus?: string; nav?: Nav }) {
   // old example contacts get the links of the new example, the missing people are added; nothing else changes
   const upgradeExample = () => {
     const xs = exampleContacts();
+    update(d => { exampleOrgs().forEach(o => { if (!orgOf(d, o.name)) d.orgs[o.id] = o; }); });
     update(d => xs.forEach(x => {
       const c = d.contacts[x.id];
       if (!c) { d.contacts[x.id] = x; return; }
@@ -113,6 +115,41 @@ export function Annuaire({ focus = '', nav }: { focus?: string; nav?: Nav }) {
       if (c.personId && d.people[c.personId]) d.people[c.personId].active = false;
     });
     setEdit('');
+  };
+  // an organisation opened by its name gets its record (switchboard, address…) the first time
+  const openOrg = (name: string, category: ContactCategory) => {
+    const found = orgOf(state, name);
+    if (found) return setOrgEdit(found.id);
+    const o: Org = { id: `org_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`, name: name === 'Sans société' ? '' : name, category, phone: '', email: '', address: '', reference: '' };
+    update(d => { d.orgs[o.id] = o; });
+    setOrgEdit(o.id);
+  };
+  // renaming an organisation renames it on the cards of its people
+  const setOrg = (id: string, patch: Partial<Org>) => update(d => {
+    const before = d.orgs[id];
+    if (!before) return;
+    const after = d.orgs[id] = { ...before, ...patch };
+    if (patch.name !== undefined && before.name.trim()) Object.values(d.contacts).forEach(c => { if (c.category === before.category && orgKey(c.company) === orgKey(before.name)) c.company = after.name; });
+    if (patch.category) Object.values(d.contacts).forEach(c => { if (c.category === before.category && orgKey(c.company) === orgKey(after.name)) { c.category = patch.category!; c.reportsTo = c.reportsTo && d.contacts[c.reportsTo]?.company === c.company ? c.reportsTo : undefined; } });
+  });
+  const removeOrg = (o: Org) => {
+    const people = Object.values(state.contacts).filter(c => c.category === o.category && o.name.trim() && orgKey(c.company) === orgKey(o.name));
+    if (!window.confirm(people.length ? `Supprimer ${o.name || 'cette organisation'} et ses ${people.length} personne(s) de l'annuaire ?` : `Supprimer ${o.name || 'cette organisation'} ?`)) return;
+    const ids = new Set(people.map(c => c.id));
+    update(d => {
+      delete d.orgs[o.id];
+      ids.forEach(id => delete d.contacts[id]);
+      Object.values(d.risks).forEach(r => { r.contactIds = r.contactIds.filter(x => !ids.has(x)); r.notifyIds = r.notifyIds.filter(x => !ids.has(x)); });
+      Object.values(d.contacts).forEach(x => { if (x.backupId && ids.has(x.backupId)) x.backupId = undefined; if (x.reportsTo && ids.has(x.reportsTo)) x.reportsTo = undefined; });
+      Object.values(d.suppliers).forEach(x => { if (x.contactId && ids.has(x.contactId)) x.contactId = undefined; });
+      Object.values(d.equipments).forEach(x => { if (x.contactId && ids.has(x.contactId)) x.contactId = undefined; });
+    });
+    setOrgEdit('');
+  };
+  const newOrg = (category: ContactCategory) => {
+    const o: Org = { id: `org_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`, name: '', category, phone: '', email: '', address: '', reference: '' };
+    update(d => { d.orgs[o.id] = o; });
+    setOrgEdit(o.id);
   };
   const fillExamples = () => {
     const xs = exampleContacts();
@@ -153,7 +190,7 @@ export function Annuaire({ focus = '', nav }: { focus?: string; nav?: Nav }) {
           )}
           <div className="ml-auto flex items-center gap-2 print:hidden">
             <Checks state={state} dups={dups} onShow={id => openSheet(id)} />
-            <Button kind="primary" onClick={() => add()}><Plus size={14} />Ajouter</Button>
+            <Button kind="primary" onClick={() => add()}><Plus size={14} />{view === 'org' && cat !== 'interne' ? 'Ajouter une organisation' : 'Ajouter'}</Button>
             <More>
               <PasteImport title="Importer des contacts (Outlook, Excel, logiciel)" cols={IMPORT_COLS} onImport={importRows} label="Importer" />
               {cands.length > 0 && <Button kind="ghost" onClick={() => setPick(true)}><Contact2 size={14} />Reprendre des autres outils ({cands.length})</Button>}
@@ -173,7 +210,7 @@ export function Annuaire({ focus = '', nav }: { focus?: string; nav?: Nav }) {
             <Button kind="primary" onClick={fillExamples}>Remplir avec des exemples</Button>
           </div>
         ) : view === 'org' ? (
-          <OrgView key={cat} state={state} cat={cat} setCat={setCat} onEdit={id => openSheet(id)} onMove={id => openSheet(id, true)} onAdd={addInChart} onLink={linkTo} nav={nav}
+          <OrgView key={cat} state={state} cat={cat} setCat={setCat} onEdit={id => openSheet(id)} onMove={id => openSheet(id, true)} onAdd={addInChart} onLink={linkTo} nav={nav} onOpenOrg={name => openOrg(name, cat)}
             setDirector={id => update(d => { d.params.directorId = id || undefined; })} upgrade={upgradeExample} />
         ) : <>
           <div className="flex flex-wrap items-center gap-2 print:hidden">
@@ -206,7 +243,14 @@ export function Annuaire({ focus = '', nav }: { focus?: string; nav?: Nav }) {
       </Card>
       {edit && state.contacts[edit] && (
         <ContactSheet c={state.contacts[edit]} state={state} teamView={teamView} move={move} nav={nav} onClose={() => setEdit('')}
-          set={p => set(edit, p)} verify={() => verify(edit)} remove={() => remove(state.contacts[edit])} />
+          set={p => set(edit, p)} verify={() => verify(edit)} remove={() => remove(state.contacts[edit])}
+          newOrg={name => update(d => { if (!orgOf(d, name)) { const id = `org_${Date.now().toString(36)}`; d.orgs[id] = { id, name, category: d.contacts[edit].category, phone: '', email: '', address: '', reference: '' }; } d.contacts[edit].company = name; })} />
+      )}
+      {orgEdit && state.orgs[orgEdit] && (
+        <OrgSheet o={state.orgs[orgEdit]} state={state} teamView={teamView} nav={nav}
+          onClose={() => { const id = orgEdit; if (!state.orgs[id]?.name.trim()) update(d => { delete d.orgs[id]; }); setOrgEdit(''); }} set={p => setOrg(orgEdit, p)} remove={() => removeOrg(state.orgs[orgEdit])}
+          onPerson={id => { setOrgEdit(''); openSheet(id); }}
+          onAdd={() => { const o = state.orgs[orgEdit]; setOrgEdit(''); addInChart({ category: o.category, company: o.name }); }} />
       )}
       {pick && <PickCandidates state={state} onClose={() => setPick(false)} onAdd={xs => {
         const made = xs.map(x => ({ x, c: blank({ category: x.category, company: x.company, name: x.name }) }));
@@ -311,7 +355,8 @@ function Line({ c, focused, dup, uses, onOpen, verify }: { c: Contact; focused: 
 // (Client A: director, then buyer, then assistant). Links are made by dragging a card onto its manager,
 // by the + of a card (adds someone under it), or in the card sheet ("Rattaché à", also reached by "Déplacer").
 // Branches fold, a search centres the person found, and "Chemin d'appel" lights who to call and who is above.
-function OrgView({ state, cat, setCat, onEdit, onMove, onAdd, onLink, setDirector, upgrade, nav }: {
+function OrgView({ state, cat, setCat, onEdit, onMove, onAdd, onLink, setDirector, upgrade, nav, onOpenOrg }: {
+  onOpenOrg(name: string): void;
   state: State; cat: ContactCategory; setCat(c: ContactCategory): void; onEdit(id: string): void; onMove(id: string): void;
   onAdd(p: Partial<Contact>): void; onLink(id: string, bossId: string | undefined): void;
   setDirector(id: string): void; upgrade(): void; nav?: Nav;
@@ -389,18 +434,21 @@ function OrgView({ state, cat, setCat, onEdit, onMove, onAdd, onLink, setDirecto
           Déposer ici pour mettre la personne en haut, sans responsable
         </div>
       )}
-      {!groups.some(g => g.roots.length) && <p className="py-6 text-center text-[11px] text-slate-500">Personne dans cette catégorie pour l'instant.</p>}
-      {groups.filter(g => g.roots.length).map(g => (
+      {!groups.length && <p className="py-6 text-center text-[11px] text-slate-500">{inside ? 'Personne pour l\'instant.' : 'Aucune organisation pour l\'instant : « Ajouter une organisation ».'}</p>}
+      {groups.filter(g => inside ? g.roots.length : true).map(g => (
         <section key={g.company} className="break-inside-avoid rounded-lg border border-slate-200 p-2">
           {!inside && (
-            <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
-              <h4 className="text-xs font-bold text-slate-900">{g.company}</h4>
-              <span className="flex flex-wrap items-center gap-3 print:hidden">
+            <div className="mb-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+              <button type="button" className="text-xs font-bold text-slate-900 hover:underline" onClick={() => onOpenOrg(g.company)} title="Ouvrir la fiche de l'organisation">{g.company}</button>
+              {g.org?.phone && <a href={`tel:${telOf(g.org.phone)}`} className="font-mono text-[11px] font-bold text-slate-700 hover:underline">{g.org.phone}</a>}
+              {g.org?.reference && <span className="text-[11px] text-slate-500">donner : {g.org.reference}</span>}
+              <span className="ml-auto flex flex-wrap items-center gap-3 print:hidden">
                 <OrgLinks state={state} company={g.company} nav={nav} />
+                <button type="button" className={`${link} text-[11px]`} onClick={() => onAdd({ category: cat, company: g.company === 'Sans société' ? '' : g.company })}><Plus size={13} />Personne</button>
               </span>
             </div>
           )}
-          <FitTree roots={g.roots} ctx={ctx} />
+          {g.roots.length ? <FitTree roots={g.roots} ctx={ctx} /> : <p className="py-3 text-center text-[11px] text-slate-500">Aucune personne encore dans cette organisation.</p>}
         </section>
       ))}
     </div>
@@ -523,14 +571,56 @@ function OrgCard({ c, ctx, pending, team, folded }: { c: Contact; ctx: TreeCtx; 
   );
 }
 
-// The sheet of one contact, opened from the org chart and from the list
-function ContactSheet({ c, state, teamView, move, nav, onClose, set, verify, remove }: {
-  c: Contact; state: State; teamView: boolean; move: boolean; nav?: Nav; onClose(): void; set(p: Partial<Contact>): void; verify(): void; remove(): void;
+// The sheet of an outside organisation: its switchboard and details, then its people
+function OrgSheet({ o, state, teamView, nav, onClose, set, remove, onPerson, onAdd }: {
+  o: Org; state: State; teamView: boolean; nav?: Nav; onClose(): void; set(p: Partial<Org>): void; remove(): void; onPerson(id: string): void; onAdd(): void;
 }) {
+  const people = o.name.trim() ? Object.values(state.contacts).filter(c => c.category === o.category && orgKey(c.company) === orgKey(o.name)).sort((a, b) => contactLabel(a).localeCompare(contactLabel(b))) : [];
+  const canDelete = !teamView || state.params.teamCanDelete;
+  return (
+    <Modal title={o.name || 'Nouvelle organisation'} subtitle={categoryLabel(o.category)} onClose={onClose}
+      footer={<>{canDelete && <Button kind="danger" className="mr-auto" onClick={remove}><Trash2 size={14} />Supprimer</Button>}<Button kind="primary" onClick={onClose}>Fermer</Button></>}>
+      <div className="grid gap-2.5 sm:grid-cols-2">
+        <Field label="Nom"><input className={inputCls} autoFocus={!o.name} value={o.name} placeholder="Client A, Aciers du Rhône…" onChange={e => set({ name: e.target.value })} /></Field>
+        <Field label="Catégorie">
+          <select className={inputCls} value={o.category} onChange={e => set({ category: e.target.value as ContactCategory })}>{CATEGORIES.filter(x => x.key !== 'interne').map(x => <option key={x.key} value={x.key}>{x.label}</option>)}</select>
+        </Field>
+        <Field label="Standard"><input className={`${inputCls} font-mono`} inputMode="tel" value={o.phone} onChange={e => set({ phone: e.target.value })} /></Field>
+        <Field label="E-mail"><input className={inputCls} type="email" inputMode="email" value={o.email} onChange={e => set({ email: e.target.value })} /></Field>
+        <div className="sm:col-span-2"><Field label="Adresse"><input className={inputCls} value={o.address} onChange={e => set({ address: e.target.value })} /></Field></div>
+        <div className="sm:col-span-2"><Field label="Référence à donner à l'appel"><input className={inputCls} placeholder="Notre n° client, n° de contrat" value={o.reference} onChange={e => set({ reference: e.target.value })} /></Field></div>
+        <div className="sm:col-span-2"><Field label="Note"><input className={inputCls} value={o.note || ''} onChange={e => set({ note: e.target.value })} /></Field></div>
+        <div className="space-y-1 sm:col-span-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold text-slate-700">Personnes ({people.length})</span>
+            <button type="button" className={`${link} text-[11px]`} disabled={!o.name.trim()} onClick={onAdd}><Plus size={13} />Ajouter une personne</button>
+          </div>
+          {people.length ? (
+            <ul className="divide-y divide-slate-100 rounded-lg border border-slate-200 text-[11px]">
+              {people.map(c => (
+                <li key={c.id} className="flex items-center gap-2 px-2.5 py-1.5">
+                  <button type="button" className="flex-1 text-left font-semibold hover:underline" onClick={() => onPerson(c.id)}>{c.name || 'Sans nom'}{c.role ? <span className="font-normal text-slate-600"> · {c.role}</span> : ''}</button>
+                  {c.phone && <a href={`tel:${telOf(c.phone)}`} className="font-mono font-bold text-delacour-primary hover:underline">{c.phone}</a>}
+                </li>
+              ))}
+            </ul>
+          ) : <p className="text-[11px] text-slate-500">{o.name.trim() ? 'Aucune personne encore.' : 'Donnez un nom à l\'organisation, puis ajoutez ses personnes.'}</p>}
+        </div>
+        {nav && o.name.trim() && <p className="flex flex-wrap gap-3 sm:col-span-2"><OrgLinks state={state} company={o.name} nav={nav} /></p>}
+      </div>
+    </Modal>
+  );
+}
+
+// The sheet of one contact, opened from the org chart and from the list
+function ContactSheet({ c, state, teamView, move, nav, onClose, set, verify, remove, newOrg }: {
+  c: Contact; state: State; teamView: boolean; move: boolean; nav?: Nav; onClose(): void; set(p: Partial<Contact>): void; verify(): void; remove(): void; newOrg(name: string): void;
+}) {
+  const orgs = orgNames(state, c.category);
+  const inside = c.category === 'interne';
   const others = Object.values(state.contacts).filter(x => x.id !== c.id).sort((a, b) => contactLabel(a).localeCompare(contactLabel(b)));
   const bosses = others.filter(x => x.category === c.category && !isUnder(state, x.id, c.id));
   const canDelete = !teamView || state.params.teamCanDelete;
-  const inside = c.category === 'interne';
   const info = staffInfo(state, c);
   const calls = chainOf(state, c).chain;
   const above = managersOf(state, c);
@@ -554,7 +644,18 @@ function ContactSheet({ c, state, teamView, move, nav, onClose, set, verify, rem
         </div>
         <Field label="Nom"><input className={inputCls} autoFocus={!move && !c.name && !c.vacant} disabled={c.vacant} value={c.vacant ? '' : c.name} onChange={e => set({ name: e.target.value })} /></Field>
         <Field label="Fonction"><input className={inputCls} value={c.role} onChange={e => set({ role: e.target.value })} /></Field>
-        <Field label="Société ou organisation"><input className={inputCls} value={c.company} onChange={e => set({ company: e.target.value })} /></Field>
+        {!inside && (
+          <Field label="Organisation">
+            <select className={inputCls} value={orgs.find(n => orgKey(n) === orgKey(c.company)) || ''} onChange={e => {
+              if (e.target.value === '__new') { const name = window.prompt('Nom de la nouvelle organisation :')?.trim(); if (name) newOrg(name); return; }
+              set({ company: e.target.value, reportsTo: undefined });
+            }}>
+              <option value="">Aucune</option>
+              {orgs.map(n => <option key={n} value={n}>{n}</option>)}
+              <option value="__new">Nouvelle organisation…</option>
+            </select>
+          </Field>
+        )}
         <Field label="Catégorie">
           <select className={inputCls} value={c.category} onChange={e => set({ category: e.target.value as ContactCategory, reportsTo: undefined })}>{CATEGORIES.map(x => <option key={x.key} value={x.key}>{x.label}</option>)}</select>
         </Field>

@@ -1,6 +1,6 @@
 // Directory (tool 1.3): categories, labels, numbers to check, call chains (who next when nobody answers),
 // the org charts (the company, and each outside organisation: customer, supplier, occupational health…), duplicates, the monthly check campaign and the export to the phone contacts (vCard).
-import type { Contact, ContactCategory, Person, State } from './types';
+import type { Contact, ContactCategory, Org, Person, State } from './types';
 import { parseDate } from './periods';
 
 export const CATEGORIES: { key: ContactCategory; label: string }[] = [
@@ -87,16 +87,27 @@ function cascade(roots: OrgNode[], topId?: string): OrgNode[] {
 export function orgTree(s: Pick<State, 'contacts'>, category: ContactCategory = 'interne', topId?: string): OrgNode[] {
   return cascade(forest(s, category), topId);
 }
-// Outside the company: one org chart per organisation (Client A, Fournisseur B…), each with its own top person
-export function orgGroups(s: Pick<State, 'contacts'>, category: ContactCategory): { company: string; roots: OrgNode[] }[] {
-  const groups = new Map<string, { company: string; roots: OrgNode[] }>();
+// Outside the company: one org chart per organisation (Client A, Fournisseur B…), each with its own top person.
+// The organisations are the recorded ones (with their switchboard, address…) and the names found on the contacts.
+export function orgGroups(s: Pick<State, 'contacts'> & Partial<Pick<State, 'orgs'>>, category: ContactCategory): { company: string; roots: OrgNode[]; org?: Org }[] {
+  const groups = new Map<string, { company: string; roots: OrgNode[]; org?: Org }>();
+  Object.values(s.orgs || {}).filter(o => o.category === category && o.name.trim()).forEach(o => groups.set(orgKey(o.name), { company: o.name.trim(), roots: [], org: o }));
   forest(s, category).forEach(n => {
     const company = n.c.company.trim() || 'Sans société';
-    const k = company.toLowerCase();
+    const k = orgKey(company) || 'sans societe';
     if (!groups.has(k)) groups.set(k, { company, roots: [] });
     groups.get(k)!.roots.push(n);
   });
   return [...groups.values()].map(g => ({ ...g, roots: cascade(g.roots) })).sort((a, b) => a.company.localeCompare(b.company));
+}
+// The organisation record of a name, if any
+export const orgOf = (s: Partial<Pick<State, 'orgs'>>, name: string): Org | undefined => Object.values(s.orgs || {}).find(o => orgKey(o.name) === orgKey(name));
+// Names of the organisations of a category, for the choice on a contact card
+export function orgNames(s: Pick<State, 'contacts'> & Partial<Pick<State, 'orgs'>>, category: ContactCategory): string[] {
+  const names = new Map<string, string>();
+  [...Object.values(s.orgs || {}).filter(o => o.category === category).map(o => o.name), ...Object.values(s.contacts).filter(c => c.category === category).map(c => c.company)]
+    .filter(n => n.trim()).forEach(n => { if (!names.has(orgKey(n))) names.set(orgKey(n), n.trim()); });
+  return [...names.values()].sort((a, b) => a.localeCompare(b));
 }
 // People shown under the top person only because nobody attached them yet
 export const pendingOf = (roots: OrgNode[]): Contact[] => roots.flatMap(n => [...(n.pending ? [n.c] : []), ...pendingOf(n.children)]);

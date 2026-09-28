@@ -1,5 +1,5 @@
 // Tool 1.2 content: Plan B families with ideas, typical risks per job, demo risks of the fictitious company.
-import type { Action, Contact, ParadeFamily, Risk, State } from './types';
+import type { Action, Contact, Org, ParadeFamily, Risk, State } from './types';
 import { isoDate } from './periods';
 import { newRisk } from './risk';
 
@@ -282,6 +282,20 @@ export function exampleContacts(today = new Date()): Contact[] {
     ct_demo_vacant_soudeur: { reportsTo: 'ct_demo_eric' },
   };
   return list.map(c => ({ ...c, ...more[c.id], ...cascade[c.id] }));
+}
+
+// Records of the outside organisations of the example: switchboard, address, our reference there
+export function exampleOrgs(): Org[] {
+  const org = (id: string, name: string, category: Org['category'], phone: string, address: string, reference = '', email = ''): Org => ({ id: `org_demo_${id}`, name, category, phone, address, reference, email });
+  return [
+    org('clientA', 'Client A (grand compte)', 'client', '04 00 00 02 00', 'Zone industrielle Nord, 69100 Villeurbanne', 'Fournisseur n° F-20331', 'achats@client-a.example.com'),
+    org('clientB', 'Client B', 'client', '04 00 00 02 01', '5 avenue des Frères Lumière, 69008 Lyon', 'Fournisseur n° 7781'),
+    org('clientC', 'Client C', 'client', '04 00 00 02 02', 'Parc d\'activités du Rhône, 69200 Vénissieux', 'Code fournisseur DEL-12'),
+    org('acier', 'Aciers du Rhône', 'fournisseur', '04 00 00 02 03', '18 quai Perrache, 69002 Lyon', 'Compte client 10442', 'commandes@aciers-rhone.example.com'),
+    org('sst', 'SST interentreprises', 'sante', '04 00 00 02 04', '3 rue de la Santé, 69003 Lyon', 'Adhérent n° 55120'),
+    org('dreets', 'Inspection du travail (DREETS)', 'administration', '04 00 00 02 05', 'Unité de contrôle Lyon Est, 69003 Lyon'),
+    org('constructeur', 'Constructeur', 'prestataire', '04 00 00 02 06', '', 'Contrat maintenance CNC n° M-5520'),
+  ];
 }
 
 // ---- fictitious company: the 7 risks of the previous version, completed, with tests at various ages

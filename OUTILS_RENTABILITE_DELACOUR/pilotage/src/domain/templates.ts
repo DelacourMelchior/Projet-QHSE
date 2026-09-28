@@ -3,7 +3,7 @@ import type { State } from './types';
 import { fromLegacyTool, DEFAULT_SETTINGS } from './migrate';
 import { addMonths, periodOfDate } from './periods';
 import legacy from './legacy-templates.json';
-import { demoRisks } from './riskTemplates';
+import { demoRisks, exampleOrgs } from './riskTemplates';
 import { emptyTools } from './base';
 import { applyQualityExample } from './qualityExamples';
 import { applyCommercialExample } from './commercialExamples';
@@ -24,6 +24,7 @@ export function demoState(today = new Date()): State {
   const d = demoRisks(today);
   s.risks = d.risks;
   s.contacts = d.contacts;
+  s.orgs = Object.fromEntries(exampleOrgs().map(o => [o.id, o]));
   Object.assign(s.actions, d.actions);
   applyQualityExample(s, today);
   applyCommercialExample(s, today);

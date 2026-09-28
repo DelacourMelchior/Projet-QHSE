@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Contact, State } from './types';
-import { syncStaff, staffInfo, managersOf } from './contacts';
+import { syncStaff, staffInfo, managersOf, orgNames } from './contacts';
 import { callChains, candidates, chainIssues, chainOf, duplicates, isUnder, orgGroups, orgTree, pendingOf, toCallThisMonth, vcardOf, vitalContacts } from './contacts';
 import { flatten, unflatten, bucketOf } from '../store/flat';
 import { demoState } from './templates';
@@ -150,5 +150,23 @@ describe('une seule liste de salariés', () => {
     expect(staffInfo(s, s.contacts.ct_demo_lucie, now).absentUntil).not.toBe('');
     expect(staffInfo(s, s.contacts.ct_demo_marc, now).powers).toContain('Programmation de la CNC 5 axes');
     expect(managersOf(s, s.contacts.ct_demo_karim).map(c => c.id)).toEqual(['ct_demo_julien', 'ct_demo_atelier', 'ct_demo_prod', 'ct_demo_dirigeant']);
+  });
+});
+
+describe('organisations', () => {
+  it('shows a recorded organisation even without people, and offers it on the cards', () => {
+    const s = demoState(now);
+    s.orgs.org_x = { id: 'org_x', name: 'Client D (prospect)', category: 'client', phone: '', email: '', address: '', reference: '' };
+    const g = orgGroups(s, 'client');
+    expect(g.find(x => x.company === 'Client D (prospect)')!.roots).toEqual([]);
+    expect(g.find(x => x.company.startsWith('Client A'))!.org!.phone).toBe('04 00 00 02 00');
+    expect(orgNames(s, 'client')).toContain('Client D (prospect)');
+    expect(g.filter(x => x.company.startsWith('Client A')).length).toBe(1);
+  });
+  it('keeps the organisations in the shared files', () => {
+    const s = demoState(now);
+    const m = flatten(s);
+    expect(m['org|org_demo_acier']).toBeTruthy();
+    expect(unflatten(m).orgs.org_demo_acier.reference).toBe('Compte client 10442');
   });
 });

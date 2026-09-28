@@ -19,11 +19,11 @@ export const processLabel = (id: string) => (PROCESS_NAMES[id] ? `${id} · ${PRO
 
 // The collections added by tools 2.1 to 5.4, empty
 export const emptyTools = (): Pick<State, 'params' | 'quotes' | 'changes' | 'complaints' | 'feedbacks' | 'suppliers' | 'debits' | 'sops'
-  | 'equipments' | 'deliveries' | 'powers' | 'envelope' | 'people' | 'skills' | 'newcomers' | 'ged' | 'chronos' | 'ncs' | 'analyses' | 'pokas' | 'logs'> => ({
+  | 'equipments' | 'deliveries' | 'powers' | 'envelope' | 'people' | 'skills' | 'newcomers' | 'ged' | 'chronos' | 'ncs' | 'analyses' | 'pokas' | 'logs' | 'orgs'> => ({
   params: { ...DEFAULT_PARAMS },
   quotes: {}, changes: {}, complaints: {}, feedbacks: {}, suppliers: {}, debits: {}, sops: {}, equipments: {}, deliveries: {},
   powers: {}, envelope: { location: '', checkedAt: '', by: '' }, people: {}, skills: {}, newcomers: {}, ged: defaultGed(), chronos: {},
-  ncs: {}, analyses: {}, pokas: {}, logs: {},
+  ncs: {}, analyses: {}, pokas: {}, logs: {}, orgs: {},
 });
 
 // Filing plan in 5 processes (tool 4.4)

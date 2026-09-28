@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Contact, State } from './types';
-import { callChains, candidates, chainIssues, chainOf, duplicates, isUnder, orgGroups, orgTree, toCallThisMonth, vcardOf, vitalContacts } from './contacts';
+import { callChains, candidates, chainIssues, chainOf, duplicates, isUnder, orgGroups, orgTree, pendingOf, toCallThisMonth, vcardOf, vitalContacts } from './contacts';
 import { flatten, unflatten, bucketOf } from '../store/flat';
 import { demoState } from './templates';
 import { allTasks } from './tasks';
@@ -102,5 +102,27 @@ describe('organigrammes externes', () => {
     const s = demoState(now);
     expect(isUnder(s, 'ct_demo_clientA_asst', 'ct_demo_clientA_dir')).toBe(true);
     expect(isUnder(s, 'ct_demo_clientA_dir', 'ct_demo_clientA_asst')).toBe(false);
+  });
+});
+
+describe('tout le monde sous le dirigeant', () => {
+  it('puts people without a manager under the head, as pending', () => {
+    const s = st([c('a', { category: 'interne', name: 'Antoine', role: 'Responsable qualité' }), c('j', { category: 'interne', name: 'Jean-Marc', role: 'Dirigeant' }),
+      c('d', { category: 'interne', name: 'David', role: 'Chef d\'atelier' }), c('t', { category: 'interne', name: 'Thomas', role: 'Informatique' }), c('w', { category: 'interne', reportsTo: 'd' })]);
+    const t = orgTree(s);
+    expect(t.map(n => n.c.id)).toEqual(['j']);
+    expect(pendingOf(t).map(x => x.id).sort()).toEqual(['a', 'd', 't']);
+    expect(t[0].children.find(n => n.c.id === 'd')!.children[0].c.id).toBe('w');
+  });
+  it('uses the chosen head, and leaves the chart flat when nobody can be found', () => {
+    const s = st([c('x', { category: 'interne' }), c('y', { category: 'interne' })]);
+    expect(orgTree(s).length).toBe(2);
+    expect(orgTree(s, 'interne', 'y').map(n => n.c.id)).toEqual(['y']);
+  });
+  it('does the same in each outside organisation', () => {
+    const s = st([c('p', { category: 'client', company: 'Client Z', name: 'Acheteur' }), c('q', { category: 'client', company: 'Client Z', name: 'Directeur général' })]);
+    const g = orgGroups(s, 'client');
+    expect(g[0].roots.map(n => n.c.id)).toEqual(['q']);
+    expect(pendingOf(g[0].roots).map(x => x.id)).toEqual(['p']);
   });
 });

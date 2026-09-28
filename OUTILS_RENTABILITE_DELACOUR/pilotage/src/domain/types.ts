@@ -133,6 +133,7 @@ export interface Params {
   cnqTrigger?: number;     // cost from which a five whys workshop is expected (5.3)
   variableMarginPct?: number;   // margin on variable costs (%), second reading of the revenue to make up (5.2)
   siteAccess?: string;     // how the emergency services find and enter the site (1.3)
+  directorId?: string;     // top of the internal org chart when no role says it (1.3)
 }
 
 // Signature drawn with the finger: strokes of points in a 300 x 100 box

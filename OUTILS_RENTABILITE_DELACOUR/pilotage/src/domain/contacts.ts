@@ -55,9 +55,10 @@ export function callChains(s: Pick<State, 'contacts'>): ReturnType<typeof chainO
   return out.sort((a, b) => contactLabel(a.chain[0]).localeCompare(contactLabel(b.chain[0])));
 }
 
-// Org chart of one category: roots are those without a manager in the same category (or caught in a loop of managers)
-export interface OrgNode { c: Contact; children: OrgNode[] }
-export function orgTree(s: Pick<State, 'contacts'>, category: ContactCategory = 'interne'): OrgNode[] {
+// Org chart of one category. Everyone hangs from one top person: people without a manager are placed under the top
+// person as "to attach" (pending) until someone drags them under their real manager.
+export interface OrgNode { c: Contact; children: OrgNode[]; pending?: boolean }
+function forest(s: Pick<State, 'contacts'>, category: ContactCategory): OrgNode[] {
   const inside = Object.values(s.contacts).filter(c => c.category === category);
   const ids = new Set(inside.map(c => c.id));
   const roots = inside.filter(c => !c.reportsTo || !ids.has(c.reportsTo) || reportsLoop(s, c));
@@ -65,17 +66,40 @@ export function orgTree(s: Pick<State, 'contacts'>, category: ContactCategory = 
   const build = (c: Contact): OrgNode => ({ c, children: inside.filter(x => x.reportsTo === c.id && !rootIds.has(x.id)).sort(byLabel).map(build) });
   return roots.sort(byLabel).map(build);
 }
-// Outside the company: one org chart per organisation (Client A, Fournisseur B…), grouped by the company of the top person
+// Who is on top, from the wording: the head first, then a director, then a manager (outside, the function is often in the name)
+const TOP_WORDS = [/dirigeant|g[ée]rant|pdg|pr[ée]sident|directeur g[ée]n[ée]ral|directrice g[ée]n[ée]rale|chef d'entreprise|\bdg\b/i, /directeur|directrice/i, /responsable|chef/i];
+const size = (n: OrgNode): number => 1 + n.children.reduce((a, k) => a + size(k), 0);
+export function topOf(roots: OrgNode[], topId?: string): OrgNode | undefined {
+  const chosen = roots.find(n => n.c.id === topId);
+  if (chosen) return chosen;
+  for (const re of TOP_WORDS) {
+    const hits = roots.filter(n => re.test(`${n.c.name} ${n.c.role}`));
+    if (hits.length) return hits.sort((a, b) => size(b) - size(a))[0];
+  }
+  return undefined;
+}
+function cascade(roots: OrgNode[], topId?: string): OrgNode[] {
+  if (roots.length < 2) return roots;
+  const top = topOf(roots, topId);
+  if (!top) return roots;
+  return [{ ...top, children: [...top.children, ...roots.filter(n => n !== top).map(n => ({ ...n, pending: true }))] }];
+}
+export function orgTree(s: Pick<State, 'contacts'>, category: ContactCategory = 'interne', topId?: string): OrgNode[] {
+  return cascade(forest(s, category), topId);
+}
+// Outside the company: one org chart per organisation (Client A, Fournisseur B…), each with its own top person
 export function orgGroups(s: Pick<State, 'contacts'>, category: ContactCategory): { company: string; roots: OrgNode[] }[] {
   const groups = new Map<string, { company: string; roots: OrgNode[] }>();
-  orgTree(s, category).forEach(n => {
+  forest(s, category).forEach(n => {
     const company = n.c.company.trim() || 'Sans société';
     const k = company.toLowerCase();
     if (!groups.has(k)) groups.set(k, { company, roots: [] });
     groups.get(k)!.roots.push(n);
   });
-  return [...groups.values()].sort((a, b) => a.company.localeCompare(b.company));
+  return [...groups.values()].map(g => ({ ...g, roots: cascade(g.roots) })).sort((a, b) => a.company.localeCompare(b.company));
 }
+// People shown under the top person only because nobody attached them yet
+export const pendingOf = (roots: OrgNode[]): Contact[] => roots.flatMap(n => [...(n.pending ? [n.c] : []), ...pendingOf(n.children)]);
 const byLabel = (a: Contact, b: Contact) => (b.vital ? 1 : 0) - (a.vital ? 1 : 0) || contactLabel(a).localeCompare(contactLabel(b));
 // A manager chain that comes back to the contact: the contact is drawn as a root, not lost
 function reportsLoop(s: Pick<State, 'contacts'>, c: Contact): boolean {

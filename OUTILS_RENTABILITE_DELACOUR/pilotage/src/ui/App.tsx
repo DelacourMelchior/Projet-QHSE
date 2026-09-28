@@ -21,6 +21,7 @@ import { Settings } from './Settings';
 import { Risques } from './Risques';
 import { RiskSheet } from './RiskSheet';
 import { Annuaire } from './Annuaire';
+import { ErrorBoundary } from './ErrorBoundary';
 import { Home } from './Home';
 import { MesTaches } from './MesTaches';
 import { allTasks } from '../domain/tasks';
@@ -129,12 +130,12 @@ export function App() {
               className="flex items-center gap-1.5 rounded-md border border-white/20 px-2 py-1.5 text-xs font-semibold hover:bg-white/10 disabled:opacity-60">
               {teamView ? <EyeOff size={15} /> : <Eye size={15} />}<span className="hidden md:inline">{teamView ? 'Vue équipe' : 'Vue direction'}</span>
             </button>
-            {folder.status !== 'unsupported' && (
+            {folder.status !== 'unsupported' && folder.status !== 'local' && (
               <button type="button" onClick={() => folder.status === 'needs-permission' ? store.reconnectFolder() : setSettings(true)}
                 title={folder.status === 'connected' ? `Dossier partagé · ${folder.contributors.join(', ')}` : folder.error || 'Stockage des données'}
-                className={`flex items-center gap-1.5 rounded-md border px-2 py-1.5 text-xs font-semibold ${folder.status === 'connected' ? 'border-emerald-300/40 text-emerald-100' : folder.status === 'local' ? 'border-white/20 text-white/80' : 'border-amber-300/60 bg-amber-500/20 text-amber-100'} hover:bg-white/10`}>
+                className={`flex items-center gap-1.5 rounded-md border px-2 py-1.5 text-xs font-semibold ${folder.status === 'connected' ? 'border-emerald-300/40 text-emerald-100' : 'border-amber-300/60 bg-amber-500/20 text-amber-100'} hover:bg-white/10`}>
                 <FolderSync size={15} />
-                <span className="hidden lg:inline">{{ local: 'Sur ce poste', connected: `Partagé${folder.lastSync ? ' · ' + folder.lastSync.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : ''}`, 'needs-permission': 'Reconnecter le dossier', error: 'Dossier : erreur', unsupported: '' }[folder.status]}</span>
+                <span className="hidden lg:inline">{{ connected: `Partagé${folder.lastSync ? ' · ' + folder.lastSync.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : ''}`, 'needs-permission': 'Reconnecter le dossier', error: 'Dossier : erreur' }[folder.status]}</span>
               </button>
             )}
             <button type="button" onClick={() => setSettings(true)} aria-label="Réglages" className="rounded-md border border-white/20 p-1.5 hover:bg-white/10"><SlidersHorizontal size={15} /></button>
@@ -156,6 +157,7 @@ export function App() {
 
       <main className="mx-auto max-w-7xl px-3 py-4 sm:px-6">
         {teamView && view !== 'home' && view !== 'taches' && view !== '1.3' && <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-900 print:hidden">Vue équipe : les montants confidentiels (chiffre d'affaires, marge, trésorerie, coûts des devis et des arrêts…) sont masqués.</p>}
+        <ErrorBoundary key={view} label="Cet outil" onBack={() => go('home')}>
         {view === 'home' && <Home nav={nav} />}
         {view === 'taches' && <MesTaches nav={nav} />}
         {view !== 'home' && view !== 'taches' && restricted(view) && <p className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white p-6 text-xs text-slate-600"><Lock size={16} />Outil réservé à la direction (Réglages, droits des outils).</p>}
@@ -165,12 +167,13 @@ export function App() {
         {view === '1.2' && !restricted('1.2') && <Risques onOpenRisk={openRisk} onNewRisk={() => setRisk({ r: newRisk(state.processes[0]?.id || 'P1'), step: 0 })} onOpenDirectory={() => go('1.3')} />}
         {view === '1.3' && !restricted('1.3') && <Annuaire key={focus} focus={focus} />}
         {Screen && <Screen key={view} nav={nav} focus={focus} clearFocus={() => setFocus('')} />}
+        </ErrorBoundary>
       </main>
 
       {kpiOpen && <KpiDetail kpiId={kpiOpen} onClose={() => setKpiOpen(null)} onOpenAction={openAction} onNewAction={kpiId => startAction({ kpiId })} />}
       {action && <ActionSheet key={action.id} initial={action} onClose={() => setAction(null)} />}
       {risk && <RiskSheet key={risk.r.id} initial={risk.r} startStep={risk.step} onClose={() => setRisk(null)} onNewAction={id => startAction({ riskId: id })} onOpenAction={openAction} />}
-      {settings && <Settings onClose={() => setSettings(false)} />}
+      {settings && <ErrorBoundary label="Les réglages" onBack={() => setSettings(false)}><Settings onClose={() => setSettings(false)} /></ErrorBoundary>}
       <datalist id="people">{knownPeople(state).map(p => <option key={p} value={p} />)}</datalist>
     </div>
   );

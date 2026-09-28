@@ -23,7 +23,8 @@ export function Settings({ onClose }: { onClose(): void }) {
   const [th, setTh] = useState<string[]>(() => (state!.settings.gravityThresholds || ['', '', '']).map(String));
   const [msg, setMsg] = useState('');
   const [params, setParams] = useState(state!.params);
-  const legacy = useMemo(() => legacyToolRecords(legacyLocalTools(), state!), []); // eslint-disable-line react-hooks/exhaustive-deps
+  // data of the old versions still on this computer: unreadable data must not stop the settings from opening
+  const legacy = useMemo(() => { try { return legacyToolRecords(legacyLocalTools(), state!); } catch { return { counts: {}, apply: () => undefined }; } }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const legacyTotal = Object.values(legacy.counts).reduce((a, b) => a + b, 0);
   const fileRef = useRef<HTMLInputElement>(null);
   const mergeRef = useRef<HTMLInputElement>(null);

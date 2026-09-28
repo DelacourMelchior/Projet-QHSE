@@ -32,5 +32,6 @@ input, select, textarea { caret-color: #1B4D3E; }
 .org li:last-child::before { border-right: 2px solid #1e293b; border-radius: 0 12px 0 0; }
 .org li:first-child::after { border-radius: 12px 0 0 0; }
 .org ul::before { content: ''; position: absolute; top: 0; left: 50%; height: 22px; border-left: 2px solid #1e293b; margin-left: -1px; }
+.org li.pending::before, .org li.pending::after { border-style: dashed; border-color: #64748b; }
 .org > li { padding-top: 0; }
 .org > li::before, .org > li::after { display: none; }

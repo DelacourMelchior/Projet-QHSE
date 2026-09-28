@@ -4,7 +4,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AlertTriangle, CheckCircle2, Contact2, CreditCard, Download, Mail, Phone, Pin, Plus, Printer, Search, Trash2, UserRound } from 'lucide-react';
 import type { Contact, ContactCategory, State } from '../domain/types';
-import { CATEGORIES, badLoop, candidates, categoryLabel, chainIssues, chainOf, contactLabel, deputiesFromPowers, duplicates, isUnder, orgGroups, orgTree, telOf, toCallThisMonth, toCheck, vcardOf, vitalContacts, type OrgNode } from '../domain/contacts';
+import { CATEGORIES, badLoop, candidates, categoryLabel, chainIssues, chainOf, contactLabel, deputiesFromPowers, duplicates, isUnder, orgGroups, orgTree, pendingOf, telOf, toCallThisMonth, toCheck, vcardOf, vitalContacts, type OrgNode } from '../domain/contacts';
 import { pocketCardPdf } from '../domain/directoryPdf';
 import { exampleContacts } from '../domain/riskTemplates';
 import { frDate, isoDate } from '../domain/periods';
@@ -76,6 +76,16 @@ export function Annuaire({ focus = '' }: { focus?: string }) {
       c.reportsTo = boss?.id;
       if (boss) { c.category = boss.category; if (boss.category !== 'interne' && boss.company) c.company = boss.company; }
     });
+  };
+  // old example contacts get the links of the new example, the missing people are added; nothing else changes
+  const upgradeExample = () => {
+    const xs = exampleContacts();
+    update(d => xs.forEach(x => {
+      const c = d.contacts[x.id];
+      if (!c) { d.contacts[x.id] = x; return; }
+      d.contacts[x.id] = { ...c, category: x.category, role: x.role, reportsTo: c.reportsTo ?? x.reportsTo, backupId: c.backupId ?? x.backupId, hours: c.hours ?? x.hours, reference: c.reference ?? x.reference, phone2: c.phone2 ?? x.phone2, vital: c.vital ?? x.vital };
+    }));
+    setOrder(sortIds([...all, ...xs.filter(x => !state.contacts[x.id])]));
   };
   const remove = (c: Contact) => {
     const uses = usedBy(c.id).length;
@@ -149,7 +159,8 @@ export function Annuaire({ focus = '' }: { focus?: string }) {
                 className={`-mb-px border-b-2 px-3 py-1.5 text-xs font-semibold ${view === v ? 'border-delacour-primary text-delacour-primary' : 'border-transparent text-slate-500 hover:text-slate-800'}`}>{l}</button>
             ))}
           </div>
-          {view === 'org' ? <OrgView state={state} cat={cat} setCat={setCat} onEdit={setEdit} onAdd={addInChart} onLink={linkTo} /> : <>
+          {view === 'org' ? <OrgView state={state} cat={cat} setCat={setCat} onEdit={setEdit} onAdd={addInChart} onLink={linkTo}
+            setDirector={id => update(d => { d.params.directorId = id || undefined; })} upgrade={upgradeExample} /> : <>
             <div className="flex flex-wrap items-center gap-2 print:hidden">
               <div className="relative min-w-[200px] flex-1">
                 <Search size={14} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -311,14 +322,20 @@ function Row({ c, state, all, uses, focused, dup, teamView, set, verify, remove 
 // "Organigramme": one tree per category. Inside the company, one tree; outside, one tree per organisation
 // (Client A: director, then buyer, then assistant). Links are made by dragging a card onto its manager,
 // by the + of a card (adds someone under it), or in the card sheet ("Rattaché à").
-function OrgView({ state, cat, setCat, onEdit, onAdd, onLink }: {
+function OrgView({ state, cat, setCat, onEdit, onAdd, onLink, setDirector, upgrade }: {
+  setDirector(id: string): void; upgrade(): void;
   state: State; cat: ContactCategory; setCat(c: ContactCategory): void; onEdit(id: string): void;
   onAdd(p: Partial<Contact>): void; onLink(id: string, bossId: string | undefined): void;
 }) {
   const [drag, setDrag] = useState('');
   const count = (k: ContactCategory) => Object.values(state.contacts).filter(c => c.category === k).length;
   const inside = cat === 'interne';
-  const groups = inside ? [{ company: state.settings.companyName || 'Interne', roots: orgTree(state, 'interne') }] : orgGroups(state, cat);
+  const groups = inside ? [{ company: state.settings.companyName || 'Interne', roots: orgTree(state, 'interne', state.params.directorId) }] : orgGroups(state, cat);
+  const pending = groups.flatMap(g => pendingOf(g.roots));
+  const internal = Object.values(state.contacts).filter(c => c.category === 'interne');
+  const noTop = inside && groups[0].roots.length > 1;
+  // an annuaire filled with the first example: offer the org charts of the new one, without touching anything else
+  const oldExample = !!state.contacts.ct_demo_dirigeant && !state.contacts.ct_demo_prod;
   const ctx: TreeCtx = { state, drag, setDrag, onEdit, onAdd, onLink };
   const addOrg = () => {
     const company = window.prompt(`Nom de l'organisation (${categoryLabel(cat).toLowerCase()}) :`)?.trim();
@@ -341,6 +358,27 @@ function OrgView({ state, cat, setCat, onEdit, onAdd, onLink }: {
           ? <Button onClick={() => onAdd({ category: 'interne', company: 'Interne' })}><Plus size={14} />Ajouter une personne</Button>
           : <Button onClick={addOrg}><Plus size={14} />Ajouter une organisation</Button>}
       </div>
+      {oldExample && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] text-slate-700 print:hidden">
+          <span>Votre annuaire contient l'exemple de la première version, sans organigramme. Le nouvel exemple compte 34 salariés et des organisations extérieures en cascade.</span>
+          <Button kind="primary" onClick={upgrade}>Compléter avec le nouvel exemple</Button>
+        </div>
+      )}
+      {noTop && (
+        <label className="flex flex-wrap items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-semibold text-amber-900 print:hidden">
+          Qui est le dirigeant, en haut de l'organigramme ?
+          <select className={`${inputCls} w-auto`} value={state.params.directorId || ''} onChange={e => setDirector(e.target.value)}>
+            <option value="">Choisir…</option>
+            {internal.sort((a, b) => contactLabel(a).localeCompare(contactLabel(b))).map(c => <option key={c.id} value={c.id}>{c.name || contactLabel(c)}{c.role ? ` (${c.role})` : ''}</option>)}
+          </select>
+        </label>
+      )}
+      {pending.length > 0 && (
+        <p className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-[11px] text-slate-700 print:hidden">
+          <strong>{pending.length > 1 ? `${pending.length} personnes à rattacher` : '1 personne à rattacher'}</strong> (trait en pointillé) : glissez chaque carte sur celle de son responsable.{' '}
+          {pending.map((c, i) => <span key={c.id}>{i ? ', ' : ''}<button type="button" className="font-semibold underline decoration-dotted" onClick={() => onEdit(c.id)}>{c.name || contactLabel(c)}</button></span>)}
+        </p>
+      )}
       {drag && (
         <div onDragOver={e => e.preventDefault()} onDrop={e => { e.preventDefault(); onLink(drag, undefined); setDrag(''); }}
           className="rounded-lg border-2 border-dashed border-delacour-gold bg-amber-50/50 px-3 py-2 text-center text-[11px] font-semibold text-slate-700 print:hidden">
@@ -408,14 +446,14 @@ function FitTree({ roots, ctx }: { roots: OrgNode[]; ctx: TreeCtx }) {
 // A person, then the people under them, in cascade: every link to the manager is drawn
 function Node({ n, ctx }: { n: OrgNode; ctx: TreeCtx }) {
   return (
-    <li>
-      <OrgCard c={n.c} ctx={ctx} />
+    <li className={n.pending ? 'pending' : undefined}>
+      <OrgCard c={n.c} ctx={ctx} pending={n.pending} />
       {n.children.length > 0 && <ul>{n.children.map(k => <Node key={k.c.id} n={k} ctx={ctx} />)}</ul>}
     </li>
   );
 }
 
-function OrgCard({ c, ctx }: { c: Contact; ctx: TreeCtx }) {
+function OrgCard({ c, ctx, pending }: { c: Contact; ctx: TreeCtx; pending?: boolean }) {
   const [over, setOver] = useState(false);
   const backup = c.backupId ? ctx.state.contacts[c.backupId] : undefined;
   // same organisation: the name is enough
@@ -425,6 +463,7 @@ function OrgCard({ c, ctx }: { c: Contact; ctx: TreeCtx }) {
       onDragOver={e => { if (ctx.drag && ctx.drag !== c.id) { e.preventDefault(); setOver(true); } }} onDragLeave={() => setOver(false)}
       onDrop={e => { e.preventDefault(); setOver(false); if (ctx.drag && ctx.drag !== c.id) ctx.onLink(ctx.drag, c.id); ctx.setDrag(''); }}
       className={`relative flex w-32 cursor-grab flex-col items-center rounded-md border border-slate-300 bg-white px-1.5 pb-1.5 pt-2 text-center text-[11px] shadow-sm active:cursor-grabbing ${over ? 'ring-2 ring-delacour-gold' : ''} ${ctx.drag === c.id ? 'opacity-40' : ''}`}>
+      {pending && <span className="mb-0.5 rounded border border-dashed border-slate-500 px-1 font-semibold leading-4 text-slate-700">À rattacher</span>}
       {c.vital && <span className="absolute left-1 top-1 rounded bg-red-700 px-1 text-[11px] font-bold leading-4 text-white">Vital</span>}
       <button type="button" title="Ajouter une personne sous elle" aria-label={`Ajouter une personne sous ${contactLabel(c)}`}
         onClick={() => ctx.onAdd({ category: c.category, company: c.company, reportsTo: c.id })}

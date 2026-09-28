@@ -20,16 +20,17 @@ input, select, textarea { caret-color: #1B4D3E; }
   body.printing-one .print-one { display: block; }
 }
 
-/* Org chart of the directory (1.3): top-down tree, lines from each manager to the people under them */
+/* Org chart of the directory (1.3): top-down tree, rounded lines from each manager to the people under them */
 .org, .org ul { display: flex; justify-content: center; }
-.org ul { position: relative; padding-top: 18px; }
-.org li { position: relative; display: flex; flex-direction: column; align-items: center; padding: 18px 6px 0; list-style: none; }
-.org li::before, .org li::after { content: ''; position: absolute; top: 0; right: 50%; width: 50%; height: 18px; border-top: 1px solid #94a3b8; }
-.org li::after { right: auto; left: 50%; border-left: 1px solid #94a3b8; }
+.org ul { position: relative; padding-top: 22px; }
+.org li { position: relative; display: flex; flex-direction: column; align-items: center; padding: 22px 8px 0; list-style: none; }
+.org li::before, .org li::after { content: ''; position: absolute; top: 0; right: 50%; width: 50%; height: 22px; border-top: 2px solid #1e293b; }
+.org li::after { right: auto; left: 50%; border-left: 2px solid #1e293b; }
 .org li:only-child { padding-top: 0; }
 .org li:only-child::before, .org li:only-child::after { display: none; }
 .org li:first-child::before, .org li:last-child::after { border: 0 none; }
-.org li:last-child::before { border-right: 1px solid #94a3b8; }
-.org ul::before { content: ''; position: absolute; top: 0; left: 50%; height: 18px; border-left: 1px solid #94a3b8; }
+.org li:last-child::before { border-right: 2px solid #1e293b; border-radius: 0 12px 0 0; }
+.org li:first-child::after { border-radius: 12px 0 0 0; }
+.org ul::before { content: ''; position: absolute; top: 0; left: 50%; height: 22px; border-left: 2px solid #1e293b; margin-left: -1px; }
 .org > li { padding-top: 0; }
 .org > li::before, .org > li::after { display: none; }

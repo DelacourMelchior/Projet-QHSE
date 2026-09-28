@@ -64,13 +64,11 @@ export function Annuaire({ focus = '', nav }: { focus?: string; nav?: Nav }) {
   });
   const openSheet = (id: string, moving = false) => { setMove(moving); setEdit(id); };
   const verify = (id: string) => set(id, { verifiedAt: isoDate(new Date()), verifiedBy: author });
-  const add = (p: Partial<Contact> = {}) => {
-    if (view === 'org') return cat === 'interne' ? addInChart({ category: 'interne', company: 'Interne', ...p }) : newOrg(cat);
-    const c = blank(p);
-    update(d => { d.contacts[c.id] = c; });
-    setOrder([c.id, ...order]);
-    setQ(''); setFilter('all'); openSheet(c.id);
-  };
+  // "Ajouter" offers three clear choices, whatever the screen shows
+  const addPerson = () => { setView('org'); setCat('interne'); addInChart({ category: 'interne', company: 'Interne' }); };
+  const outside = cat === 'interne' ? 'client' as ContactCategory : cat;
+  const addOrg = () => { setView('org'); setCat(outside); newOrg(outside); };
+  const addOutsideContact = () => { setView('org'); setCat(outside); addInChart({ category: outside, company: '' }); };
   // from the org chart: the new card appears at its place and its sheet opens
   const addInChart = (p: Partial<Contact>) => {
     const c = blank(p);
@@ -190,7 +188,11 @@ export function Annuaire({ focus = '', nav }: { focus?: string; nav?: Nav }) {
           )}
           <div className="ml-auto flex items-center gap-2 print:hidden">
             <Checks state={state} dups={dups} onShow={id => openSheet(id)} />
-            <Button kind="primary" onClick={() => add()}><Plus size={14} />{view === 'org' && cat !== 'interne' ? 'Ajouter une organisation' : 'Ajouter'}</Button>
+            <More label={<><Plus size={14} />Ajouter</>} primary>
+              <Button kind="ghost" onClick={addPerson}>Une personne de l'entreprise</Button>
+              <Button kind="ghost" onClick={addOrg}>Une organisation (client, fournisseur, médecine du travail…)</Button>
+              <Button kind="ghost" onClick={addOutsideContact}>Un contact dans une organisation</Button>
+            </More>
             <More>
               <PasteImport title="Importer des contacts (Outlook, Excel, logiciel)" cols={IMPORT_COLS} onImport={importRows} label="Importer" />
               {cands.length > 0 && <Button kind="ghost" onClick={() => setPick(true)}><Contact2 size={14} />Reprendre des autres outils ({cands.length})</Button>}
@@ -248,7 +250,7 @@ export function Annuaire({ focus = '', nav }: { focus?: string; nav?: Nav }) {
       )}
       {orgEdit && state.orgs[orgEdit] && (
         <OrgSheet o={state.orgs[orgEdit]} state={state} teamView={teamView} nav={nav}
-          onClose={() => { const id = orgEdit; if (!state.orgs[id]?.name.trim()) update(d => { delete d.orgs[id]; }); setOrgEdit(''); }} set={p => setOrg(orgEdit, p)} remove={() => removeOrg(state.orgs[orgEdit])}
+          onClose={() => { const id = orgEdit; const o = state.orgs[id]; if (!o?.name.trim()) update(d => { delete d.orgs[id]; }); else { setView('org'); setCat(o.category); } setOrgEdit(''); }} set={p => setOrg(orgEdit, p)} remove={() => removeOrg(state.orgs[orgEdit])}
           onPerson={id => { setOrgEdit(''); openSheet(id); }}
           onAdd={() => { const o = state.orgs[orgEdit]; setOrgEdit(''); addInChart({ category: o.category, company: o.name }); }} />
       )}
@@ -265,7 +267,7 @@ export function Annuaire({ focus = '', nav }: { focus?: string; nav?: Nav }) {
 const sortIds = (xs: Contact[]) => [...xs].sort((a, b) => contactLabel(a).localeCompare(contactLabel(b))).map(c => c.id);
 
 // The rarely used actions, behind one button
-function More({ children }: { children: React.ReactNode }) {
+function More({ children, label, primary }: { children: React.ReactNode; label?: React.ReactNode; primary?: boolean }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -276,8 +278,8 @@ function More({ children }: { children: React.ReactNode }) {
   }, [open]);
   return (
     <div ref={ref} className="relative">
-      <Button aria-expanded={open} aria-label="Plus d'actions" onClick={() => setOpen(!open)}><MoreHorizontal size={16} /></Button>
-      {open && <div className="absolute right-0 z-30 mt-1 flex w-max flex-col items-stretch rounded-lg border border-slate-200 bg-white p-1 shadow-lg [&>button]:justify-start">{children}</div>}
+      <Button kind={primary ? 'primary' : 'secondary'} aria-expanded={open} aria-label={label ? undefined : 'Plus d\'actions'} onClick={() => setOpen(!open)}>{label || <MoreHorizontal size={16} />}</Button>
+      {open && <div onClick={e => { if (primary && (e.target as HTMLElement).closest('button')) setOpen(false); }} className="absolute right-0 z-30 mt-1 flex w-max max-w-[90vw] flex-col items-stretch rounded-lg border border-slate-200 bg-white p-1 shadow-lg [&>button]:justify-start">{children}</div>}
     </div>
   );
 }
@@ -391,7 +393,7 @@ function OrgView({ state, cat, setCat, onEdit, onMove, onAdd, onLink, setDirecto
     toggle: id => { const f = new Set(folded); if (f.has(id)) f.delete(id); else f.add(id); setFolded(f); },
   };
   const last = Object.values(state.logs || {}).filter(l => l.kind === 'contact').sort((a, b) => (a.at < b.at ? 1 : -1))[0];
-  const cats = CATEGORIES.filter(k => k.key === cat || count(k.key));
+  const cats = CATEGORIES;
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2 print:hidden">

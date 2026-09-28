@@ -85,8 +85,8 @@ export function App() {
   ];
   const Screen = view !== 'home' && view !== 'saisir' && view !== 'actions' && view !== 'taches' && !restricted(view) ? SCREENS[view] : undefined;
 
-  // the org chart of the directory uses the whole width of the window; the other tools keep a reading width
-  const width = view === '1.3' ? 'max-w-none' : 'max-w-7xl';
+  // every tool uses the whole width of the window
+  const width = 'max-w-none';
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-40 bg-delacour-primary text-white shadow-sm print:static print:bg-white print:text-slate-900 print:shadow-none">

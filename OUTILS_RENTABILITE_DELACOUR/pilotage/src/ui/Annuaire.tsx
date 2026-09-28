@@ -2,9 +2,9 @@
 // Two views: "Organigramme" (the company and each outside organisation, as trees, edited by drag and drop) and "Liste".
 // The reflex cards of the Plans B (tool 1.2) take their contacts and chains from here.
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { AlertTriangle, CheckCircle2, Contact2, CreditCard, Download, Mail, Phone, Pin, Plus, Printer, Search, Trash2, UserRound } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, HelpCircle, Contact2, CreditCard, Download, Mail, Phone, Pin, Plus, Printer, Search, Trash2, UserRound, MoreHorizontal } from 'lucide-react';
 import type { Contact, ContactCategory, State } from '../domain/types';
-import { CATEGORIES, CONTRACTS, candidates, managersOf, orgKey, staffInfo, syncStaff, categoryLabel, chainIssues, chainOf, contactLabel, deputiesFromPowers, duplicates, isUnder, orgGroups, orgTree, pendingOf, telOf, toCallThisMonth, toCheck, vcardOf, vitalContacts, type OrgNode } from '../domain/contacts';
+import { CATEGORIES, CONTRACTS, candidates, managersOf, orgKey, staffInfo, syncStaff, categoryLabel, chainIssues, chainOf, contactLabel, deputiesFromPowers, duplicates, isUnder, orgGroups, orgTree, pendingOf, telOf,  toCheck, vcardOf, vitalContacts, type OrgNode } from '../domain/contacts';
 import { pocketCardPdf } from '../domain/directoryPdf';
 import { exampleContacts } from '../domain/riskTemplates';
 import { frDate, isoDate } from '../domain/periods';
@@ -132,7 +132,7 @@ export function Annuaire({ focus = '', nav }: { focus?: string; nav?: Nav }) {
   const words = norm(q).split(/\s+/).filter(Boolean);
   const pass: Record<Filter, (c: Contact) => boolean> = { all: () => true, vital: c => !!c.vital, always: c => c.always, check: c => toCheck(c), dup: c => dupIds.has(c.id) };
   const shown = all.filter(c => pass[filter](c) && words.every(w => norm([c.company, c.name, c.role, c.phone, c.phone2, c.email, c.reference].join(' ')).includes(w)));
-  const FILTERS: [Filter, string][] = [['all', 'Tous'], ['vital', 'Vitaux'], ['always', 'Joignables 24 h/24'], ['check', 'À vérifier'], ['dup', 'Doublons']];
+  const FILTERS: [Filter, string][] = [['all', 'Tous'], ['vital', 'Vitaux'], ['always', 'Joignables 24 h/24'], ['check', 'Numéros à vérifier'], ['dup', 'Doublons']];
   const vcf = () => downloadFile(`Annuaire-${fileSlug(state.settings.companyName || 'crise')}.vcf`, vcardOf(all.filter(c => c.phone || c.email), state.settings.companyName), 'text/vcard');
   const pocket = () => downloadFile('Carte-de-poche.pdf', pocketCardPdf(vitalContacts(state), { company: state.settings.companyName, address: state.params.company?.address || '', access: state.params.siteAccess || '', date: new Date() }), 'application/pdf');
   const cands = candidates(state);
@@ -141,76 +141,68 @@ export function Annuaire({ focus = '', nav }: { focus?: string; nav?: Nav }) {
     <div className="space-y-4">
       {view === 'org' && <style>{'@media print { @page { size: A4 landscape; margin: 10mm; } }'}</style>}
       <Card className="space-y-3 p-3 sm:p-4">
-        <div className="flex flex-wrap items-start justify-between gap-2">
-          <div>
-            <h2 className="text-sm font-bold text-delacour-primary">Annuaire</h2>
-            <p className="text-[11px] text-slate-500">Qui appeler quand ça casse, et qui appeler ensuite si ça ne répond pas. Les fiches réflexes des Plans B reprennent ces numéros et ces chaînes.</p>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <h2 className="text-sm font-bold text-delacour-primary">Annuaire</h2>
+          {all.length > 0 && (
+            <div role="tablist" className="flex gap-1 print:hidden">
+              {([['org', 'Organigramme'], ['liste', 'Liste']] as [View, string][]).map(([v, l]) => (
+                <button key={v} role="tab" type="button" aria-selected={view === v} onClick={() => setView(v)}
+                  className={`rounded-md px-2.5 py-1 text-xs font-semibold ${view === v ? 'bg-delacour-primary text-white' : 'text-slate-600 hover:bg-slate-100'}`}>{l}</button>
+              ))}
+            </div>
+          )}
+          <div className="ml-auto flex items-center gap-2 print:hidden">
+            <Checks state={state} dups={dups} onShow={id => openSheet(id)} />
+            <Button kind="primary" onClick={() => add()}><Plus size={14} />Ajouter</Button>
+            <More>
+              <PasteImport title="Importer des contacts (Outlook, Excel, logiciel)" cols={IMPORT_COLS} onImport={importRows} label="Importer" />
+              {cands.length > 0 && <Button kind="ghost" onClick={() => setPick(true)}><Contact2 size={14} />Reprendre des autres outils ({cands.length})</Button>}
+              <Button kind="ghost" onClick={vcf} disabled={!all.length}><Download size={14} />Vers les contacts du téléphone</Button>
+              <Button kind="ghost" onClick={pocket} disabled={!all.length}><CreditCard size={14} />Carte de poche (PDF)</Button>
+              <Button kind="ghost" onClick={() => window.print()}><Printer size={14} />Imprimer</Button>
+              <p className="max-w-[16rem] px-2 pt-1 text-[11px] leading-snug text-slate-500">Préférez les numéros professionnels et prévenez les personnes concernées (RGPD). Chaque mois, 4 numéros à vérifier arrivent dans « Mes tâches ».</p>
+            </More>
           </div>
-          <div className="flex flex-wrap gap-2 print:hidden">
-            <Button kind="primary" onClick={() => add()}><Plus size={14} />Ajouter un contact</Button>
-            <PasteImport title="Importer des contacts (Outlook, Excel, logiciel)" cols={IMPORT_COLS} onImport={importRows} label="Importer" />
-            {cands.length > 0 && <Button kind="ghost" onClick={() => setPick(true)}><Contact2 size={14} />Reprendre des autres outils ({cands.length})</Button>}
-          </div>
-        </div>
-        <div className="flex flex-wrap gap-2 print:hidden">
-          <Button onClick={vcf} disabled={!all.length} title="Fichier .vcf : ouvrez-le sur le téléphone, tous les numéros entrent dans les contacts"><Download size={14} />Vers les contacts du téléphone</Button>
-          <Button onClick={pocket} disabled={!all.length} title="4 cartes A6 sur une page A4 : les numéros épinglés comme vitaux, à découper et plastifier"><CreditCard size={14} />Carte de poche (PDF)</Button>
-          <Button onClick={() => window.print()}><Printer size={14} />{view === 'org' ? 'Imprimer l\'organigramme (A4 paysage)' : 'Imprimer la liste'}</Button>
         </div>
 
-        <SiteBlock state={state} update={update} />
+        <SiteLine state={state} update={update} />
 
         {all.length === 0 ? (
           <div className="space-y-3 py-6 text-center">
             <p className="text-xs text-slate-500">Aucun contact. Ajoutez le prestataire informatique, la banque, l'assureur, les confrères et les clients à prévenir.</p>
             <Button kind="primary" onClick={fillExamples}>Remplir avec des exemples</Button>
           </div>
+        ) : view === 'org' ? (
+          <OrgView key={cat} state={state} cat={cat} setCat={setCat} onEdit={id => openSheet(id)} onMove={id => openSheet(id, true)} onAdd={addInChart} onLink={linkTo} nav={nav}
+            setDirector={id => update(d => { d.params.directorId = id || undefined; })} upgrade={upgradeExample} />
         ) : <>
-          <Checks state={state} dups={dups} onVerify={verify} onShow={id => { setView('liste'); setFilter('all'); setQ(''); setTimeout(() => document.getElementById(`ct-${id}`)?.scrollIntoView({ block: 'center', behavior: 'smooth' }), 50); }} />
-          <div role="tablist" className="flex gap-1 border-b border-slate-200 print:hidden">
-            {([['org', 'Organigramme'], ['liste', 'Liste']] as [View, string][]).map(([v, l]) => (
-              <button key={v} role="tab" type="button" aria-selected={view === v} onClick={() => setView(v)}
-                className={`-mb-px border-b-2 px-3 py-1.5 text-xs font-semibold ${view === v ? 'border-delacour-primary text-delacour-primary' : 'border-transparent text-slate-500 hover:text-slate-800'}`}>{l}</button>
-            ))}
+          <div className="flex flex-wrap items-center gap-2 print:hidden">
+            <div className="relative min-w-[200px] flex-1">
+              <Search size={14} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input className={`${inputCls} pl-8`} value={q} placeholder="Rechercher un nom, une société, un numéro…" aria-label="Rechercher" onChange={e => setQ(e.target.value)} />
+            </div>
+            <select className={`${inputCls} !w-auto`} value={filter} aria-label="Filtrer" onChange={e => setFilter(e.target.value as Filter)}>
+              {FILTERS.map(([f, l]) => { const n = all.filter(pass[f]).length; return (f === 'dup' && !n) ? null : <option key={f} value={f}>{l} ({n})</option>; })}
+            </select>
           </div>
-          {view === 'org' ? <OrgView state={state} cat={cat} setCat={setCat} onEdit={id => openSheet(id)} onMove={id => openSheet(id, true)} onAdd={addInChart} onLink={linkTo} nav={nav}
-            setDirector={id => update(d => { d.params.directorId = id || undefined; })} upgrade={upgradeExample} /> : <>
-            <div className="flex flex-wrap items-center gap-2 print:hidden">
-              <div className="relative min-w-[200px] flex-1">
-                <Search size={14} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input className={`${inputCls} pl-8`} value={q} placeholder="Rechercher un nom, une société, un numéro, une référence…" aria-label="Rechercher" onChange={e => setQ(e.target.value)} />
-              </div>
-              {FILTERS.map(([f, l]) => {
-                const n = all.filter(pass[f]).length;
-                if (f === 'dup' && !n) return null;
+          {shown.length === 0 ? <p className="py-6 text-center text-xs text-slate-500">Aucun contact ne correspond.</p> : (
+            <div className="space-y-4 print:hidden">
+              {CATEGORIES.map(cat => {
+                const rows = shown.filter(c => c.category === cat.key).sort((a, b) => (b.vital ? 1 : 0) - (a.vital ? 1 : 0));
+                if (!rows.length) return null;
                 return (
-                  <button key={f} type="button" onClick={() => setFilter(f)} aria-pressed={filter === f}
-                    className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${filter === f ? 'border-delacour-primary bg-delacour-primary text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'}`}>
-                    {l} <span className="opacity-75">{n}</span>
-                  </button>
+                  <section key={cat.key} className="space-y-1.5">
+                    <h3 className="text-xs font-bold text-slate-900">{cat.label} <span className="font-normal text-slate-500">{rows.length}</span></h3>
+                    <ul className="divide-y divide-slate-100 rounded-lg border border-slate-200">{rows.map(c => (
+                      <Line key={c.id} c={c} focused={focus === c.id} dup={dupIds.has(c.id)} uses={usedBy(c.id).length} onOpen={() => openSheet(c.id)} verify={() => verify(c.id)} />
+                    ))}</ul>
+                  </section>
                 );
               })}
             </div>
-            {shown.length === 0 ? <p className="py-6 text-center text-xs text-slate-500">Aucun contact ne correspond.</p> : (
-              <div className="space-y-4 print:hidden">
-                {CATEGORIES.map(cat => {
-                  const rows = shown.filter(c => c.category === cat.key).sort((a, b) => (b.vital ? 1 : 0) - (a.vital ? 1 : 0));
-                  if (!rows.length) return null;
-                  return (
-                    <section key={cat.key} className="space-y-1.5">
-                      <h3 className="text-xs font-bold text-slate-900">{cat.label} <span className="font-normal text-slate-500">{rows.length}</span></h3>
-                      <ul className="divide-y divide-slate-100 rounded-lg border border-slate-200">{rows.map(c => (
-                        <Line key={c.id} c={c} focused={focus === c.id} dup={dupIds.has(c.id)} uses={usedBy(c.id).length} onOpen={() => openSheet(c.id)} verify={() => verify(c.id)} />
-                      ))}</ul>
-                    </section>
-                  );
-                })}
-              </div>
-            )}
-            <PrintList contacts={shown} state={state} />
-          </>}
+          )}
+          <PrintList contacts={shown} state={state} />
         </>}
-        <p className="text-[11px] text-slate-500 print:hidden">Préférez les numéros professionnels et prévenez les personnes concernées (RGPD). Un numéro se vérifie en l'appelant : 4 numéros par mois arrivent dans « Mes tâches ».</p>
       </Card>
       {edit && state.contacts[edit] && (
         <ContactSheet c={state.contacts[edit]} state={state} teamView={teamView} move={move} nav={nav} onClose={() => setEdit('')}
@@ -228,47 +220,64 @@ export function Annuaire({ focus = '', nav }: { focus?: string; nav?: Nav }) {
 
 const sortIds = (xs: Contact[]) => [...xs].sort((a, b) => contactLabel(a).localeCompare(contactLabel(b))).map(c => c.id);
 
-// Address of the site and how the emergency services get in: printed on the pocket card and the list
-function SiteBlock({ state, update }: { state: State; update(f: (d: State) => void): void }) {
-  const address = state.params.company?.address || '';
+// The rarely used actions, behind one button
+function More({ children }: { children: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node) && !(e.target as HTMLElement).closest('[role=dialog]')) setOpen(false); };
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, [open]);
   return (
-    <div className="grid gap-2 rounded-lg border border-red-200 bg-red-50/50 p-2.5 sm:grid-cols-2 print:border-0 print:bg-transparent print:p-0">
-      <label className="block space-y-1">
-        <span className="block text-[11px] font-semibold text-red-900">Adresse du site à donner aux secours</span>
-        <input className={inputCls} value={address} placeholder="12 rue de l'Industrie, 69000 Lyon" onChange={e => update(d => { d.params.company = { siret: '', phone: '', email: '', ...d.params.company, address: e.target.value }; })} />
-      </label>
-      <label className="block space-y-1">
-        <span className="block text-[11px] font-semibold text-red-900">Accès pour les secours</span>
-        <input className={inputCls} value={state.params.siteAccess || ''} placeholder="Portail côté parking, code 1234, bâtiment B au fond" onChange={e => update(d => { d.params.siteAccess = e.target.value; })} />
-      </label>
+    <div ref={ref} className="relative">
+      <Button aria-expanded={open} aria-label="Plus d'actions" onClick={() => setOpen(!open)}><MoreHorizontal size={16} /></Button>
+      {open && <div className="absolute right-0 z-30 mt-1 flex w-max flex-col items-stretch rounded-lg border border-slate-200 bg-white p-1 shadow-lg [&>button]:justify-start">{children}</div>}
     </div>
   );
 }
 
-// What to fix: chains that loop, unchecked numbers in a chain, duplicates, vital contacts without backup, numbers to call this month
-function Checks({ state, dups, onVerify, onShow }: { state: State; dups: Contact[][]; onVerify(id: string): void; onShow(id: string): void }) {
+// Address of the site and how the emergency services get in, on one line (printed on the pocket card and the list)
+function SiteLine({ state, update }: { state: State; update(f: (d: State) => void): void }) {
+  const address = state.params.company?.address || '';
+  const access = state.params.siteAccess || '';
+  const [editing, setEditing] = useState(!address);
+  if (!editing) return (
+    <p className="text-[11px] text-slate-600">
+      <span className="font-semibold text-slate-800">Secours :</span> {address}{access ? ` · accès : ${access}` : ''}{' '}
+      <button type="button" className="font-semibold text-delacour-primary hover:underline print:hidden" onClick={() => setEditing(true)}>modifier</button>
+    </p>
+  );
+  return (
+    <div className="flex flex-wrap items-center gap-2 print:hidden">
+      <input className={`${inputCls} min-w-[200px] flex-1`} value={address} placeholder="Adresse du site à donner aux secours" aria-label="Adresse du site pour les secours" onChange={e => update(d => { d.params.company = { siret: '', phone: '', email: '', ...d.params.company, address: e.target.value }; })} />
+      <input className={`${inputCls} min-w-[200px] flex-1`} value={access} placeholder="Accès : portail, code, bâtiment" aria-label="Accès pour les secours" onChange={e => update(d => { d.params.siteAccess = e.target.value; })} />
+      {address && <Button onClick={() => setEditing(false)}>OK</Button>}
+    </div>
+  );
+}
+
+// What to fix (loops, numbers never checked in a chain, duplicates, vital contacts without backup): one button, the detail on demand
+function Checks({ state, dups, onShow }: { state: State; dups: Contact[][]; onShow(id: string): void }) {
+  const [open, setOpen] = useState(false);
   const { loops, unchecked } = chainIssues(state);
   const lonely = Object.values(state.contacts).filter(c => c.vital && !c.backupId && c.category !== 'secours');
-  const month = toCallThisMonth(state);
+  const n = loops.length + (unchecked.length ? 1 : 0) + dups.length + (lonely.length ? 1 : 0);
+  if (!n) return null;
   const Name = ({ c }: { c: Contact }) => <button type="button" className="font-semibold underline decoration-dotted hover:text-slate-900" onClick={() => onShow(c.id)}>{short(c)}</button>;
   const join = (xs: Contact[], sep = ', ') => xs.map((c, i) => <span key={c.id}>{i ? sep : ''}<Name c={c} /></span>);
-  if (!loops.length && !unchecked.length && !dups.length && !lonely.length && !month.length) return null;
   return (
-    <div className="space-y-1.5 print:hidden">
-      {loops.map((l, i) => <p key={i} className="flex gap-2 rounded-lg bg-red-50 px-2.5 py-1.5 text-[11px] text-red-900"><AlertTriangle size={13} className="mt-0.5 shrink-0" /><span>Chaîne d'appel qui boucle : {join(l, ' puis ')}, puis retour au début. Changez un relais.</span></p>)}
-      {unchecked.length > 0 && <p className="flex gap-2 rounded-lg bg-amber-50 px-2.5 py-1.5 text-[11px] text-amber-900"><AlertTriangle size={13} className="mt-0.5 shrink-0" /><span>Numéros jamais vérifiés, ou pas depuis un an, dans une chaîne d'appel : {join(unchecked)}.</span></p>}
-      {dups.map((g, i) => <p key={i} className="flex gap-2 rounded-lg bg-amber-50 px-2.5 py-1.5 text-[11px] text-amber-900"><AlertTriangle size={13} className="mt-0.5 shrink-0" /><span>Même numéro ou même e-mail : {join(g, ' et ')}. Gardez une seule fiche.</span></p>)}
-      {lonely.length > 0 && <p className="flex gap-2 rounded-lg bg-amber-50 px-2.5 py-1.5 text-[11px] text-amber-900"><AlertTriangle size={13} className="mt-0.5 shrink-0" /><span>Contacts vitaux sans relais si ça ne répond pas : {join(lonely)}.</span></p>}
-      {month.length > 0 && (
-        <div className="rounded-lg border border-slate-200 px-2.5 py-2 text-[11px] text-slate-700">
-          <p className="font-semibold text-slate-900">À appeler ce mois-ci pour vérifier le numéro</p>
-          <ul className="mt-1 space-y-1">{month.map(c => (
-            <li key={c.id} className="flex flex-wrap items-center gap-x-3">
-              <Name c={c} /><a href={`tel:${telOf(c.phone)}`} className="font-mono font-semibold text-delacour-primary hover:underline">{c.phone}</a>
-              <span className="text-slate-500">{c.verifiedAt ? `vérifié le ${frDate(c.verifiedAt)}` : 'jamais vérifié'}</span>
-              <button type="button" className={link} onClick={() => onVerify(c.id)}><CheckCircle2 size={13} />Le numéro répond</button>
-            </li>
-          ))}</ul>
+    <div className="relative">
+      <button type="button" aria-expanded={open} onClick={() => setOpen(!open)} className="inline-flex items-center gap-1 rounded-lg border border-amber-300 bg-amber-50 px-2.5 py-1.5 text-xs font-semibold text-amber-900 hover:bg-amber-100">
+        <AlertTriangle size={13} />{n > 1 ? `${n} points à vérifier` : '1 point à vérifier'}
+      </button>
+      {open && (
+        <div className="absolute right-0 z-30 mt-1 w-[min(22rem,90vw)] space-y-1.5 rounded-lg border border-slate-200 bg-white p-2.5 text-[11px] text-slate-800 shadow-lg">
+          {loops.map((l, i) => <p key={i}>Chaîne d'appel qui boucle : {join(l, ' puis ')}. Changez un relais.</p>)}
+          {unchecked.length > 0 && <p>Numéros à vérifier dans une chaîne d'appel : {join(unchecked)}.</p>}
+          {dups.map((g, i) => <p key={i}>Même numéro ou même e-mail : {join(g, ' et ')}.</p>)}
+          {lonely.length > 0 && <p>Contacts vitaux sans relais : {join(lonely)}.</p>}
         </div>
       )}
     </div>
@@ -309,9 +318,6 @@ function OrgView({ state, cat, setCat, onEdit, onMove, onAdd, onLink, setDirecto
 }) {
   const [drag, setDrag] = useState('');
   const [q, setQ] = useState('');
-  const [folded, setFolded] = useState<Set<string>>(new Set());
-  const [pathMode, setPathMode] = useState(false);
-  const [pathOf, setPathOf] = useState('');
   const count = (k: ContactCategory) => Object.values(state.contacts).filter(c => c.category === k).length;
   const inside = cat === 'interne';
   const groups = inside ? [{ company: state.settings.companyName || 'Interne', roots: orgTree(state, 'interne', state.params.directorId) }] : orgGroups(state, cat);
@@ -324,7 +330,6 @@ function OrgView({ state, cat, setCat, onEdit, onMove, onAdd, onLink, setDirecto
   const words = norm(q).split(/\s+/).filter(Boolean);
   const found = words.length ? Object.values(state.contacts).filter(c => c.category === cat && words.every(w => norm([c.name, c.role, c.company, c.phone].join(' ')).includes(w))) : [];
   const open = new Set(found.flatMap(c => managersOf(state, c).map(m => m.id)));
-  const fold = new Set([...folded].filter(id => !open.has(id)));
   // once the typing stops, the first person found is brought to the middle of the screen
   useEffect(() => {
     if (!found[0]) return;
@@ -332,57 +337,31 @@ function OrgView({ state, cat, setCat, onEdit, onMove, onAdd, onLink, setDirecto
     const timer = setTimeout(() => document.getElementById(`org-${id}`)?.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' }), 400);
     return () => clearTimeout(timer);
   }, [q]); // eslint-disable-line react-hooks/exhaustive-deps
-  const target = pathMode && pathOf ? state.contacts[pathOf] : undefined;
-  const calls = target ? chainOf(state, target).chain : [];
-  const bosses = target ? managersOf(state, target) : [];
-  const lit = target ? new Set([...calls, ...bosses].map(c => c.id)) : null;
   const teams = groups.flatMap(g => g.roots.flatMap(r => r.children)).filter(n => n.children.length).map(n => n.c.id);
+  // the chart opens with the teams folded: the top of the company fits the screen, each team opens with its button
+  const [folded, setFolded] = useState<Set<string>>(() => new Set(teams));
+  const fold = new Set([...folded].filter(id => !open.has(id)));
   const ctx: TreeCtx = {
-    state, drag, setDrag, onAdd, onLink, onMove, fold, found: new Set(found.map(c => c.id)), lit,
-    onOpen: id => (pathMode ? setPathOf(id) : onEdit(id)),
+    state, drag, setDrag, onAdd, onLink, fold, found: new Set(found.map(c => c.id)), onOpen: onEdit,
     toggle: id => { const f = new Set(folded); if (f.has(id)) f.delete(id); else f.add(id); setFolded(f); },
   };
-  const addOrg = () => {
-    const company = window.prompt(`Nom de l'organisation (${categoryLabel(cat).toLowerCase()}) :`)?.trim();
-    if (company) onAdd({ category: cat, company });
-  };
   const last = Object.values(state.logs || {}).filter(l => l.kind === 'contact').sort((a, b) => (a.at < b.at ? 1 : -1))[0];
+  const cats = CATEGORIES.filter(k => k.key === cat || count(k.key));
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap gap-1.5 print:hidden">
-        {CATEGORIES.map(k => (
-          <button key={k.key} type="button" onClick={() => { setCat(k.key); setPathOf(''); }} aria-pressed={cat === k.key}
-            className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${cat === k.key ? 'border-delacour-primary bg-delacour-primary text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'}`}>
-            {k.label} <span className="opacity-75">{count(k.key)}</span>
-          </button>
-        ))}
+      <div className="flex flex-wrap items-center gap-2 print:hidden">
+        <select className={`${inputCls} !w-auto font-semibold`} value={cat} aria-label="Catégorie" onChange={e => setCat(e.target.value as ContactCategory)}>
+          {cats.map(k => <option key={k.key} value={k.key}>{k.label} ({count(k.key)})</option>)}
+        </select>
+        <div className="relative min-w-[160px] flex-1">
+          <Search size={14} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input className={`${inputCls} pl-8`} value={q} placeholder="Chercher…" aria-label="Chercher dans l'organigramme" onChange={e => setQ(e.target.value)} />
+        </div>
+        {(teams.length > 0 || folded.size > 0) && <Button onClick={() => setFolded(folded.size ? new Set() : new Set(teams))}>{folded.size ? 'Tout déplier' : 'Replier'}</Button>}
+        <span className="cursor-help text-slate-400" title={`Glissez une carte sur son responsable pour la rattacher. Le + d'une carte ajoute quelqu'un en dessous ; un clic ouvre la fiche (rattachement, remplaçant, chemin d'appel).${last ? ` Mis à jour le ${frDate(last.at.slice(0, 10))}${last.by ? ` par ${last.by}` : ''}.` : ''}`} aria-label="Aide"><HelpCircle size={16} /></span>
       </div>
       <p className="hidden text-xs font-bold print:block">{state.settings.companyName ? `${state.settings.companyName} · ` : ''}Organigramme : {categoryLabel(cat)}, imprimé le {new Date().toLocaleDateString('fr-FR')}</p>
-      <div className="flex flex-wrap items-center gap-2 print:hidden">
-        <div className="relative min-w-[180px] flex-1">
-          <Search size={14} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input className={`${inputCls} pl-8`} value={q} placeholder="Chercher une personne, une fonction, un numéro…" aria-label="Chercher dans l'organigramme" onChange={e => setQ(e.target.value)} />
-        </div>
-        <Button onClick={() => setFolded(new Set(teams))} disabled={!teams.length}>Replier les équipes</Button>
-        <Button onClick={() => setFolded(new Set())} disabled={!folded.size}>Tout déplier</Button>
-        <Button kind={pathMode ? 'primary' : 'secondary'} aria-pressed={pathMode} onClick={() => { setPathMode(!pathMode); setPathOf(''); }}>Chemin d'appel</Button>
-        {inside
-          ? <Button onClick={() => onAdd({ category: 'interne', company: 'Interne' })}><Plus size={14} />Ajouter une personne</Button>
-          : <Button onClick={addOrg}><Plus size={14} />Ajouter une organisation</Button>}
-      </div>
-      <p className="text-[11px] text-slate-500 print:hidden">
-        {pathMode ? 'Chemin d\'appel : cliquez sur une personne pour voir qui appeler et dans quel ordre, et qui est au-dessus d\'elle.'
-          : 'Pour rattacher une personne, glissez sa carte sur celle de son responsable, ou utilisez « Déplacer » sur la carte. Le + ajoute quelqu\'un en dessous ; un clic sur la carte ouvre sa fiche.'}
-        {last && <> Mis à jour le {frDate(last.at.slice(0, 10))}{last.by ? ` par ${last.by}` : ''}.</>}
-      </p>
-      {words.length > 0 && <p className="text-[11px] font-semibold text-slate-700 print:hidden">{found.length ? `${found.length} personne(s) trouvée(s), surlignée(s) dans l'organigramme.` : 'Personne ne correspond dans cette catégorie.'}</p>}
-      {target && (
-        <div className="rounded-lg border border-delacour-gold bg-amber-50/40 px-3 py-2 text-[11px] text-slate-800">
-          <p><strong>Appeler {short(target)}</strong>{target.phone && <> au <a href={`tel:${telOf(target.phone)}`} className="font-mono font-bold">{target.phone}</a></>}
-            {calls.slice(1).map(c => <span key={c.id}>, sinon <strong>{short(c)}</strong>{c.phone && <> au <a href={`tel:${telOf(c.phone)}`} className="font-mono font-bold">{c.phone}</a></>}</span>)}.</p>
-          {bosses.length > 0 && <p>Au-dessus : {bosses.map(short).join(', puis ')}.</p>}
-        </div>
-      )}
+      {words.length > 0 && !found.length && <p className="text-[11px] text-slate-500">Personne ne correspond.</p>}
       {oldExample && (
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] text-slate-700 print:hidden">
           <span>Votre annuaire contient l'exemple de la première version, sans organigramme. Le nouvel exemple compte 34 salariés et des organisations extérieures en cascade.</span>
@@ -392,7 +371,7 @@ function OrgView({ state, cat, setCat, onEdit, onMove, onAdd, onLink, setDirecto
       {noTop && (
         <label className="flex flex-wrap items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-semibold text-amber-900 print:hidden">
           Qui est le dirigeant, en haut de l'organigramme ?
-          <select className={`${inputCls} w-auto`} value={state.params.directorId || ''} onChange={e => setDirector(e.target.value)}>
+          <select className={`${inputCls} !w-auto`} value={state.params.directorId || ''} onChange={e => setDirector(e.target.value)}>
             <option value="">Choisir…</option>
             {internal.sort((a, b) => contactLabel(a).localeCompare(contactLabel(b))).map(c => <option key={c.id} value={c.id}>{c.name || contactLabel(c)}{c.role ? ` (${c.role})` : ''}</option>)}
           </select>
@@ -400,7 +379,7 @@ function OrgView({ state, cat, setCat, onEdit, onMove, onAdd, onLink, setDirecto
       )}
       {pending.length > 0 && (
         <p className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-[11px] text-slate-700 print:hidden">
-          <strong>{pending.length > 1 ? `${pending.length} personnes à rattacher` : '1 personne à rattacher'}</strong> (trait en pointillé) : glissez chaque carte sur celle de son responsable, ou « Déplacer ».{' '}
+          <strong>À rattacher :</strong>{' '}
           {pending.map((c, i) => <span key={c.id}>{i ? ', ' : ''}<button type="button" className="font-semibold underline decoration-dotted" onClick={() => onMove(c.id)}>{c.name || contactLabel(c)}</button></span>)}
         </p>
       )}
@@ -418,7 +397,6 @@ function OrgView({ state, cat, setCat, onEdit, onMove, onAdd, onLink, setDirecto
               <h4 className="text-xs font-bold text-slate-900">{g.company}</h4>
               <span className="flex flex-wrap items-center gap-3 print:hidden">
                 <OrgLinks state={state} company={g.company} nav={nav} />
-                <button type="button" className={`${link} text-[11px]`} onClick={() => onAdd({ category: cat, company: g.company === 'Sans société' ? '' : g.company })}><Plus size={13} />Personne chez {g.company}</button>
               </span>
             </div>
           )}
@@ -445,9 +423,9 @@ function OrgLinks({ state, company, nav }: { state: State; company: string; nav?
 }
 
 interface TreeCtx {
-  state: State; drag: string; setDrag(id: string): void; onOpen(id: string): void; onMove(id: string): void;
+  state: State; drag: string; setDrag(id: string): void; onOpen(id: string): void;
   onAdd(p: Partial<Contact>): void; onLink(id: string, bossId: string | undefined): void;
-  fold: Set<string>; toggle(id: string): void; found: Set<string>; lit: Set<string> | null;
+  fold: Set<string>; toggle(id: string): void; found: Set<string>;
 }
 
 // The tree is drawn at real size (text readable, 11 px); when wider than the screen, "Voir tout l'organigramme" shrinks it to the width
@@ -481,7 +459,7 @@ function FitTree({ roots, ctx }: { roots: OrgNode[]; ctx: TreeCtx }) {
           <button type="button" className={`${link} text-[11px]`} onClick={() => setFit(!fit)}>{fit ? 'Taille réelle' : 'Voir tout l\'organigramme'}</button>
         </div>
       )}
-      <div ref={box} className="overflow-x-auto pb-2">
+      <div ref={box} className="overflow-x-auto overflow-y-hidden pb-4">
         <ul ref={tree} className="org mx-auto w-max" style={{ zoom: z }}>{roots.map(n => <Node key={n.c.id} n={n} ctx={ctx} />)}</ul>
       </div>
     </div>
@@ -501,45 +479,46 @@ function Node({ n, ctx }: { n: OrgNode; ctx: TreeCtx }) {
   );
 }
 
-// Every card has the same frame and shows its texts in full: name, function, number, who replaces, and the badges
+// Every card has the same frame and shows its texts in full: name, function, number, and who replaces.
+// Badges: vital, to attach, absent. The rest is in the sheet.
 function OrgCard({ c, ctx, pending, team, folded }: { c: Contact; ctx: TreeCtx; pending?: boolean; team: number; folded: boolean }) {
   const [over, setOver] = useState(false);
   const backup = c.backupId ? ctx.state.contacts[c.backupId] : undefined;
   // same organisation: the name is enough
   const absent = backup ? (backup.company === c.company && backup.name ? backup.name : short(backup)) : deputiesFromPowers(ctx.state, c)[0];
-  const info = staffInfo(ctx.state, c);
-  const keyOf = [...info.skills, ...info.powers];
-  const contract = CONTRACTS.find(x => x.key && x.key === c.contract)?.label;
-  const dim = ctx.lit && !ctx.lit.has(c.id);
-  const hit = ctx.found.has(c.id) || (ctx.lit?.has(c.id) ?? false);
+  const away = staffInfo(ctx.state, c).absentUntil;
   const badge = 'rounded px-1 text-[11px] font-semibold leading-4';
   return (
     <div id={`org-${c.id}`} draggable onDragStart={e => { e.dataTransfer.setData('text/plain', c.id); e.dataTransfer.effectAllowed = 'move'; ctx.setDrag(c.id); }} onDragEnd={() => { ctx.setDrag(''); setOver(false); }}
       onDragOver={e => { if (ctx.drag && ctx.drag !== c.id) { e.preventDefault(); setOver(true); } }} onDragLeave={() => setOver(false)}
       onDrop={e => { e.preventDefault(); setOver(false); if (ctx.drag && ctx.drag !== c.id) ctx.onLink(ctx.drag, c.id); ctx.setDrag(''); }}
-      className={`relative flex min-h-[13rem] w-44 cursor-grab flex-col items-center gap-0.5 rounded-md border px-2 pb-1.5 pt-1.5 text-center text-[11px] shadow-sm active:cursor-grabbing ${c.vacant ? 'border-dashed border-slate-400 bg-slate-50' : info.absentUntil ? 'border-slate-300 bg-slate-100' : 'border-slate-300 bg-white'} ${over || hit ? 'ring-2 ring-delacour-gold' : ''} ${ctx.drag === c.id || dim ? 'opacity-40' : ''}`}>
-      <div className="flex min-h-[1rem] w-full flex-wrap justify-center gap-1 pr-4">
+      className={`group relative flex min-h-[10rem] w-44 cursor-grab flex-col items-center gap-0.5 rounded-md border px-2 pb-3 pt-1.5 text-center text-[11px] shadow-sm active:cursor-grabbing ${c.vacant ? 'border-dashed border-slate-400 bg-slate-50' : away ? 'border-slate-300 bg-slate-100' : 'border-slate-300 bg-white'} ${over || ctx.found.has(c.id) ? 'ring-2 ring-delacour-gold' : ''} ${ctx.drag === c.id ? 'opacity-40' : ''}`}>
+      <div className="flex min-h-[1rem] w-full flex-wrap justify-center gap-1 px-4">
         {c.vital && <span className={`${badge} bg-red-700 text-white`}>Vital</span>}
         {pending && <span className={`${badge} border border-dashed border-slate-500 text-slate-700`}>À rattacher</span>}
-        {contract && <span className={`${badge} bg-slate-200 text-slate-800`}>{contract}</span>}
-        {keyOf.length > 0 && <span className={`${badge} bg-slate-800 text-white`} title={`Seul à tenir : ${keyOf.join(', ')}`}>Personne clé</span>}
+        {away && <span className={`${badge} bg-amber-100 text-amber-900`}>Absent jusqu'au {frDate(away).slice(0, 5)}</span>}
       </div>
-      <button type="button" title="Ajouter une personne sous elle" aria-label={`Ajouter une personne sous ${contactLabel(c)}`}
+      <button type="button" title="Ajouter une personne en dessous" aria-label={`Ajouter une personne sous ${contactLabel(c)}`}
         onClick={() => ctx.onAdd({ category: c.category, company: c.company, reportsTo: c.id })}
-        className="absolute right-0.5 top-0.5 rounded p-0.5 text-slate-500 hover:bg-slate-100 hover:text-delacour-primary print:hidden"><Plus size={14} /></button>
+        className="absolute right-0.5 top-0.5 rounded p-0.5 text-slate-500 opacity-0 hover:bg-slate-100 hover:text-delacour-primary focus:opacity-100 group-hover:opacity-100 print:hidden [@media(hover:none)]:opacity-100"><Plus size={14} /></button>
       <button type="button" onClick={() => ctx.onOpen(c.id)} className="flex w-full flex-col items-center gap-1" aria-label={`Ouvrir la fiche de ${contactLabel(c)}`}>
-        <UserRound size={28} strokeWidth={1.6} className={c.vacant ? 'text-slate-400' : 'text-slate-500'} aria-hidden />
+        <UserRound size={26} strokeWidth={1.6} className={c.vacant ? 'text-slate-400' : 'text-slate-500'} aria-hidden />
         <span className={`w-full break-words rounded-xl px-2 py-0.5 font-bold leading-tight ${c.vacant ? 'border border-dashed border-slate-500 bg-white text-slate-700' : 'bg-delacour-primary text-white'}`}>{c.vacant ? 'Poste à pourvoir' : c.name || c.company || 'Sans nom'}</span>
         {c.role && <span className="w-full break-words leading-tight text-slate-700">{c.role}</span>}
       </button>
-      {c.phone && <a href={`tel:${telOf(c.phone)}`} className="whitespace-nowrap font-mono font-bold text-slate-900 hover:underline">{c.phone}</a>}
-      {info.absentUntil && <span className="w-full break-words font-semibold leading-tight text-amber-800">Absent jusqu'au {frDate(info.absentUntil)}</span>}
-      {!c.vacant && <span className={`w-full break-words leading-tight ${info.absentUntil ? 'font-semibold text-slate-900' : absent ? 'text-slate-600' : 'font-semibold text-amber-800'}`}>{info.absentUntil ? 'Remplacé par' : 'Si absent'} : {absent || 'personne'}</span>}
-      {toCheck(c) && !c.vacant && <span className="font-semibold leading-tight text-amber-800">Numéro à vérifier</span>}
-      <div className="mt-auto flex w-full flex-wrap justify-center gap-x-3 pt-0.5 print:hidden">
-        <button type="button" className="font-semibold text-delacour-primary hover:underline" onClick={() => ctx.onMove(c.id)}>Déplacer</button>
-        {team > 0 && <button type="button" className="font-semibold text-delacour-primary hover:underline" aria-expanded={!folded} onClick={() => ctx.toggle(c.id)}>{folded ? `Déplier (${team})` : 'Replier'}</button>}
-      </div>
+      {c.phone && (
+        <span className="inline-flex items-center gap-1">
+          <a href={`tel:${telOf(c.phone)}`} className="whitespace-nowrap font-mono font-bold text-slate-900 hover:underline">{c.phone}</a>
+          {toCheck(c) && <span className="h-2 w-2 rounded-full bg-amber-500" title="Numéro à vérifier" aria-label="Numéro à vérifier" />}
+        </span>
+      )}
+      {!c.vacant && <span className={`w-full break-words leading-tight ${away ? 'font-semibold text-slate-900' : absent ? 'text-slate-600' : 'text-amber-800'}`}>{away ? 'Remplacé par' : 'Si absent'} : {absent || 'personne'}</span>}
+      {team > 0 && (
+        <button type="button" aria-expanded={!folded} aria-label={folded ? `Déplier l'équipe (${team})` : 'Replier l\'équipe'} title={folded ? 'Déplier l\'équipe' : 'Replier l\'équipe'} onClick={() => ctx.toggle(c.id)}
+          className="absolute -bottom-2.5 left-1/2 z-10 min-w-[1.5rem] -translate-x-1/2 rounded-full border border-slate-400 bg-white px-1.5 text-[11px] font-bold leading-4 text-slate-700 hover:border-delacour-primary hover:text-delacour-primary print:hidden">
+          {folded ? `+${team}` : '−'}
+        </button>
+      )}
     </div>
   );
 }
@@ -553,10 +532,18 @@ function ContactSheet({ c, state, teamView, move, nav, onClose, set, verify, rem
   const canDelete = !teamView || state.params.teamCanDelete;
   const inside = c.category === 'interne';
   const info = staffInfo(state, c);
+  const calls = chainOf(state, c).chain;
+  const above = managersOf(state, c);
   return (
     <Modal title={c.vacant ? `Poste à pourvoir${c.role ? ` : ${c.role}` : ''}` : contactLabel(c)} subtitle={categoryLabel(c.category)} onClose={onClose}
       footer={<>{canDelete && <Button kind="danger" className="mr-auto" onClick={remove}><Trash2 size={14} />Supprimer</Button>}<Button kind="primary" onClick={onClose}>Fermer</Button></>}>
       <div className="grid gap-2.5 sm:grid-cols-2">
+        {!c.vacant && (calls.length > 1 || above.length > 0) && (
+          <div className="rounded-lg bg-slate-50 px-2.5 py-2 text-[11px] text-slate-800 sm:col-span-2">
+            {calls.length > 1 && <p><strong>Chemin d'appel :</strong> {calls.map((x, i) => <span key={x.id}>{i ? ', sinon ' : ''}{short(x)}{x.phone && <> <a href={`tel:${telOf(x.phone)}`} className="font-mono font-semibold text-delacour-primary">{x.phone}</a></>}</span>)}.</p>}
+            {above.length > 0 && <p><strong>Au-dessus :</strong> {above.map(short).join(', puis ')}.</p>}
+          </div>
+        )}
         <div className="sm:col-span-2">
           <Field label="Rattaché à (son responsable)">
             <select className={`${inputCls} ${move ? 'ring-2 ring-delacour-gold' : ''}`} autoFocus={move} value={c.reportsTo || ''} onChange={e => set({ reportsTo: e.target.value || undefined })}>

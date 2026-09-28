@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Contact, State } from './types';
+import { syncStaff, staffInfo, managersOf } from './contacts';
 import { callChains, candidates, chainIssues, chainOf, duplicates, isUnder, orgGroups, orgTree, pendingOf, toCallThisMonth, vcardOf, vitalContacts } from './contacts';
 import { flatten, unflatten, bucketOf } from '../store/flat';
 import { demoState } from './templates';
@@ -74,12 +75,12 @@ describe('annuaire de démonstration', () => {
   it('has 34 employees in one org chart under the director, no bad loop, a mutual pair at the end of a chain is fine', () => {
     const s = demoState(now);
     const inside = Object.values(s.contacts).filter(x => x.category === 'interne');
-    expect(inside.length).toBe(34);
+    expect(inside.filter(x => !x.vacant).length).toBe(34);
     const count = (n: ReturnType<typeof orgTree>[number]): number => 1 + n.children.reduce((a, k) => a + count(k), 0);
     const tree = orgTree(s);
     expect(tree.length).toBe(1);
     expect(tree[0].c.id).toBe('ct_demo_dirigeant');
-    expect(count(tree[0])).toBe(34);
+    expect(count(tree[0])).toBe(35);
     expect(chainIssues(s, now).loops).toEqual([]);
     const claire = chainOf(s, s.contacts.ct_demo_claire);
     expect(claire.cycle).toBe(2);
@@ -124,5 +125,30 @@ describe('tout le monde sous le dirigeant', () => {
     const g = orgGroups(s, 'client');
     expect(g[0].roots.map(n => n.c.id)).toEqual(['q']);
     expect(pendingOf(g[0].roots).map(x => x.id)).toEqual(['p']);
+  });
+});
+
+describe('une seule liste de salariés', () => {
+  it('links the org chart and the staff list, both ways, without creating twice', () => {
+    const s = demoState(now);
+    const n = syncStaff(s);
+    expect(n).toBeGreaterThan(0);
+    expect(syncStaff(s)).toBe(0);
+    const inside = Object.values(s.contacts).filter(c => c.category === 'interne' && !c.vacant);
+    expect(inside.every(c => c.personId && s.people[c.personId])).toBe(true);
+    expect(s.contacts.ct_demo_dirigeant.personId).toBe('pp_demo_jm');
+  });
+  it('does not bring back someone removed from the staff list', () => {
+    const s = demoState(now);
+    syncStaff(s);
+    delete s.people[s.contacts.ct_demo_fabien.personId!];
+    expect(syncStaff(s)).toBe(0);
+  });
+  it('knows who is absent, who is key, and the managers above', () => {
+    const s = demoState(now);
+    syncStaff(s);
+    expect(staffInfo(s, s.contacts.ct_demo_lucie, now).absentUntil).not.toBe('');
+    expect(staffInfo(s, s.contacts.ct_demo_marc, now).powers).toContain('Programmation de la CNC 5 axes');
+    expect(managersOf(s, s.contacts.ct_demo_karim).map(c => c.id)).toEqual(['ct_demo_julien', 'ct_demo_atelier', 'ct_demo_prod', 'ct_demo_dirigeant']);
   });
 });

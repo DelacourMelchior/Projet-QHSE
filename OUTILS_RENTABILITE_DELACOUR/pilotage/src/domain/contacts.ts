@@ -1,6 +1,6 @@
 // Directory (tool 1.3): categories, labels, numbers to check, call chains (who next when nobody answers),
 // the org charts (the company, and each outside organisation: customer, supplier, occupational health…), duplicates, the monthly check campaign and the export to the phone contacts (vCard).
-import type { Contact, ContactCategory, State } from './types';
+import type { Contact, ContactCategory, Person, State } from './types';
 import { parseDate } from './periods';
 
 export const CATEGORIES: { key: ContactCategory; label: string }[] = [
@@ -177,10 +177,12 @@ export function vcardOf(list: Contact[], company = ''): string {
   ].filter(Boolean).join('\r\n')).join('\r\n');
 }
 
+// "Client A" is the same organisation as "Client A (grand compte)": compare the words, not the whole text
+export const orgKey = (t: string) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\(.*?\)/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+
 // Cards the other tools already know (suppliers 3.1, customers 2.1 / 2.3) and that are not in the directory yet
 export function candidates(s: Pick<State, 'contacts' | 'suppliers' | 'quotes' | 'complaints'>): { key: string; category: ContactCategory; company: string; name: string; from: string; supplierId?: string }[] {
-  // "Client A" is already there as "Client A (grand compte)": compare the words, not the whole text
-  const key = (t: string) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\(.*?\)/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+  const key = orgKey;
   const known = Object.values(s.contacts).map(c => key(c.company)).filter(Boolean);
   const out: ReturnType<typeof candidates> = [];
   const push = (x: (typeof out)[number]) => { const k = key(x.company); if (!k || known.includes(k)) return; known.push(k); out.push(x); };
@@ -189,3 +191,47 @@ export function candidates(s: Pick<State, 'contacts' | 'suppliers' | 'quotes' | 
     .forEach(client => push({ key: `c${client}`, category: 'client', company: client, name: '', from: 'Devis gagnés et réclamations' }));
   return out;
 }
+
+// ---- one staff list: the internal contacts of the directory and the people of tools 4.1 to 4.3 are the same people
+const same = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
+export const personOf = (s: Pick<State, 'people'>, c: Contact): Person | undefined =>
+  (c.personId && s.people?.[c.personId]) || Object.values(s.people || {}).find(p => p.name.trim() && same(p.name, c.name));
+// Adds the missing side (a contact for a person, a person for a contact) and keeps the link; returns the number added
+export function syncStaff(d: State): number {
+  let n = 0;
+  const inside = Object.values(d.contacts).filter(c => c.category === 'interne' && !c.vacant && c.name.trim());
+  inside.forEach(c => {
+    if (c.personId && !d.people[c.personId]) return;   // removed from the staff list on purpose: not created again
+    const p = personOf(d, c);
+    if (p) { if (c.personId !== p.id) c.personId = p.id; if (!p.role && c.role) p.role = c.role; return; }
+    const id = `pp_${c.id}`;
+    d.people[id] = { id, name: c.name.trim(), role: c.role, active: true };
+    c.personId = id; n++;
+  });
+  const linked = new Set(Object.values(d.contacts).map(c => c.personId).filter(Boolean));
+  Object.values(d.people || {}).filter(p => p.active && p.name.trim() && !linked.has(p.id)).forEach(p => {
+    const id = `ct_${p.id}`;
+    d.contacts[id] = { id, category: 'interne', name: p.name.trim(), role: p.role, company: 'Interne', phone: '', email: '', always: false, verifiedAt: '', personId: p.id };
+    n++;
+  });
+  return n;
+}
+// What the staff tools know about this person: absent today (until when), sole holder of a skill (4.2) or of a vital act (4.1)
+export function staffInfo(s: State, c: Contact, today = new Date()): { absentUntil: string; skills: string[]; powers: string[] } {
+  const p = c.category === 'interne' ? personOf(s, c) : undefined;
+  const day = today.toISOString().slice(0, 10);
+  const abs = (p?.absences || []).find(a => a.from <= day && day <= a.to);
+  const skills = p ? Object.values(s.skills || {}).filter(k => { const aut = Object.entries(k.levels).filter(([id, l]) => l >= 3 && s.people[id]?.active); return aut.length === 1 && aut[0][0] === p.id; }).map(k => k.name) : [];
+  const powers = c.name.trim() ? Object.values(s.powers || {}).filter(x => same(x.holder, c.name) && ![...x.deputies, ...(x.extra || [])].some(d => d.trim())).map(x => x.power) : [];
+  return { absentUntil: abs?.to || '', skills, powers };
+}
+// Managers from the person up to the top of the chart
+export function managersOf(s: Pick<State, 'contacts'>, c: Contact): Contact[] {
+  const out: Contact[] = [];
+  let m = c.reportsTo ? s.contacts[c.reportsTo] : undefined;
+  while (m && !out.includes(m) && m !== c) { out.push(m); m = m.reportsTo ? s.contacts[m.reportsTo] : undefined; }
+  return out;
+}
+export const CONTRACTS: { key: NonNullable<Contact['contract']>; label: string }[] = [
+  { key: '', label: 'CDI' }, { key: 'cdd', label: 'CDD' }, { key: 'interim', label: 'Intérim' }, { key: 'alternance', label: 'Alternance' }, { key: 'stage', label: 'Stage' },
+];

@@ -535,6 +535,9 @@ export interface Contact {
   vital?: boolean;        // pinned at the top and on the pocket card
   reportsTo?: string;     // contact id of the manager, in the same category (org chart of the company or of the organisation)
   backupId?: string;      // contact to call when this one does not answer (call chain)
+  personId?: string;      // internal: the same person in the staff list of tools 4.1 to 4.3
+  vacant?: boolean;       // post to fill: drawn in the org chart without anybody
+  contract?: '' | 'cdd' | 'interim' | 'alternance' | 'stage';
 }
 
 export interface RiskScale { gravity: string[]; likelihood: string[] }  // 4 texts each

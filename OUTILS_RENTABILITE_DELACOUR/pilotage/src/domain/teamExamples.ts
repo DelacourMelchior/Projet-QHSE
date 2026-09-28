@@ -12,7 +12,7 @@ export function teamExamples(today = new Date()) {
     ['nr', 'Nicolas R.', 'Soudeur'], ['ap', 'Antoine P.', 'Responsable qualité'], ['tm', 'Thomas M.', 'Informatique et administration'], ['hr', 'Hélène R.', 'Comptabilité'],
   ];
   const TEAM: Record<string, string> = { jm: 'Direction', lb: 'Bureau', sv: 'Bureau', hr: 'Bureau', tm: 'Bureau', ap: 'Bureau', dk: 'Atelier', mm: 'Atelier', jp: 'Atelier', kt: 'Atelier', lu: 'Atelier', nr: 'Atelier' };
-  const people: Person[] = team.map(([k, name, role]) => ({ id: `pp_demo_${k}`, name, role, active: true, team: TEAM[k], ...(k === 'kt' ? { absences: [{ from: ago(-20), to: ago(-34) }] } : {}) }));
+  const people: Person[] = team.map(([k, name, role]) => ({ id: `pp_demo_${k}`, name, role, active: true, team: TEAM[k], ...(k === 'kt' ? { absences: [{ from: ago(-20), to: ago(-34) }] } : k === 'lu' ? { absences: [{ from: ago(2), to: ago(-5) }] } : {}) }));
   const pp = (k: string) => `pp_demo_${k}`;
   const power = (n: number, processId: string, what: string, holder: string, d1: string, p1: number | null, d2: string, p2: number | null, access: string): Power =>
     ({ id: `pw_demo_${n}`, processId, power: what, holder, deputies: [d1, d2], practiced: [p1 === null ? '' : ago(p1), p2 === null ? '' : ago(p2)], access });

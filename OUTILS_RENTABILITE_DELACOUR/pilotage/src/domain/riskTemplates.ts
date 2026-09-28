@@ -178,6 +178,7 @@ export function exampleContacts(today = new Date()): Contact[] {
     contact('ct_demo_sst_iprp', 'sante', 'Ergonome (IPRP)', 'Étude de poste, document unique', 'SST interentreprises', '04 00 00 01 25', false, 300),
     contact('ct_demo_insp_ruc', 'administration', 'Responsable de l\'unité de contrôle', 'Si l\'inspectrice est absente', 'Inspection du travail (DREETS)', '04 00 00 01 26', false, 300),
     contact('ct_demo_banque1_dir', 'finance', 'Directeur d\'agence', 'Découvert exceptionnel', 'Banque A', '04 00 00 01 27', false, 230),
+    { ...contact('ct_demo_vacant_soudeur', 'interne', '', 'Soudeur TIG (recrutement en cours)', 'Interne', '', false, 0), vacant: true },
     contact('ct_demo_expert_compta', 'conseil', 'Collaborateur comptable', 'Saisie, TVA, bilan', 'Cabinet Comptable', '04 00 00 01 28', false, 60),
   ];
   // what makes the directory usable in a crisis: chains, org chart, references, hours, vital numbers
@@ -244,13 +245,9 @@ export function exampleContacts(today = new Date()): Contact[] {
     ct_demo_julien: { reportsTo: 'ct_demo_atelier', role: 'Chef d\'équipe usinage et pliage', backupId: 'ct_demo_eric' },
     ct_demo_eric: { backupId: 'ct_demo_julien' },
     ct_demo_karim: { reportsTo: 'ct_demo_julien' },
-    ct_demo_sarah: { reportsTo: 'ct_demo_julien', backupId: 'ct_demo_karim' },
     ct_demo_yanis: { reportsTo: 'ct_demo_julien', backupId: 'ct_demo_julien' },
-    ct_demo_emma: { reportsTo: 'ct_demo_eric', backupId: 'ct_demo_lucie' },
-    ct_demo_hugo: { reportsTo: 'ct_demo_eric', backupId: 'ct_demo_nicolas' },
     ct_demo_alexis: { reportsTo: 'ct_demo_marc', backupId: 'ct_demo_marc' },
     ct_demo_damien: { reportsTo: 'ct_demo_rachid', backupId: 'ct_demo_rachid' },
-    ct_demo_ines: { reportsTo: 'ct_demo_nadia', backupId: 'ct_demo_nadia' },
     ct_demo_valerie: { reportsTo: 'ct_demo_helene', backupId: 'ct_demo_kevin' },
     ct_demo_kevin: { reportsTo: 'ct_demo_valerie', backupId: 'ct_demo_valerie' },
     ct_demo_melanie: { reportsTo: 'ct_demo_pierre' },
@@ -278,6 +275,11 @@ export function exampleContacts(today = new Date()): Contact[] {
     ct_demo_insp: { reportsTo: 'ct_demo_insp_ruc', backupId: 'ct_demo_insp_ruc' },
     ct_demo_banque1: { reportsTo: 'ct_demo_banque1_dir' },
     ct_demo_expert_compta: { reportsTo: 'ct_demo_expert' },
+    ct_demo_emma: { reportsTo: 'ct_demo_eric', backupId: 'ct_demo_lucie', contract: 'interim' },
+    ct_demo_sarah: { reportsTo: 'ct_demo_julien', backupId: 'ct_demo_karim', contract: 'alternance' },
+    ct_demo_ines: { reportsTo: 'ct_demo_nadia', backupId: 'ct_demo_nadia', contract: 'alternance' },
+    ct_demo_hugo: { reportsTo: 'ct_demo_eric', backupId: 'ct_demo_nicolas', contract: 'cdd' },
+    ct_demo_vacant_soudeur: { reportsTo: 'ct_demo_eric' },
   };
   return list.map(c => ({ ...c, ...more[c.id], ...cascade[c.id] }));
 }

@@ -1,5 +1,6 @@
 // Tool 4.2 "Polyvalence": who can do what, from 0 to 4, on the key skills; a skill held by one autonomous person (level 3 or 4)
 // is a key-person risk; the double is trained 2 hours a week with a tutor, then 2 days alone validate level 3.
+import { syncStaff } from '../../domain/contacts';
 import { useEffect, useState } from 'react';
 import { Plus, Printer, ShieldAlert, Trash2, UserPlus, X } from 'lucide-react';
 import type { Person, Skill, SkillLevel } from '../../domain/types';
@@ -26,6 +27,8 @@ export function Polyvalence({ nav, focus, clearFocus }: ScreenProps) {
   const [undo, setUndo] = useState<{ k: string; p: string; l: SkillLevel | undefined } | null>(null);
   const [group, setGroup] = useState('');
   useEffect(() => { if (focus && state?.skills[focus]) { setOpen(state.skills[focus]); clearFocus(); } }, [focus]); // eslint-disable-line react-hooks/exhaustive-deps
+  // one staff list with the directory (1.3): the people of the org chart are here too
+  useEffect(() => { if (state && syncStaff(structuredClone(state))) update(d => { syncStaff(d); }); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   if (!state) return null;
   const teams = [...new Set(activePeople(state).map(p => p.team || '').filter(Boolean))].sort();
   const people = activePeople(state).filter(p => !group || p.team === group);
@@ -128,7 +131,7 @@ function TeamSheet({ onClose }: { onClose(): void }) {
   const [role, setRole] = useState('');
   if (!state) return null;
   const people = Object.values(state.people).sort((a, b) => Number(b.active) - Number(a.active) || a.name.localeCompare(b.name));
-  const add = () => { if (!name.trim()) return; const p = { ...newPerson(name.trim()), role: role.trim() }; update(d => { d.people[p.id] = p; }); setName(''); setRole(''); };
+  const add = () => { if (!name.trim()) return; const p = { ...newPerson(name.trim()), role: role.trim() }; update(d => { d.people[p.id] = p; syncStaff(d); }); setName(''); setRole(''); };
   const set = (id: string, x: Partial<Person>) => update(d => { d.people[id] = { ...d.people[id], ...x }; });
   return (
     <Modal title="Équipe" subtitle="Les personnes de la matrice de polyvalence ; leurs noms sont proposés dans tous les outils." onClose={onClose} footer={<Button kind="primary" onClick={onClose}>Fermer</Button>}>

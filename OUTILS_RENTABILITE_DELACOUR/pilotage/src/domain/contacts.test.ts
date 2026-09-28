@@ -71,14 +71,15 @@ describe('annuaire 1.3', () => {
 });
 
 describe('annuaire de démonstration', () => {
-  it('has 20 employees in one org chart, no bad loop, a mutual pair at the end of a chain is fine', () => {
+  it('has 34 employees in one org chart under the director, no bad loop, a mutual pair at the end of a chain is fine', () => {
     const s = demoState(now);
     const inside = Object.values(s.contacts).filter(x => x.category === 'interne');
-    expect(inside.length).toBe(20);
+    expect(inside.length).toBe(34);
     const count = (n: ReturnType<typeof orgTree>[number]): number => 1 + n.children.reduce((a, k) => a + count(k), 0);
     const tree = orgTree(s);
     expect(tree.length).toBe(1);
-    expect(count(tree[0])).toBe(20);
+    expect(tree[0].c.id).toBe('ct_demo_dirigeant');
+    expect(count(tree[0])).toBe(34);
     expect(chainIssues(s, now).loops).toEqual([]);
     const claire = chainOf(s, s.contacts.ct_demo_claire);
     expect(claire.cycle).toBe(2);
@@ -91,9 +92,10 @@ describe('organigrammes externes', () => {
     const s = demoState(now);
     const clients = orgGroups(s, 'client');
     const a = clients.find(g => g.company.startsWith('Client A'))!;
-    expect(a.roots.map(n => n.c.id)).toEqual(['ct_demo_clientA_dir']);
-    expect(a.roots[0].children.map(n => n.c.id).sort()).toEqual(['ct_demo_clientA', 'ct_demo_clientA_qual']);
-    expect(orgGroups(s, 'sante')[0].roots[0].children.length).toBe(2);
+    expect(a.roots.map(n => n.c.id)).toEqual(['ct_demo_clientA_dg']);
+    expect(a.roots[0].children.map(n => n.c.id).sort()).toEqual(['ct_demo_clientA_dir', 'ct_demo_clientA_dq', 'ct_demo_clientA_log']);
+    expect(clients.every(g => g.roots.length === 1)).toBe(true);
+    expect(orgGroups(s, 'sante')[0].roots[0].children.length).toBe(3);
     expect(orgGroups(s, 'administration').map(g => g.company)).toEqual(['CARSAT', 'Inspection du travail (DREETS)', 'URSSAF']);
   });
   it('refuses a manager placed under the person', () => {

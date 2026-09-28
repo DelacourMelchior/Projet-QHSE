@@ -368,20 +368,6 @@ interface TreeCtx {
   onAdd(p: Partial<Contact>): void; onLink(id: string, bossId: string | undefined): void;
 }
 
-// One colour per branch under the top person (the top person in the brand green): who belongs to which team at a glance.
-// Red and orange stay for the alerts; white text only on the 700 shades.
-const ROOT_TONE = { card: 'bg-emerald-50 border-emerald-200', pill: 'bg-delacour-primary', icon: 'text-delacour-primary' };
-const TONES = [
-  { card: 'bg-pink-50 border-pink-200', pill: 'bg-pink-700', icon: 'text-pink-700' },
-  { card: 'bg-sky-50 border-sky-200', pill: 'bg-sky-700', icon: 'text-sky-700' },
-  { card: 'bg-violet-50 border-violet-200', pill: 'bg-violet-700', icon: 'text-violet-700' },
-  { card: 'bg-teal-50 border-teal-200', pill: 'bg-teal-700', icon: 'text-teal-700' },
-  { card: 'bg-fuchsia-50 border-fuchsia-200', pill: 'bg-fuchsia-700', icon: 'text-fuchsia-700' },
-  { card: 'bg-indigo-50 border-indigo-200', pill: 'bg-indigo-700', icon: 'text-indigo-700' },
-  { card: 'bg-cyan-50 border-cyan-200', pill: 'bg-cyan-700', icon: 'text-cyan-700' },
-];
-type Tone = typeof ROOT_TONE;
-
 // The tree is drawn at real size (text readable, 11 px); when wider than the screen, "Voir tout l'organigramme" shrinks it to the width
 function FitTree({ roots, ctx }: { roots: OrgNode[]; ctx: TreeCtx }) {
   const box = useRef<HTMLDivElement>(null);
@@ -401,8 +387,10 @@ function FitTree({ roots, ctx }: { roots: OrgNode[]; ctx: TreeCtx }) {
     if (box.current) ro.observe(box.current);
     return () => ro.disconnect();
   }, [roots]);
-  const z = fit ? Math.max(0.35, scale) : 1;
+  const z = fit ? Math.max(0.25, scale) : 1;
   applied.current = z;
+  // the top person is in the middle of a wide tree: open the scroll there
+  useLayoutEffect(() => { const b = box.current; if (b) b.scrollLeft = (b.scrollWidth - b.clientWidth) / 2; }, [z, roots]);
   return (
     <div className="space-y-1">
       {scale < 0.98 && (
@@ -411,35 +399,23 @@ function FitTree({ roots, ctx }: { roots: OrgNode[]; ctx: TreeCtx }) {
         </div>
       )}
       <div ref={box} className="overflow-x-auto pb-2">
-        <ul ref={tree} className="org mx-auto w-max" style={{ zoom: z }}>{roots.map(n => <Node key={n.c.id} n={n} ctx={ctx} tone={ROOT_TONE} />)}</ul>
+        <ul ref={tree} className="org mx-auto w-max" style={{ zoom: z }}>{roots.map(n => <Node key={n.c.id} n={n} ctx={ctx} />)}</ul>
       </div>
     </div>
   );
 }
 
-// A person and the people under them; the people right under the top person each open a coloured branch.
-// People without anyone under them are grouped in one column (a team block): the chart stays as wide as the screen.
-function Node({ n, ctx, tone, depth = 0 }: { n: OrgNode; ctx: TreeCtx; tone: Tone; depth?: number }) {
-  const toneOf = (i: number) => (depth === 0 ? TONES[i % TONES.length] : tone);
-  const branches = n.children.map((k, i) => ({ k, t: toneOf(i) })).filter(x => x.k.children.length);
-  const leaves = n.children.map((k, i) => ({ k, t: toneOf(i) })).filter(x => !x.k.children.length);
-  const group = depth > 0 && leaves.length >= 2;
+// A person, then the people under them, in cascade: every link to the manager is drawn
+function Node({ n, ctx }: { n: OrgNode; ctx: TreeCtx }) {
   return (
     <li>
-      <OrgCard c={n.c} ctx={ctx} tone={tone} />
-      {n.children.length > 0 && (
-        <ul>
-          {branches.map(x => <Node key={x.k.c.id} n={x.k} ctx={ctx} depth={depth + 1} tone={x.t} />)}
-          {group
-            ? <li><div className={`space-y-1.5 rounded-lg border-2 border-dashed p-1.5 ${tone.card}`}>{leaves.map(x => <OrgCard key={x.k.c.id} c={x.k.c} ctx={ctx} tone={x.t} />)}</div></li>
-            : leaves.map(x => <Node key={x.k.c.id} n={x.k} ctx={ctx} depth={depth + 1} tone={x.t} />)}
-        </ul>
-      )}
+      <OrgCard c={n.c} ctx={ctx} />
+      {n.children.length > 0 && <ul>{n.children.map(k => <Node key={k.c.id} n={k} ctx={ctx} />)}</ul>}
     </li>
   );
 }
 
-function OrgCard({ c, ctx, tone }: { c: Contact; ctx: TreeCtx; tone: Tone }) {
+function OrgCard({ c, ctx }: { c: Contact; ctx: TreeCtx }) {
   const [over, setOver] = useState(false);
   const backup = c.backupId ? ctx.state.contacts[c.backupId] : undefined;
   // same organisation: the name is enough
@@ -448,14 +424,14 @@ function OrgCard({ c, ctx, tone }: { c: Contact; ctx: TreeCtx; tone: Tone }) {
     <div draggable onDragStart={e => { e.dataTransfer.setData('text/plain', c.id); e.dataTransfer.effectAllowed = 'move'; ctx.setDrag(c.id); }} onDragEnd={() => { ctx.setDrag(''); setOver(false); }}
       onDragOver={e => { if (ctx.drag && ctx.drag !== c.id) { e.preventDefault(); setOver(true); } }} onDragLeave={() => setOver(false)}
       onDrop={e => { e.preventDefault(); setOver(false); if (ctx.drag && ctx.drag !== c.id) ctx.onLink(ctx.drag, c.id); ctx.setDrag(''); }}
-      className={`relative flex w-36 cursor-grab flex-col items-center rounded-md border px-1.5 pb-1.5 pt-2 text-center text-[11px] active:cursor-grabbing ${tone.card} ${over ? 'ring-2 ring-delacour-gold' : ''} ${ctx.drag === c.id ? 'opacity-40' : ''}`}>
+      className={`relative flex w-32 cursor-grab flex-col items-center rounded-md border border-slate-300 bg-white px-1.5 pb-1.5 pt-2 text-center text-[11px] shadow-sm active:cursor-grabbing ${over ? 'ring-2 ring-delacour-gold' : ''} ${ctx.drag === c.id ? 'opacity-40' : ''}`}>
       {c.vital && <span className="absolute left-1 top-1 rounded bg-red-700 px-1 text-[11px] font-bold leading-4 text-white">Vital</span>}
       <button type="button" title="Ajouter une personne sous elle" aria-label={`Ajouter une personne sous ${contactLabel(c)}`}
         onClick={() => ctx.onAdd({ category: c.category, company: c.company, reportsTo: c.id })}
         className="absolute right-0.5 top-0.5 rounded p-0.5 text-slate-500 hover:bg-white hover:text-delacour-primary print:hidden"><Plus size={14} /></button>
       <button type="button" onClick={() => ctx.onEdit(c.id)} className="flex w-full flex-col items-center gap-1" aria-label={`Ouvrir la fiche de ${contactLabel(c)}`}>
-        <UserRound size={34} strokeWidth={1.6} className={tone.icon} aria-hidden />
-        <span className={`w-full break-words rounded-xl px-2 py-0.5 font-bold leading-tight text-white ${tone.pill}`}>{c.name || c.company || 'Sans nom'}</span>
+        <UserRound size={30} strokeWidth={1.6} className="text-slate-500" aria-hidden />
+        <span className={`w-full break-words rounded-xl px-2 py-0.5 font-bold leading-tight text-white bg-delacour-primary`}>{c.name || c.company || 'Sans nom'}</span>
         {c.role && <span className="line-clamp-2 leading-tight text-slate-700">{c.role}</span>}
       </button>
       {c.phone && <a href={`tel:${telOf(c.phone)}`} className="whitespace-nowrap font-mono font-bold text-slate-900 hover:underline">{c.phone}</a>}

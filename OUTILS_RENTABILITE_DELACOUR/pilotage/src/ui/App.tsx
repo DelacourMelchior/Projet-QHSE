@@ -85,10 +85,12 @@ export function App() {
   ];
   const Screen = view !== 'home' && view !== 'saisir' && view !== 'actions' && view !== 'taches' && !restricted(view) ? SCREENS[view] : undefined;
 
+  // the org chart of the directory uses the whole width of the window; the other tools keep a reading width
+  const width = view === '1.3' ? 'max-w-none' : 'max-w-7xl';
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-40 bg-delacour-primary text-white shadow-sm print:static print:bg-white print:text-slate-900 print:shadow-none">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2 sm:px-6">
+        <div className={`mx-auto flex ${width} flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2 sm:px-6`}>
           <div className="flex min-w-0 items-center gap-2">
             <button type="button" onClick={() => go('home')} title="Tous les outils" aria-label="Tous les outils" className="flex shrink-0 items-center gap-1 rounded-md py-1 pr-1.5 text-emerald-100 hover:bg-white/10 hover:text-white print:hidden">
               <span className="flex h-7 w-7 items-center justify-center rounded bg-delacour-gold text-sm font-black text-delacour-dark">D</span>
@@ -142,7 +144,7 @@ export function App() {
           </div>
         </div>
 
-        <nav className={`mx-auto flex max-w-7xl gap-0.5 overflow-x-auto px-3 sm:gap-1 sm:px-6 print:hidden ${tabs.length ? '' : '!hidden'}`} aria-label="Outils du processus">
+        <nav className={`mx-auto flex ${width} gap-0.5 overflow-x-auto px-3 sm:gap-1 sm:px-6 print:hidden ${tabs.length ? '' : '!hidden'}`} aria-label="Outils du processus">
           {tabs.map(t => (
             <button key={t.id} type="button" onClick={() => go(t.id)} aria-current={view === t.id ? 'page' : undefined}
               className={`flex shrink-0 items-center gap-1.5 rounded-t-lg px-2 py-2 text-xs font-semibold transition sm:px-3 ${view === t.id ? 'bg-slate-100 text-delacour-primary' : 'text-emerald-50 hover:bg-white/10'}`}>
@@ -155,7 +157,7 @@ export function App() {
         </nav>
       </header>
 
-      <main className="mx-auto max-w-7xl px-3 py-4 sm:px-6">
+      <main className={`mx-auto px-3 py-4 sm:px-6 ${width}`}>
         {teamView && view !== 'home' && view !== 'taches' && view !== '1.3' && <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-900 print:hidden">Vue équipe : les montants confidentiels (chiffre d'affaires, marge, trésorerie, coûts des devis et des arrêts…) sont masqués.</p>}
         <ErrorBoundary key={view} label="Cet outil" onBack={() => go('home')}>
         {view === 'home' && <Home nav={nav} />}

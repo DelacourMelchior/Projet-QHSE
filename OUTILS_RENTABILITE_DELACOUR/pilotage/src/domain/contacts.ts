@@ -24,19 +24,20 @@ export function toCheck(c: Contact, today = new Date()): boolean {
 }
 
 // Who to call, in order: the contact, then its backup, then the backup of the backup… (stops on a loop)
-export function chainOf(s: Pick<State, 'contacts'>, c: Contact): { chain: Contact[]; loop: boolean } {
+// cycle = number of people who send back to each other at the end of the chain (0 when it ends)
+export function chainOf(s: Pick<State, 'contacts'>, c: Contact): { chain: Contact[]; loop: boolean; cycle: number } {
   const chain = [c];
   let next = c.backupId ? s.contacts[c.backupId] : undefined;
   while (next) {
-    if (chain.includes(next)) return { chain, loop: true };
+    if (chain.includes(next)) return { chain, loop: true, cycle: chain.length - chain.indexOf(next) };
     chain.push(next);
     next = next.backupId ? s.contacts[next.backupId] : undefined;
   }
-  return { chain, loop: false };
+  return { chain, loop: false, cycle: 0 };
 }
 
 // Chains to draw: they start at a contact that is nobody's backup (a loop is drawn from its first member)
-export function callChains(s: Pick<State, 'contacts'>): { chain: Contact[]; loop: boolean }[] {
+export function callChains(s: Pick<State, 'contacts'>): ReturnType<typeof chainOf>[] {
   const all = Object.values(s.contacts);
   const isBackup = new Set(all.map(c => c.backupId).filter(Boolean));
   const out = all.filter(c => c.backupId && !isBackup.has(c.id)).map(c => chainOf(s, c));
@@ -88,7 +89,7 @@ export function duplicates(s: Pick<State, 'contacts'>): Contact[][] {
 }
 
 // Two people who stand in for each other is normal; a loop of 3 or more means nobody knows where the chain ends
-export const badLoop = (x: { chain: Contact[]; loop: boolean }) => x.loop && x.chain.length > 2;
+export const badLoop = (x: { cycle: number }) => x.cycle > 2;
 
 // What is wrong in the chains: a loop of 3 or more, or a number never checked (or checked more than a year ago) in a chain
 export function chainIssues(s: Pick<State, 'contacts'>, today = new Date()): { loops: Contact[][]; unchecked: Contact[] } {

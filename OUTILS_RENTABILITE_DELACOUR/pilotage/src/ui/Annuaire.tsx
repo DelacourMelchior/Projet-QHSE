@@ -201,7 +201,7 @@ function Checks({ state, dups, onVerify, onShow }: { state: State; dups: Contact
   const { loops, unchecked } = chainIssues(state);
   const lonely = Object.values(state.contacts).filter(c => c.vital && !c.backupId && c.category !== 'secours');
   const month = toCallThisMonth(state);
-  const Name = ({ c }: { c: Contact }) => <button type="button" className="font-semibold underline decoration-dotted hover:text-slate-900" onClick={() => onShow(c.id)}>{contactLabel(c)}</button>;
+  const Name = ({ c }: { c: Contact }) => <button type="button" className="font-semibold underline decoration-dotted hover:text-slate-900" onClick={() => onShow(c.id)}>{short(c)}</button>;
   const join = (xs: Contact[], sep = ', ') => xs.map((c, i) => <span key={c.id}>{i ? sep : ''}<Name c={c} /></span>);
   if (!loops.length && !unchecked.length && !dups.length && !lonely.length && !month.length) return null;
   return (
@@ -298,9 +298,7 @@ function CrisisView({ state }: { state: State }) {
       <section className="space-y-2 break-inside-avoid">
         <h3 className="text-xs font-bold text-slate-900">Interne : qui fait quoi, et qui appeler si la personne est absente</h3>
         {tree.length ? (
-          <div className="overflow-x-auto overflow-y-hidden pb-1">
-            <ul className="flex min-w-max justify-center gap-4">{tree.map(n => <OrgBox key={n.c.id} n={n} state={state} />)}</ul>
-          </div>
+          <div className="space-y-4">{tree.map(n => <OrgRoot key={n.c.id} n={n} state={state} />)}</div>
         ) : <p className="text-[11px] text-slate-500">Aucun contact interne. Ajoutez le dirigeant, les responsables et les personnes clés (catégorie Interne), puis indiquez à qui chacun est rattaché.</p>}
       </section>
       <section className="space-y-2">
@@ -334,31 +332,54 @@ function CrisisView({ state }: { state: State }) {
   );
 }
 
-function OrgBox({ n, state }: { n: OrgNode; state: State }) {
-  const c = n.c;
-  const backup = c.backupId ? state.contacts[c.backupId] : undefined;
-  const deps = deputiesFromPowers(state, c);
-  const absent = backup ? short(backup) : deps[0];
+// Top of the chart centred, one column per manager under it, then each team listed below its manager:
+// readable with 20 people or more, on a phone and on an A4 landscape page
+function OrgRoot({ n, state }: { n: OrgNode; state: State }) {
   return (
-    <li className="flex flex-col items-center">
-      <div className="w-44">
-        <Box c={c} />
-        <p className={`mt-1 rounded px-1.5 py-0.5 text-center text-[11px] ${absent ? 'bg-slate-100 text-slate-700' : 'bg-amber-50 font-semibold text-amber-900'}`}>
-          Si absent : {absent ? <>{absent}{backup?.phone && <> <a href={`tel:${telOf(backup.phone)}`} className="whitespace-nowrap font-mono font-semibold text-delacour-primary">{backup.phone}</a></>}</> : 'personne'}
-        </p>
-      </div>
+    <div className="flex flex-col items-center">
+      <div className="w-56"><Person c={n.c} state={state} /></div>
       {n.children.length > 0 && <>
         <span className="h-4 w-px bg-slate-300" />
-        <ul className="flex gap-3 border-t border-slate-300 pt-4">{n.children.map(k => <OrgBox key={k.c.id} n={k} state={state} />)}</ul>
+        <ul className={`grid w-full gap-3 border-t border-slate-300 pt-3 sm:grid-cols-2 ${n.children.length >= 4 ? 'lg:grid-cols-4 print:grid-cols-4' : n.children.length === 3 ? 'lg:grid-cols-3 print:grid-cols-3' : 'print:grid-cols-2'}`}>
+          {n.children.map(k => (
+            <li key={k.c.id} className="break-inside-avoid space-y-1.5 rounded-lg bg-slate-50 p-2">
+              <Person c={k.c} state={state} />
+              <Team list={k.children} state={state} />
+            </li>
+          ))}
+        </ul>
       </>}
-    </li>
+    </div>
+  );
+}
+
+function Team({ list, state }: { list: OrgNode[]; state: State }) {
+  if (!list.length) return null;
+  return (
+    <ul className="ml-2 space-y-1.5 border-l-2 border-slate-300 pl-2.5">
+      {list.map(k => <li key={k.c.id} className="space-y-1.5"><Person c={k.c} state={state} /><Team list={k.children} state={state} /></li>)}
+    </ul>
+  );
+}
+
+// A person of the chart: the card, then who to call if the person is away (backup, else deputy of tool 4.1)
+function Person({ c, state }: { c: Contact; state: State }) {
+  const backup = c.backupId ? state.contacts[c.backupId] : undefined;
+  const absent = backup ? short(backup) : deputiesFromPowers(state, c)[0];
+  return (
+    <div>
+      <Box c={c} full />
+      <p className={`mt-0.5 rounded px-1.5 py-0.5 text-[11px] ${absent ? 'text-slate-600' : 'bg-amber-50 font-semibold text-amber-900'}`}>
+        Si absent : {absent ? <><strong className="text-slate-800">{absent}</strong>{backup?.phone && <> <a href={`tel:${telOf(backup.phone)}`} className="whitespace-nowrap font-mono font-semibold text-delacour-primary">{backup.phone}</a></>}</> : 'personne'}
+      </p>
+    </div>
   );
 }
 
 // One contact as a card: who, what for, the number to tap, when it answers, what to give
-function Box({ c, step }: { c: Contact; step?: number }) {
+function Box({ c, step, full }: { c: Contact; step?: number; full?: boolean }) {
   return (
-    <div className={`min-w-[150px] max-w-[220px] rounded-lg border bg-white px-2 py-1.5 text-[11px] ${c.vital ? 'border-2 border-red-400' : 'border-slate-300'}`}>
+    <div className={`${full ? 'w-full' : 'min-w-[150px] max-w-[220px]'} rounded-lg border bg-white px-2 py-1.5 text-[11px] ${c.vital ? 'border-2 border-red-400' : 'border-slate-300'}`}>
       <p className="font-bold leading-tight text-slate-900">{step ? `${step}. ` : ''}{short(c)}</p>
       {c.role && <p className="leading-tight text-slate-600">{c.role}</p>}
       {c.phone && <a href={`tel:${telOf(c.phone)}`} className="block whitespace-nowrap font-mono text-xs font-bold text-delacour-primary hover:underline">{c.phone}</a>}

@@ -69,3 +69,19 @@ describe('annuaire 1.3', () => {
     expect(xs.every(x => !Object.values(s.contacts).some(y => y.company.toLowerCase() === x.company.toLowerCase()))).toBe(true);
   });
 });
+
+describe('annuaire de démonstration', () => {
+  it('has 20 employees in one org chart, no bad loop, a mutual pair at the end of a chain is fine', () => {
+    const s = demoState(now);
+    const inside = Object.values(s.contacts).filter(x => x.category === 'interne');
+    expect(inside.length).toBe(20);
+    const count = (n: ReturnType<typeof orgTree>[number]): number => 1 + n.children.reduce((a, k) => a + count(k), 0);
+    const tree = orgTree(s);
+    expect(tree.length).toBe(1);
+    expect(count(tree[0])).toBe(20);
+    expect(chainIssues(s, now).loops).toEqual([]);
+    const claire = chainOf(s, s.contacts.ct_demo_claire);
+    expect(claire.cycle).toBe(2);
+    expect(duplicates(s)).toEqual([]);
+  });
+});

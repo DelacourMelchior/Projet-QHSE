@@ -120,6 +120,22 @@ export function exampleContacts(today = new Date()): Contact[] {
     contact('ct_demo_expert', 'finance', 'Cabinet comptable', 'Expert-comptable', 'Cabinet Comptable', '04 00 00 00 27', false, 60),
     contact('ct_demo_itboss', 'prestataire', 'Gérant', 'Si la hotline ne répond pas', 'Prestataire IT', '06 00 00 00 30', false, 90),
     contact('ct_demo_helene', 'interne', 'Hélène R.', 'Administration et finances', 'Interne', '06 00 00 00 13', false, 60),
+    // the rest of the 20 employees: 10 at the office (with Jean-Marc, Hélène, Antoine, Thomas), 10 in the workshop (with David)
+    contact('ct_demo_laurent', 'interne', 'Laurent B.', 'Commercial', 'Interne', '06 00 00 00 14', false, 45),
+    contact('ct_demo_sophie', 'interne', 'Sophie V.', 'Achats et ADV', 'Interne', '06 00 00 00 15', false, 80),
+    contact('ct_demo_nadia', 'interne', 'Nadia F.', 'Ressources humaines et paie', 'Interne', '06 00 00 00 16', false, 120),
+    contact('ct_demo_claire', 'interne', 'Claire D.', 'Accueil et assistante de direction', 'Interne', '06 00 00 00 17', false, 30),
+    contact('ct_demo_pierre', 'interne', 'Pierre L.', 'Chargé d\'affaires', 'Interne', '06 00 00 00 18', false, 200),
+    contact('ct_demo_melanie', 'interne', 'Mélanie C.', 'Assistante commerciale', 'Interne', '06 00 00 00 19', false, 400),
+    contact('ct_demo_marc', 'interne', 'Marc M.', 'Méthodes et programmation', 'Interne', '06 00 00 00 20', false, 60),
+    contact('ct_demo_eric', 'interne', 'Éric V.', 'Chef d\'équipe montage et soudure', 'Interne', '06 00 00 00 21', false, 60),
+    contact('ct_demo_rachid', 'interne', 'Rachid H.', 'Technicien de maintenance', 'Interne', '06 00 00 00 22', true, 20),
+    contact('ct_demo_samuel', 'interne', 'Samuel G.', 'Magasinier cariste', 'Interne', '06 00 00 00 23', false, 150),
+    contact('ct_demo_fabien', 'interne', 'Fabien T.', 'Chauffeur livreur', 'Interne', '06 00 00 00 24', false, 0),
+    contact('ct_demo_julien', 'interne', 'Julien P.', 'Régleur CNC', 'Interne', '06 00 00 00 25', false, 90),
+    contact('ct_demo_karim', 'interne', 'Karim T.', 'Plieur', 'Interne', '06 00 00 00 26', false, 90),
+    contact('ct_demo_lucie', 'interne', 'Lucie B.', 'Monteuse câbleuse', 'Interne', '06 00 00 00 27', false, 90),
+    contact('ct_demo_nicolas', 'interne', 'Nicolas R.', 'Soudeur', 'Interne', '06 00 00 00 28', false, 380),
   ];
   // what makes the directory usable in a crisis: chains, org chart, references, hours, vital numbers
   const more: Record<string, Partial<Contact>> = {
@@ -135,9 +151,26 @@ export function exampleContacts(today = new Date()): Contact[] {
     ct_demo_dirigeant: { vital: true, backupId: 'ct_demo_helene' },
     ct_demo_helene: { reportsTo: 'ct_demo_dirigeant', backupId: 'ct_demo_dirigeant' },
     ct_demo_qualite: { reportsTo: 'ct_demo_dirigeant', backupId: 'ct_demo_atelier' },
-    ct_demo_atelier: { reportsTo: 'ct_demo_dirigeant', backupId: 'ct_demo_qualite' },
-    ct_demo_thomas: { reportsTo: 'ct_demo_helene', backupId: 'ct_demo_it' },
+    ct_demo_atelier: { reportsTo: 'ct_demo_dirigeant', backupId: 'ct_demo_marc', vital: true },
+    ct_demo_thomas: { reportsTo: 'ct_demo_helene', backupId: 'ct_demo_it', role: 'Informatique et administration' },
     ct_demo_expert: { hours: 'lun-ven 9 h-18 h' },
+    // office: Jean-Marc, then administration (Hélène), sales (Laurent), quality (Antoine)
+    ct_demo_nadia: { reportsTo: 'ct_demo_helene', backupId: 'ct_demo_helene', hours: 'lun-jeu 8 h 30-17 h' },
+    ct_demo_claire: { reportsTo: 'ct_demo_helene', backupId: 'ct_demo_melanie', phone2: '04 00 00 00 00', hours: 'lun-ven 8 h-12 h, 13 h 30-17 h 30' },
+    ct_demo_laurent: { reportsTo: 'ct_demo_dirigeant', backupId: 'ct_demo_pierre' },
+    ct_demo_pierre: { reportsTo: 'ct_demo_laurent', backupId: 'ct_demo_laurent' },
+    ct_demo_melanie: { reportsTo: 'ct_demo_laurent', backupId: 'ct_demo_sophie' },
+    ct_demo_sophie: { reportsTo: 'ct_demo_laurent', backupId: 'ct_demo_melanie' },
+    // workshop: David, then methods (Marc), assembly and welding (Éric), maintenance, stores, delivery
+    ct_demo_marc: { reportsTo: 'ct_demo_atelier', backupId: 'ct_demo_julien' },
+    ct_demo_eric: { reportsTo: 'ct_demo_atelier', backupId: 'ct_demo_lucie' },
+    ct_demo_rachid: { reportsTo: 'ct_demo_atelier', backupId: 'ct_demo_maint', vital: true, hours: 'astreinte le week-end' },
+    ct_demo_samuel: { reportsTo: 'ct_demo_atelier', backupId: 'ct_demo_fabien', hours: 'lun-ven 6 h-14 h' },
+    ct_demo_fabien: { reportsTo: 'ct_demo_atelier', backupId: 'ct_demo_samuel', verifiedAt: '' },
+    ct_demo_julien: { reportsTo: 'ct_demo_marc', backupId: 'ct_demo_marc', hours: 'équipe du matin 5 h-13 h' },
+    ct_demo_karim: { reportsTo: 'ct_demo_marc', backupId: 'ct_demo_nicolas', hours: 'équipe de l\'après-midi 13 h-21 h' },
+    ct_demo_lucie: { reportsTo: 'ct_demo_eric', backupId: 'ct_demo_eric' },
+    ct_demo_nicolas: { reportsTo: 'ct_demo_eric', backupId: 'ct_demo_karim' },
   };
   return list.map(c => ({ ...c, ...more[c.id] }));
 }

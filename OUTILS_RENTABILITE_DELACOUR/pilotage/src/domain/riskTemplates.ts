@@ -281,7 +281,9 @@ export function exampleContacts(today = new Date()): Contact[] {
     ct_demo_hugo: { reportsTo: 'ct_demo_eric', backupId: 'ct_demo_nicolas', contract: 'cdd' },
     ct_demo_vacant_soudeur: { reportsTo: 'ct_demo_eric' },
   };
-  return list.map(c => ({ ...c, ...more[c.id], ...cascade[c.id] }));
+  // the people of the company have a work e-mail (prénom.initiale@…)
+  const mail = (name: string) => `${name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z]+/g, '.').replace(/^\.|\.$/g, '')}@entreprise.example`;
+  return list.map(c => ({ ...c, ...more[c.id], ...cascade[c.id] })).map(c => (c.category === 'interne' && c.name && !c.email ? { ...c, email: mail(c.name) } : c));
 }
 
 // Records of the outside organisations of the example: switchboard, address, our reference there

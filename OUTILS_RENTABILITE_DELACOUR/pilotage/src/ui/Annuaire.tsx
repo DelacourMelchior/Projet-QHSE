@@ -500,6 +500,15 @@ function FitTree({ roots, ctx }: { roots: OrgNode[]; ctx: TreeCtx }) {
   }, [roots]);
   const z = fit ? Math.max(0.25, scale) : 1;
   applied.current = z;
+  // every card of a chart takes the height of the tallest one, so that each level stays on one line
+  useLayoutEffect(() => {
+    const ul = tree.current;
+    if (!ul) return;
+    ul.style.removeProperty('--card-h');
+    const cards = [...ul.querySelectorAll<HTMLElement>('[data-card]')];
+    const h = Math.max(0, ...cards.map(c => c.offsetHeight));
+    if (h) ul.style.setProperty('--card-h', `${h}px`);
+  });
   // the top person is in the middle of a wide tree: open the scroll there
   useLayoutEffect(() => { const b = box.current; if (b) b.scrollLeft = (b.scrollWidth - b.clientWidth) / 2; }, [z]);
   return (
@@ -539,10 +548,10 @@ function OrgCard({ c, ctx, pending, team, folded }: { c: Contact; ctx: TreeCtx; 
   const away = staffInfo(ctx.state, c).absentUntil;
   const badge = 'rounded px-1 text-[11px] font-semibold leading-4';
   return (
-    <div id={`org-${c.id}`} draggable onDragStart={e => { e.dataTransfer.setData('text/plain', c.id); e.dataTransfer.effectAllowed = 'move'; ctx.setDrag(c.id); }} onDragEnd={() => { ctx.setDrag(''); setOver(false); }}
+    <div id={`org-${c.id}`} data-card draggable onDragStart={e => { e.dataTransfer.setData('text/plain', c.id); e.dataTransfer.effectAllowed = 'move'; ctx.setDrag(c.id); }} onDragEnd={() => { ctx.setDrag(''); setOver(false); }}
       onDragOver={e => { if (ctx.drag && ctx.drag !== c.id) { e.preventDefault(); setOver(true); } }} onDragLeave={() => setOver(false)}
       onDrop={e => { e.preventDefault(); setOver(false); if (ctx.drag && ctx.drag !== c.id) ctx.onLink(ctx.drag, c.id); ctx.setDrag(''); }}
-      className={`group relative flex min-h-[10rem] w-44 cursor-grab flex-col items-center gap-0.5 rounded-md border px-2 pb-3 pt-1.5 text-center text-[11px] shadow-sm active:cursor-grabbing ${c.vacant ? 'border-dashed border-slate-400 bg-slate-50' : away ? 'border-slate-300 bg-slate-100' : 'border-slate-300 bg-white'} ${over || ctx.found.has(c.id) ? 'ring-2 ring-delacour-gold' : ''} ${ctx.drag === c.id ? 'opacity-40' : ''}`}>
+      className={`group relative flex min-h-[var(--card-h,10rem)] w-44 cursor-grab flex-col items-center gap-0.5 rounded-md border px-2 pb-3 pt-1.5 text-center text-[11px] shadow-sm active:cursor-grabbing ${c.vacant ? 'border-dashed border-slate-400 bg-slate-50' : away ? 'border-slate-300 bg-slate-100' : 'border-slate-300 bg-white'} ${over || ctx.found.has(c.id) ? 'ring-2 ring-delacour-gold' : ''} ${ctx.drag === c.id ? 'opacity-40' : ''}`}>
       <div className="flex min-h-[1rem] w-full flex-wrap justify-center gap-1 px-4">
         {c.vital && <span className={`${badge} bg-red-700 text-white`}>Vital</span>}
         {pending && <span className={`${badge} border border-dashed border-slate-500 text-slate-700`}>À rattacher</span>}
@@ -553,7 +562,7 @@ function OrgCard({ c, ctx, pending, team, folded }: { c: Contact; ctx: TreeCtx; 
         className="absolute right-0.5 top-0.5 rounded p-0.5 text-slate-500 opacity-0 hover:bg-slate-100 hover:text-delacour-primary focus:opacity-100 group-hover:opacity-100 print:hidden [@media(hover:none)]:opacity-100"><Plus size={14} /></button>
       <button type="button" onClick={() => ctx.onOpen(c.id)} className="flex w-full flex-col items-center gap-1" aria-label={`Ouvrir la fiche de ${contactLabel(c)}`}>
         <UserRound size={26} strokeWidth={1.6} className={c.vacant ? 'text-slate-400' : 'text-slate-500'} aria-hidden />
-        <span className={`w-full break-words rounded-xl px-2 py-0.5 font-bold leading-tight ${c.vacant ? 'border border-dashed border-slate-500 bg-white text-slate-700' : 'bg-delacour-primary text-white'}`}>{c.vacant ? 'Poste à pourvoir' : c.name || c.company || 'Sans nom'}</span>
+        <span className={`w-full break-words rounded-xl px-2 py-0.5 font-bold leading-tight ${c.vacant ? 'border border-dashed border-slate-500 bg-white text-slate-700' : 'bg-delacour-primary text-white'}`}>{c.vacant ? 'Poste à pourvoir' : c.name || (c.category === 'interne' ? 'Sans nom' : c.company) || 'Sans nom'}</span>
         {c.role && <span className="w-full break-words leading-tight text-slate-700">{c.role}</span>}
       </button>
       {c.phone && (
@@ -562,6 +571,7 @@ function OrgCard({ c, ctx, pending, team, folded }: { c: Contact; ctx: TreeCtx; 
           {toCheck(c) && <span className="h-2 w-2 rounded-full bg-amber-500" title="Numéro à vérifier" aria-label="Numéro à vérifier" />}
         </span>
       )}
+      {c.email && <a href={`mailto:${c.email}`} className="w-full leading-tight text-delacour-primary [overflow-wrap:anywhere] hover:underline">{c.email.split('@')[0]}@<wbr />{c.email.split('@').slice(1).join('@')}</a>}
       {!c.vacant && <span className={`w-full break-words leading-tight ${away ? 'font-semibold text-slate-900' : absent ? 'text-slate-600' : 'text-amber-800'}`}>{away ? 'Remplacé par' : 'Si absent'} : {absent || 'personne'}</span>}
       {team > 0 && (
         <button type="button" aria-expanded={!folded} aria-label={folded ? `Déplier l'équipe (${team})` : 'Replier l\'équipe'} title={folded ? 'Déplier l\'équipe' : 'Replier l\'équipe'} onClick={() => ctx.toggle(c.id)}

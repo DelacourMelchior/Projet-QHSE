@@ -55,8 +55,8 @@ export function Onboarding() {
       <div>
         <h1 className="text-xl font-bold text-delacour-primary">{tool ? `${tool.id} · ${tool.title}` : 'Outils Delacour : mise en route'}</h1>
         <p className="mt-1 text-xs text-slate-600">{tool
-          ? `${tool.desc} La mise en route prépare l'entreprise pour les 19 outils, dont le tableau d'indicateurs (outil 1.1) qui partage le même plan d'actions.`
-          : "Vos indicateurs clés, vos Plans B, vos devis, vos réclamations, votre bac rouge : 19 outils qui partagent un seul plan d'actions."} Vos données restent sur ce poste ou dans le dossier partagé de votre entreprise.</p>
+          ? `${tool.desc} La mise en route prépare l'entreprise pour les 22 outils, dont le tableau d'indicateurs (outil 1.1) qui partage le même plan d'actions.`
+          : "Vos indicateurs clés, vos Plans B, vos devis, vos réclamations, votre bac rouge : 22 outils qui partagent un seul plan d'actions."} Vos données restent sur ce poste ou dans le dossier partagé de votre entreprise.</p>
       </div>
 
       {step === 0 && (

@@ -1,6 +1,6 @@
 # Outils Delacour : guide développeur et consultant
 
-Les 19 outils de pilotage pour PME (un par question de l'audit des 5 processus, plus l'annuaire de crise) forment une seule application, livrée en un seul fichier HTML, sans serveur et sans appel à internet.
+Les 22 outils de pilotage pour PME (un par question de l'audit des 5 processus, plus l'annuaire de crise, le seuil de rentabilité, les coûts horaires et la charte de prix) forment une seule application, livrée en un seul fichier HTML, sans serveur et sans appel à internet.
 
 ## Structure
 
@@ -33,7 +33,7 @@ Dossier partagé du client (OneDrive, SharePoint, Google Drive, Nextcloud…) : 
 
 ## Utilisation en rendez-vous
 
-Voir `../SCENARIO_DEMO_OUTIL_1_1.md`. Pour afficher des données : premier lancement, **Voir un exemple** (une entreprise fictive avec des données dans les 19 outils), ou **Réglages**, **Charger l'exemple de démonstration**. Chaque outil vide propose aussi **Voir un exemple traité**.
+Voir `../SCENARIO_DEMO_OUTIL_1_1.md`. Pour afficher des données : premier lancement, **Voir un exemple** (une entreprise fictive avec des données dans les 22 outils), ou **Réglages**, **Charger l'exemple de démonstration**. Chaque outil vide propose aussi **Voir un exemple traité**.
 
 ## Limites connues
 

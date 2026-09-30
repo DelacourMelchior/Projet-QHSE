@@ -4,6 +4,9 @@ import type { Period, State } from './types';
 import { synthesis } from './engine';
 import { riskSummary, staleContacts } from './risk';
 import { chainIssues, duplicates, toCheck } from './contacts';
+import { breakEven } from './breakeven';
+import { capacity, hourlyCosts } from './hourly';
+import { charterChanges, chartModel, hourValues, isStale, issuedText, signals } from './charter';
 import { cnqMonth, ncState, pokaState, analysisState } from './quality';
 import { formatValue } from './numbers';
 import { isoDate } from './periods';
@@ -16,7 +19,8 @@ const ok = (text: string): ToolStatus => ({ n: 0, tone: 'ok', text });
 const empty = (text = 'Pas encore utilisé'): ToolStatus => ({ n: 0, tone: 'pending', text });
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n > 1 ? many : one}`;
 
-export function toolBadge(s: State, tool: string, p: Period, now = new Date()): ToolStatus {
+// money = false in team view: what says how the company is doing is not shown (1.4)
+export function toolBadge(s: State, tool: string, p: Period, now = new Date(), money = true): ToolStatus {
   switch (tool) {
     case '1.1': {
       const syn = synthesis(s, p);
@@ -43,6 +47,38 @@ export function toolBadge(s: State, tool: string, p: Period, now = new Date()): 
       const stale = staleContacts(s, now).length || all.filter(c => toCheck(c, now)).length;
       if (!stale && dup) return { n: dup, tone: 'warn', text: `${plural(dup, 'doublon')} à fusionner` };
       return stale ? { n: stale, tone: 'warn', text: `${plural(stale, 'numéro')} à vérifier` } : ok(`${plural(all.length, 'contact')} à jour`);
+    }
+    case '1.4': {
+      if (!money) return { n: 0, tone: 'pending', text: 'Réservé à la direction' };
+      if (!s.settings.accounts) return empty('Chiffres du compte de résultat à saisir');
+      const b = breakEven(s.settings.accounts);
+      if (b && b.ratePct <= 0) return { n: 1, tone: 'alert', text: 'Marge sur coûts variables négative' };
+      if (!b || b.safetyPct === null) return { n: 0, tone: 'pending', text: 'Chiffres du compte de résultat à compléter' };
+      if (b.safetyPct < 0) return { n: 1, tone: 'alert', text: 'Exercice sous le seuil de rentabilité' };
+      return b.safetyPct < 10 ? { n: 1, tone: 'warn', text: `Marge de sécurité fragile : ${formatValue(b.safetyPct, '%')}` } : ok(`Marge de sécurité de ${formatValue(b.safetyPct, '%')}`);
+    }
+    case '1.5': {
+      if (!money) return { n: 0, tone: 'pending', text: 'Réservé à la direction' };
+      const h = s.settings.hourly;
+      if (!h?.stations.length) return empty('Postes de travail à saisir');
+      const c = hourlyCosts(h)!;
+      if (c.incomplete.length) return { n: c.incomplete.length, tone: 'warn', text: `${plural(c.incomplete.length, 'poste')} à compléter` };
+      const k = capacity(h, s.settings.accounts);
+      if (k && (k.neededPct > 100 || k.sold < k.needed)) return { n: 1, tone: 'alert', text: k.neededPct > 100 ? "Le seuil demande plus d'heures que la capacité" : 'Heures vendues sous le seuil' };
+      if (k && k.neededPct > 90) return { n: 1, tone: 'warn', text: `Le seuil demande ${Math.round(k.neededPct)} % de la capacité` };
+      return ok(`Coût horaire moyen : ${formatValue(c.average, '€/h')}`);
+    }
+    case '1.6': {
+      if (!money) return { n: 0, tone: 'pending', text: 'Réservé à la direction' };
+      const m = chartModel(s);
+      if (!m) return empty('Chiffres du compte de résultat à saisir (1.4)');
+      const sg = signals(s, hourValues(s, m), now), red = sg.filter(x => x.tone === 'alert').length, orange = sg.filter(x => x.tone === 'warn').length;
+      const issued = s.settings.policy?.issued, changes = charterChanges(issued, m).length;
+      if (red) return { n: red, tone: 'alert', text: `${plural(red, 'alerte')} du voyant` };
+      if (changes) return { n: 1, tone: 'warn', text: 'Charte à rééditer : les coûts ont changé' };
+      if (isStale(s.settings.accounts, now)) return { n: 1, tone: 'warn', text: `Chiffres de ${s.settings.accounts!.year} : nouvel exercice à saisir` };
+      if (orange) return { n: orange, tone: 'warn', text: `${orange} point${orange > 1 ? 's' : ''} de vigilance` };
+      return issued ? ok(`Voyant au vert, charte ${issuedText(issued)}`) : { n: 1, tone: 'warn', text: 'Charte à valider' };
     }
     case '5.1': {
       const all = Object.values(s.ncs);

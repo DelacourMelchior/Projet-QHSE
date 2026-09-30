@@ -7,6 +7,7 @@ import { DEFAULT_SCALE, newRisk } from './risk';
 import { parseDuration } from './duration';
 import { exampleEmail, EMAILS } from './riskTemplates';
 import { emptyTools } from './base';
+import { applyExampleCompany } from './costExamples';
 
 // Short stable hash (FNV-1a): the same old contact line gives the same id on every computer
 function fnv(text: string): string {
@@ -33,6 +34,9 @@ const PROCESS_COLORS = ['#059669', '#2563EB', '#7C3AED', '#D97706', '#DC2626', '
 export const DEFAULT_SETTINGS: Settings = {
   companyName: '', profile: 'industrie', annualBudget: 600000, netMarginPct: 5, avgQuoteValue: 4500,
 };
+export const DEMO_COMPANY = 'Entreprise exemple (fictive)';
+// Raise it when a tool gets example figures, and add them to the top-up in normalize: every saved example company receives them once
+export const EXAMPLE_LEVEL = 1;
 
 const kpiType = (t: string): KpiType => {
   const x = String(t || '').toLowerCase();
@@ -146,7 +150,11 @@ export function normalize(s: State): State {
     e.inspections = e.inspections.map(i => (i.ids ? i : { ...i, ids: e.checkpoints.slice(0, i.results.length).map(c => c.id!) }));
     return [id, e];
   }));
-  return { ...s, ...withTools, equipments, params: { ...tools.params, ...(s.params || {}) }, risks, contacts, scale: s.scale || DEFAULT_SCALE };
+  const out = { ...s, ...withTools, settings: { ...s.settings }, equipments, params: { ...tools.params, ...(s.params || {}) }, risks, contacts, scale: s.scale || DEFAULT_SCALE };
+  // the example company saved before some tools existed gets their figures, once; what it holds is kept and other companies are left alone
+  const c = out.settings;
+  if (c.companyName === DEMO_COMPANY && (c.exampleLevel ?? 0) < EXAMPLE_LEVEL) { applyExampleCompany(out); c.exampleLevel = EXAMPLE_LEVEL; }
+  return out;
 }
 
 // "Nom, rôle : 06 00 00 00 00" lines -> crisis directory entries (same line = same id, whoever converts it)

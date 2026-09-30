@@ -71,6 +71,67 @@ export interface Settings {
   netMarginPct: number;   // to compute the revenue needed to offset a loss
   avgQuoteValue: number;  // to value pending quotes
   gravityThresholds?: [number, number, number] | null; // risk gravity bounds in € (null = from annualBudget)
+  accounts?: Accounts;    // 1.4: last profit and loss account (direction folder, like the rest of the settings)
+  hourly?: HourlyCosts;   // 1.5: workstations and productive hours (direction folder: pay and machine costs)
+  previous?: Accounts;    // 1.4: the exercise before, kept to tell whether the growth paid (archived by "Nouvel exercice")
+  policy?: PricePolicy;   // 1.6: the decisions of the price charter (direction folder)
+  exampleLevel?: number;  // example company only: rounds of example figures received, so that a tool added later fills it once (migrate.ts)
+}
+
+// ---- 1.4 break-even: the 10 figures of the last profit and loss account, € HT over a 12-month year
+export interface Accounts {
+  year: number;                    // year the accounts close
+  revenue: number | null;          // chiffre d'affaires
+  purchases: number | null;        // achats consommés, variation de stock comprise
+  subcontracting: number | null;
+  otherVariable: number | null;    // production energy, transport on sales, commissions, packaging
+  labourProduction: number | null; // pay and charges of the people whose time is sold
+  labourOverhead: number | null;   // pay and charges of the structure, manager included
+  otherFixed: number | null;       // rent, insurance, fees, maintenance, vehicles, taxes
+  depreciation: number | null;
+  interest: number | null;
+  result: number | null;           // net result: net margin, and check of what was typed
+  soldHours?: number | null;       // hours sold over the year: typed here for the previous exercise, the current one is in 1.5
+}
+
+// ---- 1.5 hourly cost of the workstations: people and machine costs over the hours really spent on orders
+export interface Workstation {
+  id: string;
+  name: string;                    // as the quotes name it (params.rates): "CNC 5 axes", "Soudure", "Bureau d'études"
+  people: number | null;           // people at the workstation, in full-time equivalents
+  labourCost: number | null;       // yearly loaded cost of one person (€)
+  depreciation: number | null;     // yearly, of the machine (€)
+  maintenance: number | null;
+  energy: number | null;
+}
+export interface HourlyCosts {
+  contractHours: number;           // paid hours of one person over the year (1 607 by law)
+  absencePct: number;              // absences beyond the legal leave, and training (% of the paid hours)
+  idlePct: number;                 // time spent on no order: waiting, set-up, cleaning, meetings (% of the hours present)
+  soldHours: number | null;        // hours sold over the year (timesheets or invoices), to read the capacity
+  stations: Workstation[];
+}
+
+// ---- 1.6 price charter: what the company decides once. Null means "derived": the margin of the accounts, the average coefficient, the margin aimed at.
+export interface PricePolicy {
+  marginPct: number | null;            // margin aimed at before tax, % of the price
+  coefMaterials: number | null;        // sale coefficient on the purchases (x 1.30)
+  coefSubcontracting: number | null;
+  discountSales: number | null;        // largest discount the sales person gives alone (%): null = the margin aimed at
+  discountDirection: number | null;    // largest discount with the visa of the management (%): null = the same
+  loadCeilingPct: number;              // share of the productive hours over which a new order costs more than it earns
+  surchargePct: number;                // premium asked on the orders that go over the ceiling (%)
+  lowLoadPct: number;                  // share of the hours under which the management may use its discount
+  billed: Record<string, number | null>;   // rate billed today per workstation (id), to compare with the rate of the charter
+  issued?: IssuedCharter;              // the charter as last validated
+}
+export interface IssuedCharter {
+  at: string;                          // ISO date
+  marginPct: number;
+  kMaterials: number;
+  kSubcontracting: number;
+  kLabour: number | null;
+  rates: { name: string; target: number }[];   // €/h
 }
 
 export interface Timeline {
@@ -173,6 +234,7 @@ export interface Quote {
   depositAmount?: number | null;
   depositAt?: string;
   startedAt?: string;      // manufacturing launched
+  maxDiscountPct?: number | null;   // largest discount the management lets the sales person give: seen in team view, without any cost
 }
 export interface QuoteCost { material: number | null; hours: number | null; subcontract: number | null; other: number | null; rate?: string }
 

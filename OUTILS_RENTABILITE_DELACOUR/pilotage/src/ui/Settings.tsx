@@ -110,7 +110,7 @@ export function Settings({ onClose }: { onClose(): void }) {
             <Field label="Objectif de CA annuel (€ HT)" hint="Sert au CA cumulé comparé à l'objectif à date et à la projection de fin d'année.">
               <input className={inputCls} inputMode="decimal" value={s.annualBudget} onChange={e => setS({ ...s, annualBudget: parseNumber(e.target.value) ?? 0 })} />
             </Field>
-            <Field label="Marge nette habituelle (%)" hint="CA à refaire pour compenser 1 € perdu = 100 / marge nette.">
+            <Field label="Marge nette habituelle (%)" hint="CA à refaire pour compenser 1 € perdu = 100 / marge nette. Proposée par l'outil 1.4.">
               <input className={inputCls} inputMode="decimal" value={s.netMarginPct} onChange={e => setS({ ...s, netMarginPct: parseNumber(e.target.value) ?? 5 })} />
             </Field>
             <Field label="Montant moyen d'un devis (€ HT)" hint="Sert à chiffrer les devis en attente de relance.">
@@ -123,19 +123,19 @@ export function Settings({ onClose }: { onClose(): void }) {
         <section className="space-y-3">
           <h3 className="text-xs font-bold text-slate-900">Hypothèses des outils 2 à 5</h3>
           <div className="grid gap-3 sm:grid-cols-4">
-            <Field label="Coût horaire chargé (€/h)" hint="Valorise les heures perdues, de retouche et de reprise (5.1, 5.2, 3.1, 2.1)."><input className={inputCls} inputMode="decimal" value={params.hourlyRate} onChange={e => setParams({ ...params, hourlyRate: parseNumber(e.target.value) ?? 0 })} /></Field>
+            <Field label="Coût horaire chargé (€/h)" hint="Valorise les heures perdues, de retouche et de reprise (5.1, 5.2, 3.1, 2.1). Proposé par l'outil 1.5."><input className={inputCls} inputMode="decimal" value={params.hourlyRate} onChange={e => setParams({ ...params, hourlyRate: parseNumber(e.target.value) ?? 0 })} /></Field>
             <Field label="Marge brute plancher (%)" hint="En dessous, un devis ne part qu'avec une dérogation (2.1)."><input className={inputCls} inputMode="decimal" value={params.marginFloorPct} onChange={e => setParams({ ...params, marginFloorPct: parseNumber(e.target.value) ?? 0 })} /></Field>
             <Field label="Acompte à la commande (%)"><input className={inputCls} inputMode="decimal" value={params.depositPct} onChange={e => setParams({ ...params, depositPct: parseNumber(e.target.value) ?? 0 })} /></Field>
             <Field label="Visas obligatoires dès (€ HT)" hint="Commercial, technique et direction (2.1)."><input className={inputCls} inputMode="decimal" value={params.visaThreshold} onChange={e => setParams({ ...params, visaThreshold: parseNumber(e.target.value) ?? 0 })} /></Field>
           </div>
           <div className="grid gap-3 sm:grid-cols-4">
-            <Field label="Frais généraux (%)" hint="Ajoutés au coût direct d'un devis pour le résultat après frais (2.1)."><input className={inputCls} inputMode="decimal" value={params.overheadPct ?? 0} onChange={e => setParams({ ...params, overheadPct: parseNumber(e.target.value) ?? 0 })} /></Field>
-            <Field label="Marge sur coûts variables (%)" hint="Seconde lecture du CA à refaire (5.2)."><input className={inputCls} inputMode="decimal" value={params.variableMarginPct ?? ''} onChange={e => setParams({ ...params, variableMarginPct: parseNumber(e.target.value) ?? undefined })} /></Field>
+            <Field label="Frais généraux (%)" hint="Ajoutés au coût direct d'un devis pour le résultat après frais (2.1). Proposés par l'outil 1.4."><input className={inputCls} inputMode="decimal" value={params.overheadPct ?? 0} onChange={e => setParams({ ...params, overheadPct: parseNumber(e.target.value) ?? 0 })} /></Field>
+            <Field label="Marge sur coûts variables (%)" hint="Seconde lecture du CA à refaire (5.2). Proposée par l'outil 1.4."><input className={inputCls} inputMode="decimal" value={params.variableMarginPct ?? ''} onChange={e => setParams({ ...params, variableMarginPct: parseNumber(e.target.value) ?? undefined })} /></Field>
             <Field label="Atelier 5 Pourquoi dès (€)" hint="Coût d'un défaut qui déclenche un atelier (5.3)."><input className={inputCls} inputMode="decimal" value={params.cnqTrigger ?? 500} onChange={e => setParams({ ...params, cnqTrigger: parseNumber(e.target.value) ?? 500 })} /></Field>
             <label className="flex items-center gap-2 pt-5 text-[11px] text-slate-700"><input type="checkbox" checked={!!params.businessHours} onChange={e => setParams({ ...params, businessHours: e.target.checked })} />Délais de 24 h et 48 h comptés du lundi au vendredi</label>
           </div>
           <div className="space-y-1.5">
-            <span className="block text-[11px] font-semibold text-slate-700">Coût horaire par poste ou machine (sinon le coût horaire général)</span>
+            <span className="block text-[11px] font-semibold text-slate-700">Coût horaire par poste ou machine (sinon le coût horaire général), proposé par l'outil 1.5</span>
             {(params.rates || []).map((r, i) => (
               <div key={i} className="flex gap-1.5">
                 <input className={inputCls} value={r.name} placeholder="Poste ou machine (ex. : CNC 5 axes)" aria-label="Poste" onChange={e => setParams({ ...params, rates: params.rates!.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)) })} />

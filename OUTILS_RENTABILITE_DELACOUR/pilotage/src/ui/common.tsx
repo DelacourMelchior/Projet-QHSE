@@ -42,7 +42,7 @@ export function Field({ label, hint, children }: { label: string; hint?: string;
   );
 }
 
-export const inputCls = 'w-full rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-900 outline-none focus:border-delacour-gold focus:ring-2 focus:ring-delacour-gold/30';
+export const inputCls = 'w-full rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-900 outline-none focus:border-delacour-gold focus:ring-2 focus:ring-delacour-gold/30 disabled:bg-slate-50 disabled:text-slate-600';
 
 // Modal dialog (Escape or backdrop closes it)
 export function Modal({ title, subtitle, onClose, children, footer, wide, xwide }: {

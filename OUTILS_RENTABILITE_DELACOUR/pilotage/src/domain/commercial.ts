@@ -32,6 +32,43 @@ export function quoteMargin(q: Quote, p: Params): { value: number; pct: number }
 }
 export const needsVisas = (q: Quote, p: Params) => (q.amount ?? 0) >= p.visaThreshold;
 
+// Price ladder: the price to ask, and the prices under which the quote stops paying (cost engine of tools 1.4 and 1.5)
+export interface Ladder {
+  target: number | null;    // prix cible: complete cost plus the net margin aimed at
+  floor: number | null;     // price at the gross margin floor of the settings: under it, a written derogation
+  complete: number;         // complete cost, overheads included: under it the job loses money once the structure is paid
+  variable: number | null;  // variable cost: materials, subcontracting, other costs, what the machines consume: under it every sale costs cash
+}
+// Pay is paid whatever is sold (1.4), so an hour only costs what the machines consume (variableHourly, computed by 1.5).
+// Nothing when only a total cost was typed (express control): it cannot be split.
+export function quoteVariableCost(q: Quote, variableHourly: number): number | null {
+  const c = q.cost;
+  if (!c || (c.material === null && c.hours === null && c.subcontract === null)) return null;
+  return sum([c.material, c.subcontract, c.other]) + (c.hours || 0) * variableHourly;
+}
+// What each hour of the job leaves to pay the structure: price less variable costs, over the hours (1.6 compares it with the value of an hour)
+export function quoteHourMargin(q: Quote, variableHourly: number): number | null {
+  const v = quoteVariableCost(q, variableHourly), hours = q.cost?.hours;
+  return v === null || !q.amount || !hours ? null : (q.amount - v) / hours;
+}
+// targetPct: margin aimed at before tax, % of the price (the decision of the charter of 1.6, else the margin of the accounts)
+export function priceLadder(q: Quote, p: Params, targetPct: number, variableHourly = 0): Ladder | null {
+  const direct = quoteCost(q, p);
+  if (direct === null) return null;
+  const complete = quoteFullCost(q, p)!, n = targetPct;
+  return {
+    target: n < 100 ? complete / (1 - n / 100) : null,
+    floor: p.marginFloorPct < 100 ? direct / (1 - p.marginFloorPct / 100) : null,
+    complete, variable: quoteVariableCost(q, variableHourly),
+  };
+}
+// Largest discount (%) that keeps the price above the gross margin floor and above the complete cost, rounded down to half a point
+export function maxDiscount(price: number | null, l: Ladder): number {
+  if (!price || price <= 0) return 0;
+  const limit = Math.max(l.floor ?? 0, l.complete);
+  return limit >= price ? 0 : Math.floor((1 - limit / price) * 200 + 1e-9) / 2;   // 1e-9: 8 % must not fall to 7.5 % on a rounding error
+}
+
 // What still stops the offer from leaving (empty = ready to send)
 export function quoteIssues(q: Quote, p: Params, money = true): string[] {
   const out: string[] = [];
@@ -79,12 +116,13 @@ export function quoteStats(s: State, period: string, today = new Date()) {
   const won = qs.filter(q => q.status === 'won' && q.decidedAt.slice(0, 7) === period);
   const since = isoDate(new Date(today.getFullYear() - 1, today.getMonth(), today.getDate()));
   const decided = qs.filter(q => (q.status === 'won' || q.status === 'lost') && q.decidedAt >= since);
-  const margins = qs.filter(q => q.status === 'won' && q.decidedAt >= since).map(q => quoteMargin(q, s.params)).filter((m): m is NonNullable<typeof m> => !!m);
+  // weighted by the amounts: a thin margin on a big order weighs more than a fat one on a small order
+  const margins = qs.filter(q => q.status === 'won' && q.decidedAt >= since).flatMap(q => { const m = quoteMargin(q, s.params); return m ? [{ value: m.value, amount: q.amount || 0 }] : []; });
   return {
     sentCount: sent.length, sentAmount: sum(sent.map(q => q.amount)),
     wonCount: won.length, wonAmount: sum(won.map(q => q.amount)),
     conversionPct: decided.length ? Math.round(decided.filter(q => q.status === 'won').length / decided.length * 100) : null,
-    avgMarginPct: margins.length ? margins.reduce((a, m) => a + m.pct, 0) / margins.length : null,
+    avgMarginPct: margins.length ? sum(margins.map(m => m.value)) / sum(margins.map(m => m.amount)) * 100 : null,
     toFollow: qs.filter(q => quoteState(q, s.params, today) === 'to_follow').length,
     pendingAmount: sum(qs.filter(q => q.status === 'sent').map(q => q.amount)),
   };
@@ -112,6 +150,10 @@ export function quoteInsights(s: State, today = new Date(), money = true): Insig
   if (money) {
     const low = qs.filter(q => q.status !== 'lost' && q.status !== 'dropped' && !q.derogation.trim() && (quoteMargin(q, s.params)?.pct ?? 100) < s.params.marginFloorPct);
     if (low.length) out.push({ key: 'low', tone: 'warn', title: 'Marge sous le plancher', text: `${names(low, q => `${q.ref} à ${Math.round(quoteMargin(q, s.params)!.pct)} %`)} pour un plancher de ${s.params.marginFloorPct} % : revoir le prix, ou dérogation écrite de la direction.` });
+  }
+  if (money) {
+    const below = qs.filter(q => (q.status === 'draft' || q.status === 'sent') && !!q.amount && q.amount < (quoteFullCost(q, s.params) ?? 0));
+    if (below.length) out.push({ key: 'belowcost', tone: 'warn', title: 'Devis sous le coût complet', text: `${names(below, q => `${q.ref} (${q.client})`)} : avec ${Math.round(s.params.overheadPct || 0)} % de frais généraux, ${below.length > 1 ? 'ces offres perdent' : 'cette offre perd'} de l'argent une fois la structure payée. Voir l'échelle de prix de la fiche.` });
   }
   const noDeposit = qs.filter(q => q.status === 'won' && !q.depositReceived);
   if (noDeposit.length) out.push({ key: 'deposit', tone: 'warn', title: 'Acompte non encaissé', text: `${names(noDeposit, q => `${q.ref} (${q.client})`)} : ne pas commander la matière ni lancer la fabrication avant l'acompte de ${s.params.depositPct} %.` });

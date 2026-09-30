@@ -1,5 +1,5 @@
 // Shell: header (company, process, tools of the process, month, team/management view, storage, settings) + screens.
-// 19 tools in 5 processes (see tools.ts). Actions is the single action register, filtered on the current process.
+// 22 tools in 5 processes (see tools.ts). Actions is the single action register, filtered on the current process.
 // Tool 1.1 has two screens (Indicateurs, Saisie); every other tool is one screen with its own sheets.
 import { useEffect, useState } from 'react';
 import { ChevronLeft, ChevronRight, Eye, EyeOff, FolderSync, House, ListChecks, ListTodo, Lock, SlidersHorizontal } from 'lucide-react';
@@ -75,7 +75,7 @@ export function App() {
   const restricted = (id: string) => teamView && (state.params.restricted || []).includes(id);
   const tabs: { id: View; label: string; badge?: { n: number; tone: string } }[] = view === 'home' || view === 'taches' ? [] : [
     ...toolsOf(proc).flatMap(t => {
-      const b = toolBadge(state, t.id, period);
+      const b = toolBadge(state, t.id, period, new Date(), !teamView);
       const tab = { id: t.id as View, label: t.label, badge: b.n ? { n: b.n, tone: b.tone === 'alert' ? 'bg-red-600' : b.tone === 'warn' ? 'bg-amber-500' : 'bg-slate-500' } : undefined };
       if (t.id !== '1.1') return [tab];
       const b2 = toolBadge(state, 'saisie', period);

@@ -1,7 +1,8 @@
 // Printed documents of tools 2.1 and 2.2: validation sheet of an offer (5 locks, margin, visas), change order to sign ("bon pour accord").
 import type { Change, Quote, State } from './types';
 import { COLORS, DocWriter } from './docPdf';
-import { LOCK_STATE, LOCKS, needsVisas, quoteMargin } from './commercial';
+import { LOCK_STATE, LOCKS, needsVisas, priceLadder, quoteMargin } from './commercial';
+import { variableRate } from './hourly';
 import { frDate } from './periods';
 import { formatValue } from './numbers';
 import { processLabel } from './base';
@@ -18,9 +19,12 @@ export function quotePdf(s: State, q: Quote, o: Opts): string {
   });
   if (o.money) {
     const m = quoteMargin(q, s.params);
+    const l = priceLadder(q, s.params, s.settings.netMarginPct, variableRate(s.settings.hourly, q.cost?.rate || ''));
     w.heading('Marge');
     w.fields([
       ['Marge brute', m ? `${formatValue(m.value, '€')} (${Math.round(m.pct)} %)` : 'Coûts à chiffrer'],
+      ['Coût complet', l ? `${formatValue(l.complete, '€')} avec ${Math.round(s.params.overheadPct || 0)} % de frais généraux` : 'Coûts à chiffrer'],
+      ['Prix cible', l?.target ? formatValue(l.target, '€') : 'Coûts à chiffrer'],
       ['Plancher', `${s.params.marginFloorPct} %`], ['Acompte à la commande', `${s.params.depositPct} %`],
       ...(q.derogation ? [['Dérogation', q.derogation] as [string, string]] : []),
     ]);

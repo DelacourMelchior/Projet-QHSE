@@ -1,12 +1,13 @@
 // Demo company and job templates (KPI lists), taken from the previous version.
 import type { State } from './types';
-import { fromLegacyTool, DEFAULT_SETTINGS } from './migrate';
+import { fromLegacyTool, DEFAULT_SETTINGS, DEMO_COMPANY, EXAMPLE_LEVEL } from './migrate';
 import { addMonths, periodOfDate } from './periods';
 import legacy from './legacy-templates.json';
 import { demoRisks, exampleOrgs } from './riskTemplates';
 import { emptyTools } from './base';
 import { applyQualityExample } from './qualityExamples';
 import { applyCommercialExample } from './commercialExamples';
+import { applyExampleCompany } from './costExamples';
 import { applyOperationsExample } from './operationsExamples';
 import { applyTeamExample } from './teamExamples';
 
@@ -17,10 +18,10 @@ export const PROFILES = {
 } as const;
 export type ProfileKey = keyof typeof PROFILES;
 
-// Fictitious company, full year 2026 with 13 actions, 9 risks with their Plan B (tool 1.2), and examples of every tool of processes 2 to 5
+// Fictitious company, full year 2026 with 13 actions, 9 risks with their Plan B (tool 1.2), the figures of tools 1.4 to 1.6, and examples of every tool of processes 2 to 5
 export function demoState(today = new Date()): State {
   const s = fromLegacyTool(JSON.parse(JSON.stringify(legacy.demo)));
-  s.settings = { ...DEFAULT_SETTINGS, companyName: 'Entreprise exemple (fictive)', profile: 'industrie' };
+  s.settings = { ...DEFAULT_SETTINGS, companyName: DEMO_COMPANY, profile: 'industrie', exampleLevel: EXAMPLE_LEVEL };
   const d = demoRisks(today);
   s.risks = d.risks;
   s.contacts = d.contacts;
@@ -30,6 +31,7 @@ export function demoState(today = new Date()): State {
   applyCommercialExample(s, today);
   applyOperationsExample(s, today);
   applyTeamExample(s, today);
+  applyExampleCompany(s, today);      // last: it adds to the register of 5.1 that the quality example replaces
   s.params.company ||= { address: '12 rue de l\'Industrie, 69000 Lyon (exemple)', siret: '', phone: '04 00 00 00 00', email: '' };
   s.params.siteAccess = 'Portail côté parking, code 1234 ; atelier au fond, bâtiment B';
   return s;

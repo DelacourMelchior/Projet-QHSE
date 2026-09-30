@@ -2,8 +2,8 @@
 import { describe, expect, it } from 'vitest';
 import type { Change, Complaint, Feedback, Quote, State } from './types';
 import {
-  agreementMessage, changeState, complaintState, complaintStats, contactDelay, feedbackState, isNegative, newChange, newComplaint, newFeedback, newQuote, nps,
-  quoteInsights, quoteIssues, quoteMargin, quoteState, quoteStats, startedWithout,
+  agreementMessage, changeState, complaintState, complaintStats, contactDelay, feedbackState, isNegative, maxDiscount, newChange, newComplaint, newFeedback, newQuote, nps,
+  priceLadder, quoteHourMargin, quoteInsights, quoteIssues, quoteMargin, quoteState, quoteStats, startedWithout,
 } from './commercial';
 import { commercialExamples } from './commercialExamples';
 import { changePdf, quotePdf } from './commercialPdf';
@@ -58,6 +58,53 @@ describe('2.1 quotes', () => {
   it('warns about a won order without deposit', () => {
     const s = st({ quotes: { a: ready({ status: 'won', decidedAt: '2026-09-20' }) } });
     expect(quoteInsights(s, now).map(i => i.key)).toContain('deposit');
+  });
+});
+
+describe('2.1 price ladder', () => {
+  const P40 = { ...P, overheadPct: 40 };
+  it('gives the price to ask and the prices under which the quote stops paying', () => {
+    const l = priceLadder(ready(), P40, 5, 3)!;                        // direct cost: 3 000 + 500 + 20 h at 55 = 4 600
+    expect(l.complete).toBeCloseTo(6440, 5);                           // plus 40 % of overheads
+    expect(l.floor).toBeCloseTo(4600 / 0.7, 5);                        // gross margin floor of 30 %
+    expect(l.target).toBeCloseTo(6440 / 0.95, 5);                      // complete cost, then 5 % of net margin
+    expect(l.variable).toBe(3000 + 500 + 20 * 3);                      // materials, subcontracting, what the machines consume: pay is fixed
+    expect(priceLadder(ready({ cost: undefined }), P40, 5)).toBeNull();
+    expect(priceLadder(ready({ cost: { material: null, hours: null, subcontract: null, other: 4600 } }), P40, 5)!.variable).toBeNull();   // express control: a total cost cannot be split
+  });
+  it('aims at the margin given, before tax', () => {
+    expect(priceLadder(ready(), P40, 8)!.target).toBeCloseTo(6440 / 0.92, 5);
+    expect(priceLadder(ready(), P40, 100)!.target).toBeNull();
+  });
+  it('gives the margin per hour of a quote: price less variable costs, over the hours', () => {
+    expect(quoteHourMargin(ready(), 3)).toBe((8000 - (3000 + 500 + 20 * 3)) / 20);                                                         // 222 €/h
+    expect(quoteHourMargin(ready({ cost: { material: null, hours: null, subcontract: null, other: 4600 } }), 3)).toBeNull();             // express control
+    expect(quoteHourMargin(ready({ cost: { material: 3000, hours: null, subcontract: null, other: null } }), 3)).toBeNull();             // no hours
+    expect(quoteHourMargin(ready({ amount: null }), 3)).toBeNull();
+  });
+  it('gives the largest discount that stays above the floor and above the complete cost, by half points', () => {
+    const l = priceLadder(ready(), P40, 5)!;                           // floor 6 571, above the complete cost of 6 440
+    expect(maxDiscount(8000, l)).toBe(17.5);
+    expect(maxDiscount(6571, l)).toBe(0);                              // already at the floor
+    expect(maxDiscount(null, l)).toBe(0);
+    const heavy = priceLadder(ready(), { ...P, overheadPct: 60 }, 5)!; // complete cost 7 360, above the floor: it limits
+    expect(maxDiscount(8000, heavy)).toBe(8);
+  });
+  it('warns about the offers under the complete cost, in management view only', () => {
+    const s = st({ params: P40, quotes: {
+      a: ready({ id: 'a', ref: 'DEV-A', amount: 6000 }),
+      b: ready({ id: 'b', ref: 'DEV-B', amount: 8000 }),
+      c: ready({ id: 'c', ref: 'DEV-C', amount: 6000, status: 'won', decidedAt: '2026-09-20', depositReceived: true }),
+    } });
+    const w = quoteInsights(s, now).find(i => i.key === 'belowcost')!;
+    expect(w.text).toContain('DEV-A (A)');
+    expect(w.text).not.toMatch(/DEV-B|DEV-C/);
+    expect(quoteInsights(s, now, false).map(i => i.key)).not.toContain('belowcost');
+  });
+  it('weights the average margin of the won quotes by their amounts', () => {
+    const won = (id: string, amount: number, material: number) => ready({ id, status: 'won', decidedAt: '2026-09-10', amount, cost: { material, hours: null, subcontract: null, other: null } });
+    const s = st({ quotes: { big: won('big', 10000, 9000), small: won('small', 1000, 600) } });
+    expect(quoteStats(s, '2026-09', now).avgMarginPct).toBeCloseTo((1000 + 400) / 11000 * 100, 5);   // 12.7 %, not the 25 % of the plain average
   });
 });
 
@@ -129,7 +176,7 @@ describe('examples and documents', () => {
       expect(/[^\x00-\x7F]/.test(pdf)).toBe(false);
     }
     const text = (pdf: string) => [...pdf.matchAll(/<([0-9a-f]+)> Tj/g)].map(m => m[1].match(/../g)!.map(h => String.fromCharCode(parseInt(h, 16))).join('')).join(' ');
-    expect(text(quotePdf(s, ex.quotes.qt_demo_2, { company: '', date: now, money: true }))).toMatch(/Plancher/);
-    expect(text(quotePdf(s, ex.quotes.qt_demo_2, { company: '', date: now, money: false }))).not.toMatch(/Plancher|Dérogation/);   // team view
+    expect(text(quotePdf(s, ex.quotes.qt_demo_2, { company: '', date: now, money: true }))).toMatch(/Plancher.*Prix cible|Prix cible.*Plancher/);
+    expect(text(quotePdf(s, ex.quotes.qt_demo_2, { company: '', date: now, money: false }))).not.toMatch(/Plancher|Dérogation|Prix cible/);   // team view
   });
 });

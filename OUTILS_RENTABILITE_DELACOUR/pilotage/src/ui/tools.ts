@@ -1,9 +1,9 @@
-// The 19 tools of the application, one per question of the process audit (1.3 Annuaire added), grouped by process.
+// The 22 tools of the application, one per question of the process audit (1.3 Annuaire, then 1.4 Rentabilité, 1.5 Coûts horaires and 1.6 Charte de prix added), grouped by process.
 // Address of a tool: pilotage.html#2.1 (the tool 1.1 has no hash; #continuite and #annuaire are kept for 1.2 and 1.3).
 import type { Action, Ref } from '../domain/types';
 
 export type ProcessKey = 'P1' | 'P2' | 'P3' | 'P4' | 'P5';
-export type ToolId = '1.1' | '1.2' | '1.3' | '2.1' | '2.2' | '2.3' | '2.4' | '3.1' | '3.2' | '3.3' | '3.4' | '4.1' | '4.2' | '4.3' | '4.4' | '5.1' | '5.2' | '5.3' | '5.4';
+export type ToolId = '1.1' | '1.2' | '1.3' | '1.4' | '1.5' | '1.6' | '2.1' | '2.2' | '2.3' | '2.4' | '3.1' | '3.2' | '3.3' | '3.4' | '4.1' | '4.2' | '4.3' | '4.4' | '5.1' | '5.2' | '5.3' | '5.4';
 
 export interface ToolDef { id: ToolId; process: ProcessKey; label: string; title: string; desc: string }
 
@@ -19,6 +19,9 @@ export const TOOLS: ToolDef[] = [
   { id: '1.1', process: 'P1', label: 'Indicateurs', title: 'Tableau de pilotage mensuel', desc: 'Les indicateurs du mois, une synthèse pour décider et un plan d\'actions pour corriger.' },
   { id: '1.2', process: 'P1', label: 'Plans B', title: "Continuité d'activité : Plans B", desc: 'Les risques vitaux, un Plan B testé pour chacun et les fiches réflexes du jour de la panne.' },
   { id: '1.3', process: 'P1', label: 'Annuaire', title: 'Annuaire', desc: 'Les numéros à appeler quand ça casse, vérifiés au moins une fois par an.' },
+  { id: '1.4', process: 'P1', label: 'Rentabilité', title: 'Seuil de rentabilité', desc: 'Combien vendre pour couvrir la structure : 10 chiffres du dernier compte de résultat.' },
+  { id: '1.5', process: 'P1', label: 'Coûts horaires', title: 'Coût horaire des postes', desc: "Combien coûte une heure de chaque poste ou machine, et combien d'heures vendre pour couvrir la structure." },
+  { id: '1.6', process: 'P1', label: 'Charte de prix', title: 'Charte de prix et voyant de croissance', desc: "Décider une fois des prix, des remises et de la charge, et voir quand l'entreprise travaille pour travailler." },
   { id: '2.1', process: 'P2', label: 'Devis', title: 'Faisabilité et marge des devis', desc: '5 verrous à cocher et une marge vérifiée avant d\'envoyer une offre.' },
   { id: '2.2', process: 'P2', label: 'Avenants', title: 'Avenants et accord client', desc: 'Chiffrer le supplément, obtenir l\'accord avant de le faire, puis le facturer.' },
   { id: '2.3', process: 'P2', label: 'Réclamations', title: 'Réclamations clients sous 48 h', desc: 'Rappeler le client sous 48 h, trouver le processus en cause, chiffrer le litige.' },

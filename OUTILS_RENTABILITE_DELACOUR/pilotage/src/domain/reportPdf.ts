@@ -14,7 +14,7 @@ import { supplierSummary } from './operations';
 import { daysBetween } from './base';
 
 const TOOL_NAMES: [string, string][] = [
-  ['1.1', 'Indicateurs'], ['1.2', 'Plans B'], ['1.3', 'Annuaire'], ['2.1', 'Devis'], ['2.2', 'Avenants'], ['2.3', 'Réclamations'], ['2.4', 'Bilan de fin'],
+  ['1.1', 'Indicateurs'], ['1.2', 'Plans B'], ['1.3', 'Annuaire'], ['1.4', 'Rentabilité'], ['1.5', 'Coûts horaires'], ['1.6', 'Charte de prix'], ['2.1', 'Devis'], ['2.2', 'Avenants'], ['2.3', 'Réclamations'], ['2.4', 'Bilan de fin'],
   ['3.1', 'Fournisseurs'], ['3.2', 'Instructions'], ['3.3', 'Maintenance'], ['3.4', 'Réceptions'], ['4.1', 'Suppléances'], ['4.2', 'Polyvalence'],
   ['4.3', 'Accueil'], ['4.4', 'Classement'], ['5.1', 'Bac rouge'], ['5.2', 'Non-qualité'], ['5.3', '5 Pourquoi'], ['5.4', 'Détrompeurs'],
 ];
@@ -63,8 +63,8 @@ export function monthlyReportPdf(s: State, p: Period, o: { company: string; date
     ['Polyvalence', `${coveragePct(s) ?? '—'} %`, 'compétences clés doublées'],
   ], [0.2, 0.2, 0.6], { size: 9.5 });
   w.heading('État de chaque outil');
-  w.table(['Outil', 'État', 'À traiter'], TOOL_NAMES.map(([id, name]) => { const b = toolBadge(s, id, p, o.date); return [`${id} ${name}`, b.text, b.n ? String(b.n) : '']; }), [0.25, 0.63, 0.12], {
-    size: 9.5, highlight: i => (toolBadge(s, TOOL_NAMES[i][0], p, o.date).tone === 'alert' ? [254, 242, 242] : null),
+  w.table(['Outil', 'État', 'À traiter'], TOOL_NAMES.map(([id, name]) => { const b = toolBadge(s, id, p, o.date, o.money); return [`${id} ${name}`, b.text, b.n ? String(b.n) : '']; }), [0.25, 0.63, 0.12], {
+    size: 9.5, highlight: i => (toolBadge(s, TOOL_NAMES[i][0], p, o.date, o.money).tone === 'alert' ? [254, 242, 242] : null),
   });
   w.heading('Décisions de la réunion');
   ['', '', ''].forEach((_, i) => w.para(`${i + 1}. ......................................................................................................................`, 10.5, { gap: 10 }));

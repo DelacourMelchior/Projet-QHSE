@@ -1,11 +1,15 @@
-// Tool 2.1 "Devis": 5 locks checked with the technical manager, a margin checked against the floor,
-// 3 visas above the threshold, then the follow-up until won or lost. Costs and margins are reserved to management.
+// Tool 2.1 "Devis": 5 locks checked with the technical manager, a margin checked against the floor and a price ladder (target price,
+// floor, complete cost, variable cost, largest discount), 3 visas above the threshold, then the follow-up until won or lost.
+// Costs and margins are reserved to management: the team only sees the largest discount it may give.
 import { useEffect, useState } from 'react';
 import { Check, FileDown, Lightbulb, Plus, Printer, Send, Trash2 } from 'lucide-react';
 import type { Quote, QuoteCost, State } from '../../domain/types';
 import {
-  FOLLOW_DAYS, forecast, LOCK_STATE, LOCKS, LOST_CATEGORIES, lostStats, needsVisas, newQuote, QUOTE_STATE, quoteCost, quoteFullCost, quoteInsights, quoteIssues, quoteMargin, quoteState, quoteStats,
+  FOLLOW_DAYS, forecast, LOCK_STATE, LOCKS, LOST_CATEGORIES, lostStats, needsVisas, newQuote, priceLadder, QUOTE_STATE, quoteCost, quoteFullCost, quoteInsights, quoteHourMargin, quoteIssues, quoteMargin, quoteState, quoteStats,
 } from '../../domain/commercial';
+import { variableRate } from '../../domain/hourly';
+import { chartModel, hourValues } from '../../domain/charter';
+import { PriceLadder } from './PriceLadder';
 import { parseNumber } from '../../domain/numbers';
 import { PasteImport } from '../PasteImport';
 import { applyCommercialExample } from '../../domain/commercialExamples';
@@ -74,7 +78,7 @@ export function Devis({ focus, clearFocus }: ScreenProps) {
                   lead={<span className="w-[92px] shrink-0 font-mono text-[11px] font-semibold text-slate-700">{q.ref}</span>}
                   title={`${q.client || 'Client à saisir'}${q.object ? ` · ${q.object}` : ''}`}
                   sub={st === 'draft' ? quoteIssues(q, state.params, money)[0] : st === 'lost' ? [q.lostCategory ? LOST_CATEGORIES[q.lostCategory] : '', q.lostReason].filter(Boolean).join(' : ') : [q.weeks ? `${q.weeks} semaine(s)` : '', q.sentAt ? `envoyé le ${frDate(q.sentAt)}` : '', st === 'won' && !q.depositReceived ? 'acompte non encaissé' : ''].filter(Boolean).join(' · ')}
-                  right={<><span className="block font-mono font-semibold text-slate-800">{formatValue(q.amount, '€')}</span>{m ? <span className={m.pct < state.params.marginFloorPct ? 'font-semibold text-red-700' : ''}>marge {Math.round(m.pct)} %</span> : frDate(q.date)}</>}
+                  right={<><span className="block font-mono font-semibold text-slate-800">{formatValue(q.amount, '€')}</span>{m ? <span className={m.pct < state.params.marginFloorPct ? 'font-semibold text-red-700' : ''}>marge {Math.round(m.pct)} %</span> : q.maxDiscountPct != null ? `remise max ${formatValue(q.maxDiscountPct, '%')}` : frDate(q.date)}</>}
                   badge={<StatusBadge level={QUOTE_STATE[st].tone} text={QUOTE_STATE[st].label} />} />
               );
             })}
@@ -124,6 +128,9 @@ function QuoteSheet({ initial, onClose }: { initial: Quote; onClose(): void }) {
   const st = quoteState(q, p, new Date(), money);
   const m = quoteMargin(q, p);
   const total = quoteCost(q, p);
+  // the margin aimed at is the decision of the charter (1.6), else the margin of the accounts
+  const model = money ? chartModel(state) : null, variableHourly = variableRate(state.settings.hourly, cost.rate || '');
+  const ladder = money ? priceLadder(q, p, model?.marginPct ?? state.settings.netMarginPct, variableHourly) : null;
   const today = isoDate(new Date());
   // in team view the costs are neither shown nor overwritten
   const commit = (x: Quote) => update(d => { d.quotes[x.id] = money ? x : { ...x, cost: d.quotes[x.id]?.cost }; });
@@ -199,7 +206,12 @@ function QuoteSheet({ initial, onClose }: { initial: Quote; onClose(): void }) {
 
         <section className="space-y-2">
           <SubTitle>3. Marge</SubTitle>
-          {!money ? <p className="text-[11px] text-slate-500">Coûts et marge réservés à la direction.</p> : (
+          {!money ? (
+            <>
+              <p className="text-[11px] text-slate-500">Coûts et marge réservés à la direction.</p>
+              {q.maxDiscountPct != null && !!q.amount && <p className="rounded-lg bg-emerald-50 px-3 py-2 text-[11px] text-emerald-900">Remise maximale accordée par la direction : <strong>{formatValue(q.maxDiscountPct, '%')}</strong>, soit un prix minimum de <strong className="font-mono">{formatValue(q.amount * (1 - q.maxDiscountPct / 100), '€')}</strong>.</p>}
+            </>
+          ) : (
             <>
               <label className="flex items-center gap-2 text-[11px] text-slate-700"><input type="checkbox" checked={express} onChange={e => { setExpress(e.target.checked); if (e.target.checked) setCost({ material: null, hours: null, subcontract: null, other: total }); }} />Contrôle express : je saisis seulement le coût de revient total calculé par mon logiciel de devis</label>
               {express ? (
@@ -225,6 +237,9 @@ function QuoteSheet({ initial, onClose }: { initial: Quote; onClose(): void }) {
               {m && m.pct < p.marginFloorPct && (
                 <Field label="Dérogation de la direction (qui, pourquoi)"><input className={inputCls} value={q.derogation} placeholder="Ex. : Jean-Marc, client stratégique, première commande" onChange={e => set({ derogation: e.target.value })} /></Field>
               )}
+              {ladder && <PriceLadder q={q} ladder={ladder} p={p} targetPct={model?.marginPct ?? state.settings.netMarginPct} machines={!!state.settings.hourly?.stations.length}
+                hourMargin={quoteHourMargin(q, variableHourly)} hv={hourValues(state, model)}
+                onPrice={v => set({ amount: v })} onDiscount={v => set({ maxDiscountPct: v === null ? null : Math.max(0, Math.min(100, v)) })} />}
             </>
           )}
         </section>

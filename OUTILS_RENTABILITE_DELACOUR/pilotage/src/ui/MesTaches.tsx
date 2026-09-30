@@ -30,7 +30,7 @@ export function MesTaches({ nav }: { nav: Nav }) {
   return (
     <div className="space-y-4">
       <Card className="space-y-3 p-3 sm:p-4">
-        <ToolHeader title="Mes tâches" text="Tout ce qu'il y a à faire dans les 19 outils, par échéance : actions, rappels clients, décisions du bac rouge, tests, contrôles, relances.">
+        <ToolHeader title="Mes tâches" text="Tout ce qu'il y a à faire dans les 22 outils, par échéance : actions, rappels clients, décisions du bac rouge, tests, contrôles, relances.">
           <select value={who} onChange={e => setWho(e.target.value)} aria-label="Personne" className="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs">
             <option value="">Non attribué</option>
             <option value="*">Toute l'équipe</option>

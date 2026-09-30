@@ -28,7 +28,7 @@ export function Home({ nav }: { nav: Nav }) {
           <h2 className="flex items-baseline gap-2 text-sm font-bold text-slate-900"><span className="rounded bg-delacour-primary px-1.5 py-0.5 font-mono text-[11px] text-white">{p.key}</span>{p.name}</h2>
           <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
             {toolsOf(p.key).map(t => {
-              const st = toolBadge(state, t.id, month);
+              const st = toolBadge(state, t.id, month, new Date(), !teamView);
               return (
                 <li key={t.id}>
                   <button type="button" onClick={() => nav.tool(t.id)} className="flex h-full w-full flex-col gap-1.5 rounded-lg border border-slate-200 p-2.5 text-left transition hover:border-delacour-gold hover:bg-slate-50">

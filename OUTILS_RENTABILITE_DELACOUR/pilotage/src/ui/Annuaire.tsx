@@ -2,6 +2,7 @@
 // Two views: "Organigramme" (the company and each outside organisation, as trees, edited by drag and drop) and "Liste".
 // The reflex cards of the Plans B (tool 1.2) take their contacts and chains from here.
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { AlertTriangle, CheckCircle2, HelpCircle, Contact2, CreditCard, Download, Mail, Phone, Pin, Plus, Printer, Search, Trash2, UserRound, Users, MoreHorizontal } from 'lucide-react';
 import type { Contact, ContactCategory, Org, State } from '../domain/types';
 import { CATEGORIES, CONTRACTS, orgNames, orgOf, candidates, managersOf, orgKey, staffInfo, syncStaff, categoryLabel, chainIssues, chainOf, contactLabel, deputiesFromPowers, duplicates, isUnder, orgGroups, orgTree, pendingOf, telOf,  toCheck, vcardOf, vitalContacts, type OrgNode } from '../domain/contacts';
@@ -599,7 +600,8 @@ function OrgCard({ c, ctx, pending, team, folded }: { c: Contact; ctx: TreeCtx; 
           <div className="flex items-start gap-1.5">
             <dt className="mt-px shrink-0 text-slate-400"><Users size={12} aria-label={away ? 'Remplacé par' : 'Si absent'} /></dt>
             <dd className={`min-w-0 break-words ${away ? 'font-semibold text-slate-900' : absent ? 'text-slate-700' : 'text-amber-800'}`}>
-              <span className="text-slate-500">{away ? 'Remplacé par' : 'Si absent'} :</span> {absent || 'personne'}
+              <span className="text-slate-500">{away ? 'Remplacé par' : 'Si absent'} :</span>{' '}
+              {backup ? <BackupLink c={backup} label={absent} onOpen={ctx.onOpen} /> : absent || 'personne'}
             </dd>
           </div>
         </dl>
@@ -612,6 +614,41 @@ function OrgCard({ c, ctx, pending, team, folded }: { c: Contact; ctx: TreeCtx; 
       )}
     </div>
   );
+}
+
+// The backup on a card opens a small box with the backup's details: call or write without leaving the chart
+function BackupLink({ c, label, onOpen }: { c: Contact; label: string; onOpen(id: string): void }) {
+  const [at, setAt] = useState<{ left: number; top: number } | null>(null);
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!at) return;
+    const close = (e: Event) => { const n = e.target as Node | null; if (!(n && box.current?.contains(n))) setAt(null); };
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setAt(null); };
+    document.addEventListener('mousedown', close);
+    window.addEventListener('scroll', close, true);
+    window.addEventListener('keydown', esc);
+    return () => { document.removeEventListener('mousedown', close); window.removeEventListener('scroll', close, true); window.removeEventListener('keydown', esc); };
+  }, [at]);
+  const open = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    setAt(at ? null : { left: Math.max(8, Math.min(r.left, window.innerWidth - 256)), top: r.bottom + 4 });
+  };
+  return <>
+    <button type="button" onClick={open} aria-expanded={!!at} aria-label={`${label} : voir ses coordonnées`} title="Voir ses coordonnées" className="text-left font-semibold text-delacour-primary underline decoration-dotted underline-offset-2 hover:decoration-solid">{label}</button>
+    {at && createPortal(
+      <div ref={box} role="dialog" aria-label={`Coordonnées de ${contactLabel(c)}`} style={{ left: at.left, top: at.top }}
+        className="fixed z-50 w-60 space-y-1 rounded-lg border border-slate-200 bg-white p-2.5 text-left text-[11px] text-slate-800 shadow-xl">
+        <p className="text-xs font-bold text-slate-900">{c.name || contactLabel(c)}</p>
+        {(c.role || (c.category !== 'interne' && c.company)) && <p className="text-slate-600">{[c.role, c.category !== 'interne' ? c.company : ''].filter(Boolean).join(' · ')}</p>}
+        {c.phone ? <a href={`tel:${telOf(c.phone)}`} className="flex items-center gap-1.5 font-mono text-xs font-bold text-delacour-primary hover:underline"><Phone size={12} />{c.phone}</a> : <p className="text-slate-400">Pas de numéro</p>}
+        {c.phone2 && <a href={`tel:${telOf(c.phone2)}`} className="flex items-center gap-1.5 font-mono text-delacour-primary hover:underline"><Phone size={12} />{c.phone2}</a>}
+        {c.email && <a href={`mailto:${c.email}`} className="flex items-start gap-1.5 text-delacour-primary [overflow-wrap:anywhere] hover:underline"><Mail size={12} className="mt-px shrink-0" />{c.email}</a>}
+        {(c.always || c.hours) && <p className="text-slate-600">{c.always ? 'Joignable 24 h/24' : c.hours}</p>}
+        <button type="button" className={`${link} pt-0.5 text-[11px]`} onClick={() => { setAt(null); onOpen(c.id); }}>Ouvrir sa fiche</button>
+      </div>,
+      document.body,
+    )}
+  </>;
 }
 
 // The sheet of an outside organisation: its switchboard and details, then its people

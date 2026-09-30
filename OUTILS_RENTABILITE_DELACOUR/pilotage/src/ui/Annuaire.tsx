@@ -232,9 +232,17 @@ export function Annuaire({ focus = '', nav }: { focus?: string; nav?: Nav }) {
                 return (
                   <section key={cat.key} className="space-y-1.5">
                     <h3 className="text-xs font-bold text-slate-900">{cat.label} <span className="font-normal text-slate-500">{rows.length}</span></h3>
-                    <ul className="divide-y divide-slate-100 rounded-lg border border-slate-200">{rows.map(c => (
-                      <Line key={c.id} c={c} focused={focus === c.id} dup={dupIds.has(c.id)} uses={usedBy(c.id).length} onOpen={() => openSheet(c.id)} verify={() => verify(c.id)} />
-                    ))}</ul>
+                    <div className="overflow-x-auto rounded-lg border border-slate-200">
+                      <table className="w-full min-w-[980px] table-fixed border-collapse text-left text-[11px]">
+                        <colgroup><col className="w-[17%]" /><col className="w-[17%]" /><col className="w-[14%]" /><col className="w-[11%]" /><col className="w-[17%]" /><col className="w-[10%]" /><col className="w-[8%]" /><col className="w-[6%]" /></colgroup>
+                        <thead className="bg-slate-50 text-slate-500">
+                          <tr>{['Nom', 'Fonction', 'Organisation', 'Téléphone', 'E-mail', 'Horaires', 'Vérifié', 'Plans B'].map((h, i) => <th key={i} scope="col" className="px-2.5 py-1.5 font-semibold">{h}</th>)}</tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">{rows.map(c => (
+                          <Line key={c.id} c={c} focused={focus === c.id} dup={dupIds.has(c.id)} uses={usedBy(c.id).length} onOpen={() => openSheet(c.id)} verify={() => verify(c.id)} />
+                        ))}</tbody>
+                      </table>
+                    </div>
                   </section>
                 );
               })}
@@ -330,26 +338,34 @@ function Checks({ state, dups, onShow }: { state: State; dups: Contact[][]; onSh
   );
 }
 
-// One line per contact: who, what for, the number to tap, the checks; the sheet opens on a click (light with 100 contacts)
+// One row per contact, one column per information; the sheet opens on the name (light with 100 contacts)
 function Line({ c, focused, dup, uses, onOpen, verify }: { c: Contact; focused: boolean; dup: boolean; uses: number; onOpen(): void; verify(): void }) {
   const stale = toCheck(c);
+  const cell = 'px-2.5 py-1.5 align-top break-words';
   return (
-    <li id={`ct-${c.id}`} className={`flex flex-wrap items-center gap-x-3 gap-y-1 px-2.5 py-2 text-[11px] ${focused ? 'bg-amber-50' : ''}`}>
-      <button type="button" onClick={onOpen} className="min-w-[12rem] flex-1 text-left">
-        <span className="block text-xs font-semibold text-slate-900 hover:underline">{c.vacant ? `Poste à pourvoir${c.role ? ` : ${c.role}` : ''}` : contactLabel(c)}</span>
-        <span className="block text-slate-600">{[c.role, c.always ? '24 h/24' : c.hours, c.reference && `donner : ${c.reference}`].filter(Boolean).join(' · ')}</span>
-      </button>
-      <span className="flex flex-wrap items-center gap-1">
-        {c.vital && <span className="rounded bg-red-700 px-1 font-semibold leading-4 text-white">Vital</span>}
-        {dup && <span className="rounded bg-amber-100 px-1 font-semibold leading-4 text-amber-900">Doublon</span>}
-        {uses > 0 && <span className="rounded bg-slate-100 px-1 leading-4 text-slate-700">{uses} Plan{uses > 1 ? 's' : ''} B</span>}
-      </span>
-      {c.phone ? <a href={`tel:${telOf(c.phone)}`} className="whitespace-nowrap font-mono text-xs font-bold text-delacour-primary hover:underline">{c.phone}</a> : <span className="text-slate-400">sans numéro</span>}
-      {c.email && <a href={`mailto:${c.email}`} className="text-delacour-primary hover:underline" aria-label={`Écrire à ${contactLabel(c)}`}><Mail size={13} /></a>}
-      <button type="button" onClick={verify} className={`inline-flex items-center gap-1 ${stale ? 'font-semibold text-amber-800' : 'text-slate-500'} hover:underline`} title="Le numéro répond : vérifié aujourd'hui">
-        <CheckCircle2 size={13} />{c.verifiedAt ? frDate(c.verifiedAt) : 'jamais vérifié'}
-      </button>
-    </li>
+    <tr id={`ct-${c.id}`} className={focused ? 'bg-amber-50' : 'hover:bg-slate-50'}>
+      <td className={cell}>
+        <button type="button" onClick={onOpen} className="text-left text-xs font-semibold text-slate-900 hover:underline">{c.vacant ? 'Poste à pourvoir' : c.name || (c.category === 'interne' ? 'Sans nom' : c.company) || 'Sans nom'}</button>
+        <span className="mt-0.5 flex flex-wrap gap-1">
+          {c.vital && <span className="rounded bg-red-700 px-1 font-semibold leading-4 text-white">Vital</span>}
+          {dup && <span className="rounded bg-amber-100 px-1 font-semibold leading-4 text-amber-900">Doublon</span>}
+        </span>
+      </td>
+      <td className={`${cell} text-slate-700`}>{c.role}</td>
+      <td className={`${cell} text-slate-700`}>{c.category === 'interne' ? '' : c.company}</td>
+      <td className={cell}>
+        {c.phone ? <a href={`tel:${telOf(c.phone)}`} className="whitespace-nowrap font-mono text-xs font-bold text-delacour-primary hover:underline">{c.phone}</a> : <span className="text-slate-400">—</span>}
+        {c.phone2 && <a href={`tel:${telOf(c.phone2)}`} className="block whitespace-nowrap font-mono text-delacour-primary hover:underline">{c.phone2}</a>}
+      </td>
+      <td className={`${cell} [overflow-wrap:anywhere]`}>{c.email ? <a href={`mailto:${c.email}`} className="text-delacour-primary hover:underline">{c.email.split('@')[0]}@<wbr />{c.email.split('@').slice(1).join('@')}</a> : <span className="text-slate-400">—</span>}</td>
+      <td className={`${cell} text-slate-700`}>{c.always ? '24 h/24' : c.hours}</td>
+      <td className={cell}>
+        <button type="button" onClick={verify} className={`inline-flex items-center gap-1 text-left ${stale ? 'font-semibold text-amber-800' : 'text-slate-600'} hover:underline`} title="Le numéro répond : vérifié aujourd'hui">
+          <CheckCircle2 size={13} className="shrink-0" />{c.verifiedAt ? frDate(c.verifiedAt) : 'jamais'}
+        </button>
+      </td>
+      <td className={`${cell} text-slate-600`} title={uses ? `Utilisé par ${uses} Plan${uses > 1 ? 's' : ''} B` : undefined}>{uses > 0 ? uses : ''}</td>
+    </tr>
   );
 }
 

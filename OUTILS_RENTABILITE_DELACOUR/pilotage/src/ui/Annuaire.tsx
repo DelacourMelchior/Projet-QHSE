@@ -3,7 +3,7 @@
 // The reflex cards of the Plans B (tool 1.2) take their contacts and chains from here.
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { AlertTriangle, CheckCircle2, HelpCircle, Contact2, CreditCard, Download, Mail, Phone, Pin, Plus, Printer, Search, Trash2, UserRound, Users, MoreHorizontal } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, HelpCircle, Contact2, CreditCard, Download, Mail, Phone, Pin, Plus, Printer, Search, Trash2, UserRound, Users, MoreHorizontal, Copy } from 'lucide-react';
 import type { Contact, ContactCategory, Org, State } from '../domain/types';
 import { CATEGORIES, CONTRACTS, orgNames, orgOf, candidates, managersOf, orgKey, staffInfo, syncStaff, categoryLabel, chainIssues, chainOf, contactLabel, deputiesFromPowers, duplicates, isUnder, orgGroups, orgTree, pendingOf, telOf,  toCheck, vcardOf, vitalContacts, type OrgNode } from '../domain/contacts';
 import { pocketCardPdf } from '../domain/directoryPdf';
@@ -358,7 +358,7 @@ function Line({ c, focused, dup, onOpen, verify }: { c: Contact; focused: boolea
         {c.phone ? <a href={`tel:${telOf(c.phone)}`} className="whitespace-nowrap font-mono text-xs font-bold text-delacour-primary hover:underline">{c.phone}</a> : <span className="text-slate-400">—</span>}
         {c.phone2 && <a href={`tel:${telOf(c.phone2)}`} className="block whitespace-nowrap font-mono text-delacour-primary hover:underline">{c.phone2}</a>}
       </td>
-      <td className={`${cell} [overflow-wrap:anywhere]`}>{c.email ? <a href={`mailto:${c.email}`} className="text-delacour-primary hover:underline">{c.email.split('@')[0]}@<wbr />{c.email.split('@').slice(1).join('@')}</a> : <span className="text-slate-400">—</span>}</td>
+      <td className={cell}>{c.email ? <CopyEmail email={c.email} /> : <span className="text-slate-400">—</span>}</td>
       <td className={`${cell} text-slate-700`}>{c.always ? '24 h/24' : c.hours}</td>
       <td className={cell}>
         <button type="button" onClick={verify} className={`inline-flex items-center gap-1 text-left ${stale ? 'font-semibold text-amber-800' : 'text-slate-600'} hover:underline`} title="Le numéro répond : vérifié aujourd'hui">
@@ -594,7 +594,7 @@ function OrgCard({ c, ctx, pending, team, folded }: { c: Contact; ctx: TreeCtx; 
           {c.email && (
             <div className="flex items-start gap-1.5">
               <dt className="mt-px shrink-0 text-slate-400"><Mail size={12} aria-label="E-mail" /></dt>
-              <dd className="min-w-0"><a href={`mailto:${c.email}`} className="text-delacour-primary [overflow-wrap:anywhere] hover:underline">{c.email.split('@')[0]}@<wbr />{c.email.split('@').slice(1).join('@')}</a></dd>
+              <dd className="min-w-0"><CopyEmail email={c.email} /></dd>
             </div>
           )}
           <div className="flex items-start gap-1.5">
@@ -613,6 +613,28 @@ function OrgCard({ c, ctx, pending, team, folded }: { c: Contact; ctx: TreeCtx; 
         </button>
       )}
     </div>
+  );
+}
+
+// An e-mail address is copied in one click (to paste it in any mail software); "Copié" confirms it for a moment
+function CopyEmail({ email, label }: { email: string; label?: string }) {
+  const [done, setDone] = useState(false);
+  const copy = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try { await navigator.clipboard.writeText(email); } catch {
+      // older browsers, or a page opened from a file: copy through a hidden text field
+      const ta = Object.assign(document.createElement('textarea'), { value: email });
+      document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+    }
+    setDone(true);
+    setTimeout(() => setDone(false), 1500);
+  };
+  const [user, ...domain] = email.split('@');
+  return (
+    <button type="button" onClick={copy} title="Copier l'adresse" aria-label={`Copier l'adresse ${email}`}
+      className="inline-flex max-w-full items-start gap-1 text-left text-delacour-primary [overflow-wrap:anywhere] hover:underline">
+      {done ? <span className="font-semibold text-emerald-700">Copié</span> : label ? <><Copy size={13} className="mt-px shrink-0" />{label}</> : <span>{user}@<wbr />{domain.join('@')}</span>}
+    </button>
   );
 }
 
@@ -642,7 +664,7 @@ function BackupLink({ c, label, onOpen }: { c: Contact; label: string; onOpen(id
         {(c.role || (c.category !== 'interne' && c.company)) && <p className="text-slate-600">{[c.role, c.category !== 'interne' ? c.company : ''].filter(Boolean).join(' · ')}</p>}
         {c.phone ? <a href={`tel:${telOf(c.phone)}`} className="flex items-center gap-1.5 font-mono text-xs font-bold text-delacour-primary hover:underline"><Phone size={12} />{c.phone}</a> : <p className="text-slate-400">Pas de numéro</p>}
         {c.phone2 && <a href={`tel:${telOf(c.phone2)}`} className="flex items-center gap-1.5 font-mono text-delacour-primary hover:underline"><Phone size={12} />{c.phone2}</a>}
-        {c.email && <a href={`mailto:${c.email}`} className="flex items-start gap-1.5 text-delacour-primary [overflow-wrap:anywhere] hover:underline"><Mail size={12} className="mt-px shrink-0" />{c.email}</a>}
+        {c.email && <p className="flex items-start gap-1.5"><Mail size={12} className="mt-px shrink-0 text-delacour-primary" /><CopyEmail email={c.email} /></p>}
         {(c.always || c.hours) && <p className="text-slate-600">{c.always ? 'Joignable 24 h/24' : c.hours}</p>}
         <button type="button" className={`${link} pt-0.5 text-[11px]`} onClick={() => { setAt(null); onOpen(c.id); }}>Ouvrir sa fiche</button>
       </div>,
@@ -761,7 +783,7 @@ function ContactSheet({ c, state, teamView, move, nav, onClose, set, verify, rem
           <span>{c.verifiedAt ? `Vérifié le ${frDate(c.verifiedAt)}${c.verifiedBy ? ` par ${c.verifiedBy}` : ''}` : 'Jamais vérifié'}</span>
           <button type="button" className={link} onClick={verify}><CheckCircle2 size={13} />Vérifié aujourd'hui</button>
           {c.phone && <a href={`tel:${telOf(c.phone)}`} className={link}><Phone size={13} />Appeler</a>}
-          {c.email && <a href={`mailto:${c.email}`} className={link}><Mail size={13} />Écrire</a>}
+          {c.email && <CopyEmail email={c.email} label="Copier l'e-mail" />}
         </div>
         {inside && !c.vacant && (
           <div className="space-y-0.5 rounded-lg bg-slate-50 px-2.5 py-2 text-[11px] text-slate-700 sm:col-span-2">

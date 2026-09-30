@@ -2,7 +2,7 @@
 // Two views: "Organigramme" (the company and each outside organisation, as trees, edited by drag and drop) and "Liste".
 // The reflex cards of the Plans B (tool 1.2) take their contacts and chains from here.
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { AlertTriangle, CheckCircle2, HelpCircle, Contact2, CreditCard, Download, Mail, Phone, Pin, Plus, Printer, Search, Trash2, UserRound, MoreHorizontal } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, HelpCircle, Contact2, CreditCard, Download, Mail, Phone, Pin, Plus, Printer, Search, Trash2, UserRound, Users, MoreHorizontal } from 'lucide-react';
 import type { Contact, ContactCategory, Org, State } from '../domain/types';
 import { CATEGORIES, CONTRACTS, orgNames, orgOf, candidates, managersOf, orgKey, staffInfo, syncStaff, categoryLabel, chainIssues, chainOf, contactLabel, deputiesFromPowers, duplicates, isUnder, orgGroups, orgTree, pendingOf, telOf,  toCheck, vcardOf, vitalContacts, type OrgNode } from '../domain/contacts';
 import { pocketCardPdf } from '../domain/directoryPdf';
@@ -442,7 +442,7 @@ function OrgView({ state, cat, setCat, onEdit, onMove, onAdd, onLink, setDirecto
       {pending.length > 0 && (
         <p className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-[11px] text-slate-700 print:hidden">
           <strong>À rattacher :</strong>{' '}
-          {pending.map((c, i) => <span key={c.id}>{i ? ', ' : ''}<button type="button" className="font-semibold underline decoration-dotted" onClick={() => onMove(c.id)}>{c.name || contactLabel(c)}</button></span>)}
+          {pending.map((c, i) => <span key={c.id}>{i ? ', ' : ''}<button type="button" className="font-semibold underline decoration-dotted" onClick={() => onMove(c.id)}>{c.name || (c.category === 'interne' ? 'Sans nom' : contactLabel(c))}</button></span>)}
         </p>
       )}
       {drag && (
@@ -566,7 +566,7 @@ function OrgCard({ c, ctx, pending, team, folded }: { c: Contact; ctx: TreeCtx; 
     <div id={`org-${c.id}`} data-card draggable onDragStart={e => { e.dataTransfer.setData('text/plain', c.id); e.dataTransfer.effectAllowed = 'move'; ctx.setDrag(c.id); }} onDragEnd={() => { ctx.setDrag(''); setOver(false); }}
       onDragOver={e => { if (ctx.drag && ctx.drag !== c.id) { e.preventDefault(); setOver(true); } }} onDragLeave={() => setOver(false)}
       onDrop={e => { e.preventDefault(); setOver(false); if (ctx.drag && ctx.drag !== c.id) ctx.onLink(ctx.drag, c.id); ctx.setDrag(''); }}
-      className={`group relative flex min-h-[var(--card-h,10rem)] w-44 cursor-grab flex-col items-center gap-0.5 rounded-md border px-2 pb-3 pt-1.5 text-center text-[11px] shadow-sm active:cursor-grabbing ${c.vacant ? 'border-dashed border-slate-400 bg-slate-50' : away ? 'border-slate-300 bg-slate-100' : 'border-slate-300 bg-white'} ${over || ctx.found.has(c.id) ? 'ring-2 ring-delacour-gold' : ''} ${ctx.drag === c.id ? 'opacity-40' : ''}`}>
+      className={`group relative flex min-h-[var(--card-h,10rem)] w-52 cursor-grab flex-col items-center gap-1 rounded-lg border px-2.5 pb-3.5 pt-1.5 text-center text-[11px] shadow-sm active:cursor-grabbing ${c.vacant ? 'border-dashed border-slate-400 bg-slate-50' : away ? 'border-slate-300 bg-slate-100' : 'border-slate-300 bg-white'} ${over || ctx.found.has(c.id) ? 'ring-2 ring-delacour-gold' : ''} ${ctx.drag === c.id ? 'opacity-40' : ''}`}>
       <div className="flex min-h-[1rem] w-full flex-wrap justify-center gap-1 px-4">
         {c.vital && <span className={`${badge} bg-red-700 text-white`}>Vital</span>}
         {pending && <span className={`${badge} border border-dashed border-slate-500 text-slate-700`}>À rattacher</span>}
@@ -576,18 +576,34 @@ function OrgCard({ c, ctx, pending, team, folded }: { c: Contact; ctx: TreeCtx; 
         onClick={() => ctx.onAdd({ category: c.category, company: c.company, reportsTo: c.id })}
         className="absolute right-0.5 top-0.5 rounded p-0.5 text-slate-500 opacity-0 hover:bg-slate-100 hover:text-delacour-primary focus:opacity-100 group-hover:opacity-100 print:hidden [@media(hover:none)]:opacity-100"><Plus size={14} /></button>
       <button type="button" onClick={() => ctx.onOpen(c.id)} className="flex w-full flex-col items-center gap-1" aria-label={`Ouvrir la fiche de ${contactLabel(c)}`}>
-        <UserRound size={26} strokeWidth={1.6} className={c.vacant ? 'text-slate-400' : 'text-slate-500'} aria-hidden />
-        <span className={`w-full break-words rounded-xl px-2 py-0.5 font-bold leading-tight ${c.vacant ? 'border border-dashed border-slate-500 bg-white text-slate-700' : 'bg-delacour-primary text-white'}`}>{c.vacant ? 'Poste à pourvoir' : c.name || (c.category === 'interne' ? 'Sans nom' : c.company) || 'Sans nom'}</span>
-        {c.role && <span className="w-full break-words leading-tight text-slate-700">{c.role}</span>}
+        <UserRound size={24} strokeWidth={1.6} className={c.vacant ? 'text-slate-400' : 'text-slate-500'} aria-hidden />
+        <span className={`w-full break-words rounded-xl px-2 py-0.5 text-xs font-bold leading-tight ${c.vacant ? 'border border-dashed border-slate-500 bg-white text-slate-700' : 'bg-delacour-primary text-white'}`}>{c.vacant ? 'Poste à pourvoir' : c.name || (c.category === 'interne' ? 'Sans nom' : c.company) || 'Sans nom'}</span>
+        {c.role && <span className="w-full break-words font-medium leading-tight text-slate-700">{c.role}</span>}
       </button>
-      {c.phone && (
-        <span className="inline-flex items-center gap-1">
-          <a href={`tel:${telOf(c.phone)}`} className="whitespace-nowrap font-mono font-bold text-slate-900 hover:underline">{c.phone}</a>
-          {toCheck(c) && <span className="h-2 w-2 rounded-full bg-amber-500" title="Numéro à vérifier" aria-label="Numéro à vérifier" />}
-        </span>
+      {/* the details, one per line, each with its icon, aligned on the left */}
+      {!c.vacant && (
+        <dl className="mt-0.5 w-full space-y-1 border-t border-slate-100 pt-1.5 text-left leading-tight">
+          <div className="flex items-start gap-1.5">
+            <dt className="mt-px shrink-0 text-slate-400"><Phone size={12} aria-label="Téléphone" /></dt>
+            <dd className="flex min-w-0 items-center gap-1">
+              {c.phone ? <a href={`tel:${telOf(c.phone)}`} className="whitespace-nowrap font-mono font-bold text-slate-900 hover:underline">{c.phone}</a> : <span className="text-slate-400">pas de numéro</span>}
+              {c.phone && toCheck(c) && <span className="h-2 w-2 shrink-0 rounded-full bg-amber-500" title="Numéro à vérifier" aria-label="Numéro à vérifier" />}
+            </dd>
+          </div>
+          {c.email && (
+            <div className="flex items-start gap-1.5">
+              <dt className="mt-px shrink-0 text-slate-400"><Mail size={12} aria-label="E-mail" /></dt>
+              <dd className="min-w-0"><a href={`mailto:${c.email}`} className="text-delacour-primary [overflow-wrap:anywhere] hover:underline">{c.email.split('@')[0]}@<wbr />{c.email.split('@').slice(1).join('@')}</a></dd>
+            </div>
+          )}
+          <div className="flex items-start gap-1.5">
+            <dt className="mt-px shrink-0 text-slate-400"><Users size={12} aria-label={away ? 'Remplacé par' : 'Si absent'} /></dt>
+            <dd className={`min-w-0 break-words ${away ? 'font-semibold text-slate-900' : absent ? 'text-slate-700' : 'text-amber-800'}`}>
+              <span className="text-slate-500">{away ? 'Remplacé par' : 'Si absent'} :</span> {absent || 'personne'}
+            </dd>
+          </div>
+        </dl>
       )}
-      {c.email && <a href={`mailto:${c.email}`} className="w-full leading-tight text-delacour-primary [overflow-wrap:anywhere] hover:underline">{c.email.split('@')[0]}@<wbr />{c.email.split('@').slice(1).join('@')}</a>}
-      {!c.vacant && <span className={`w-full break-words leading-tight ${away ? 'font-semibold text-slate-900' : absent ? 'text-slate-600' : 'text-amber-800'}`}>{away ? 'Remplacé par' : 'Si absent'} : {absent || 'personne'}</span>}
       {team > 0 && (
         <button type="button" aria-expanded={!folded} aria-label={folded ? `Déplier l'équipe (${team})` : 'Replier l\'équipe'} title={folded ? 'Déplier l\'équipe' : 'Replier l\'équipe'} onClick={() => ctx.toggle(c.id)}
           className="absolute -bottom-2.5 left-1/2 z-10 min-w-[1.5rem] -translate-x-1/2 rounded-full border border-slate-400 bg-white px-1.5 text-[11px] font-bold leading-4 text-slate-700 hover:border-delacour-primary hover:text-delacour-primary print:hidden">

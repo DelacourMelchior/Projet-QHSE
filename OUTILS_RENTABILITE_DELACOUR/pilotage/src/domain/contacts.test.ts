@@ -170,3 +170,17 @@ describe('organisations', () => {
     expect(unflatten(m).orgs.org_demo_acier.reference).toBe('Compte client 10442');
   });
 });
+
+describe('e-mails de l\'exemple', () => {
+  it('gives an e-mail to every example contact except the post to fill, and fills old example data on load', async () => {
+    const { normalize } = await import('./migrate');
+    const s = demoState(now);
+    expect(Object.values(s.contacts).filter(c => !c.vacant && !c.email).map(c => c.id)).toEqual([]);
+    const old = structuredClone(s);
+    old.contacts.ct_demo_fabien.email = '';
+    old.contacts.ct_mine = { id: 'ct_mine', category: 'client', name: 'Acheteur', role: '', company: 'Client Z', phone: '', email: '', always: false, verifiedAt: '' };
+    const n = normalize(old);
+    expect(n.contacts.ct_demo_fabien.email).toBe('fabien.t@entreprise.example');
+    expect(n.contacts.ct_mine.email).toBe('');
+  });
+});

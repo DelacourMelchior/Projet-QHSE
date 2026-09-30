@@ -86,6 +86,17 @@ export const EMAILS: Record<string, string> = {
   ct_demo_expert: 'contact@cabinet-comptable.example.com',
 };
 
+// Fictitious e-mail of an example contact: prénom.initiale@entreprise.example inside, fonction@organisation.example outside
+// (reserved .example domain: never a real address)
+const slug = (x: string) => x.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\(.*?\)/g, '').replace(/[^a-z0-9]+/g, '.').replace(/^\.|\.$/g, '');
+export function exampleEmail(c: Pick<Contact, 'name' | 'company' | 'category' | 'vacant'>): string {
+  if (c.vacant) return '';
+  const who = slug(c.name) || 'contact';
+  if (c.category === 'interne') return c.name ? `${who}@entreprise.example` : '';
+  const org = slug(c.company).replace(/\./g, '-');
+  return org ? `${who}@${org}.example` : '';
+}
+
 // Example directory (every category): used by the demo, and offered when the directory is empty
 export function exampleContacts(today = new Date()): Contact[] {
   const ago = (days: number) => isoDate(new Date(today.getFullYear(), today.getMonth(), today.getDate() - days));
@@ -281,11 +292,7 @@ export function exampleContacts(today = new Date()): Contact[] {
     ct_demo_hugo: { reportsTo: 'ct_demo_eric', backupId: 'ct_demo_nicolas', contract: 'cdd' },
     ct_demo_vacant_soudeur: { reportsTo: 'ct_demo_eric' },
   };
-  // everybody has an e-mail: prénom.initiale@entreprise.example inside, fonction@organisation.example outside
-  // (the emergency numbers excepted: 15, 18, 112 have no e-mail)
-  const slug = (x: string) => x.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\(.*?\)/g, '').replace(/[^a-z]+/g, '.').replace(/^\.|\.$/g, '');
-  const mailOf = (c: Contact) => (c.category === 'interne' ? `${slug(c.name)}@entreprise.example` : `${slug(c.name)}@${slug(c.company).replace(/\./g, '-')}.example`);
-  return list.map(c => ({ ...c, ...more[c.id], ...cascade[c.id] })).map(c => (c.name && !c.email && c.category !== 'secours' ? { ...c, email: mailOf(c) } : c));
+  return list.map(c => ({ ...c, ...more[c.id], ...cascade[c.id] })).map(c => (!c.email && exampleEmail(c) ? { ...c, email: exampleEmail(c) } : c));
 }
 
 // Records of the outside organisations of the example: switchboard, address, our reference there

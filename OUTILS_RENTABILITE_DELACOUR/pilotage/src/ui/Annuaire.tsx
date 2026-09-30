@@ -234,12 +234,12 @@ export function Annuaire({ focus = '', nav }: { focus?: string; nav?: Nav }) {
                     <h3 className="text-xs font-bold text-slate-900">{cat.label} <span className="font-normal text-slate-500">{rows.length}</span></h3>
                     <div className="overflow-x-auto rounded-lg border border-slate-200">
                       <table className="w-full min-w-[980px] table-fixed border-collapse text-left text-[11px]">
-                        <colgroup><col className="w-[17%]" /><col className="w-[17%]" /><col className="w-[14%]" /><col className="w-[11%]" /><col className="w-[17%]" /><col className="w-[10%]" /><col className="w-[8%]" /><col className="w-[6%]" /></colgroup>
+                        <colgroup><col className="w-[18%]" /><col className="w-[18%]" /><col className="w-[15%]" /><col className="w-[11%]" /><col className="w-[19%]" /><col className="w-[10%]" /><col className="w-[9%]" /></colgroup>
                         <thead className="bg-slate-50 text-slate-500">
-                          <tr>{['Nom', 'Fonction', 'Organisation', 'Téléphone', 'E-mail', 'Horaires', 'Vérifié', 'Plans B'].map((h, i) => <th key={i} scope="col" className="px-2.5 py-1.5 font-semibold">{h}</th>)}</tr>
+                          <tr>{['Nom', 'Fonction', 'Organisation', 'Téléphone', 'E-mail', 'Horaires', 'Vérifié'].map((h, i) => <th key={i} scope="col" className="px-2.5 py-1.5 font-semibold">{h}</th>)}</tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">{rows.map(c => (
-                          <Line key={c.id} c={c} focused={focus === c.id} dup={dupIds.has(c.id)} uses={usedBy(c.id).length} onOpen={() => openSheet(c.id)} verify={() => verify(c.id)} />
+                          <Line key={c.id} c={c} focused={focus === c.id} dup={dupIds.has(c.id)} onOpen={() => openSheet(c.id)} verify={() => verify(c.id)} />
                         ))}</tbody>
                       </table>
                     </div>
@@ -339,7 +339,7 @@ function Checks({ state, dups, onShow }: { state: State; dups: Contact[][]; onSh
 }
 
 // One row per contact, one column per information; the sheet opens on the name (light with 100 contacts)
-function Line({ c, focused, dup, uses, onOpen, verify }: { c: Contact; focused: boolean; dup: boolean; uses: number; onOpen(): void; verify(): void }) {
+function Line({ c, focused, dup, onOpen, verify }: { c: Contact; focused: boolean; dup: boolean; onOpen(): void; verify(): void }) {
   const stale = toCheck(c);
   const cell = 'px-2.5 py-1.5 align-top break-words';
   return (
@@ -364,7 +364,6 @@ function Line({ c, focused, dup, uses, onOpen, verify }: { c: Contact; focused: 
           <CheckCircle2 size={13} className="shrink-0" />{c.verifiedAt ? frDate(c.verifiedAt) : 'jamais'}
         </button>
       </td>
-      <td className={`${cell} text-slate-600`} title={uses ? `Utilisé par ${uses} Plan${uses > 1 ? 's' : ''} B` : undefined}>{uses > 0 ? uses : ''}</td>
     </tr>
   );
 }

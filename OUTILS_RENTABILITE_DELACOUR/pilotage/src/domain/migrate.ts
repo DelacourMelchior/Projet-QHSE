@@ -5,7 +5,7 @@ import type { Contact, Risk, Action, ActionStatus, Aggregation, Dim5M, Kpi, KpiR
 import { isoDate, parseDate, periodOf } from './periods';
 import { DEFAULT_SCALE, newRisk } from './risk';
 import { parseDuration } from './duration';
-import { EMAILS } from './riskTemplates';
+import { exampleEmail, EMAILS } from './riskTemplates';
 import { emptyTools } from './base';
 
 // Short stable hash (FNV-1a): the same old contact line gives the same id on every computer
@@ -136,7 +136,8 @@ export function normalize(s: State): State {
     r.maxOutage ??= null; r.activation ??= null; r.contactIds ||= []; r.notifyIds ||= []; r.tests ||= [];
     return [id, r as Risk];
   }));
-  Object.values(contacts).forEach(c => { c.category ||= 'autre'; c.email ??= EMAILS[c.id] || ''; });   // example contacts filled before e-mails existed
+  // example contacts filled before e-mails existed get their fictitious e-mail; the contacts typed by the company are left as they are
+  Object.values(contacts).forEach(c => { c.category ||= 'autre'; c.email ??= EMAILS[c.id] || ''; if (!c.email && c.id.startsWith('ct_demo_')) c.email = exampleEmail(c); });
   const tools = emptyTools();
   const withTools = Object.fromEntries(Object.entries(tools).map(([k, v]) => [k, (s as any)[k] ?? v])) as typeof tools;
   // checkpoints get an id, and past inspections remember which point each result belongs to

@@ -5,7 +5,7 @@ import { isoDate, parseDate } from './periods';
 // Message of a summary card
 export interface Insight { key: string; tone: 'good' | 'warn' | 'bad'; title: string; text: string }
 
-export const DEFAULT_PARAMS: Params = { hourlyRate: 55, marginFloorPct: 30, depositPct: 30, visaThreshold: 10000, overheadPct: 0, cnqTrigger: 500, variableMarginPct: 35 };
+export const DEFAULT_PARAMS: Params = { hourlyRate: 55, marginFloorPct: 30, depositPct: 30, visaThreshold: 10000, cnqTrigger: 500, businessHours: true };
 
 export const PROCESS_NAMES: Record<string, string> = {
   P1: 'Direction et pilotage',
@@ -18,11 +18,11 @@ export const PROCESS_IDS = Object.keys(PROCESS_NAMES);
 export const processLabel = (id: string) => (PROCESS_NAMES[id] ? `${id} · ${PROCESS_NAMES[id]}` : id || 'À qualifier');
 
 // The collections added by tools 2.1 to 5.4, empty
-export const emptyTools = (): Pick<State, 'params' | 'quotes' | 'changes' | 'complaints' | 'feedbacks' | 'suppliers' | 'debits' | 'sops'
-  | 'equipments' | 'deliveries' | 'powers' | 'envelope' | 'people' | 'skills' | 'newcomers' | 'ged' | 'chronos' | 'ncs' | 'analyses' | 'pokas' | 'logs' | 'orgs'> => ({
+export const emptyTools = (): Pick<State, 'params' | 'quotes' | 'complaints' | 'feedbacks' | 'suppliers' | 'debits' | 'sectors' | 'sops'
+  | 'equipments' | 'spares' | 'deliveries' | 'powers' | 'practices' | 'covers' | 'vaults' | 'vlogs' | 'envelope' | 'people' | 'skills' | 'newcomers' | 'ged' | 'chronos' | 'ncs' | 'analyses' | 'pokas' | 'logs' | 'orgs'> => ({
   params: { ...DEFAULT_PARAMS },
-  quotes: {}, changes: {}, complaints: {}, feedbacks: {}, suppliers: {}, debits: {}, sops: {}, equipments: {}, deliveries: {},
-  powers: {}, envelope: { location: '', checkedAt: '', by: '' }, people: {}, skills: {}, newcomers: {}, ged: defaultGed(), chronos: {},
+  quotes: {}, complaints: {}, feedbacks: {}, suppliers: {}, debits: {}, sectors: {}, sops: {}, equipments: {}, spares: {}, deliveries: {},
+  powers: {}, practices: {}, covers: {}, vaults: {}, vlogs: {}, envelope: { location: '', checkedAt: '', by: '' }, people: {}, skills: {}, newcomers: {}, ged: defaultGed(), chronos: {},
   ncs: {}, analyses: {}, pokas: {}, logs: {}, orgs: {},
 });
 
@@ -85,6 +85,9 @@ export const frStamp = (s: string) => {
   if (!d) return '';
   return s.length > 10 ? `${d.toLocaleDateString('fr-FR')} ${String(d.getHours()).padStart(2, '0')} h ${String(d.getMinutes()).padStart(2, '0')}` : d.toLocaleDateString('fr-FR');
 };
+// French typography for a text written by the code: a narrow no-break space before : ; ? ! % » and after «, and inside "14 h 05" or "48 h", so that a line never begins with a sign
+// or ends on an opening quote. Only the ordinary space is replaced: a text that is already set is not changed (nb(nb(s)) is nb(s)).
+export const nb = (s: string): string => s.replace(/ (?=[:;?!%»])/g, '\u202f').replace(/« /g, '«\u202f').replace(/(\d) h (?=\d\d\b)/g, '$1\u00a0h\u00a0').replace(/(\d) h\b/g, '$1\u00a0h');
 export const formatHours = (h: number) => (h < 1 ? `${Math.max(0, Math.round(h * 60))} min` : h < 48 ? `${Math.round(h)} h` : `${Math.round(h / 24)} jours`);
 
 // Money figure of a count of hours at the loaded hourly cost
@@ -102,8 +105,14 @@ export function knownPeople(s: State): string[] {
   return [...new Set(names.map(n => (n || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b));
 }
 
-// Hours between two moments, counting only Monday to Friday when business is true (48 h rule of 2.3, 24 h rule of 5.1)
-export function workHoursBetween(a: string, b: Date | string, business = false): number | null {
+// Working calendar of the 48 h and 24 h rules: false = every hour counts; true = Monday to Friday; a list of days = Monday to Friday
+// except those days (public holidays, closing of the company), as ISO dates
+export type Business = boolean | readonly string[];
+export const businessOf = (p: Pick<Params, 'businessHours' | 'closedDays'>): Business => (p.businessHours ? (p.closedDays || []) : false);
+const isOffDay = (d: Date, business: Business) => d.getDay() === 0 || d.getDay() === 6 || (Array.isArray(business) && business.includes(isoDate(d)));
+
+// Hours between two moments, counting only working days when business is set (48 h rule of 2.3, 24 h rule of 5.1)
+export function workHoursBetween(a: string, b: Date | string, business: Business = false): number | null {
   const x = parseStamp(a), y = typeof b === 'string' ? parseStamp(b) : b;
   if (!x || !y) return null;
   if (!business) return (y.getTime() - x.getTime()) / 3600000;
@@ -111,17 +120,25 @@ export function workHoursBetween(a: string, b: Date | string, business = false):
   for (let t = x.getTime(); t < y.getTime();) {
     const d = new Date(t);
     const next = Math.min(y.getTime(), new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1).getTime());
-    if (d.getDay() !== 0 && d.getDay() !== 6) h += (next - t) / 3600000;
+    if (!isOffDay(d, business)) h += (next - t) / 3600000;
     t = next;
   }
   return h;
 }
 
-// Hourly cost of a workstation or machine when the settings give one, else the general hourly cost
-export function rateFor(p: Params, name = ''): number {
-  const n = name.trim().toLowerCase();
-  const r = n && (p.rates || []).find(x => x.name.trim().toLowerCase() === n || n.includes(x.name.trim().toLowerCase()));
-  return r ? r.rate : p.hourlyRate;
+// Moment when `h` hours have gone by since `a`, counting only working days when business is set (the deadline of a 48 h rule)
+export function addWorkHours(a: string, h: number, business: Business = false): string {
+  const x = parseStamp(a);
+  if (!x) return '';
+  if (!business) return nowLocal(new Date(x.getTime() + h * 3600000));
+  let left = h * 3600000, t = x.getTime();
+  while (left > 0) {
+    const d = new Date(t), next = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1).getTime();
+    if (isOffDay(d, business)) { t = next; continue; }
+    if (left <= next - t) { t += left; break; }
+    left -= next - t; t = next;
+  }
+  return nowLocal(new Date(t));
 }
 
 // Words of the tools, explained to the team (glossary of the home screen)
@@ -135,15 +152,28 @@ export const GLOSSARY: [string, string][] = [
   ['Bac rouge', 'Le bac fermé où l\'on isole toute pièce douteuse en attendant une décision.'],
   ['Homme-clé', 'La seule personne qui sait faire une tâche : si elle manque, la tâche s\'arrête.'],
   ['Plan B', 'La solution de secours prête et testée quand une ressource vitale s\'arrête.'],
-  ['Seuil de rentabilité', "Le chiffre d'affaires en dessous duquel l'entreprise perd de l'argent : charges fixes divisées par le taux de marge sur coûts variables."],
-  ['Marge sur coûts variables', "Ce qui reste d'une vente une fois payés les achats et la sous-traitance : elle paie la structure, puis fait le bénéfice."],
-  ['Charges fixes', "Ce qui reste à payer même sans commande : salaires, loyers, assurances, amortissements."],
-  ['Valeur de l\'heure', "La marge minimale qu'une heure vendue doit laisser (prix moins matière, sous-traitance et autres frais variables) pour payer la structure et la marge visée. En dessous, l'offre dilue le résultat."],
-  ['Plafond de charge', "La part des heures productives au-delà de laquelle une commande de plus coûte plus qu'elle ne rapporte : heures supplémentaires, intérim, retards, défauts."],
-  ['Coefficient de vente', "Le prix de vente divisé par le coût direct : ×1,45 veut dire 145 € vendus pour 100 € de coût direct."],
-  ['Coût complet', "Le coût direct d'une affaire plus sa part de frais généraux : en dessous, l'affaire perd de l'argent une fois la structure payée."],
-  ['Prix cible', "Le prix qui donne la marge visée avant impôt : le coût complet divisé par un moins la marge."],
-  ['Coût horaire d\'un poste', "Ce que coûte une heure de travail à un poste : personnel chargé, amortissement, maintenance et énergie de la machine, divisés par les heures réellement passées sur des commandes."],
-  ['Heures productives', "Les heures payées moins les absences et le temps passé hors commandes (attente, réglages, rangement) : bien moins que les 1 607 heures payées."],
-  ['Recommandation (NPS)', 'Notes de 9-10 moins notes de 0 à 6, sur la question « nous recommanderiez-vous ? ».'],
+  ['Note de satisfaction', 'Moyenne des notes de 0 (très bas) à 10 (très haut) que les clients donnent à la fin d\'une commande.'],
+  ['Jalon', 'Un point de contrôle d\'une commande : le résultat est noté avec la personne, le jour et la preuve.'],
+  ['Libération', 'L\'accord d\'une personne nommée, une fois les jalons contrôlés, pour que la commande parte chez le client.'],
+  ['Réserve', 'Une remarque écrite sur le PV quand le client reçoit la commande : un défaut constaté, à lever dans un délai.'],
+  ['Levée', 'Le constat par le client qu\'une réserve est réglée : le jour et la personne sont notés.'],
+  ['PV', 'Le procès-verbal de réception : il garde le jour, le lieu, le résultat, les réserves et les signatures d\'une livraison.'],
+  ['Livraison', 'La remise de la commande, ou d\'une partie, au client : un jour, un lieu et une quantité livrée.'],
+  ['Réception', 'L\'acte du client qui réceptionne une livraison : son résultat (sans réserve, avec réserve ou refusée), le PV et les signatures.'],
+  ['Plage attendue', 'Les valeurs, mini et maxi, entre lesquelles la mesure d\'un jalon est conforme.'],
+  ['Fiche', 'La fiche d\'une commande : ses jalons, sa libération, sa réception et ses suites, au même endroit.'],
+  ['Fiche suiveuse', 'Le document papier qui suit une commande : un visa par jalon.'],
+  ['Fonction clé', "L'acte sans lequel un processus s'arrête : payer, valider une offre, lancer l'activité, ouvrir les locaux, libérer un produit."],
+  ['Suppléant', "Une personne qui a fait l'acte elle-même dans l'année, vue par un titulaire ou la direction : elle peut le tenir si le titulaire manque."],
+  ['Enveloppe des accès', "Les accès de secours sous pli scellé, au coffre : elle s'ouvre sous double visa, se vérifie tous les six mois, et ses codes changent après chaque ouverture."],
 ];
+
+// The button "Voir un exemple traité": puts the example records in the collections that are empty, and never touches one that already holds records of the company
+export function fillEmptyCollections(d: object, ex: object): void {
+  const target = d as Record<string, unknown>;
+  for (const [k, v] of Object.entries(ex)) {
+    if (!v || typeof v !== 'object' || Array.isArray(v)) continue;
+    const cur = target[k];
+    if (!cur || typeof cur !== 'object' || !Object.keys(cur).length) target[k] = v;
+  }
+}

@@ -1,6 +1,7 @@
 // Small shared UI pieces. Visual rules: ../../app/DESIGN_OUTILS.md (11 px minimum, no emoji, drawn icons).
-import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { X } from 'lucide-react';
+import { useEffect, useId, useRef, useState, type ReactNode, type RefObject } from 'react';
+import { createPortal } from 'react-dom';
+import { ExternalLink, SlidersHorizontal, X } from 'lucide-react';
 import type { Level } from '../domain/types';
 import type { Insight } from '../domain/base';
 import { useStore } from '../store/StoreContext';
@@ -14,7 +15,7 @@ export const LEVEL_STYLE: Record<Level, { dot: string; badge: string; hex: strin
 
 export function StatusBadge({ level, text }: { level: Level; text: string }) {
   return (
-    <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2 py-0.5 text-[11px] font-semibold ${LEVEL_STYLE[level].badge}`}>
+    <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2 py-0.5 text-xs font-semibold ${LEVEL_STYLE[level].badge}`}>
       <span className={`h-1.5 w-1.5 rounded-full ${LEVEL_STYLE[level].dot}`} />{text}
     </span>
   );
@@ -29,46 +30,64 @@ const BTN: Record<BtnKind, string> = {
 };
 export function Button({ kind = 'secondary', className = '', ...p }: React.ButtonHTMLAttributes<HTMLButtonElement> & { kind?: BtnKind }) {
   return <button type="button" {...p}
-    className={`inline-flex items-center justify-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-delacour-gold disabled:opacity-50 ${BTN[kind]} ${className}`} />;
+    className={`inline-flex items-center justify-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-delacour-golddark disabled:opacity-50 max-sm:min-h-[44px] [@media(pointer:coarse)]:min-h-[44px] ${BTN[kind]} ${className}`} />;
 }
 
-export function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
+export function Field({ label, hint, children }: { label: string; hint?: ReactNode; children: ReactNode }) {
   return (
     <label className="block space-y-1">
-      <span className="block text-[11px] font-semibold text-slate-700">{label}</span>
+      <span className="block text-xs font-semibold text-slate-700">{label}</span>
       {children}
-      {hint && <span className="block text-[11px] text-slate-500">{hint}</span>}
+      {hint && <span className="block text-xs text-slate-500">{hint}</span>}
     </label>
   );
 }
 
-export const inputCls = 'w-full rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-900 outline-none focus:border-delacour-gold focus:ring-2 focus:ring-delacour-gold/30 disabled:bg-slate-50 disabled:text-slate-600';
+// the border of a field is 3,5:1 on white (WCAG 1.4.11), the focus ring 4:1
+export const inputCls = 'w-full rounded-lg border border-[#7b8aa3] bg-white px-2.5 py-1.5 text-xs text-slate-900 outline-none focus:border-delacour-golddark focus:ring-2 focus:ring-delacour-golddark/40 max-sm:min-h-[44px] [@media(pointer:coarse)]:min-h-[44px]';
 
-// Modal dialog (Escape or backdrop closes it)
-export function Modal({ title, subtitle, onClose, children, footer, wide, xwide }: {
-  title: ReactNode; subtitle?: ReactNode; onClose(): void; children: ReactNode; footer?: ReactNode; wide?: boolean; xwide?: boolean;
+// A dialog or a full screen takes the focus, keeps the page behind it out of the tab order and of the screen reader (inert), and gives the focus back to what opened it
+export function useDialogFocus(ref: RefObject<HTMLElement | null>) {
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const back = document.activeElement as HTMLElement | null;
+    const off: Element[] = [];
+    for (let n: Element = el; n !== document.body && n.parentElement; n = n.parentElement)
+      for (const s of n.parentElement.children) if (s !== n && !s.hasAttribute('inert') && s.tagName !== 'SCRIPT') { s.setAttribute('inert', ''); off.push(s); }
+    if (!el.contains(document.activeElement)) el.focus({ preventScroll: true });
+    return () => { off.forEach(s => s.removeAttribute('inert')); if (back?.isConnected) back.focus({ preventScroll: true }); };
+  }, [ref]);
+}
+
+// Modal dialog (Escape or backdrop closes it); drawn in the body, so a draggable parent (a step row) never drags it along
+export function Modal({ title, subtitle, onClose, children, footer, wide, xwide, full }: {
+  title: ReactNode; subtitle?: ReactNode; onClose(): void; children: ReactNode; footer?: ReactNode; wide?: boolean; xwide?: boolean; full?: boolean;   // full: follows the screen, up to 1280 px
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const tid = useId();
+  useDialogFocus(ref);
   // with two sheets open (an action over a workshop), Escape closes the top one only
   useEffect(() => {
     const k = (e: KeyboardEvent) => { if (e.key === 'Escape' && ref.current === [...document.querySelectorAll('[role=dialog]')].at(-1)) onClose(); };
     window.addEventListener('keydown', k);
     return () => window.removeEventListener('keydown', k);
   }, [onClose]);
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 p-0 sm:items-center sm:p-4" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div ref={ref} role="dialog" aria-modal="true" className={`flex max-h-[92vh] w-full flex-col rounded-t-2xl bg-white shadow-2xl sm:rounded-2xl ${xwide ? 'sm:max-w-6xl' : wide ? 'sm:max-w-4xl' : 'sm:max-w-lg'}`}>
+      <div ref={ref} role="dialog" aria-modal="true" aria-labelledby={tid} tabIndex={-1} className={`flex max-h-[92vh] w-full flex-col rounded-t-2xl bg-white shadow-2xl outline-none sm:rounded-2xl ${full ? 'sm:max-w-[min(94vw,1280px)]' : xwide ? 'sm:max-w-6xl' : wide ? 'sm:max-w-4xl' : 'sm:max-w-lg'}`}>
         <div className="flex items-start justify-between gap-3 border-b border-slate-100 px-4 py-3 sm:px-5">
           <div className="min-w-0">
-            <h2 className="text-sm font-bold text-slate-900">{title}</h2>
-            {subtitle && <div className="mt-0.5 text-[11px] text-slate-500">{subtitle}</div>}
+            <h2 id={tid} className="text-sm font-bold text-slate-900">{title}</h2>
+            {subtitle && <div className="mt-0.5 text-xs text-slate-500">{subtitle}</div>}
           </div>
-          <button type="button" onClick={onClose} aria-label="Fermer" className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"><X size={18} /></button>
+          <button type="button" onClick={onClose} aria-label="Fermer" className="rounded-md p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-800 max-sm:p-[13px] [@media(pointer:coarse)]:p-[13px]"><X size={18} /></button>
         </div>
         <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-5">{children}</div>
         {footer && <div className="flex flex-wrap items-center justify-end gap-2 border-t border-slate-100 px-4 py-3 sm:px-5">{footer}</div>}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -81,33 +100,47 @@ export function Card({ children, className = '' }: { children: ReactNode; classN
 export const TONE = { good: 'border-emerald-200 bg-emerald-50 text-emerald-900', warn: 'border-amber-200 bg-amber-50 text-amber-950', bad: 'border-red-200 bg-red-50 text-red-900' };
 
 // Key figure of a summary; tone colours the tile only when the figure calls for attention
-export function Tile({ title, value, sub, tone }: { title: string; value: string; sub: string; tone?: 'ok' | 'warn' | 'alert' }) {
+export function Tile({ title, value, sub, tone, onClick, active }: { title: string; value: string; sub: string; tone?: 'ok' | 'warn' | 'alert'; onClick?(): void; active?: boolean }) {
   const cls = tone === 'ok' ? 'border-emerald-200 bg-emerald-50/60' : tone === 'warn' ? 'border-amber-300 bg-amber-50/70' : tone === 'alert' ? 'border-red-300 bg-red-50/70' : 'border-slate-200 bg-white';
-  return (
-    <div className={`rounded-lg border p-2.5 ${cls}`}>
-      <div className="text-[11px] font-semibold text-slate-600">{title}</div>
-      <div className="font-mono text-lg font-bold text-slate-900">{value}</div>
-      <div className="text-[11px] text-slate-600">{sub}</div>
-    </div>
-  );
+  const body = <>
+    <div className="text-xs font-semibold text-slate-600">{title}</div>
+    <div className="font-mono text-lg font-bold text-slate-900">{value}</div>
+    <div className="text-xs text-slate-600">{sub}</div>
+  </>;
+  // a tile with an action is a button (it filters a list); without, a plain figure
+  return onClick
+    ? <button type="button" onClick={onClick} aria-pressed={!!active} className={`rounded-lg border p-2.5 text-left hover:shadow-sm ${cls} ${active ? 'ring-2 ring-delacour-primary' : ''}`}>{body}</button>
+    : <div className={`rounded-lg border p-2.5 ${cls}`}>{body}</div>;
 }
 
 // Summary card: question, 4 key figures, messages (the first 4, then "voir les autres")
-export function Summary({ title, tiles, insights }: { title: string; tiles: ReactNode; insights: Insight[] }) {
+export function Summary({ title, tiles, insights, max = 4, list = false, answer }: { title: string; tiles: ReactNode; insights: Insight[]; max?: number; list?: boolean; answer?: string }) {
   const [all, setAll] = useState(false);
-  const MAX = 4;
+  const MAX = max;
+  const shown = all ? insights : insights.slice(0, MAX);
   return (
     <Card className="space-y-3 p-3 sm:p-4">
       <h2 className="text-sm font-bold text-delacour-primary">{title}</h2>
+      {answer && <p className="!mt-1 text-xs font-semibold text-slate-800">{answer}</p>}
       <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">{tiles}</div>
-      {insights.length > 0 && (
-        <ul className="grid gap-2 md:grid-cols-2">
-          {(all ? insights : insights.slice(0, MAX)).map(i => <li key={i.key} className={`rounded-lg border px-3 py-2 text-[11px] ${TONE[i.tone]}`}><strong className="block text-xs">{i.title}</strong>{i.text}</li>)}
+      {insights.length > 0 && (list ? (
+        // a quiet list: a dot for the weight of the message, the title, then the facts; nothing is coloured but the dot
+        <ul className="divide-y divide-slate-100 border-t border-slate-100">
+          {shown.map(i => (
+            <li key={i.key} className="flex items-start gap-2.5 py-2 text-xs text-slate-700">
+              <span aria-hidden className={`mt-1 h-2 w-2 shrink-0 rounded-full ${i.tone === 'bad' ? 'bg-red-600' : i.tone === 'warn' ? 'bg-amber-500' : 'bg-emerald-600'}`} />
+              <span><span className="sr-only">{i.tone === 'bad' ? 'Important : ' : i.tone === 'warn' ? 'À noter : ' : 'Bon point : '}</span><strong className="font-semibold text-slate-900">{i.title}</strong> · {i.text}</span>
+            </li>
+          ))}
         </ul>
-      )}
+      ) : (
+        <ul className="grid gap-2 md:grid-cols-2">
+          {shown.map(i => <li key={i.key} className={`rounded-lg border px-3 py-2 text-xs ${TONE[i.tone]}`}><strong className="block text-xs">{i.title}</strong>{i.text}</li>)}
+        </ul>
+      ))}
       {insights.length > MAX && (
-        <button type="button" onClick={() => setAll(!all)} aria-expanded={all} className="text-[11px] font-semibold text-delacour-primary hover:underline print:hidden">
-          {all ? 'Afficher moins de messages' : insights.length - MAX === 1 ? 'Voir 1 autre message' : `Voir les ${insights.length - MAX} autres messages`}
+        <button type="button" onClick={() => setAll(!all)} aria-expanded={all} className="text-xs font-semibold text-delacour-primary hover:underline max-sm:min-h-[44px] [@media(pointer:coarse)]:min-h-[44px] print:hidden">
+          {all ? 'Afficher moins de messages' : insights.length - MAX === 1 ? `Voir 1 ${MAX ? 'autre ' : ''}message` : `Voir les ${insights.length - MAX} ${MAX ? 'autres ' : ''}messages`}
         </button>
       )}
     </Card>
@@ -120,7 +153,7 @@ export function Chips<T extends string>({ value, onChange, items }: { value: T; 
     <div className="flex flex-wrap items-center gap-1.5 print:hidden">
       {items.map(([k, l, n]) => (
         <button key={k} type="button" onClick={() => onChange(k)} aria-pressed={value === k}
-          className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${value === k ? 'border-delacour-primary bg-delacour-primary text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'}`}>
+          className={`rounded-full border px-2.5 py-1 text-xs font-semibold max-sm:min-h-[44px] max-sm:px-3 [@media(pointer:coarse)]:min-h-[44px] ${value === k ? 'border-delacour-primary bg-delacour-primary text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'}`}>
           {l}{n !== undefined && <span className="opacity-75"> {n}</span>}
         </button>
       ))}
@@ -132,20 +165,33 @@ export function Chips<T extends string>({ value, onChange, items }: { value: T; 
 export function Method({ rule, steps, tips = [] }: { rule: string; steps: [string, string][]; tips?: string[] }) {
   return (
     <details className="group rounded-xl border border-slate-200 bg-white print:hidden">
-      <summary className="cursor-pointer list-none px-3 py-2 text-[11px] font-semibold text-delacour-primary hover:bg-slate-50 sm:px-4">
-        <span className="group-open:hidden">Méthode en 3 étapes</span><span className="hidden group-open:inline">Masquer la méthode</span>
+      <summary className="flex min-h-[44px] cursor-pointer list-none items-center px-3 py-2 text-xs font-semibold text-delacour-primary hover:bg-slate-50 sm:min-h-0 sm:px-4">
+        <span className="group-open:hidden">Méthode en {steps.length} étapes</span><span className="hidden group-open:inline">Masquer la méthode</span>
       </summary>
       <div className="space-y-3 border-t border-slate-100 px-3 py-3 sm:px-4">
         <p className="text-xs font-semibold text-slate-800">{rule}</p>
         <ol className="grid gap-2 sm:grid-cols-3">
           {steps.map(([t, x], i) => (
             <li key={t} className="rounded-lg bg-slate-50 p-2.5">
-              <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900"><span className="flex h-4 w-4 items-center justify-center rounded-full bg-delacour-primary text-[11px] text-white">{i + 1}</span>{t}</div>
-              <p className="mt-1 text-[11px] text-slate-600">{x}</p>
+              <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900"><span className="flex h-4 w-4 items-center justify-center rounded-full bg-delacour-primary text-xs text-white">{i + 1}</span>{t}</div>
+              <p className="mt-1 text-xs text-slate-600">{x}</p>
             </li>
           ))}
         </ol>
-        {tips.length > 0 && <ul className="list-disc space-y-0.5 pl-4 text-[11px] text-slate-600">{tips.map(t => <li key={t}>{t}</li>)}</ul>}
+        {tips.length > 0 && <ul className="list-disc space-y-0.5 pl-4 text-xs text-slate-600">{tips.map(t => <li key={t}>{t}</li>)}</ul>}
+      </div>
+    </details>
+  );
+}
+
+// Settings that only one tool reads: closed by default, saved as typed (the general Réglages keep what several tools share)
+export function ToolSettings({ title = 'Réglages de cet outil', children }: { title?: string; children: ReactNode }) {
+  return (
+    <details className="group rounded-xl border border-slate-200 bg-white print:hidden">
+      <summary className="flex min-h-[44px] cursor-pointer list-none items-center gap-1.5 px-3 py-2 text-xs font-semibold text-delacour-primary hover:bg-slate-50 sm:min-h-0 sm:px-4"><SlidersHorizontal size={13} />{title}</summary>
+      <div className="space-y-3 border-t border-slate-100 px-3 py-3 sm:px-4">
+        {children}
+        <p className="text-xs text-slate-500">Chaque champ est enregistré dès qu'il est modifié.</p>
       </div>
     </details>
   );
@@ -157,7 +203,7 @@ export function ToolHeader({ title, text, children }: { title: string; text: str
     <div className="flex flex-wrap items-start justify-between gap-2">
       <div className="min-w-0">
         <h2 className="text-sm font-bold text-delacour-primary">{title}</h2>
-        <p className="max-w-3xl text-[11px] text-slate-500">{text}</p>
+        <p className="max-w-3xl text-xs text-slate-500">{text}</p>
       </div>
       {children && <div className="flex flex-wrap items-center gap-2 print:hidden">{children}</div>}
     </div>
@@ -193,7 +239,7 @@ export function YesNo({ value, onChange, labels = ['Oui', 'Non'], label }: { val
     <div className="flex gap-1" role="radiogroup" aria-label={label}>
       {[true, false].map(v => (
         <button key={String(v)} type="button" role="radio" aria-checked={value === v} onClick={() => onChange(value === v ? null : v)}
-          className={`rounded-lg border px-2.5 py-1 text-[11px] font-semibold ${value === v ? (v ? 'border-emerald-700 bg-emerald-600 text-white' : 'border-red-700 bg-red-600 text-white') : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'}`}>
+          className={`rounded-lg border px-2.5 py-1 text-xs font-semibold ${value === v ? (v ? 'border-emerald-700 bg-emerald-600 text-white' : 'border-red-700 bg-red-600 text-white') : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'}`}>
           {labels[v ? 0 : 1]}
         </button>
       ))}
@@ -209,9 +255,9 @@ export function Row({ onClick, lead, title, sub, right, badge }: { onClick(): vo
         {lead}
         <span className="min-w-0 flex-1">
           <span className="line-clamp-2 block text-xs font-semibold text-slate-900 sm:truncate">{title}</span>
-          {sub && <span className="line-clamp-2 block text-[11px] text-slate-500 sm:truncate">{sub}</span>}
+          {sub && <span className="line-clamp-2 block text-xs text-slate-500 sm:truncate">{sub}</span>}
         </span>
-        {right && <span className="hidden shrink-0 text-right text-[11px] text-slate-600 sm:block">{right}</span>}
+        {right && <span className="hidden shrink-0 text-right text-xs text-slate-600 sm:block">{right}</span>}
         {badge && <span className="shrink-0">{badge}</span>}
       </button>
     </li>
@@ -225,4 +271,9 @@ export function DeleteButton({ onClick, className = '', children }: { onClick():
   const { teamView, state } = useStore();
   if (teamView && !state?.params.teamCanDelete) return null;
   return <Button kind="danger" onClick={onClick} className={className}>{children}</Button>;
+}
+
+// Goes inside a button or a link that opens another tool in a new browser tab, after its label: the icon for the eye, the words for a screen reader
+export function NewTab({ size = 12 }: { size?: number }) {
+  return <><ExternalLink size={size} aria-hidden className="inline shrink-0" /><span className="sr-only"> (s'ouvre dans un nouvel onglet)</span></>;
 }

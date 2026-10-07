@@ -12,7 +12,7 @@ const LABEL: Record<RefKind, (s: State, id: string) => string | null> = {
 };
 export const KIND_LABEL: Record<RefKind, string> = {
   analysis: 'Atelier 5 Pourquoi', equipment: 'Équipement', supplier: 'Fournisseur', feedback: "Bilan de fin d'affaire",
-  complaint: 'Réclamation', skill: 'Compétence', power: 'Pouvoir vital',
+  complaint: 'Réclamation', skill: 'Compétence', power: 'Fonction clé',
 };
 
 export const refLabel = (s: State, r: Ref) => LABEL[r.kind](s, r.id) || `${KIND_LABEL[r.kind]} supprimé(e)`;

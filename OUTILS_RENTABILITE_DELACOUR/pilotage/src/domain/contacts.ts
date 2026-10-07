@@ -2,6 +2,7 @@
 // the org charts (the company, and each outside organisation: customer, supplier, occupational health…), duplicates, the monthly check campaign and the export to the phone contacts (vCard).
 import type { Contact, ContactCategory, Org, Person, State } from './types';
 import { parseDate } from './periods';
+import { newId } from './base';
 
 export const CATEGORIES: { key: ContactCategory; label: string }[] = [
   { key: 'secours', label: 'Secours et sécurité' },
@@ -131,7 +132,7 @@ export function isUnder(s: Pick<State, 'contacts'>, who: string, boss: string): 
 export function deputiesFromPowers(s: Pick<State, 'powers'>, c: Contact): string[] {
   const n = c.name.trim().toLowerCase();
   if (!n) return [];
-  return [...new Set(Object.values(s.powers || {}).filter(p => p.holder.trim().toLowerCase() === n).flatMap(p => [...p.deputies, ...(p.extra || [])]).map(x => x.trim()).filter(Boolean))];
+  return [...new Set(Object.values(s.powers || {}).filter(p => !p.archivedAt && p.holder.trim().toLowerCase() === n).flatMap(p => [...p.deputies, ...(p.extra || [])]).map(x => x.trim()).filter(Boolean))];
 }
 
 // Same phone number or same e-mail on two cards
@@ -192,7 +193,7 @@ export function vcardOf(list: Contact[], company = ''): string {
 export const orgKey = (t: string) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\(.*?\)/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
 
 // Cards the other tools already know (suppliers 3.1, customers 2.1 / 2.3) and that are not in the directory yet
-export function candidates(s: Pick<State, 'contacts' | 'suppliers' | 'quotes' | 'complaints'>): { key: string; category: ContactCategory; company: string; name: string; from: string; supplierId?: string }[] {
+export function candidates(s: Pick<State, 'contacts' | 'suppliers' | 'quotes' | 'complaints'> & Partial<Pick<State, 'feedbacks'>>): { key: string; category: ContactCategory; company: string; name: string; from: string; supplierId?: string }[] {
   const key = orgKey;
   const known = Object.values(s.contacts).map(c => key(c.company)).filter(Boolean);
   const out: ReturnType<typeof candidates> = [];
@@ -200,6 +201,9 @@ export function candidates(s: Pick<State, 'contacts' | 'suppliers' | 'quotes' | 
   Object.values(s.suppliers || {}).filter(x => !x.contactId).forEach(x => push({ key: `s${x.id}`, category: 'fournisseur', company: x.name, name: x.contact, from: 'Fournisseurs (3.1)', supplierId: x.id }));
   [...Object.values(s.quotes || {}).filter(q => q.status === 'won').map(q => q.client), ...Object.values(s.complaints || {}).map(c => c.client)]
     .forEach(client => push({ key: `c${client}`, category: 'client', company: client, name: '', from: 'Devis gagnés et réclamations' }));
+  // customers questioned at the end of a job (2.4), with the person who answered
+  Object.values(s.feedbacks || {}).sort((a, b) => (a.date < b.date ? 1 : -1))
+    .forEach(f => push({ key: `c${f.client}`, category: 'client', company: f.client, name: f.contact, from: 'Bilans de fin d\'affaire (2.4)' }));
   return out;
 }
 
@@ -227,14 +231,17 @@ export function syncStaff(d: State): number {
   });
   return n;
 }
-// What the staff tools know about this person: absent today (until when), sole holder of a skill (4.2) or of a vital act (4.1)
-export function staffInfo(s: State, c: Contact, today = new Date()): { absentUntil: string; skills: string[]; powers: string[] } {
+// What the staff tools know about this person: absent today (until when), sole holder of a skill (4.2), the vital acts (4.1) she holds, the ones she is a deputy of, and the ones that have no deputy
+export function staffInfo(s: State, c: Contact, today = new Date()): { absentUntil: string; skills: string[]; powers: string[]; holds: string[]; covers: string[] } {
   const p = c.category === 'interne' ? personOf(s, c) : undefined;
   const day = today.toISOString().slice(0, 10);
   const abs = (p?.absences || []).find(a => a.from <= day && day <= a.to);
   const skills = p ? Object.values(s.skills || {}).filter(k => { const aut = Object.entries(k.levels).filter(([id, l]) => l >= 3 && s.people[id]?.active); return aut.length === 1 && aut[0][0] === p.id; }).map(k => k.name) : [];
-  const powers = c.name.trim() ? Object.values(s.powers || {}).filter(x => same(x.holder, c.name) && ![...x.deputies, ...(x.extra || [])].some(d => d.trim())).map(x => x.power) : [];
-  return { absentUntil: abs?.to || '', skills, powers };
+  const live = Object.values(s.powers || {}).filter(x => !x.archivedAt), named = !!c.name.trim();
+  const powers = named ? live.filter(x => same(x.holder, c.name) && ![...x.deputies, ...(x.extra || [])].some(d => d.trim())).map(x => x.power) : [];
+  const holds = named ? live.filter(x => same(x.holder, c.name)).map(x => x.power) : [];
+  const covers = named ? live.filter(x => [...x.deputies, ...(x.extra || [])].some(d => same(d, c.name))).map(x => x.power) : [];
+  return { absentUntil: abs?.to || '', skills, powers, holds, covers };
 }
 // Managers from the person up to the top of the chart
 export function managersOf(s: Pick<State, 'contacts'>, c: Contact): Contact[] {
@@ -246,3 +253,11 @@ export function managersOf(s: Pick<State, 'contacts'>, c: Contact): Contact[] {
 export const CONTRACTS: { key: NonNullable<Contact['contract']>; label: string }[] = [
   { key: '', label: 'CDI' }, { key: 'cdd', label: 'CDD' }, { key: 'interim', label: 'Intérim' }, { key: 'alternance', label: 'Alternance' }, { key: 'stage', label: 'Stage' },
 ];
+
+// A person added to the directory from a tool that needed her: in the staff list (and so in the directory as an internal contact) or as an outside contact. Gives the name and the link back.
+export function createContact(d: State, name: string, internal: boolean): { name: string; ref: string } {
+  const c: Contact = { id: newId('ct'), category: internal ? 'interne' : 'autre', name: name.trim(), role: '', company: internal ? 'Interne' : '', phone: '', email: '', always: false, verifiedAt: '' };
+  d.contacts[c.id] = c;
+  if (internal) { syncStaff(d); return { name: c.name, ref: `p:${c.personId || `pp_${c.id}`}` }; }
+  return { name: c.name, ref: `c:${c.id}` };
+}

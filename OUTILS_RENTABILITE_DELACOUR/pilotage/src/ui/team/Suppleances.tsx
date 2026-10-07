@@ -1,171 +1,230 @@
-// Tool 4.1 "Suppléances": for each vital power of a process (the act without which the company stops), a holder and two deputies
-// who really did it within the year, and the access under a sealed envelope checked every 6 months.
+// Tool 4.1 "Suppléances d'urgence": for each vital power (the act without which the company stops) a holder and two deputies who did the act within the year, the formalities that let
+// a deputy act, and the accesses under sealed envelopes. Screen: the question and its door (« Quelqu'un est absent »), who is away today, one line of verdict, what is left to do; the
+// whole list (the powers, the people, the envelopes) opens on « Voir toutes les fonctions »; the rare gestures are in the menu « ⋯ », the method and the settings in a closed foot.
+// Addresses (`#4.1~…`): `<id>[:tab]` a power, `contact:<id>` a card of the directory, `absent:<name>:<from>:<to>`, `vault:<id>`, `cover:<id>`, `review`, `setup`, `new`.
 import { useEffect, useState } from 'react';
-import { Check, Plus, Printer, Trash2 } from 'lucide-react';
-import type { Power, State } from '../../domain/types';
-import { absenceView, DEFAULT_POWERS, ENVELOPE_DAYS, envelopeState, newPower, POWER_STATE, powerInsights, powerState, practiceLeft, PRACTICE_DAYS } from '../../domain/team';
-import { newRisk } from '../../domain/risk';
-import { applyTeamExample } from '../../domain/teamExamples';
-import { addDays, PROCESS_IDS, processLabel } from '../../domain/base';
-import { frDate, isoDate } from '../../domain/periods';
+import { MoreHorizontal, Plus, Search, UserX } from 'lucide-react';
+import type { Power } from '../../domain/types';
+import { nb, processLabel } from '../../domain/base';
+import { norm } from '../../domain/instructions';
+import { frDate, isoDate, periodOfDate } from '../../domain/periods';
+import { plural } from '../../domain/receptions';
+import { activePowers, newPower, powerCfg, STATE_RANK, syncPowerPeople, waitRank } from '../../domain/powers';
+import { powerSummary } from '../../domain/powersAll';
+import { applyPowerExample, hasPowerExample, removePowerExample } from '../../domain/powersExamples';
+import { addPowerKpis, isPowerKpi } from '../../domain/powersFeeds';
 import { useStore } from '../../store/StoreContext';
-import { Button, DeleteButton, NumInput, Card, Empty, Field, inputCls, Method, Modal, StatusBadge, SubTitle, Summary, Tile, ToolHeader } from '../common';
+import { Button, Card, Chips, Empty, Method, Modal, TONE } from '../common';
+import { FeedBox } from '../Feed';
 import type { ScreenProps } from '../screens';
-import type { Nav } from '../tools';
+import { FIELD, TOUCH, useUndo } from './PwBits';
+import { PwAbsent } from './PwAbsent';
+import { PwList, rowOf } from './PwCards';
+import { PwCover } from './PwCover';
+import { PwPeople } from './PwPeople';
+import { PwQueue } from './PwQueue';
+import { PwReview, PwSetup } from './PwSetup';
+import { PwSettings } from './PwSettings';
+import { PwSheet, type PwTab } from './PwSheet';
+import { PwVaults } from './PwVaults';
 
-// "Pratiqué le 12/03/2026" in colour: late, soon, or fine
-function Practice({ date }: { date: string }) {
-  const left = practiceLeft(date);
-  if (left === null) return <span className="font-semibold text-amber-800">jamais pratiqué</span>;
-  return <span className={left < 0 ? 'font-semibold text-red-700' : left <= 30 ? 'font-semibold text-amber-800' : 'text-slate-500'}>pratiqué le {frDate(date)}</span>;
-}
+type View = 'register' | 'absent' | 'setup' | 'review';
+type Section = 'powers' | 'people' | 'vaults';
+type Filter = 'all' | 'todo' | 'mine' | 'archived';
+const PAGE = 24, enc = encodeURIComponent;
+const TABS = ['act', 'people', 'forms'];
+const ME = 'pw-me';
+const remembered = () => { try { return window.localStorage.getItem(ME) || ''; } catch { return ''; } };
 
 export function Suppleances({ nav, focus, clearFocus }: ScreenProps) {
-  const { state, update, author, teamView } = useStore();
-  const [absent, setAbsent] = useState('');
-  const [open, setOpen] = useState<Power | null>(null);
-  useEffect(() => { if (focus && state?.powers[focus]) { setOpen(state.powers[focus]); clearFocus(); } }, [focus]); // eslint-disable-line react-hooks/exhaustive-deps
+  const { state, update, teamView } = useStore();
+  const [view, setView] = useState<View>('register'), [section, setSection] = useState<Section>('powers'), [filter, setFilter] = useState<Filter>('all'), [q, setQ] = useState(''), [menu, setMenu] = useState(false);
+  const [limit, setLimit] = useState(PAGE), [sheet, setSheet] = useState<{ p: Power; tab?: PwTab } | null>(null);
+  const [coverId, setCoverId] = useState(''), [vaultFocus, setVaultFocus] = useState(''), [lost, setLost] = useState(false), [dropEx, setDropEx] = useState(false), [absent, setAbsent] = useState({ name: '', from: '', to: '' });
+  const [me, setMeState] = useState(remembered);
+  const { bar, offer } = useUndo();
+  const setMe = (v: string) => { setMeState(v); try { window.localStorage.setItem(ME, v); } catch { /* nothing is kept */ } };
+  const back = () => { setView('register'); try { window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}${window.location.hash.split('~')[0]}`); } catch { /* the address stays */ } };
+
+  // a link, a tap of the queue or a task: the right place of the tool
+  const go = (f: string) => {
+    if (!state) return;
+    const [a, b = '', c = '', e = ''] = f.split(':');
+    if (f === 'new') { setView('register'); setSheet({ p: newPower() }); }
+    else if (f === 'setup' || f === 'review') setView(f);
+    else if (a === 'absent') { setAbsent({ name: decodeURIComponent(b), from: c, to: e }); setView('absent'); }
+    else if (a === 'vault') { setView('register'); setSection('vaults'); setVaultFocus(b); }
+    else if (a === 'cover') { if (state.covers[b]) setCoverId(b); else setLost(true); }
+    else if (a === 'practice') { const p = Object.hasOwn(state.powers, b) ? state.powers[b] : undefined; if (p) setSheet({ p, tab: 'people' }); else setLost(true); }
+    else if (a === 'contact') { if (state.contacts[b]) nav.open('1.3', b); else setLost(true); }
+    else { const p = Object.hasOwn(state.powers, a) ? state.powers[a] : undefined; if (p) setSheet({ p, tab: TABS.includes(b) ? b as PwTab : undefined }); else setLost(true); }
+  };
+  // the names of the powers follow the directory: a rename there is carried here, a name that is exactly a person of the lists gets its link
+  useEffect(() => { if (state && syncPowerPeople(structuredClone(state))) update(d => { syncPowerPeople(d); }); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!menu) return;
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setMenu(false); };
+    document.addEventListener('keydown', esc);
+    return () => document.removeEventListener('keydown', esc);
+  }, [menu]);
+  useEffect(() => {
+    if (!focus || !state) return;
+    go(focus);
+    if (!focus.startsWith('absent')) clearFocus();
+  }, [focus, !!state]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!state) return null;
-  const now = new Date();
-  const all = Object.values(state.powers).sort((a, b) => a.processId.localeCompare(b.processId) || a.power.localeCompare(b.power));
-  const start = () => update(d => { DEFAULT_POWERS.forEach(([p, w]) => { const x = newPower(p, w); d.powers[x.id] = x; }); });
-  if (!all.length) {
+
+  const now = new Date(), today = isoDate(now), cfg = powerCfg(state.params), live = activePowers(state), archived = Object.values(state.powers).filter(p => p.archivedAt);
+  const sm = powerSummary(state, now), todos = teamView ? sm.todos.filter(t => t.kind !== 'vault' && t.kind !== 'unsealed') : sm.todos, rows = live.map(p => rowOf(p, state, now, cfg));
+  const mine = (r: { p: Power }) => !!me && [r.p.holder, ...r.p.deputies, ...(r.p.extra || [])].some(n => norm(n) === norm(me));
+  const FILTERS: [Filter, string, number][] = [['all', 'Tous', rows.length], ['todo', 'À faire', rows.filter(r => r.st !== 'ok').length],
+    ...(me ? [['mine', 'Mes fonctions', rows.filter(mine).length] as [Filter, string, number]] : []), ...(archived.length ? [['archived', 'Archivés', archived.length] as [Filter, string, number]] : [])];
+  const words = norm(q).split(/\s+/).filter(Boolean);
+  const text = (r: { p: Power }) => norm([r.p.power, r.p.holder, ...r.p.deputies, ...(r.p.extra || []), processLabel(r.p.processId)].join(' '));
+  const shown = (filter === 'archived' ? archived.map(p => rowOf(p, state, now, cfg)) : rows)
+    .filter(r => (filter === 'todo' ? r.st !== 'ok' : filter === 'mine' ? mine(r) : true) && words.every(w => text(r).includes(w)))
+    .sort((a, b) => STATE_RANK[a.st] - STATE_RANK[b.st] || waitRank(a.p) - waitRank(b.p) || a.p.processId.localeCompare(b.p.processId) || a.p.power.localeCompare(b.p.power, 'fr'));
+  const open = (p: Power, tab?: PwTab) => { setView('register'); setSheet({ p, tab }); };
+  const mayDrop = hasPowerExample(state) && (!teamView || !!state.params.teamCanDelete);
+  const removeExample = () => {
+    const was = { powers: { ...state.powers }, practices: { ...state.practices }, covers: { ...state.covers }, vaults: { ...state.vaults }, vlogs: { ...state.vlogs } };
+    update(d => { removePowerExample(d); });
+    setDropEx(false);
+    offer('Exemple retiré', () => update(d => { Object.assign(d.powers, was.powers); Object.assign(d.practices, was.practices); Object.assign(d.covers, was.covers); Object.assign(d.vaults, was.vaults); Object.assign(d.vlogs, was.vlogs); }));
+  };
+
+  const overlays = <>
+    {sheet && <PwSheet key={sheet.p.id} id={sheet.p.id} draft={sheet.p} tab={sheet.tab} nav={nav} onClose={() => setSheet(null)} />}
+    {coverId && state.covers[coverId] && <PwCover cover={state.covers[coverId]} nav={nav} offer={offer} onClose={() => setCoverId('')} />}
+    {dropEx && <ExampleDialog gone={removePowerExample(structuredClone(state))} onClose={() => setDropEx(false)} onRemove={removeExample} />}
+    {lost && <Modal onClose={() => setLost(false)} title="Introuvable" footer={<Button onClick={() => setLost(false)}>Fermer</Button>}><p className="text-xs text-slate-700">Cette fonction ou cette absence n'existe pas sur cet appareil. Elle a peut-être été supprimée, ou les données de l'entreprise ne sont pas encore chargées ici.</p></Modal>}
+    {bar}
+  </>;
+
+  if (view === 'setup') return <div className="space-y-4"><PwSetup onClose={back} onDone={made => { back(); offer(plural(made.length, 'fonction créée', 'fonctions créées'), () => update(d => { made.forEach(id => { delete d.powers[id]; }); })); }} />{overlays}</div>;
+  if (view === 'review') return <div className="space-y-4"><PwReview onOpen={id => open(state.powers[id])} onClose={back} />{overlays}</div>;
+  if (view === 'absent') return <div className="space-y-4"><PwAbsent key={absent.name + absent.from + absent.to} initial={absent} nav={nav} onOpenPower={(id, tab) => open(state.powers[id], tab)} onCover={setCoverId} onClose={back} />{overlays}</div>;
+
+  if (!Object.keys(state.powers).length && !Object.keys(state.vaults).length) {
     return (
       <div className="space-y-4">
-        <Empty title="Suppléances : l'entreprise tourne même si quelqu'un manque" text="Pour chaque processus, l'acte sans lequel tout s'arrête : payer, valider un devis, lancer la fabrication, ouvrir les locaux, libérer un produit. Un titulaire, deux suppléants qui le font vraiment une fois par an, les accès sous pli scellé.">
-          <Button kind="primary" onClick={start}>Partir des 5 pouvoirs vitaux</Button>
-          <Button onClick={() => setOpen(newPower())}><Plus size={14} />Ajouter un pouvoir</Button>
-          <Button onClick={() => update(d => applyTeamExample(d))}>Voir un exemple traité</Button>
+        <Empty title="Suppléances : l'entreprise tourne même si quelqu'un manque" text="Pour chaque processus, l'acte sans lequel tout s'arrête : payer, valider une offre, lancer l'activité, ouvrir les locaux, libérer un produit. Un titulaire, deux suppléants qui le font vraiment une fois par an, les accès sous pli scellé.">
+          <Button kind="primary" onClick={() => setView('setup')}>Partir de la bibliothèque</Button>
+          <Button onClick={() => setSheet({ p: newPower() })}><Plus size={14} />Ajouter une fonction</Button>
+          <Button onClick={() => update(d => applyPowerExample(d))}>Voir un exemple traité</Button>
         </Empty>
-        {open && <PowerSheet initial={open} onClose={() => setOpen(null)} nav={nav} />}
+        <PwSettings />
+        {overlays}
       </div>
     );
   }
-  const st = all.map(p => powerState(p, now));
-  const env = envelopeState(state.envelope, now);
+
+  const noneText = !words.length ? 'Aucune fonction pour ce filtre.' : `Aucune fonction ne contient « ${q.trim()} » dans ce filtre.`;
+  const hasKpis = Object.values(state.kpis).some(isPowerKpi), vaultsLeft = !teamView ? sm.vaults.toDo : 0;
+  const verdictTone = !sm.total ? TONE.warn : sm.ready === sm.total ? TONE.good : sm.counts.no_deputy ? TONE.bad : TONE.warn;
+  const pick = (f: () => void) => () => { setMenu(false); f(); };
   return (
     <div className="space-y-4">
-      <Summary title="L'entreprise tourne-t-elle si quelqu'un manque ?" insights={powerInsights(state, now)} tiles={<>
-        <Tile title="Pouvoirs vitaux" value={String(all.length)} sub="un acte sans lequel un processus s'arrête" />
-        <Tile title="Suppléance prête" value={`${st.filter(x => x === 'ok').length} / ${all.length}`} sub="2 suppléants entraînés dans l'année" tone={st.every(x => x === 'ok') ? 'ok' : st.includes('no_deputy') ? 'alert' : 'warn'} />
-        <Tile title="Suppléants à entraîner" value={String(st.filter(x => x === 'unpracticed' || x === 'soon').length)} sub="une demi-journée par an sur l'acte réel" tone={st.some(x => x === 'unpracticed') ? 'warn' : undefined} />
-        <Tile title="Enveloppe des accès" value={state.envelope.checkedAt ? frDate(state.envelope.checkedAt) : '—'} sub={env === 'ok' ? `prochaine vérification avant le ${frDate(addDays(state.envelope.checkedAt, ENVELOPE_DAYS))}` : 'vérification à faire'} tone={env === 'ok' ? 'ok' : 'warn'} />
-      </>} />
       <Card className="space-y-3 p-3 sm:p-4">
-        <ToolHeader title="Matrice des suppléances" text={`Un suppléant n'est prêt que s'il a fait l'acte lui-même depuis moins de ${Math.round(PRACTICE_DAYS / 30)} mois.`}>
-          <Button kind="primary" onClick={() => setOpen(newPower())}><Plus size={14} />Ajouter un pouvoir</Button>
-          <Button kind="ghost" onClick={() => window.print()}><Printer size={14} />Imprimer</Button>
-        </ToolHeader>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[820px] border-separate border-spacing-0 text-left text-xs">
-            <thead><tr className="text-[11px] text-slate-500">{['Pouvoir vital', 'Titulaire', 'Suppléant 1', 'Suppléant 2', teamView ? 'Autres' : 'Accès', 'État'].map(h => <th key={h} className="border-b border-slate-200 px-2 py-2 font-semibold">{h}</th>)}</tr></thead>
-            <tbody>
-              {all.map((p, i) => (
-                <tr key={p.id} onClick={() => setOpen(p)} className="cursor-pointer hover:bg-slate-50">
-                  <td className="border-b border-slate-100 px-2 py-2"><span className="block text-[11px] text-slate-500">{processLabel(p.processId)}</span><strong className="text-slate-900">{p.power || 'À décrire'}</strong></td>
-                  <td className="border-b border-slate-100 px-2 py-2 font-semibold text-slate-800">{p.holder || <span className="text-red-700">À désigner</span>}</td>
-                  {[0, 1].map(k => (
-                    <td key={k} className="border-b border-slate-100 px-2 py-2">
-                      {p.deputies[k] ? <><span className="block font-semibold text-slate-800">{p.deputies[k]}</span><span className="text-[11px]"><Practice date={p.practiced[k]} /></span></> : <span className="text-[11px] text-red-700">À nommer</span>}
-                    </td>
-                  ))}
-                  <td className="max-w-[200px] border-b border-slate-100 px-2 py-2 text-[11px] text-slate-600">{teamView ? (p.extra || []).filter(Boolean).join(', ') : [p.access, (p.extra || []).filter(Boolean).length ? `+ ${(p.extra || []).filter(Boolean).join(', ')}` : ''].filter(Boolean).join(' · ')}</td>
-                  <td className="border-b border-slate-100 px-2 py-2"><StatusBadge level={POWER_STATE[st[i]].tone} text={POWER_STATE[st[i]].label} /></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+          <h2 className="min-w-0 flex-1 basis-56 text-sm font-bold text-delacour-primary">{nb("L'entreprise tourne-t-elle si quelqu'un manque ?")}</h2>
+          <div className="relative flex w-full items-center gap-2 sm:w-auto print:hidden">
+            <Button kind="primary" className="flex-1 sm:flex-none" onClick={() => go('absent')}><UserX size={14} aria-hidden />Quelqu'un est absent</Button>
+            <Button aria-label="Autres actions" aria-expanded={menu} onClick={() => setMenu(!menu)}><MoreHorizontal size={14} aria-hidden /></Button>
+            {menu && <div className="fixed inset-0 z-10" aria-hidden onClick={() => setMenu(false)} />}
+            {menu && (
+              <div role="menu" className="absolute right-0 top-full z-20 mt-1 flex w-64 flex-col gap-0.5 rounded-lg border border-slate-300 bg-white p-1 shadow-lg">
+                {[['Ajouter une fonction', () => go('new')], ['Revue de la liste', () => setView('review')], ['Partir de la bibliothèque', () => setView('setup')],
+                  ...(!hasKpis ? [['Ajouter au tableau de pilotage (1.1)', () => update(d => { addPowerKpis(d); })] as [string, () => void]] : []),
+                  ['Imprimer', () => window.print()], ...(mayDrop ? [["Retirer l'exemple", () => setDropEx(true)] as [string, () => void]] : [])].map(([l, f]) => (
+                  <button key={l as string} type="button" role="menuitem" className={`rounded px-2.5 py-1.5 text-left text-xs font-semibold text-slate-800 hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-delacour-golddark ${TOUCH}`} onClick={pick(f as () => void)}>{l as string}</button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-      </Card>
-      <Card className="space-y-2 p-3 sm:p-4">
-        <h2 className="text-xs font-bold text-slate-900">Si quelqu'un est absent demain</h2>
-        <select className="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs" value={absent} aria-label="Personne absente" onChange={e => setAbsent(e.target.value)}>
-          <option value="">Choisir la personne absente…</option>
-          {[...new Set(all.map(p => p.holder).filter(Boolean))].sort().map(n => <option key={n} value={n}>{n}</option>)}
-        </select>
-        {absent && (
-          <ul className="space-y-1 text-[11px]">
-            {absenceView(state, absent).map(({ power, ready }) => (
-              <li key={power.id} className={ready.length ? 'text-slate-700' : 'font-semibold text-red-700'}><strong>{power.power}</strong> : {ready.length ? `${ready.map(r => r.name).join(' ou ')} (entraîné${ready.length > 1 ? 's' : ''})` : 'personne d\'entraîné pour le faire'}</li>
+        {sm.absent.length > 0 && (
+          <ul className="space-y-1.5">
+            {sm.absent.map(a => (
+              <li key={a.name} className={`flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 rounded-lg border px-3 py-2 text-xs ${a.uncovered ? TONE.bad : TONE.warn}`}>
+                <span><strong>{a.name}</strong> est absent jusqu'au {frDate(a.until)} : {plural(a.held - a.uncovered, 'fonction couverte', 'fonctions couvertes')}{a.uncovered ? `, ${plural(a.uncovered, 'fonction')} sans suppléant disponible` : ''}.</span>
+                <Button className="!py-1" onClick={() => go(`absent:${enc(a.name)}:${today}:${a.until}`)}>Qui remplace ?</Button>
+              </li>
             ))}
           </ul>
         )}
+        <p role="status" className={`flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-lg border px-3 py-2 text-xs font-semibold ${verdictTone}`}>
+          <span>{sm.total ? `${sm.ready} fonction${sm.ready > 1 ? 's' : ''} clé${sm.ready > 1 ? 's' : ''} sur ${sm.total} ${sm.ready > 1 ? 'sont prêtes' : 'est prête'} (suppléants nommés, signatures faites).` : 'Aucune fonction décrite.'}{vaultsLeft ? ` ${plural(vaultsLeft, 'enveloppe', 'enveloppes')} à vérifier.` : ''}</span>
+          {vaultsLeft > 0 && <button type="button" className={`font-semibold underline ${TOUCH}`} onClick={() => setSection('vaults')}>Voir les accès</button>}
+        </p>
       </Card>
-      {!teamView && <Card className="grid items-end gap-3 p-3 sm:grid-cols-[2fr_1fr_auto] sm:p-4">
-        <Field label="Enveloppe scellée des accès : où elle est" hint="Mots de passe maîtres et procédures de secours ; ouverte seulement en cas d'absence imprévue de plus de 24 h, sous double visa.">
-          <input className={inputCls} value={state.envelope.location} onChange={e => update(d => { d.envelope.location = e.target.value; })} />
-        </Field>
-        <p className="text-[11px] text-slate-600">{state.envelope.checkedAt ? `Vérifiée le ${frDate(state.envelope.checkedAt)}${state.envelope.by ? ` par ${state.envelope.by}` : ''}.` : 'Jamais vérifiée.'} Codes à jour, suppléants à l'aise avec les outils : à revoir chaque semestre.</p>
-        <Button onClick={() => update(d => { d.envelope.checkedAt = isoDate(new Date()); d.envelope.by = author; })}><Check size={14} />Vérifiée aujourd'hui</Button>
-      </Card>}
-      <Method rule="Aucune entreprise ne doit être paralysée par l'absence d'une seule personne : chaque pouvoir vital a deux suppléants entraînés et des accès sous pli scellé."
-        steps={[['Cartographier les pouvoirs', 'Pour chaque processus, l\'acte sans lequel tout s\'arrête : payer, valider un devis, lancer, ouvrir, libérer.'], ['Entraîner les suppléants', 'Une demi-journée par an où le suppléant fait réellement l\'acte, en conditions réelles.'], ['Accès sous pli', 'Codes et mots de passe sous enveloppe scellée au coffre, signée sur la languette.']]} />
-      {open && <PowerSheet initial={open} onClose={() => setOpen(null)} nav={nav} />}
+
+      <PwQueue todos={todos} me={me} onOpen={go} />
+
+      {(
+        <>
+          <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
+            <div role="tablist" aria-label="Sections de l'outil" className="flex gap-5 print:hidden">
+              {([['powers', 'Fonctions', live.length], ['people', 'Personnes', sm.people.length], ...(teamView ? [] : [['vaults', 'Accès de secours', Object.values(state.vaults).filter(v => !v.archivedAt).length]])] as [Section, string, number][]).map(([k, l, n]) => (
+                <button key={k} type="button" role="tab" id={`pw-sec-${k}`} aria-selected={section === k} aria-controls="pw-section" onClick={() => setSection(k)}
+                  className={`inline-flex items-center gap-1.5 border-b-2 px-0.5 pb-1.5 pt-1 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-delacour-golddark ${TOUCH} ${section === k ? 'border-delacour-primary font-bold text-delacour-primary' : 'border-transparent font-semibold text-slate-600 hover:text-slate-900'}`}>
+                  {l}<span className="text-xs font-normal text-slate-600">{n}</span>
+                </button>
+              ))}
+            </div>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 print:hidden">
+              <label className="flex items-center gap-1.5 text-xs text-slate-700"><span className="font-semibold">Je suis</span>
+                <select className={`${FIELD} !w-auto`} aria-label="Je suis : pour retrouver mes fonctions et mes tâches" value={me} onChange={e => { setMe(e.target.value); if (!e.target.value && filter === 'mine') setFilter('all'); }}>
+                  <option value="">Choisir ma personne</option>
+                  {Object.values(state.people).filter(p => p.active && p.name.trim()).sort((a, b) => a.name.localeCompare(b.name, 'fr')).map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+                </select></label>
+            </div>
+          </div>
+
+          <div id="pw-section" role="tabpanel" aria-labelledby={`pw-sec-${section}`} className="space-y-4">
+          {section === 'powers' && (
+            <div id="pw-list" className="scroll-mt-36"><Card className="space-y-3 p-3 sm:p-4">
+              <div className="min-w-0"><h2 className="text-sm font-bold text-delacour-primary">Les fonctions clés</h2><p className="max-w-3xl text-xs text-slate-600">Une fonction clé est l'acte sans lequel l'entreprise s'arrête (payer, signer une offre, ouvrir les locaux). Elle est prête quand elle a deux suppléants et que chacun, le titulaire et la direction ont signé la délégation.</p></div>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+                <div className="min-w-0 max-w-full [@media(pointer:coarse)]:[&_button]:min-h-[44px]"><Chips value={filter} onChange={f => { setFilter(f); setLimit(PAGE); }} items={FILTERS} /></div>
+                <label className="relative block w-full sm:w-56"><Search size={13} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden /><input className={`${FIELD} !pl-7`} value={q} placeholder="Fonction, personne, processus" aria-label="Chercher une fonction, une personne ou un processus" onChange={e => { setQ(e.target.value); setLimit(PAGE); }} /></label>
+              </div>
+              {shown.length
+                ? <>
+                  <PwList rows={shown.slice(0, limit)} state={state} onOpen={open} />
+                  {shown.length > limit && <div className="flex flex-wrap items-center justify-center gap-3 pt-1"><span className="text-xs text-slate-600">{limit} fonctions affichés sur {shown.length}</span><Button onClick={() => setLimit(limit + PAGE)}>Afficher {Math.min(PAGE, shown.length - limit)} de plus</Button></div>}
+                </>
+                : <p className="py-6 text-center text-xs text-slate-600">{noneText}</p>}
+            </Card></div>
+          )}
+          {section === 'people' && <PwPeople state={state} now={now} onAbsent={n => go(`absent:${enc(n)}`)} onOpen={id => open(state.powers[id])} />}
+          {section === 'vaults' && !teamView && <PwVaults focusId={vaultFocus} nav={nav} offer={offer} />}
+          </div>
+        </>
+      )}
+
+      <details className="group print:hidden">
+        <summary className={`flex cursor-pointer list-none items-center text-xs font-semibold text-delacour-primary hover:underline ${TOUCH}`}>Réglages et méthode</summary>
+        <div className="mt-2 space-y-4">
+          {hasKpis && <FeedBox tool="4.1" period={periodOfDate(now)} />}
+          <Method rule="Aucune entreprise ne doit être paralysée par l'absence d'une seule personne : chaque fonction clé a deux suppléants qui ont signé leur délégation, et des accès de secours notés."
+            steps={[['Cartographier les fonctions', "Pour chaque processus, l'acte sans lequel tout s'arrête : payer, valider une offre, lancer l'activité, ouvrir les locaux, libérer un produit."], ['Faire signer la délégation', "Le titulaire, chaque suppléant et la direction signent sous leur nom, sur l'écran : une signature manquante est signalée."], ['Accès de secours', "Où sont les accès dont on a besoin si le titulaire manque, et qui peut y accéder : jamais les mots de passe eux-mêmes."]]}
+            tips={["Ce qui est tapé une fois (fonctions, personnes, formalités) reste ; les gestes (une signature, une absence) sont enregistrés à l'instant.", "Une absence enregistrée ici est aussi dans la polyvalence (4.2) et l'annuaire (1.3).", "L'outil n'écrit aucun mot de passe : seulement où il est."]} />
+          <PwSettings />
+        </div>
+      </details>
+      {overlays}
     </div>
   );
 }
 
-function PowerSheet({ initial, onClose, nav }: { initial: Power; onClose(): void; nav: Nav }) {
-  const { state, update, teamView } = useStore();
-  const [p, setP] = useState<Power>(() => structuredClone(initial));
-  const [error, setError] = useState('');
-  if (!state) return null;
-  const isNew = !state.powers[p.id];
-  const set = (x: Partial<Power>) => setP(y => ({ ...y, ...x }));
-  const setDep = (k: 0 | 1, name: string) => set({ deputies: (k === 0 ? [name, p.deputies[1]] : [p.deputies[0], name]) as [string, string], practiced: (k === 0 ? [name === p.deputies[0] ? p.practiced[0] : '', p.practiced[1]] : [p.practiced[0], name === p.deputies[1] ? p.practiced[1] : '']) as [string, string] });
-  const setPrac = (k: 0 | 1, date: string) => set({ practiced: (k === 0 ? [date, p.practiced[1]] : [p.practiced[0], date]) as [string, string] });
-  const st = powerState(p);
-  const close = () => { if (JSON.stringify(p) === JSON.stringify(initial) || window.confirm('Fermer sans enregistrer ? Vos modifications seront perdues.')) onClose(); };
-  // in team view the codes are neither shown nor overwritten
-  const commit = (d: State) => { d.powers[p.id] = teamView ? { ...p, access: d.powers[p.id]?.access || '' } : p; };
-  const save = () => { if (!p.power.trim()) return setError('Décrivez le pouvoir vital.'); update(commit); onClose(); };
-  const period = p.periodDays || PRACTICE_DAYS;
-  const setExtra = (i: number, x: { name?: string; date?: string }) => { const names = [...(p.extra || [])], dates = [...(p.extraPracticed || [])]; if (x.name !== undefined) { if (x.name !== names[i]) dates[i] = ''; names[i] = x.name; } if (x.date !== undefined) dates[i] = x.date; set({ extra: names, extraPracticed: dates }); };
-  const remove = () => { if (window.confirm('Supprimer ce pouvoir ?')) { update(d => { delete d.powers[p.id]; }); onClose(); } };
-  const train = () => { if (!p.power.trim()) return setError('Décrivez le pouvoir vital.'); update(commit); nav.newAction({ ref: { kind: 'power', id: p.id }, constat: `Entraîner le suppléant : ${p.power}` }); };
+// Removing the example says what leaves, what stays, and that "Annuler" brings it back
+function ExampleDialog({ onClose, onRemove, gone }: { onClose(): void; onRemove(): void; gone: ReturnType<typeof removePowerExample> }) {
   return (
-    <Modal wide onClose={close} title={isNew ? 'Nouveau pouvoir vital' : p.power} subtitle={<StatusBadge level={POWER_STATE[st].tone} text={POWER_STATE[st].label} />}
-      footer={<>
-        {!isNew && <DeleteButton onClick={remove} className="mr-auto"><Trash2 size={14} />Supprimer</DeleteButton>}
-        {error && <span role="alert" className="mr-2 text-[11px] font-semibold text-red-700">{error}</span>}
-        <Button onClick={close}>Annuler</Button>
-        <Button kind="primary" onClick={save}>Enregistrer</Button>
-      </>}>
-      <div className="space-y-5">
-        <section className="grid gap-3 sm:grid-cols-3">
-          <Field label="Processus"><select className={inputCls} value={p.processId} onChange={e => set({ processId: e.target.value })}>{PROCESS_IDS.map(x => <option key={x} value={x}>{processLabel(x)}</option>)}</select></Field>
-          <div className="sm:col-span-2"><Field label="Pouvoir vital (l'acte sans lequel le processus s'arrête)"><input className={inputCls} value={p.power} onChange={e => set({ power: e.target.value })} /></Field></div>
-          <Field label="Titulaire"><input className={inputCls} value={p.holder} list="people" onChange={e => set({ holder: e.target.value })} /></Field>
-          {!teamView && <div className="sm:col-span-2"><Field label="Codes et accès : où ils sont (réservé à la direction)"><input className={inputCls} value={p.access} onChange={e => set({ access: e.target.value })} /></Field></div>}
-          <Field label="Pratique à refaire tous les (jours)" hint="365 par défaut ; plus court pour un poste d'atelier."><NumInput value={p.periodDays ?? PRACTICE_DAYS} onChange={v => set({ periodDays: v && v > 0 ? v : undefined })} /></Field>
-          <Field label="Prochaine pratique prévue le"><input type="date" className={inputCls} value={p.nextPracticeAt || ''} onChange={e => set({ nextPracticeAt: e.target.value })} /></Field>
-          <div className="space-y-1 pt-4 text-[11px] text-slate-700">
-            <label className="flex items-center gap-2"><input type="checkbox" checked={!!p.delegationSigned} onChange={e => set({ delegationSigned: e.target.checked })} />Délégation écrite signée</label>
-            <label className="flex items-center gap-2"><input type="checkbox" checked={!!p.bankInformed} onChange={e => set({ bankInformed: e.target.checked })} />Banque ou organisme informé</label>
-          </div>
-        </section>
-        <section className="space-y-2">
-          <SubTitle>Deux suppléants, entraînés dans l'année</SubTitle>
-          {([0, 1] as const).map(k => (
-            <div key={k} className="grid items-end gap-2 rounded-lg border border-slate-200 p-2 sm:grid-cols-[1fr_1fr_auto]">
-              <Field label={`Suppléant ${k + 1}`}><input className={inputCls} value={p.deputies[k]} list="people" onChange={e => setDep(k, e.target.value)} /></Field>
-              <Field label="A fait l'acte lui-même le"><input type="date" className={inputCls} value={p.practiced[k]} disabled={!p.deputies[k].trim()} onChange={e => setPrac(k, e.target.value)} /></Field>
-              <Button disabled={!p.deputies[k].trim()} onClick={() => setPrac(k, isoDate(new Date()))}>Aujourd'hui</Button>
-              {p.deputies[k] && <span className="text-[11px] sm:col-span-3"><Practice date={p.practiced[k]} />{p.practiced[k] ? ` · à refaire avant le ${frDate(addDays(p.practiced[k], period))}` : ''}</span>}
-            </div>
-          ))}
-          {(p.extra || []).map((name, i) => (
-            <div key={i} className="grid items-end gap-2 rounded-lg border border-dashed border-slate-300 p-2 sm:grid-cols-[1fr_1fr_auto]">
-              <Field label={`Autre suppléant (interne ou externe, ex. expert-comptable)`}><input className={inputCls} value={name} list="people-ext" onChange={e => setExtra(i, { name: e.target.value })} /></Field>
-              <Field label="A fait l'acte le"><input type="date" className={inputCls} value={p.extraPracticed?.[i] || ''} onChange={e => setExtra(i, { date: e.target.value })} /></Field>
-              <Button onClick={() => set({ extra: p.extra!.filter((_, j) => j !== i), extraPracticed: (p.extraPracticed || []).filter((_, j) => j !== i) })}>Retirer</Button>
-            </div>
-          ))}
-          <Button className="!px-2 !py-1" onClick={() => set({ extra: [...(p.extra || []), ''], extraPracticed: [...(p.extraPracticed || []), ''] })}><Plus size={13} />Autre suppléant</Button>
-          {st !== 'ok' && <button type="button" className="ml-3 text-[11px] font-semibold text-delacour-primary hover:underline" onClick={train}>Planifier l'entraînement (action)</button>}
-          {st === 'no_deputy' && !Object.values(state.risks).some(r => r.resource.includes(p.power)) && <button type="button" className="ml-3 text-[11px] font-semibold text-red-700 hover:underline" onClick={() => { if (!p.power.trim()) return; const r = { ...newRisk(p.processId), title: `Absence de ${p.holder || 'la personne'} : ${p.power}`, resource: `Pouvoir vital : ${p.power}`, family: 'doublure' as const, cause: 'Aucun suppléant (outil 4.1)' }; update(d => { commit(d); d.risks[r.id] = r; }); onClose(); nav.openRisk(r.id); }}>Inscrire le risque dans les Plans B (1.2)</button>}
-          <datalist id="people-ext">{Object.values(state.contacts).map(c => <option key={c.id} value={`${c.name}${c.company ? ` (${c.company})` : ''}`} />)}</datalist>
-        </section>
+    <Modal onClose={onClose} title="Retirer l'exemple" footer={<><Button onClick={onClose}>Annuler</Button><Button kind="danger" onClick={onRemove}>Retirer l'exemple</Button></>}>
+      <div className="space-y-2 text-xs text-slate-700">
+        <p>Quittent l'outil : {[plural(gone.powers, "fonction d'exemple", "fonctions d'exemple"), gone.practices ? plural(gone.practices, 'pratique inscrite', 'pratiques inscrites') : '', gone.covers ? plural(gone.covers, 'absence couverte', 'absences couvertes') : '', gone.vaults ? plural(gone.vaults, "enveloppe d'exemple", "enveloppes d'exemple") : ''].filter(Boolean).join(', ')}.</p>
+        <p>Restent : les fonctions que l'entreprise a ajoutés, les personnes du personnel et de l'annuaire, et les réglages. « Annuler » restaure l'exemple pendant 8 secondes après le retrait.</p>
       </div>
     </Modal>
   );

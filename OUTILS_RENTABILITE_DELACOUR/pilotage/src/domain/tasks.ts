@@ -1,15 +1,20 @@
 // Everything someone has to do, from every tool, with its due date: the "Mes tâches" screen, the calendar export (.ics)
 // and the weekly sheet. A task without owner is shown to everyone under "Non attribué".
 import type { State } from './types';
-import { addDays, daysBetween } from './base';
+import { addDays, addWorkHours, businessOf, daysBetween, workHoursBetween } from './base';
 import { isoDate } from './periods';
 import { isOpen } from './engine';
 import { riskState, testDueDate } from './risk';
 import { ncState, pokaState, checkDate, DECISION_HOURS } from './quality';
-import { complaintState, courtesyDue, changeState, feedbackState, quoteState, FOLLOW_DAYS, CONTACT_HOURS } from './commercial';
-import { debitState, inspectionState, lowParts, liftDue, deliveryState, ncsSinceVersion, ratingDue, CLAIM_DAYS, taskDue } from './operations';
+import { ACK_HOURS, complaintState, contactDeadline, courtesyDue, deliveriesToAsk, receivedOn, detailsOf, directorName, escalationOf, feedbackState, isClosed, needsApproval, ownerToday, quoteState, FOLLOW_DAYS } from './commercial';
+import { maintFocus, maintTodos } from './maintenanceAll';
+import { receptionFocus, receptionTodos, whoOf } from './receptionsAll';
+import { sopTodos } from './instructions';
+import { sectorTasks } from './sectors';
+import { claimSupplierName, debitState, lastContact, nextReview, ratingDue, supplierCfg } from './suppliers';
 import { contactLabel, toCallThisMonth } from './contacts';
-import { checklistOf, newcomerState, powerDeputies, powerState, testDate, chronoSummary } from './team';
+import { checklistOf, newcomerState, testDate, chronoSummary } from './team';
+import { powerFocus, powerTodos } from './powersAll';
 
 export interface Task { id: string; who: string; due: string; text: string; tool: string; focus: string }
 
@@ -23,51 +28,49 @@ export function allTasks(s: State, now = new Date()): Task[] {
     const st = riskState(s, r, now);
     if (['ready', 'expired', 'failed', 'tested'].includes(st)) { const due = st === 'tested' ? testDueDate(r) : d(isoDate(now)); if (st !== 'tested' || (daysBetween(isoDate(now), due) ?? 99) <= 30) add(`r${r.id}`, r.owner, due, `Tester le Plan B : ${r.title}`, '1.2', r.id); }
   });
-  Object.values(s.ncs).filter(n => ncState(n, now) !== 'decided').forEach(n => add(`n${n.id}`, n.decidedBy || '', d(addDays(d(n.at), Math.ceil(DECISION_HOURS / 24))), `Décider (bac rouge) ${n.ref} : ${n.description}`, '5.1', n.id));
+  Object.values(s.ncs).filter(n => ncState(n, now, businessOf(s.params)) !== 'decided').forEach(n => add(`n${n.id}`, n.decidedBy || '', d(addDays(d(n.at), Math.ceil(DECISION_HOURS / 24))), `Décider (bac rouge) ${n.ref} : ${n.description}`, '5.1', n.id));
+  const biz = businessOf(s.params), today = isoDate(now);
   Object.values(s.complaints).forEach(c => {
-    const st = complaintState(c, now);
-    if (st === 'to_contact' || st === 'late') add(`c${c.id}`, c.pilot || c.receivedBy, d(addDays(d(c.at), Math.ceil(CONTACT_HOURS / 24))), `Rappeler ${c.client} (${c.ref})`, '2.3', c.id);
-    if (st === 'resolved') add(`cc${c.id}`, c.pilot, courtesyDue(c), `Appel de courtoisie ${c.client} (${c.ref})`, '2.3', c.id);
+    const st = complaintState(c, now, biz), me = ownerToday(s, c, today), away = me.absent ? ' (pilote absent)' : '';
+    if (st === 'to_contact' || st === 'late') add(`c${c.id}`, me.who, d(contactDeadline(c, biz)), `Recontacter ${c.client} (${c.ref})${away}`, '2.3', c.id);
+    if (st === 'late') add(`ce${c.id}`, escalationOf(s, c), today, `Client pas recontacté sous 48 h : faire recontacter ${c.client} (${c.ref}) par ${c.pilot || c.receivedBy || 'le pilote'}`, '2.3', c.id);
+    if (st !== 'closed' && !c.ackAt && !c.contactedAt && (workHoursBetween(c.at, now, biz) ?? 0) >= ACK_HOURS) add(`ca${c.id}`, me.who, d(c.at), `Envoyer l'accusé de réception à ${c.client} (${c.ref})${away}`, '2.3', c.id);
+    if (c.verdict && !c.resultSentAt && st !== 'closed') add(`cn${c.id}`, me.who, today, `Informer ${c.client} du résultat de l'enquête (${c.ref})${away}`, '2.3', c.id);
+    if (st === 'resolved') add(`cc${c.id}`, me.who, courtesyDue(c), `Appel de courtoisie ${c.client} (${c.ref})${away}`, '2.3', c.id);
+    if (st === 'unsatisfied') add(`cu${c.id}`, me.who, today, `Reprendre avec ${c.client} (${c.ref}) : client pas satisfait${away}`, '2.3', c.id);
+    if (!isClosed(c) && !c.pilot.trim()) add(`cp${c.id}`, '', today, `Désigner un pilote pour ${c.ref} (${c.client})`, '2.3', c.id);
+    if (!isClosed(c) && needsApproval(c, s.params) && !c.approval?.by) add(`cv${c.id}`, directorName(s), today, `Valider ${c.ref} (${c.client}) : avoir ou réponse « non justifiée »`, '2.3', c.id);
   });
   Object.values(s.quotes).forEach(q => {
     const st = quoteState(q, s.params, now);
     if (st === 'sent' || st === 'to_follow') add(`q${q.id}`, q.visas.commercial.by, q.nextFollowAt || addDays(q.followedAt || q.sentAt, FOLLOW_DAYS), `Relancer ${q.client} (${q.ref})`, '2.1', q.id);
     if (st === 'draft') add(`qd${q.id}`, q.visas.commercial.by, '', `Valider le devis ${q.ref} (${q.client})`, '2.1', q.id);
   });
-  Object.values(s.changes).forEach(c => {
-    const st = changeState(c);
-    if (st === 'to_price' || st === 'to_send') add(`ch${c.id}`, '', c.date, `${st === 'to_price' ? 'Chiffrer' : 'Envoyer pour accord'} l'avenant ${c.ref} (${c.client})`, '2.2', c.id);
-    if (st === 'accepted') add(`chf${c.id}`, '', c.answeredAt, `Facturer l'avenant ${c.ref} (${c.client})`, '2.2', c.id);
-  });
   Object.values(s.feedbacks).forEach(f => {
     const st = feedbackState(f, s);
-    if (st === 'to_ask') add(`f${f.id}`, '', f.date, `Bilan de fin : 3 questions à ${f.client}`, '2.4', f.id);
-    if (st === 'doubt') add(`f${f.id}`, '', f.date, `Régler la réserve de ${f.client} : ${f.doubt}`, '2.4', f.id);
-    if (st === 'to_invoice') add(`f${f.id}`, '', addDays(f.date, 1), `Facture de solde ${f.client}`, '2.4', f.id);
+    // a text message goes out the next morning (the method of the tool), the other ways of asking the same day
+    if (st === 'to_ask') add(`f${f.id}`, '', f.channel === 'sms' ? addDays(f.date, 1) : f.date, `Bilan de fin : 3 questions à ${f.client}`, '2.4', f.id);
+    // a dissatisfied customer with no complaint opened: the point is settled with him (a complaint has its own tasks in 2.3)
+    if (st === 'unhappy' && !f.complaintId) add(`f${f.id}`, '', f.date, `Régler avec ${f.client} : ${detailsOf(f, s.params)[0] || 'client insatisfait'}`, '2.4', f.id);
   });
+  // a delivery received without any review: the focus is the delivery, the tool creates the review from it
+  deliveriesToAsk(s, now).forEach(x => add(`fd${x.id}`, whoOf(s, x, today), receivedOn(x), `Bilan de fin : 3 questions à ${x.client || 'client'} (${x.ref || x.item})`, '2.4', x.id));
+  const sc = supplierCfg(s.params);
   Object.values(s.debits).forEach(x => {
-    const st = debitState(x, now);
-    if (st === 'to_send' || st === 'late') add(`d${x.id}`, '', addDays(x.date, CLAIM_DAYS), `Envoyer la fiche de débit ${x.ref} à ${s.suppliers[x.supplierId]?.name || 'fournisseur'}`, '3.1', x.id);
-    if (st === 'accepted' || st === 'waiting') add(`dr${x.id}`, '', x.followAt || addDays(x.sentAt, 30), `Relancer ${s.suppliers[x.supplierId]?.name || 'le fournisseur'} (${x.ref})`, '3.1', x.id);
+    const st = debitState(x, now, s.params), who = claimSupplierName(s, x);
+    if (st === 'to_send' || st === 'late') add(`d${x.id}`, '', d(addWorkHours(x.date, sc.sendDays * 24, biz)), `Réclamation ${x.ref} à envoyer à ${who}`, '3.1', x.id);
+    if (st === 'waiting' || st === 'chase') add(`dr${x.id}`, '', addDays(lastContact(x), sc.followDays), `Réponse de ${who} attendue (${x.ref})`, '3.1', x.id);
+    if (st === 'accepted') add(`dr${x.id}`, '', addDays(x.answeredAt || lastContact(x), 30), `Suite promise par ${who} à recevoir (${x.ref})`, '3.1', x.id);
+    if (st === 'contested') add(`dc${x.id}`, '', today, `Réclamation ${x.ref} contestée par ${who} : suite à décider`, '3.1', x.id);
+    if (x.supplierAction?.trim() && !x.actionCheckedAt && ['recovered', 'closed', 'accepted'].includes(st)) add(`dv${x.id}`, '', '', `Action de ${who} à vérifier à la prochaine livraison (${x.ref})`, '3.1', x.id);
   });
-  Object.values(s.suppliers).filter(x => ratingDue(x, now)).forEach(x => add(`sr${x.id}`, '', '', `Noter le fournisseur ${x.name}`, '3.1', x.id));
-  Object.values(s.sops).filter(x => ncsSinceVersion(s, x).length).forEach(x => add(`so${x.id}`, x.author, '', `Mettre à jour l'instruction du poste ${x.poste}`, '3.2', x.id));
-  Object.values(s.equipments).forEach(e => {
-    if (inspectionState(e, now) !== 'ok') add(`e${e.id}`, e.operator, isoDate(now), `Routine du lundi : ${e.name}`, '3.3', e.id);
-    lowParts(e).filter(p => !p.orderedAt).forEach((p, i) => add(`ep${e.id}${i}`, e.manager, isoDate(now), `Commander ${p.name} (${e.name})`, '3.3', e.id));
-    (e.tasks || []).forEach(t => { const due = taskDue(t); if ((daysBetween(isoDate(now), due) ?? 99) <= 30) add(`et${t.id}`, e.manager, due, `${t.label} (${e.name})${t.legal ? ' · obligatoire' : ''}`, '3.3', e.id); });
-    (e.anomalies || []).filter(a => !a.closedAt).forEach(a => add(`ea${a.id}`, e.manager, a.date, `Traiter l'anomalie : ${a.label} (${e.name})`, '3.3', e.id));
-  });
-  Object.values(s.deliveries).forEach(x => {
-    const st = deliveryState(x, now);
-    if (st === 'released') add(`dl${x.id}`, x.releasedBy, x.releasedAt, `Faire signer le PV ${x.ref} (${x.client})`, '3.4', x.id);
-    if (st === 'reserve' || st === 'reserve_late') add(`dl${x.id}`, '', liftDue(x), `Lever la réserve ${x.ref} : ${x.reception.reserve}`, '3.4', x.id);
-    if (st === 'to_release') add(`dl${x.id}`, '', '', `Libérer ${x.ref} (${x.client})`, '3.4', x.id);
-  });
-  Object.values(s.powers).forEach(p => {
-    if (powerState(p, now) === 'ok') return;
-    powerDeputies(p).forEach((dep, i) => add(`p${p.id}${i}`, dep.name, p.nextPracticeAt || isoDate(now), `Faire l'acte en suppléant : ${p.power}`, '4.1', p.id));
-  });
+  Object.values(s.suppliers).filter(x => ratingDue(x, now, s.params)).forEach(x => add(`sr${x.id}`, '', nextReview(x, s.params), `Évaluation du fournisseur ${x.name} à faire`, '3.1', x.id));
+  sectorTasks(s, now).forEach(x => add(x.id, '', x.due, x.text, '3.1', x.focus));
+  sopTodos(s, now).forEach(t => add(`so${t.id}`, t.who, t.due, t.text, '3.2', t.sopId));
+  maintTodos(s, now).forEach(t => add(`m${t.id}`, t.who, t.due, t.text, '3.3', maintFocus(t)));
+  // the review of the end is listed above (from deliveriesToAsk, it opens 2.4) and the defects by the red bin (5.1): not repeated here
+  receptionTodos(s, now).filter(t => t.kind !== 'feedback' && t.kind !== 'defect').forEach(t => add(`dl${t.id}`, t.who, t.due, t.text, '3.4', receptionFocus(t)));
+  powerTodos(s, now).forEach(t => add(`p${t.id}`, t.who, t.due, t.text, '4.1', powerFocus(t)));
   Object.values(s.newcomers).forEach(n => {
     const st = newcomerState(n, now, checklistOf(s));
     if (st === 'test_due' || st === 'failed' || st === 'tutoring') add(`nw${n.id}`, n.tutor, n.retestAt || testDate(n), `Test d'autonomie de ${n.name}`, '4.3', n.id);

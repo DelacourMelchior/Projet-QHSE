@@ -1,6 +1,7 @@
 // Tool 4.2 "Polyvalence": who can do what, from 0 to 4, on the key skills; a skill held by one autonomous person (level 3 or 4)
 // is a key-person risk; the double is trained 2 hours a week with a tutor, then 2 days alone validate level 3.
 import { syncStaff } from '../../domain/contacts';
+import { syncPowerPeople } from '../../domain/powers';
 import { useEffect, useState } from 'react';
 import { Plus, Printer, ShieldAlert, Trash2, UserPlus, X } from 'lucide-react';
 import type { Person, Skill, SkillLevel } from '../../domain/types';
@@ -132,7 +133,7 @@ function TeamSheet({ onClose }: { onClose(): void }) {
   if (!state) return null;
   const people = Object.values(state.people).sort((a, b) => Number(b.active) - Number(a.active) || a.name.localeCompare(b.name));
   const add = () => { if (!name.trim()) return; const p = { ...newPerson(name.trim()), role: role.trim() }; update(d => { d.people[p.id] = p; syncStaff(d); }); setName(''); setRole(''); };
-  const set = (id: string, x: Partial<Person>) => update(d => { d.people[id] = { ...d.people[id], ...x }; });
+  const set = (id: string, x: Partial<Person>) => update(d => { d.people[id] = { ...d.people[id], ...x }; syncPowerPeople(d); });   // a rename is carried to tool 4.1
   return (
     <Modal title="Équipe" subtitle="Les personnes de la matrice de polyvalence ; leurs noms sont proposés dans tous les outils." onClose={onClose} footer={<Button kind="primary" onClick={onClose}>Fermer</Button>}>
       <div className="space-y-3">

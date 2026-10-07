@@ -4,23 +4,26 @@ import type { Period, State } from './types';
 import { synthesis } from './engine';
 import { riskSummary, staleContacts } from './risk';
 import { chainIssues, duplicates, toCheck } from './contacts';
-import { breakEven } from './breakeven';
-import { capacity, hourlyCosts } from './hourly';
-import { charterChanges, chartModel, hourValues, isStale, issuedText, signals } from './charter';
 import { cnqMonth, ncState, pokaState, analysisState } from './quality';
 import { formatValue } from './numbers';
 import { isoDate } from './periods';
-import { changeState, changeSummary, complaintState, feedbackState, quoteState } from './commercial';
-import { checklistOf, chronoSummary, envelopeState, keyPeople, newcomerState, powerState, skillRisk } from './team';
-import { anomalies, debitState, deliveryState, inspectionState, lowParts, ncsSinceVersion, supplierSummary } from './operations';
+import { businessOf } from './base';
+import { complaintState, deliveriesToAsk, feedbackState, quoteState } from './commercial';
+import { checklistOf, chronoSummary, keyPeople, newcomerState, skillRisk } from './team';
+import { powerTodos, todoWords } from './powersAll';
+import { receptionInsights, receptionTodos } from './receptionsAll';
+import { plural } from './receptions';
+import { eqStatus } from './maintenance';
+import { maintSummary } from './maintenanceAll';
+import { sopPhase, sopSummary } from './instructions';
+import { debitState, supplierSummary } from './suppliers';
+import { sectorSummary } from './sectors';
 
 export interface ToolStatus { n: number; tone: 'ok' | 'warn' | 'alert' | 'pending'; text: string }
 const ok = (text: string): ToolStatus => ({ n: 0, tone: 'ok', text });
 const empty = (text = 'Pas encore utilisé'): ToolStatus => ({ n: 0, tone: 'pending', text });
-const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n > 1 ? many : one}`;
 
-// money = false in team view: what says how the company is doing is not shown (1.4)
-export function toolBadge(s: State, tool: string, p: Period, now = new Date(), money = true): ToolStatus {
+export function toolBadge(s: State, tool: string, p: Period, now = new Date()): ToolStatus {
   switch (tool) {
     case '1.1': {
       const syn = synthesis(s, p);
@@ -48,43 +51,11 @@ export function toolBadge(s: State, tool: string, p: Period, now = new Date(), m
       if (!stale && dup) return { n: dup, tone: 'warn', text: `${plural(dup, 'doublon')} à fusionner` };
       return stale ? { n: stale, tone: 'warn', text: `${plural(stale, 'numéro')} à vérifier` } : ok(`${plural(all.length, 'contact')} à jour`);
     }
-    case '1.4': {
-      if (!money) return { n: 0, tone: 'pending', text: 'Réservé à la direction' };
-      if (!s.settings.accounts) return empty('Chiffres du compte de résultat à saisir');
-      const b = breakEven(s.settings.accounts);
-      if (b && b.ratePct <= 0) return { n: 1, tone: 'alert', text: 'Marge sur coûts variables négative' };
-      if (!b || b.safetyPct === null) return { n: 0, tone: 'pending', text: 'Chiffres du compte de résultat à compléter' };
-      if (b.safetyPct < 0) return { n: 1, tone: 'alert', text: 'Exercice sous le seuil de rentabilité' };
-      return b.safetyPct < 10 ? { n: 1, tone: 'warn', text: `Marge de sécurité fragile : ${formatValue(b.safetyPct, '%')}` } : ok(`Marge de sécurité de ${formatValue(b.safetyPct, '%')}`);
-    }
-    case '1.5': {
-      if (!money) return { n: 0, tone: 'pending', text: 'Réservé à la direction' };
-      const h = s.settings.hourly;
-      if (!h?.stations.length) return empty('Postes de travail à saisir');
-      const c = hourlyCosts(h)!;
-      if (c.incomplete.length) return { n: c.incomplete.length, tone: 'warn', text: `${plural(c.incomplete.length, 'poste')} à compléter` };
-      const k = capacity(h, s.settings.accounts);
-      if (k && (k.neededPct > 100 || k.sold < k.needed)) return { n: 1, tone: 'alert', text: k.neededPct > 100 ? "Le seuil demande plus d'heures que la capacité" : 'Heures vendues sous le seuil' };
-      if (k && k.neededPct > 90) return { n: 1, tone: 'warn', text: `Le seuil demande ${Math.round(k.neededPct)} % de la capacité` };
-      return ok(`Coût horaire moyen : ${formatValue(c.average, '€/h')}`);
-    }
-    case '1.6': {
-      if (!money) return { n: 0, tone: 'pending', text: 'Réservé à la direction' };
-      const m = chartModel(s);
-      if (!m) return empty('Chiffres du compte de résultat à saisir (1.4)');
-      const sg = signals(s, hourValues(s, m), now), red = sg.filter(x => x.tone === 'alert').length, orange = sg.filter(x => x.tone === 'warn').length;
-      const issued = s.settings.policy?.issued, changes = charterChanges(issued, m).length;
-      if (red) return { n: red, tone: 'alert', text: `${plural(red, 'alerte')} du voyant` };
-      if (changes) return { n: 1, tone: 'warn', text: 'Charte à rééditer : les coûts ont changé' };
-      if (isStale(s.settings.accounts, now)) return { n: 1, tone: 'warn', text: `Chiffres de ${s.settings.accounts!.year} : nouvel exercice à saisir` };
-      if (orange) return { n: orange, tone: 'warn', text: `${orange} point${orange > 1 ? 's' : ''} de vigilance` };
-      return issued ? ok(`Voyant au vert, charte ${issuedText(issued)}`) : { n: 1, tone: 'warn', text: 'Charte à valider' };
-    }
     case '5.1': {
       const all = Object.values(s.ncs);
       if (!all.length) return empty();
-      const late = all.filter(n => ncState(n, now) === 'late').length;
-      const q = all.filter(n => ncState(n, now) === 'quarantine').length;
+      const late = all.filter(n => ncState(n, now, businessOf(s.params)) === 'late').length;
+      const q = all.filter(n => ncState(n, now, businessOf(s.params)) === 'quarantine').length;
       if (late) return { n: late, tone: 'alert', text: `${plural(late, 'décision')} en retard (plus de 24 h)` };
       if (q) return { n: q, tone: 'warn', text: `${plural(q, 'pièce')} en quarantaine` };
       return ok('Bac rouge vide');
@@ -121,70 +92,67 @@ export function toolBadge(s: State, tool: string, p: Period, now = new Date(), m
       if (follow) return { n: follow, tone: 'alert', text: `${plural(follow, 'devis', 'devis')} à relancer` };
       return draft ? { n: draft, tone: 'warn', text: `${plural(draft, 'devis', 'devis')} à valider avant envoi` } : ok('Devis à jour');
     }
-    case '2.2': {
-      const all = Object.values(s.changes);
-      if (!all.length) return empty();
-      const sm = changeSummary(s, now);
-      if (sm.risky) return { n: sm.risky, tone: 'alert', text: sm.risky > 1 ? `${sm.risky} avenants commencés sans accord` : '1 avenant commencé sans accord' };
-      const todo = all.filter(c => ['to_price', 'to_send', 'accepted'].includes(changeState(c))).length;
-      return todo ? { n: todo, tone: 'warn', text: `${plural(todo, 'avenant')} à chiffrer, envoyer ou facturer` } : ok('Avenants à jour');
-    }
     case '2.3': {
       const all = Object.values(s.complaints);
       if (!all.length) return empty();
-      const st = all.map(c => complaintState(c, now));
-      const late = st.filter(x => x === 'late').length, call = st.filter(x => x === 'to_contact').length;
-      if (late) return { n: late, tone: 'alert', text: late > 1 ? `${late} clients pas rappelés sous 48 h` : '1 client pas rappelé sous 48 h' };
-      return call ? { n: call, tone: 'warn', text: `${plural(call, 'client')} à rappeler` } : ok('Clients rappelés');
+      const st = all.map(c => complaintState(c, now, businessOf(s.params)));
+      const late = st.filter(x => x === 'late').length, call = st.filter(x => x === 'to_contact').length, unsat = st.filter(x => x === 'unsatisfied').length;
+      if (late) return { n: late, tone: 'alert', text: late > 1 ? `${late} clients pas recontactés sous 48 h` : '1 client pas recontacté sous 48 h' };
+      if (unsat) return { n: unsat, tone: 'alert', text: unsat > 1 ? `${unsat} clients pas satisfaits à reprendre` : '1 client pas satisfait à reprendre' };
+      return call ? { n: call, tone: 'warn', text: `${plural(call, 'client')} à recontacter` } : ok('Clients recontactés');
     }
     case '2.4': {
-      const all = Object.values(s.feedbacks);
-      if (!all.length) return empty();
+      const all = Object.values(s.feedbacks), noReview = deliveriesToAsk(s, now).length;
+      if (!all.length && !noReview) return empty();
       const st = all.map(f => feedbackState(f, s));
-      const doubt = st.filter(x => x === 'doubt' || x === 'unhappy').length, inv = st.filter(x => x === 'to_invoice' || x === 'to_ask').length;
-      if (doubt) return { n: doubt, tone: 'alert', text: `${plural(doubt, 'client')} à satisfaire avant la facture` };
-      return inv ? { n: inv, tone: 'warn', text: `${plural(inv, 'bilan')} à finir ou facturer` } : ok('Bilans facturés');
+      const unhappy = st.filter(x => x === 'unhappy').length, ask = st.filter(x => x === 'to_ask').length + noReview;
+      if (unhappy) return { n: unhappy, tone: 'alert', text: `${plural(unhappy, 'client')} à satisfaire` };
+      return ask ? { n: ask, tone: 'warn', text: `${plural(ask, 'bilan')} à faire ou finir` } : ok('Clients satisfaits');
     }
     case '3.1': {
       if (!Object.keys(s.suppliers).length && !Object.keys(s.debits).length) return empty();
       const sm = supplierSummary(s, now);
-      if (sm.late) return { n: sm.late, tone: 'alert', text: `${plural(sm.late, 'réclamation')} hors délai de 48 h` };
+      if (sm.late) return { n: sm.late, tone: 'alert', text: `${plural(sm.late, 'réclamation')} pas envoyée${sm.late > 1 ? 's' : ''} dans les délais` };
       if (sm.inC) return { n: sm.inC, tone: 'alert', text: `${plural(sm.inC, 'fournisseur')} en classe C` };
-      const todo = Object.values(s.debits).filter(d => ['to_send', 'accepted'].includes(debitState(d, now))).length + sm.due;
-      return todo ? { n: todo, tone: 'warn', text: `${plural(todo, 'point')} à traiter (envoi, avoir, notation)` } : ok(`${formatValue(sm.recovered, '€')} récupérés cette année`);
+      const todo = Object.values(s.debits).filter(d => ['to_send', 'chase', 'contested', 'accepted'].includes(debitState(d, now, s.params))).length + sm.due + sectorSummary(s, now).issues;
+      return todo ? { n: todo, tone: 'warn', text: `${plural(todo, 'point')} à traiter (envoi, réponse, évaluation, secours)` } : ok(`${plural(Object.keys(s.suppliers).length, 'fournisseur')} suivi${Object.keys(s.suppliers).length > 1 ? 's' : ''}, ${formatValue(sm.recovered, '€')} récupérés sur 12 mois`);
     }
     case '3.2': {
-      const all = Object.values(s.sops);
+      const all = Object.values(s.sops).filter(x => sopPhase(x) !== 'archived');
       if (!all.length) return empty();
-      const stale = all.filter(x => ncsSinceVersion(s, x).length).length, noVal = all.filter(x => !x.validatedBy.trim()).length;
+      const sm = sopSummary(s, now), stale = sm.todos.filter(t => t.kind === 'update').length, bad = sm.todos.filter(t => t.tone === 'bad').length, open = sm.todos.length;
       if (stale) return { n: stale, tone: 'alert', text: `${plural(stale, 'instruction')} à mettre à jour` };
-      return noVal ? { n: noVal, tone: 'warn', text: `${plural(noVal, 'instruction')} à valider` } : ok(`${plural(all.length, 'poste')} avec instruction`);
+      if (bad) return { n: bad, tone: 'alert', text: `${plural(bad, 'point')} à traiter sur les instructions (ancienne fiche affichée, habilitation échue)` };
+      return open ? { n: open, tone: 'warn', text: `${plural(open, 'point')} à suivre (validation, lecture, affichage, relecture)` } : ok(`${plural(all.length, 'poste')} avec instruction à jour`);
     }
     case '3.3': {
-      const all = Object.values(s.equipments);
-      if (!all.length) return empty();
-      const bad = all.filter(e => anomalies(e).length || lowParts(e).length).length;
-      const late = all.filter(e => inspectionState(e, now) !== 'ok').length;
-      if (bad) return { n: bad, tone: 'alert', text: `${plural(bad, 'machine')} avec anomalie ou pièce à commander` };
-      return late ? { n: late, tone: 'warn', text: `${plural(late, 'inspection')} du lundi à faire` } : ok('Machines inspectées cette semaine');
+      if (!Object.values(s.equipments).some(e => eqStatus(e) !== 'retired') && !Object.keys(s.spares).length) return empty();
+      const sm = maintSummary(s, now), bad = sm.todos.filter(t => t.tone === 'bad').length;
+      if (bad) return { n: bad, tone: 'alert', text: `${plural(bad, 'point urgent', 'points urgents')} sur ${sm.todos.length} (équipements et armoire)` };
+      return sm.todos.length ? { n: sm.todos.length, tone: 'warn', text: `${plural(sm.todos.length, 'point')} à suivre (équipements et armoire)` } : ok('Équipements et armoire à jour');
     }
     case '3.4': {
-      const all = Object.values(s.deliveries);
-      if (!all.length) return empty();
-      const st = all.map(d => deliveryState(d, now));
-      const bad = st.filter(x => x === 'blocked' || x === 'reserve_late' || x === 'refused').length;
-      const todo = st.filter(x => x === 'to_release' || x === 'released' || x === 'reserve').length;
-      if (bad) return { n: bad, tone: 'alert', text: `${plural(bad, 'commande')} en défaut (jalon, réserve, refus)` };
-      return todo ? { n: todo, tone: 'warn', text: `${plural(todo, 'commande')} à libérer, faire signer ou lever` } : ok('Réceptions à jour');
+      if (!Object.keys(s.deliveries).length) return empty();
+      // red: a PV whose content no longer matches its seal, a milestone not conform, a late reservation, a refusal, a late delivery; amber: to release, to sign, to lift, a rest to deliver, a review to post, a defect without decision (facts only);
+      // "à jour" only when no task is left (the normal course of an order, a milestone to check or a delivery to make, is not a warning)
+      const todos = receptionTodos(s, now), count = (tone: 'bad' | 'warn', ...ks: string[]) => todos.filter(t => t.tone === tone && ks.includes(t.kind)).length;
+      const say = (parts: [number, string, string][]) => ({ n: parts.reduce((n, x) => n + x[0], 0), text: parts.filter(x => x[0]).map(x => plural(x[0], x[1], x[2])).join(', ') });
+      const red = say([[count('bad', 'seal'), 'PV au scellé modifié', 'PV au scellé modifié'], [count('bad', 'blocked', 'defect'), 'jalon non conforme', 'jalons non conformes'], [count('bad', 'reserve-late'), 'réserve en retard', 'réserves en retard'], [count('bad', 'refused'), 'réception refusée', 'réceptions refusées'], [count('bad', 'late-delivery', 'next-lot'), 'livraison en retard', 'livraisons en retard']]);
+      if (red.n) return { ...red, tone: 'alert' };
+      const amber = say([
+        [count('warn', 'release'), 'commande à libérer', 'commandes à libérer'], [count('warn', 'unsigned'), 'PV sans signature', 'PV sans signature'], [count('warn', 'reserve'), 'réserve à lever', 'réserves à lever'],
+        [count('warn', 'next-lot'), 'commande avec un reste à livrer', 'commandes avec un reste à livrer'], [count('warn', 'feedback'), 'bilan à poser', 'bilans à poser'], [count('warn', 'defect'), 'défaut sans décision', 'défauts sans décision'],
+      ]);
+      // a delivery with no release recorded stays a fact even when its PV is signed (no task left): the badge says it
+      const noRelease = !count('warn', 'release') && receptionInsights(s, now).some(i => i.key === 'delivered-unreleased');
+      if (noRelease) return { n: amber.n + 1, text: [amber.text, 'livraison sans libération'].filter(Boolean).join(', '), tone: 'warn' };
+      return amber.n ? { ...amber, tone: 'warn' } : ok('Réceptions à jour');
     }
     case '4.1': {
-      const all = Object.values(s.powers);
-      if (!all.length) return empty();
-      const st = all.map(p => powerState(p, now));
-      const none = st.filter(x => x === 'no_deputy').length;
-      const todo = st.filter(x => x !== 'ok' && x !== 'no_deputy').length + (envelopeState(s.envelope, now) === 'ok' ? 0 : 1);
-      if (none) return { n: none, tone: 'alert', text: `${plural(none, 'pouvoir')} sans suppléant` };
-      return todo ? { n: todo, tone: 'warn', text: `${plural(todo, 'suppléance')} à compléter ou à entraîner` } : ok('Suppléances prêtes');
+      if (!Object.keys(s.powers).length && !Object.keys(s.vaults).length) return empty();
+      const todos = powerTodos(s, now), bad = todos.filter(t => t.tone === 'bad');
+      if (bad.length) return { n: bad.length, tone: 'alert', text: todoWords(bad) };
+      return todos.length ? { n: todos.length, tone: 'warn', text: todoWords(todos) } : ok('Suppléances prêtes');
     }
     case '4.2': {
       const ks = Object.values(s.skills);
@@ -210,4 +178,9 @@ export function toolBadge(s: State, tool: string, p: Period, now = new Date(), m
     default:
       return empty();
   }
+}
+
+// The status of a tool whose data cannot be read (a damaged record): the card says so, the other cards and the home screen stay
+export function safeBadge(...a: Parameters<typeof toolBadge>): ToolStatus {
+  try { return toolBadge(...a); } catch { return { n: 0, tone: 'pending', text: 'À vérifier' }; }
 }

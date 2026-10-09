@@ -1,0 +1,46 @@
+﻿GRILLE D'AUDIT SMQ & PERFORMANCE (ISO 9001 × MÉTHODE CABINET DELACOUR)
+
+N°;Exigence ISO 9001;Question d'Audit & Points de Contrôle;Méthode d'investigation;Preuves & Livrables;Service concerné;Commentaires;Note (0-3);Impact ROI / Risque
+CLAUSE 4 : CONTEXTE DE L'ORGANISME
+4.1;Enjeux internes & externes;Quels sont les risques financiers externes (marché, coûts) que vous avez identifiés et chiffrés pour protéger vos marges ?;Demander la preuve de l'analyse PESTEL mise à jour avec les coûts matières.;Analyse SWOT/PESTEL chiffrée.;Direction / Qualité;;;Risque de choc financier.
+4.2;Parties prenantes;Connaissez-vous précisément les attentes de vos clients et partenaires stratégiques pour éviter tout risque de perte ?;Vérifier la présence des comptes-rendus de revue de contrat récents.;Matrice des parties prenantes.;Commercial / Qualité;;;Perte de clients majeurs.
+4.3;Domaine d'application;Le périmètre de vos activités est-il clair pour chacun, afin d'éviter les doublons et les zones d'ombre ?;Demander aux opérationnels de définir les limites de leur mission sans consulter la doc.;Cartographie macro des activités.;Direction;;;Doublons et zones de flou.
+4.4;Processus & interactions;Vos processus internes sont-ils fluides, ou constatez-vous des goulots d'étranglement qui ralentissent le travail ?;Identifier les piles de dossiers en attente ou les délais de validation excessifs.;Cartographie des processus.;Opérations / Qualité;;;20% de perte d'efficacité.
+
+CLAUSE 5 : LEADERSHIP & ENGAGEMENT
+5.1;Engagement de la Direction;La direction pilote-t-elle l'entreprise avec des données factuelles plutôt qu'à l'intuition ?;Assister à une réunion de direction ou consulter le PV de la dernière revue.;Revues de direction, tableaux de bord.;Direction;;;Navigation à vue et décisions tardives.
+5.2;Politique Qualité;Votre politique qualité est-elle un outil stratégique de rentabilité ou un simple document d'affichage ?;Demander à 3 salariés au hasard s'ils connaissent les 2 objectifs majeurs de l'année.;Déclaration de politique qualité.;Direction / RH;;;Qualité perçue comme un centre de coût.
+5.3;Rôles & responsabilités;Les responsabilités sont-elles clairement attribuées pour éviter les blocages en cas d'absence d'un cadre ?;Tester la grille RACI sur un processus clé pour voir si un suppléant est désigné.;Organigramme, fiches de poste, RACI.;Direction / RH;;;Paralysie en cas d'absence.
+
+CLAUSE 6 : PLANIFICATION
+6.1;Risques & opportunités;Avez-vous un plan d'action chiffré pour traiter les risques opérationnels les plus critiques ?;Vérifier si les risques identifiés ont un responsable nommé et une date limite.;Registre des risques & opportunités.;Direction / Qualité;;;Érosion silencieuse des marges.
+6.2;Objectifs qualité;Vos objectifs sont-ils mesurables, suivis par des données et alignés sur vos résultats économiques ?;Comparer les indicateurs de performance (KPIs) avec les rapports financiers du trimestre précédent.;Feuille de route des objectifs.;Qualité / Direction;;;Objectifs vagues non suivis.
+6.3;Modifications;Lorsque vous modifiez votre organisation, le faites-vous de manière structurée pour préserver votre savoir-faire ?;Auditer le dernier changement organisationnel majeur et vérifier la mise à jour des modes opératoires associés.;Plans de conduite du changement.;Direction / RH;;;Désorganisation en croissance.
+
+CLAUSE 7 : SUPPORT & RESSOURCES
+7.1;Ressources;Vos équipements et ressources critiques sont-ils sécurisés pour éviter toute interruption d'activité ?;Consulter le registre de maintenance et vérifier les dernières interventions réelles.;Plan de maintenance préventif.;Opérations / IT;;;Ruptures de production.
+7.2;Compétences;Votre système de compétences est-il à jour pour garantir l'autonomie de vos équipes ?;Demander à un nouvel arrivant comment il accède aux modes opératoires de son poste.;Matrice des compétences.;RH / Opérations;;;Temps perdu à réinventer.
+7.3;Sensibilisation;Vos collaborateurs comprennent-ils le lien direct entre leurs actions quotidiennes et la rentabilité de l'entreprise ?;Interroger un opérateur sur le coût d'un rebut ou d'une heure de panne.;Supports d'accueil, réunions.;RH / Qualité;;;Erreurs humaines répétées.
+7.4;Communication;Vos communications internes reposent-elles sur des faits vérifiables plutôt que sur des suppositions ?;Vérifier si les rumeurs sont adressées par des faits lors des points hebdomadaires.;Flashs info, canaux internes.;Direction / RH;;;Malentendus coûteux.
+7.5;Documentation;Votre documentation est-elle simple, utile et réellement utilisée au quotidien ?;Observer si les procédures sont tachées/usées (signe d'usage) ou immaculées dans un classeur.;GED, procédures simplifiées.;Qualité / IT;;;Perte de temps (1-2h/jour).
+
+CLAUSE 8 : RÉALISATION DES ACTIVITÉS OPÉRATIONNELLES
+8.1;Maîtrise opérationnelle;Vos méthodes de travail sont-elle standardisées pour garantir une qualité constante ?;Comparer l'exécution d'une même tâche par deux opérateurs différents.;Gammes opératoires.;Opérations / Production;;;Variabilité de la qualité.
+8.2;Produits & services;Comment identifiez-vous et évitez-vous les contrats non rentables ou 'toxiques' ?;Analyser la rentabilité du client le moins satisfait (souvent le moins rentable).;Grille de revue de contrat.;Commercial / Direction;;;Marges nulles ou négatives.
+8.3;Conception;Le savoir-faire est-il bien transmis lors de la conception de nouveaux projets pour éviter les surcoûts ?;Vérifier le REX (Retour d'Expérience) intégré aux nouveaux cahiers des charges.;Dossiers de conception.;Opérations / Production;;;Retards et surcoûts.
+8.4;Prestataires;Évaluez-vous rigoureusement vos prestataires pour éviter qu'ils ne vous transmettent leurs propres risques ?;Demander le bilan de performance annuel du fournisseur principal.;Grilles évaluation fournisseurs.;Achats / Logistique;;;Non-qualité importée.
+8.5;Production;Vos opérations sont-elles optimisées pour supprimer les tâches inutiles à faible valeur ajoutée ?;Identifier les double-saisies informatiques ou les déplacements inutiles en atelier.;Fiches de suivi, instructions.;Opérations / Production;;;Retouches chronophages.
+8.6;Libération;Vos livraisons sont-elles validées par des contrôles factuels avant d'atteindre le client ?;Vérifier l'adéquation entre les PV de contrôle et les exigences spécifiques client.;PV de recette, autocontrôles.;Qualité / Opérations;;;Envoi de non-conformes.
+8.7;Éléments non conformes;En cas de défaut, avez-vous une procédure immédiate pour isoler le problème et stopper la perte financière ?;Demander de montrer physiquement la zone de quarantaine pour les non-conformes.;Zones de quarantaine, FNC.;Qualité / Production;;;Surcoût de traitement.
+
+CLAUSE 9 : ÉVALUATION DES PERFORMANCES
+9.1;Surveillance & mesure;Avez-vous un tableau de bord à jour en temps réel pour suivre votre performance sans perdre de temps en reporting ?;Vérifier la date de la dernière mise à jour automatique des données.;Dashboards Data automatisés.;IT / Data / Direction;;;Aveuglement décisionnel.
+9.1.2;Satisfaction client;Mesurez-vous la satisfaction client avec des indicateurs factuels pour réagir très rapidement ?;Vérifier le délai moyen de réponse à une réclamation client critique.;Suivi réclamations, NPS.;Commercial / Qualité;;;Churn client invisible.
+9.2;Audit interne;Vos audits internes servent-ils à détecter de vraies failles opérationnelles ?;Lire le dernier rapport d'audit et voir si des pertes financières y ont été soulevées.;Rapports d'audit robustesse.;Qualité;;;Audit 'façade' inutile.
+9.3;Revue de Direction;Votre revue de direction est-elle un vrai comité stratégique focalisé sur le ROI ?;Analyser si l'ordre du jour privilégie les décisions d'investissement plutôt que la relecture de doc.;PV de Revue de Direction.;Direction / Qualité;;;Réunionite stérile.
+
+CLAUSE 10 : AMÉLIORATION
+10.1;Généralités;Recherchez-vous activement les sources de gaspillage pour les éliminer durablement ?;Demander la liste des gains d'efficience réalisés suite aux suggestions terrain.;Suggestions, projets Lean.;Qualité / Opérations;;;Stagnation opérationnelle.
+10.2;Actions correctives;Quand un problème survient, cherchez-vous la cause profonde pour qu'il ne se reproduise plus jamais ?;Analyser une action corrective et vérifier si le plan d'action traite la cause RACINE.;5 Pourquoi / Ishikawa, CAPA.;Qualité / Tous services;;;Résolution symptomatique.
+10.3;Amélioration continue;Votre système qualité est-il assez agile pour s'adapter et améliorer votre rentabilité en continu ?;Demander un exemple de modification de processus récente suite à un gain de temps identifié.;Bilan annuel d'efficience.;Direction / Qualité;;;Système lourd et rigide.
+

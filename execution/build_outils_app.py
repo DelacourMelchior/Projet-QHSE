@@ -2,7 +2,7 @@
 """
 Build the Delacour tools deliverable (OUTILS_RENTABILITE_DELACOUR/livrable/).
 
-The 22 tools (1.1 to 5.4) are one React + TypeScript app (OUTILS_RENTABILITE_DELACOUR/pilotage), built by Vite into a single
+The 19 tools (1.1 to 5.4) are one React + TypeScript app (OUTILS_RENTABILITE_DELACOUR/pilotage), built by Vite into a single
 self-contained HTML file with a Content-Security-Policy that blocks any network request.
 
 Output : livrable/pilotage.html  the application (also copied to app/ for local review)

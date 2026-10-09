@@ -2,6 +2,7 @@
 // Dates are relative to today so the example stays alive: decisions late, day-30 checks due, efficient devices.
 import type { Action, Analysis, Nc, Poka, State } from './types';
 import { isoDate } from './periods';
+import { fillEmptyCollections } from './base';
 
 export function qualityExamples(today = new Date()) {
   const day = (n: number) => new Date(today.getFullYear(), today.getMonth(), today.getDate() - n);
@@ -68,12 +69,9 @@ export function qualityExamples(today = new Date()) {
   return { ncs: byId(ncs), analyses: byId(analyses), pokas: byId(pokas), actions: byId(actions) };
 }
 
-// Replaces the records of tools 5.1 to 5.4 by the examples (their actions too); the other tools are untouched
+// Puts the examples of tools 5.1 to 5.4 where the company has no record yet (never replaces a record, nor the links of a defect to its sheet); the other tools are untouched
 export function applyQualityExample(d: State, today = new Date()) {
-  const ex = qualityExamples(today);
-  Object.values(d.actions).filter(a => a.ref?.kind === 'analysis').forEach(a => { delete d.actions[a.id]; });
-  d.ncs = ex.ncs;
-  d.analyses = ex.analyses;
-  d.pokas = ex.pokas;
-  Object.assign(d.actions, ex.actions);
+  const ex = qualityExamples(today), had = Object.keys(d.analyses || {}).length > 0;
+  fillEmptyCollections(d, { ncs: ex.ncs, analyses: ex.analyses, pokas: ex.pokas });
+  if (!had) Object.assign(d.actions, ex.actions);   // the actions of the example analyses, with them
 }

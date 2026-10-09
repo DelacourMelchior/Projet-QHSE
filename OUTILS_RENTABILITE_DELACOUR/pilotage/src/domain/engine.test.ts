@@ -17,7 +17,7 @@ const stateWith = (k: Kpi, vals: (number | null)[], start = '2026-01'): State =>
   const values: Record<string, number> = {};
   vals.forEach((v, i) => { if (v !== null) values[ps[i]] = v; });
   return {
-    settings: { companyName: '', profile: 'industrie', annualBudget: 1200, netMarginPct: 5, avgQuoteValue: 100 },
+    settings: { companyName: '', profile: 'industrie', annualBudget: 1200, netMarginPct: 5 },
     timeline: { start: ps[0], end: ps[ps.length - 1] },
     processes: [{ id: 'P1', name: 'P1', color: '#000', order: 0, kpiIds: [k.id] }],
     kpis: { [k.id]: k }, values: { [k.id]: values }, actions: {}, risks: {}, contacts: {}, scale: DEFAULT_SCALE, ...emptyTools(),
@@ -103,8 +103,8 @@ describe('effectiveness', () => {
 
 describe('demo and templates', () => {
   const d = demoState();
-  it('demo has a full year, 15 KPIs and its actions', () => {
-    expect(Object.keys(d.kpis)).toHaveLength(15);
+  it('demo has a full year, 16 KPIs (the 15 of the model and the satisfaction of 2.4) and its actions', () => {
+    expect(Object.keys(d.kpis)).toHaveLength(16);
     expect(lastFilledPeriod(d)).toBe('2026-12');
     expect(Object.keys(d.actions).length).toBeGreaterThanOrEqual(13);
     expect(d.kpis.kpi_treso.aggregation).toBe('last');

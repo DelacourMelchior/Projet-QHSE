@@ -1,6 +1,6 @@
 // Business continuity engine (tool 1.2): criticality, zone rules, readiness state, tests, delays, exposure.
 // Pure functions, covered by risk.test.ts.
-import type { Action, Risk, RiskScale, RiskState, Scale, Settings, State } from './types';
+import type { Action, Risk, RiskCost, RiskScale, RiskState, Scale, Settings, State } from './types';
 import { isoDate, parseDate } from './periods';
 import { formatValue } from './numbers';
 import { formatDuration, hoursOf } from './duration';
@@ -53,9 +53,81 @@ export const likelihoodScale = (s: Pick<State, 'scale'>): ScaleLevel[] =>
   LIKELIHOOD_LABELS.map((label, i) => ({ level: (i + 1) as Scale, label, money: '', text: s.scale.likelihood[i] || DEFAULT_SCALE.likelihood[i] }));
 
 // ---- money (optional): loss for one event, suggested gravity, yearly exposure, Plan B payback
+export const DAY_PARTS = ['margin', 'penalties', 'idle', 'otherDay'] as const;
+export const ONCE_PARTS = ['repair', 'otherOnce'] as const;
+const sumOf = (c: RiskCost, keys: readonly (keyof RiskCost)[]) => keys.reduce((t, k) => t + ((c[k] as number | null | undefined) ?? 0), 0);
+// Total loss per day: sum of the detailed lines when any is filled, else the single figure kept from before
+// Guided calculation of each cost line: factors multiplied ('product') or added ('sum'). pct factors are percentages.
+export type CostLineKey = 'margin' | 'penalties' | 'idle' | 'otherDay' | 'repair' | 'otherOnce' | 'daysWithout' | 'daysWith' | 'planBCost';
+export interface CostFactor { key: string; label: string; hint?: string; pct?: boolean }
+export interface CostLine { mode: 'product' | 'sum'; factors: CostFactor[]; help: string }
+export const COST_LINES: Record<CostLineKey, CostLine> = {
+  margin: { mode: 'product', help: 'Marge brute = prix de vente moins matière et sous-traitance. Ne comptez que le chiffre d\'affaires réellement bloqué, pas celui qui peut être livré plus tard.', factors: [
+    { key: 'sales', label: 'Chiffre d\'affaires bloqué par jour (€)', hint: 'Chiffre d\'affaires annuel du processus ÷ jours ouvrés, ou commandes du jour.' },
+    { key: 'rate', label: 'Taux de marge brute (%)', pct: true },
+  ] },
+  penalties: { mode: 'product', help: 'Regardez les clauses de retard des contrats et des commandes en cours.', factors: [
+    { key: 'orders', label: 'Commandes en retard chaque jour (nombre)' },
+    { key: 'amount', label: 'Pénalité moyenne par commande (€)', hint: 'Remise accordée ou pénalité contractuelle par jour de retard.' },
+  ] },
+  idle: { mode: 'product', help: 'Ce que coûtent les personnes présentes qui ne peuvent plus produire (sauf si on les redéploie).', factors: [
+    { key: 'people', label: 'Personnes à l\'arrêt (nombre)' },
+    { key: 'hours', label: 'Heures payées par jour (h)' },
+    { key: 'rate', label: 'Coût horaire chargé (€ / h)', hint: 'Salaire brut + charges patronales, divisé par les heures payées.' },
+  ] },
+  otherDay: { mode: 'sum', help: 'Charges qui continuent à courir pendant l\'arrêt, plus tout ce qui n\'est pas dans les trois lignes du dessus.', factors: [
+    { key: 'fixed', label: 'Charges fixes de la ressource à l\'arrêt (€ / jour)', hint: 'Crédit-bail, loyer, amortissement ÷ jours ouvrés.' },
+    { key: 'other', label: 'Autres pertes (€ / jour)', hint: 'Stock qui se périme, chômage partiel non remboursé…' },
+  ] },
+  repair: { mode: 'sum', help: 'Ce qu\'on paie une seule fois pour remettre la ressource en état, moins ce que l\'assurance rembourse.', factors: [
+    { key: 'part', label: 'Pièce ou remplacement (€)' },
+    { key: 'labour', label: 'Intervention du technicien ou du constructeur (€)' },
+    { key: 'transport', label: 'Transport, grutage, montage (€)' },
+    { key: 'insurance', label: 'Franchise d\'assurance (€)', hint: 'Seule la part qui reste à votre charge.' },
+  ] },
+  otherOnce: { mode: 'sum', help: 'Frais exceptionnels pour tenir les délais ou repartir.', factors: [
+    { key: 'express', label: 'Transport urgent, express (€)' },
+    { key: 'rental', label: 'Location ou sous-traitance de dépannage (€)' },
+    { key: 'overtime', label: 'Heures supplémentaires de rattrapage (€)' },
+    { key: 'lostMaterial', label: 'Matière et pièces perdues en cours (€)' },
+    { key: 'restart', label: 'Remise en route, réglages, requalification (€)' },
+  ] },
+  daysWithout: { mode: 'sum', help: 'Prenez le cas réaliste, pas le meilleur : appels, devis, délais de livraison, attente du constructeur.', factors: [
+    { key: 'diagnosis', label: 'Constat, diagnostic, décision (jours)' },
+    { key: 'supply', label: 'Obtention de la pièce ou du remplaçant (jours)' },
+    { key: 'repair', label: 'Réparation ou installation (jours)' },
+    { key: 'restart', label: 'Remise en route et première pièce conforme (jours)' },
+  ] },
+  daysWith: { mode: 'sum', help: 'Arrêt qui subsiste malgré le Plan B.', factors: [
+    { key: 'activation', label: 'Délai pour déclencher le Plan B (jours)' },
+    { key: 'gap', label: 'Retard résiduel chez le partenaire ou en solution de secours (jours)' },
+  ] },
+  planBCost: { mode: 'sum', help: 'Ce que coûte la préparation, pas ce que coûte l\'incident.', factors: [
+    { key: 'stock', label: 'Achat ou stock de secours (€)' },
+    { key: 'setup', label: 'Convention, qualification du partenaire, formation (€)' },
+    { key: 'yearly', label: 'Test et entretien la première année (€)' },
+  ] },
+};
+// Computed value of a line from its factors, or undefined when none is filled (the line is typed directly).
+export function calcLine(c: RiskCost, key: CostLineKey): number | null | undefined {
+  const { mode, factors } = COST_LINES[key];
+  const v = factors.map(f => c.calc?.[`${key}.${f.key}`] ?? null);
+  if (v.every(x => x === null)) return undefined;
+  if (mode === 'sum') return v.reduce<number>((t, x) => t + (x ?? 0), 0);
+  return v.some(x => x === null) ? null : v.reduce<number>((t, x, i) => t * (factors[i].pct ? x! / 100 : x!), 1);
+}
+// Recomputes every line that has detail factors, so the stored totals always match them
+export function applyCalc(c: RiskCost): RiskCost {
+  const out: RiskCost = { ...c };
+  for (const k of Object.keys(COST_LINES) as CostLineKey[]) { const v = calcLine(c, k); if (v !== undefined) out[k] = v; }
+  out.perDay = costPerDay(out);
+  return out;
+}
+export const costPerDay = (c: RiskCost): number | null => DAY_PARTS.some(k => c[k] != null) ? sumOf(c, DAY_PARTS) : c.perDay;
 export function lossPerEvent(r: Risk): number | null {
   const c = r.cost;
-  return c && c.perDay !== null && c.daysWithout !== null ? c.perDay * c.daysWithout : null;
+  const day = c && costPerDay(c);
+  return c && day != null && c.daysWithout !== null ? day * c.daysWithout + sumOf(c, ONCE_PARTS) : null;
 }
 export function suggestedGravity(r: Risk, settings: Pick<Settings, 'annualBudget' | 'gravityThresholds'>): Scale | null {
   const loss = lossPerEvent(r);
@@ -70,8 +142,9 @@ export function yearlyExposure(r: Risk): number | null {
 // Loss avoided per event thanks to the Plan B, and years to pay back its cost
 export function planBGain(r: Risk): { avoided: number; paybackYears: number | null } | null {
   const c = r.cost;
-  if (!c || c.perDay === null || c.daysWithout === null || c.daysWith === null || !r.likelihood) return null;
-  const avoided = Math.max(0, c.perDay * (c.daysWithout - c.daysWith));
+  const day = c && costPerDay(c);
+  if (!c || day == null || c.daysWithout === null || c.daysWith === null || !r.likelihood) return null;
+  const avoided = Math.max(0, day * (c.daysWithout - c.daysWith));
   const perYear = avoided * LIKELIHOOD_PER_YEAR[r.likelihood - 1];
   return { avoided, paybackYears: c.planBCost && perYear > 0 ? c.planBCost / perYear : null };
 }

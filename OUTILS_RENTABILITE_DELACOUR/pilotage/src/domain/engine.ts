@@ -97,6 +97,12 @@ export const actionsOf = (s: State, kpiId: string): Action[] =>
   Object.values(s.actions).filter(a => a.kpiId === kpiId).sort((a, b) => (b.createdAt > a.createdAt ? 1 : -1));
 
 export const isOpen = (a: Action) => a.status === 'to_start' || a.status === 'in_progress';
+// Deletes an indicator with its values and its actions, and takes it off its process (the one way, used by tool 1.1 and by tool 1.4)
+export function deleteKpi(d: Pick<State, 'kpis' | 'values' | 'actions' | 'processes'>, id: string): void {
+  delete d.kpis[id]; delete d.values[id];
+  d.processes.forEach(p => { p.kpiIds = p.kpiIds.filter(i => i !== id); });
+  Object.values(d.actions).filter(a => a.kpiId === id).forEach(a => { delete d.actions[a.id]; });
+}
 export const openActionWithPilot = (s: State, kpiId: string) => actionsOf(s, kpiId).find(a => isOpen(a) && a.pilot.trim() !== '');
 
 export function isOverdue(a: Action, today = new Date()): boolean {
@@ -180,7 +186,7 @@ export function insights(s: State, p: Period, hideConfidential: boolean): Insigh
     const v = valueOf(s, dev.id, p);
     if (v !== null && kpiStatus(dev, v).level !== 'ok') {
       out.push({ key: 'devis', tone: 'warn', title: 'Risque commercial',
-        text: `${v} devis non relancés depuis plus de 7 jours (environ ${formatValue(v * s.settings.avgQuoteValue, '€')} d'affaires en attente, base ${formatValue(s.settings.avgQuoteValue, '€')} par devis).` });
+        text: `${v} devis non relancés depuis plus de 7 jours.` });
     }
   }
   if (syn.ca && syn.caYtd && visible(syn.ca)) {

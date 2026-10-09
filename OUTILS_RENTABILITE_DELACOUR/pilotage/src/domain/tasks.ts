@@ -15,6 +15,7 @@ import { claimSupplierName, debitState, lastContact, nextReview, ratingDue, supp
 import { contactLabel, toCallThisMonth } from './contacts';
 import { checklistOf, newcomerState, testDate, chronoSummary } from './team';
 import { powerFocus, powerTodos } from './powersAll';
+import { personName, plainName, reviewAge, reviewMonths } from './cartography';
 
 export interface Task { id: string; who: string; due: string; text: string; tool: string; focus: string }
 
@@ -30,6 +31,13 @@ export function allTasks(s: State, now = new Date()): Task[] {
   });
   Object.values(s.ncs).filter(n => ncState(n, now, businessOf(s.params)) !== 'decided').forEach(n => add(`n${n.id}`, n.decidedBy || '', d(addDays(d(n.at), Math.ceil(DECISION_HOURS / 24))), `Décider (bac rouge) ${n.ref} : ${n.description}`, '5.1', n.id));
   const biz = businessOf(s.params), today = isoDate(now);
+  // tool 1.4: a process without a pilot is for the management to settle; a sheet not reviewed in time is for its pilot
+  s.processes.forEach(p => {
+    const who = personName(s, p.pilotId), age = reviewAge(p, now), started = !!(p.pilotId || p.purpose?.trim() || p.reviewedAt || Object.values(s.flows || {}).some(f => f.processId === p.id));
+    if (!started) return;
+    if (!who || !s.people[p.pilotId!]?.active) add(`mp${p.id}`, '', today, `Nommer un pilote pour le processus ${plainName(p.name)}`, '1.4', `${p.id}:identity`);
+    else if (age === null || age > reviewMonths(s) * 30) add(`mr${p.id}`, who, p.reviewedAt ? addDays(p.reviewedAt, reviewMonths(s) * 30) : today, `Relire la fiche du processus ${plainName(p.name)}`, '1.4', `${p.id}:review`);
+  });
   Object.values(s.complaints).forEach(c => {
     const st = complaintState(c, now, biz), me = ownerToday(s, c, today), away = me.absent ? ' (pilote absent)' : '';
     if (st === 'to_contact' || st === 'late') add(`c${c.id}`, me.who, d(contactDeadline(c, biz)), `Recontacter ${c.client} (${c.ref})${away}`, '2.3', c.id);

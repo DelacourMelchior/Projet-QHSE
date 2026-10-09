@@ -1,9 +1,11 @@
 // Tools 5.1 to 5.4: red bin (quarantine and 24 h decision), cost of non-quality by process,
 // five whys workshop, mistake-proofing checked at day 30. Pure functions, covered by quality.test.ts.
 import type { Action, Analysis, Nc, NcCause, NcDecision, Params, Period, Poka, PokaLevel, State } from './types';
-import { addDays, daysBetween, hoursCost, nextRef, nowLocal, PROCESS_IDS, rateFor, sum, workHoursBetween, type Insight } from './base';
-import { addMonths, isoDate } from './periods';
+import { addDays, daysBetween, hoursCost, nb, defaultProcess, nextRef, PROCESS_IDS, sum, workHoursBetween, businessOf, type Business, type Insight } from './base';
+import { addMonths, frDate, isoDate } from './periods';
+import { logDelivery, lotsOf, pvSigned } from './receptions';
 import { formatValue } from './numbers';
+import { complaintCost } from './commercial';
 
 // ---- 5.1 red bin
 export const NC_CAUSES: { key: NcCause; label: string }[] = [
@@ -27,10 +29,12 @@ export const DECISIONS: { key: NcDecision; label: string; text: string; visa: st
   { key: 'attente', label: 'Attente de l\'avis client', text: 'Le client est consulté ; la pièce reste isolée jusqu\'à sa réponse.', visa: 'Commercial' },
 ];
 export const decisionLabel = (d: NcDecision | '') => DECISIONS.find(x => x.key === d)?.label || '';
+// What a defect declared from an order of 3.4 opens there: the order, on the tab of its milestones, or of its reservations on that reservation, wherever its delivery is ('' for any other defect)
+export const ncOrderFocus = (n: Pick<Nc, 'deliveryId' | 'milestoneId' | 'reserveId'>): string => (n.deliveryId ? `${n.deliveryId}${n.milestoneId ? ':milestones' : n.reserveId ? `:reception:${n.reserveId}` : ''}` : '');
 
 export const DECISION_HOURS = 24;
 export type NcState = 'quarantine' | 'late' | 'decided';
-export function ncState(n: Nc, now = new Date(), business = false): NcState {
+export function ncState(n: Nc, now = new Date(), business: Business = false): NcState {
   if (n.decision && n.decision !== 'attente') return 'decided';
   if (n.decision === 'attente') return 'quarantine';
   const age = workHoursBetween(n.at, now, business);
@@ -45,17 +49,28 @@ export const NC_STATE: Record<NcState, { label: string; tone: 'ok' | 'warn' | 'a
 // Direct cost of a non-conformity: scrapped material, wasted and rework hours at the hourly cost, exceptional logistics
 export function ncCost(n: Nc, p: Params): number {
   const c = n.cost;
-  return sum([c.scrap, c.logistics]) + sum([c.lostHours, c.reworkHours]) * rateFor(p, n.where);
+  return sum([c.scrap, c.logistics]) + hoursCost(sum([c.lostHours, c.reworkHours]), p);
 }
 export const ncHours = (n: Nc) => sum([n.cost.lostHours, n.cost.reworkHours]);
 
-export function newNc(s: State, by: string, now = new Date()): Nc {
-  return {
-    id: `nc_${now.getTime().toString(36)}${Math.random().toString(36).slice(2, 6)}`, ref: nextRef('NC', Object.values(s.ncs), now),
-    at: nowLocal(now), by, where: '', item: '', qty: null, description: '', cause: '', origin: 'interne',
-    decision: '', decidedAt: '', decidedBy: '', decisionNote: '', processId: '',
-    cost: { scrap: null, lostHours: null, reworkHours: null, logistics: null },
-  };
+export { newNc } from './newNc';
+
+// Deleting a defect that an order of 3.4 holds (declared from one of its milestones or reservations): refused, as a fact, when the order is released or a PV of it is signed (the defect
+// belongs to what was controlled, released or signed); otherwise allowed and written in the journal of the order (a line of proof), so that the order never loses a defect without a trace.
+const orderOfNc = (s: State, n: Pick<Nc, 'deliveryId'>) => (n.deliveryId && Object.hasOwn(s.deliveries, n.deliveryId) ? s.deliveries[n.deliveryId] : undefined);
+export function ncDeleteBar(s: State, n: Pick<Nc, 'ref' | 'deliveryId'>): string {
+  const d = orderOfNc(s, n);
+  if (!d) return '';
+  const parts = [d, ...lotsOf(d)], name = d.ref.trim() || d.item.trim() || 'sans numéro';
+  if (parts.some(pvSigned)) return nb(`La fiche ${n.ref} ne se supprime pas : la commande ${name} a un PV signé et la fiche fait partie de sa preuve. Une décision la clôt, la fiche reste.`);
+  const rel = parts.find(p => p.releasedAt);
+  return rel ? nb(`La fiche ${n.ref} ne se supprime pas : la commande ${name} est libérée le ${frDate(rel.releasedAt.slice(0, 10))} et la fiche fait partie de ce qui a été contrôlé. Une décision la clôt, la fiche reste.`) : '';
+}
+// On a draft of the state: the defect goes, and the order that held it says so (who, what the defect was, whether it had a decision)
+export function deleteNc(s: State, id: string, by: string, at: string): void {
+  const n = Object.hasOwn(s.ncs, id) ? s.ncs[id] : undefined, d = n && orderOfNc(s, n);
+  if (n && d) s.deliveries[d.id] = logDelivery(d, by || 'anonyme', at, `Fiche ${n.ref} supprimée dans l'outil 5.1${n.description.trim() ? ` : « ${n.description.trim()} »` : ''} (${n.decision ? `décision : ${decisionLabel(n.decision)}` : 'sans décision'})`, true);
+  delete s.ncs[id];
 }
 
 // ---- 5.2 cost of non-quality: every costed event of the month, imputed to its process
@@ -67,20 +82,23 @@ export function cnqItems(s: State, p: Period): CnqItem[] {
     const amount = ncCost(n, s.params);
     if (amount > 0) out.push({ kind: 'nc', id: n.id, ref: n.ref, label: n.description || n.item, date: n.at, processId: n.processId, amount, hours: ncHours(n) });
   });
-  Object.values(s.complaints).filter(c => c.at.slice(0, 7) === p && c.cost).forEach(c => {
-    out.push({ kind: 'complaint', id: c.id, ref: c.ref, label: `${c.client} : ${c.description}`, date: c.at, processId: c.processId, amount: c.cost!, hours: 0 });
+  Object.values(s.complaints).filter(c => c.at.slice(0, 7) === p).forEach(c => {
+    const amount = complaintCost(c, s.params);
+    if (amount > 0) out.push({ kind: 'complaint', id: c.id, ref: c.ref, label: `${c.client} : ${c.description}`, date: c.at, processId: c.processId, amount, hours: c.hours || 0 });
   });
   // a debit note linked to a red-bin record is already counted there
   Object.values(s.debits).filter(d => d.date.slice(0, 7) === p && !d.ncId).forEach(d => {
     const amount = sum([d.otherCost]) + hoursCost(d.reworkHours, s.params);
-    if (amount > 0) out.push({ kind: 'debit', id: d.id, ref: d.ref, label: `${s.suppliers[d.supplierId]?.name || 'Fournisseur'} : ${d.defect}`, date: d.date, processId: 'P3', amount, hours: d.reworkHours || 0 });
+    if (amount > 0) out.push({ kind: 'debit', id: d.id, ref: d.ref, label: `${s.suppliers[d.supplierId]?.name || 'Fournisseur'} : ${d.defect}`, date: d.date, processId: defaultProcess('P3'), amount, hours: d.reworkHours || 0 });
   });
   return out.sort((a, b) => b.amount - a.amount);
 }
 
 export function cnqMonth(s: State, p: Period) {
   const items = cnqItems(s, p);
-  const byProcess = Object.fromEntries([...PROCESS_IDS, ''].map(id => [id, sum(items.filter(i => (i.processId || '') === id).map(i => i.amount))])) as Record<string, number>;
+  // an amount whose process is unknown (deleted, never set) goes under '' ("À qualifier") instead of being lost
+  const known = (i: { processId: string }) => (PROCESS_IDS.includes(i.processId) ? i.processId : '');
+  const byProcess = Object.fromEntries([...PROCESS_IDS, ''].map(id => [id, sum(items.filter(i => known(i) === id).map(i => i.amount))])) as Record<string, number>;
   const recovered = sum(Object.values(s.debits).filter(d => d.recoveredAt.slice(0, 7) === p).map(d => d.recovered));
   const total = sum(items.map(i => i.amount));
   const indirect = s.params.cnqIndirect?.[p] || 0;
@@ -95,8 +113,6 @@ export function cnqMonth(s: State, p: Period) {
 
 // Revenue to make again to pay a loss back: loss x 100 / net margin (strict reading: every euro lost comes out of the profit)
 export const compensatingRevenue = (loss: number, netMarginPct: number) => (netMarginPct > 0 ? loss * 100 / netMarginPct : loss * 20);
-// Second reading, the one an accountant uses: extra revenue whose margin on variable costs covers the loss
-export const compensatingRevenueVariable = (loss: number, variableMarginPct: number) => (variableMarginPct > 0 ? loss * 100 / variableMarginPct : null);
 
 // Red-bin records per week over the last 8 weeks: a cost of non-quality is only as good as the declarations behind it
 export function declarationsPerWeek(s: State, now = new Date()): number[] {
@@ -163,17 +179,23 @@ export const slowActions = (s: State, a: Analysis) =>
 export function workshopsToOpen(s: State, now = new Date()): { kind: 'nc' | 'complaint'; id: string; ref: string; why: string }[] {
   const trigger = s.params.cnqTrigger ?? 500;
   const out: { kind: 'nc' | 'complaint'; id: string; ref: string; why: string }[] = [];
+  // a defect declared from an order of 3.4 names the deliverable of the order, not a workstation: it is not "at the same workstation" as another
   Object.values(s.ncs).filter(n => !n.analysisId).forEach(n => {
     const cost = ncCost(n, s.params);
-    const repeats = Object.values(s.ncs).filter(m => m.where.trim() && m.where.trim().toLowerCase() === n.where.trim().toLowerCase() && m.cause === n.cause && Math.abs(daysBetween(m.at.slice(0, 10), n.at.slice(0, 10)) ?? 999) <= 90).length;
+    const repeats = n.deliveryId ? 0 : Object.values(s.ncs).filter(m => !m.deliveryId && m.where.trim() && m.where.trim().toLowerCase() === n.where.trim().toLowerCase() && m.cause === n.cause && Math.abs(daysBetween(m.at.slice(0, 10), n.at.slice(0, 10)) ?? 999) <= 90).length;
     if (cost >= trigger) out.push({ kind: 'nc', id: n.id, ref: n.ref, why: `coût de ${Math.round(cost)} € (seuil ${trigger} €)` });
     else if (repeats >= 3) out.push({ kind: 'nc', id: n.id, ref: n.ref, why: `${repeats} défauts semblables au même poste en 90 jours` });
-    else if (n.origin === 'client') out.push({ kind: 'nc', id: n.id, ref: n.ref, why: 'défaut vu par le client' });
+    else if (n.origin === 'client' && !(n.reserveId && ncState(n, now) === 'decided')) out.push({ kind: 'nc', id: n.id, ref: n.ref, why: 'défaut vu par le client' });   // a reservation's defect, once decided, is dealt with
   });
-  Object.values(s.complaints).filter(c => c.severity === 'majeure' && !c.analysisId && (daysBetween(c.at.slice(0, 10), now) ?? 0) <= 180).forEach(c => out.push({ kind: 'complaint', id: c.id, ref: c.ref, why: 'réclamation majeure' }));
+  Object.values(s.complaints).filter(c => c.severity === 'majeure' && c.verdict !== 'non_fondee' && !c.analysisId && (daysBetween(c.at.slice(0, 10), now) ?? 0) <= 180).forEach(c => out.push({ kind: 'complaint', id: c.id, ref: c.ref, why: 'réclamation majeure' }));
   return out;
 }
 
+// The workshop of a defect: the one already opened for it, else a new one that carries the defect (the people who declared and decided it take part)
+export function workshopOfNc(s: State, n: Nc, today = new Date()): { a: Analysis; isNew: boolean } {
+  const have = n.analysisId && Object.hasOwn(s.analyses, n.analysisId) ? s.analyses[n.analysisId] : undefined;
+  return have ? { a: have, isNew: false } : { a: { ...newAnalysis(s, { kind: 'nc', id: n.id }, n.description, n.processId || defaultProcess('P3'), today), participants: [n.by, n.decidedBy].filter(Boolean).join(', ') }, isNew: true };
+}
 export function newAnalysis(s: State, source: Analysis['source'], problem: string, processId: string, today = new Date()): Analysis {
   return {
     id: `an_${today.getTime().toString(36)}${Math.random().toString(36).slice(2, 6)}`, ref: nextRef('5P', Object.values(s.analyses), today),
@@ -252,7 +274,7 @@ export const ncsSince = (s: State, p: Poka) => (p.installedAt && p.poste.trim()
   ? Object.values(s.ncs).filter(n => n.at.slice(0, 10) >= p.installedAt && n.where.trim().toLowerCase() === p.poste.trim().toLowerCase())
   : []);
 
-export function newPoka(analysis: Analysis | null, processId = 'P3'): Poka {
+export function newPoka(analysis: Analysis | null, processId = defaultProcess('P3')): Poka {
   return {
     id: `pk_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, analysisId: analysis?.id || '', processId: analysis?.processId || processId,
     poste: '', defect: analysis?.problem || '', level: 'detromper', description: '', howItBlocks: '', cost: null, owner: analysis?.pilot || '',
@@ -275,7 +297,7 @@ export function analysisActionEffectiveness(s: State, a: Action, today = new Dat
 export function qualityInsights(s: State, p: Period, now = new Date()): Insight[] {
   const out: Insight[] = [];
   const names = <T,>(xs: T[], f: (x: T) => string) => xs.slice(0, 3).map(f).join(', ') + (xs.length > 3 ? ` et ${xs.length - 3} autre(s)` : '');
-  const late = Object.values(s.ncs).filter(n => ncState(n, now, !!s.params.businessHours) === 'late');
+  const late = Object.values(s.ncs).filter(n => ncState(n, now, businessOf(s.params)) === 'late');
   if (late.length) out.push({ key: 'late', tone: 'bad', title: 'Bac rouge : décision en retard', text: `${names(late, n => n.ref)} : en quarantaine depuis plus de ${DECISION_HOURS} h. Rebut, retouche ou dérogation ?` });
   const m = cnqMonth(s, p);
   if (m.unqualified) out.push({ key: 'unq', tone: 'warn', title: 'Processus à qualifier', text: `${m.unqualified} coût(s) du mois sans processus d'origine : la répartition est incomplète.` });

@@ -1,10 +1,11 @@
 // Demo company and job templates (KPI lists), taken from the previous version.
+import { applyMapExample } from './mapExamples';
 import type { State } from './types';
 import { fromLegacyTool, DEFAULT_SETTINGS } from './migrate';
 import { addMonths, periodOfDate } from './periods';
 import legacy from './legacy-templates.json';
 import { demoRisks, exampleOrgs } from './riskTemplates';
-import { emptyTools } from './base';
+import { emptyTools, EXAMPLE_COMPANY } from './base';
 import { applyQualityExample } from './qualityExamples';
 import { addSatisfactionExample, alignComplaintValues, applyCommercialExample, commercialExampleParams } from './commercialExamples';
 import { applyOperationsExample } from './operationsExamples';
@@ -22,7 +23,7 @@ export type ProfileKey = keyof typeof PROFILES;
 // Fictitious company, full year 2026 with 13 actions, 9 risks with their Plan B (tool 1.2), and examples of every tool of processes 2 to 5
 export function demoState(today = new Date()): State {
   const s = fromLegacyTool(JSON.parse(JSON.stringify(legacy.demo)));
-  s.settings = { ...DEFAULT_SETTINGS, companyName: 'Entreprise exemple (fictive)', profile: 'industrie' };
+  s.settings = { ...DEFAULT_SETTINGS, companyName: EXAMPLE_COMPANY, profile: 'industrie' };
   const d = demoRisks(today);
   s.risks = d.risks;
   s.contacts = d.contacts;
@@ -37,6 +38,7 @@ export function demoState(today = new Date()): State {
   applyReceptionExample(s, today);
   applyTeamExample(s, today);
   applyPowerExample(s, today);
+  applyMapExample(s, today);
   s.params.company ||= { address: '12 rue de l\'Industrie, 69000 Lyon (exemple)', siret: '', phone: '04 00 00 00 00', email: '' };
   s.params.siteAccess = 'Portail côté parking, code 1234 ; atelier au fond, bâtiment B';
   return s;

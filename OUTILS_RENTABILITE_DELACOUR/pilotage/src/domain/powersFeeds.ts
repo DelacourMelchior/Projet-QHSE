@@ -1,6 +1,7 @@
 // Figures of tool 4.1 for the monthly dashboard (1.1): proposed, never written silently (see feeds.ts and the box of the tool).
 // The indicator is added to the dashboard by one click in the tool. The structure of the powers is the one of today, so only the month under way and the month just closed are proposed.
 import type { Kpi, Period, State } from './types';
+import { defaultProcess } from './base';
 import { activePowers, activeVaults, depViews, powerCfg, powerState, signStatus, tracksPractice, vaultState } from './powers';
 import { addMonths, periodOfDate } from './periods';
 
@@ -13,13 +14,14 @@ export const POWER_KPIS: { id: string; role: Role; name: string; unit: string; d
 ];
 export const isPowerKpi = (k: Kpi) => POWER_KPIS.some(m => m.role === k.role || m.id === k.id);
 
-// Adds the indicators the dashboard does not have yet, in the process P4 (or the last one); returns how many were added
+// Adds the indicators the dashboard does not have yet, in the process P4 (or the first one of the map); returns how many were added
 export function addPowerKpis(d: Pick<State, 'kpis' | 'processes'>): number {
   let n = 0;
+  const pid = defaultProcess('P4', d.processes.map(x => x.id));
   for (const m of POWER_KPIS) {
     if (Object.values(d.kpis).some(k => k.role === m.role || k.id === m.id)) continue;
-    d.kpis[m.id] = { id: m.id, role: m.role, name: m.name, processId: 'P4', type: m.type, unit: m.unit, direction: m.direction, aggregation: 'avg', target: m.target, targetValue: m.targetValue, confidential: false, source: 'Outil 4.1' };
-    (d.processes.find(p => p.id === 'P4') || d.processes[d.processes.length - 1])?.kpiIds.push(m.id);
+    d.kpis[m.id] = { id: m.id, role: m.role, name: m.name, processId: pid, type: m.type, unit: m.unit, direction: m.direction, aggregation: 'avg', target: m.target, targetValue: m.targetValue, confidential: false, source: 'Outil 4.1' };
+    d.processes.find(p => p.id === pid)?.kpiIds.push(m.id);
     n++;
   }
   return n;

@@ -18,6 +18,7 @@ import { maintSummary } from './maintenanceAll';
 import { sopPhase, sopSummary } from './instructions';
 import { debitState, supplierSummary } from './suppliers';
 import { sectorSummary } from './sectors';
+import { mapSummary } from './cartography';
 
 export interface ToolStatus { n: number; tone: 'ok' | 'warn' | 'alert' | 'pending'; text: string }
 const ok = (text: string): ToolStatus => ({ n: 0, tone: 'ok', text });
@@ -50,6 +51,13 @@ export function toolBadge(s: State, tool: string, p: Period, now = new Date()): 
       const stale = staleContacts(s, now).length || all.filter(c => toCheck(c, now)).length;
       if (!stale && dup) return { n: dup, tone: 'warn', text: `${plural(dup, 'doublon')} à fusionner` };
       return stale ? { n: stale, tone: 'warn', text: `${plural(stale, 'numéro')} à vérifier` } : ok(`${plural(all.length, 'contact')} à jour`);
+    }
+    case '1.4': {
+      const m = mapSummary(s, now);
+      if (!m.count || !m.started) return empty();
+      if (m.noPilot) return { n: m.noPilot, tone: 'alert', text: `${plural(m.noPilot, 'processus', 'processus')} sans pilote` };
+      const todo = m.noFlow + m.old;
+      return todo ? { n: todo, tone: 'warn', text: `${plural(m.noFlow, 'logigramme')} à faire, ${plural(m.old, 'fiche')} à relire` } : ok(`Carte complète à ${m.pct ?? 0} %`);
     }
     case '5.1': {
       const all = Object.values(s.ncs);

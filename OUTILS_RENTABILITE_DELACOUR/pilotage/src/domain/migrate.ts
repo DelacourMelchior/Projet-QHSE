@@ -14,8 +14,11 @@ import { completeMaintenanceExamples } from './maintenanceExamples';
 import { upgradeDelivery } from './receptions';
 import { completeReceptionExamples } from './receptionsExamples';
 import { completePowerExamples } from './powersExamples';
+import { completeTeamExamples } from './teamExamples';
 import { linkSuppliers } from './suppliers';
 import { emptyTools, newId } from './base';
+import { soundFlow, soundMap, soundProcess } from './cartography';
+import { completeMapExamples } from './mapExamples';
 
 // Short stable hash (FNV-1a): the same old contact line gives the same id on every computer
 function fnv(text: string): string {
@@ -142,7 +145,9 @@ const soundRoot = (s: unknown): State => {
   const x: Record<string, any> = isObj(s) ? { ...s } : {};
   if (!isObj(x.settings)) x.settings = { ...DEFAULT_SETTINGS };
   if (!isObj(x.timeline) || typeof x.timeline.start !== 'string' || typeof x.timeline.end !== 'string') x.timeline = { start: '2026-01', end: '2026-12' };
-  x.processes = records(x.processes).map(p => ({ ...p, kpiIds: Array.isArray(p.kpiIds) ? p.kpiIds : [] }));
+  // a sheet without id or with an id already taken is left out
+  const seen = new Set<string>();
+  x.processes = records(x.processes).map(p => soundProcess({ ...p, kpiIds: Array.isArray(p.kpiIds) ? p.kpiIds : [] } as Process)).filter(p => p.id && !seen.has(p.id) && !!seen.add(p.id));
   for (const k of ['kpis', 'values', 'actions', 'risks', 'contacts']) if (!isObj(x[k])) x[k] = {};
   return x as State;
 };
@@ -306,7 +311,13 @@ export function normalize(s0: State): State {
   const vaults = first ? { vt_main: { id: 'vt_main', name: 'Enveloppe des accès', location: text(env.location), contents: [], visa: ['', ''] as [string, string], ...(text(env.checkedAt) ? { checkedAt: text(env.checkedAt), checkedBy: text(env.by) } : {}) } } : vts;
   const pwIn = { powers: pws, practices: withTools.practices, covers: covs, vaults, vlogs: withTools.vlogs, people: withTools.people, params: rc.params };
   const pw = guard(() => completePowerExamples(pwIn), pwIn);
-  return { ...s, ...withTools, powers: pw.powers, practices: pw.practices, covers: pw.covers, vaults: pw.vaults, vlogs: pw.vlogs, people: pw.people, envelope: first ? { location: '', checkedAt: '', by: '' } : env, sops: sopEx.sops, ncs: rc.ncs, complaints: completed.complaints, feedbacks: completed.feedbacks ?? withTools.feedbacks, quotes: completed.quotes ?? withTools.quotes, deliveries: rc.deliveries, orgs: rc.orgs, suppliers: sup.suppliers, debits: sup.debits, sectors: sup.sectors, kpis: completed.kpis ?? s.kpis, processes: completed.processes ?? s.processes, values: completed.values, equipments: maintEx.equipments, spares: maintEx.spares, params: pw.params, risks, contacts: rc.contacts, scale: s.scale || DEFAULT_SCALE };
+  // tool 4.2: the skills of each process and the processes of the people of the fictitious company, once
+  const tmIn = { skills: withTools.skills, people: pw.people, params: pw.params, settings: s.settings };
+  const tm = guard(() => completeTeamExamples(tmIn), tmIn);
+  const flows = Object.fromEntries(Object.entries(withTools.flows).map(([id, f]) => [id, guard(() => soundFlow(id, f), f)]));
+  const out = { ...s, ...withTools, flows, powers: pw.powers, practices: pw.practices, covers: pw.covers, vaults: pw.vaults, vlogs: pw.vlogs, people: tm.people, skills: tm.skills, envelope: first ? { location: '', checkedAt: '', by: '' } : env, sops: sopEx.sops, ncs: rc.ncs, complaints: completed.complaints, feedbacks: completed.feedbacks ?? withTools.feedbacks, quotes: completed.quotes ?? withTools.quotes, deliveries: rc.deliveries, orgs: rc.orgs, suppliers: sup.suppliers, debits: sup.debits, sectors: sup.sectors, kpis: completed.kpis ?? s.kpis, processes: completed.processes ?? s.processes, values: completed.values, equipments: maintEx.equipments, spares: maintEx.spares, params: tm.params.map === undefined ? tm.params : { ...tm.params, map: soundMap(tm.params.map) }, risks, contacts: rc.contacts, scale: s.scale || DEFAULT_SCALE };
+  // tool 1.4: the sheets and flowcharts of the fictitious company, once
+  return guard(() => completeMapExamples(out), out);
 }
 
 // "Nom, rôle : 06 00 00 00 00" lines -> crisis directory entries (same line = same id, whoever converts it)

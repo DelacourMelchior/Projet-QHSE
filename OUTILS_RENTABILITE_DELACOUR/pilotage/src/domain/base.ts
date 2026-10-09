@@ -15,15 +15,19 @@ export const PROCESS_NAMES: Record<string, string> = {
   P5: 'Qualité et amélioration',
 };
 export const PROCESS_IDS = Object.keys(PROCESS_NAMES);
+// The colour of each process of the map (filled by registerProcesses; none before)
+export const PROCESS_COLORS: Record<string, string> = {};
+// The process a record falls back on: the wished one when the map still has it, else the first of the map, else none
+export const defaultProcess = (prefer = '', ids: string[] = PROCESS_IDS): string => (ids.includes(prefer) ? prefer : ids[0] || '');
 export const processLabel = (id: string) => (PROCESS_NAMES[id] ? `${id} · ${PROCESS_NAMES[id]}` : id || 'À qualifier');
 
 // The collections added by tools 2.1 to 5.4, empty
 export const emptyTools = (): Pick<State, 'params' | 'quotes' | 'complaints' | 'feedbacks' | 'suppliers' | 'debits' | 'sectors' | 'sops'
-  | 'equipments' | 'spares' | 'deliveries' | 'powers' | 'practices' | 'covers' | 'vaults' | 'vlogs' | 'envelope' | 'people' | 'skills' | 'newcomers' | 'ged' | 'chronos' | 'ncs' | 'analyses' | 'pokas' | 'logs' | 'orgs'> => ({
+  | 'equipments' | 'spares' | 'deliveries' | 'powers' | 'practices' | 'covers' | 'vaults' | 'vlogs' | 'envelope' | 'people' | 'skills' | 'newcomers' | 'ged' | 'chronos' | 'ncs' | 'analyses' | 'pokas' | 'logs' | 'orgs' | 'flows'> => ({
   params: { ...DEFAULT_PARAMS },
   quotes: {}, complaints: {}, feedbacks: {}, suppliers: {}, debits: {}, sectors: {}, sops: {}, equipments: {}, spares: {}, deliveries: {},
   powers: {}, practices: {}, covers: {}, vaults: {}, vlogs: {}, envelope: { location: '', checkedAt: '', by: '' }, people: {}, skills: {}, newcomers: {}, ged: defaultGed(), chronos: {},
-  ncs: {}, analyses: {}, pokas: {}, logs: {}, orgs: {},
+  ncs: {}, analyses: {}, pokas: {}, logs: {}, orgs: {}, flows: {},
 });
 
 // Filing plan in 5 processes (tool 4.4)
@@ -50,6 +54,8 @@ export function defaultGed(): Ged {
   };
 }
 
+// The name of the fictitious company of the demo: the examples of every tool are topped up only in the company that bears it
+export const EXAMPLE_COMPANY = 'Entreprise exemple (fictive)';
 export const newId = (prefix: string) => `${prefix}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 
 // Next record number of the year: "NC-2026-007" (numbers already used in the collection are skipped)
@@ -143,7 +149,15 @@ export function addWorkHours(a: string, h: number, business: Business = false): 
 
 // Words of the tools, explained to the team (glossary of the home screen)
 export const GLOSSARY: [string, string][] = [
-  ['P1 à P5', 'Les 5 grandes familles de travail : direction, commercial, réalisation, ressources humaines, qualité.'],
+  ['Processus', "Une famille de travail de bout en bout, de ce qui la déclenche à ce qu'elle livre. Il y en a 5 au départ (P1 à P5) ; l'entreprise peut en ajouter dans la cartographie."],
+  ['Bande de la carte', "Où se range un processus sur la carte : management (décider, piloter), réalisation (ce qui crée la valeur pour le client) ou support (ce qui rend la réalisation possible)."],
+  ['Pilote de processus', "La personne qui répond d'un processus : elle s'assure qu'il fonctionne, tient sa fiche à jour et la relit chaque année. Son suppléant la remplace."],
+  ['Suppléant du pilote', "La personne qui remplace le pilote d'un processus en son absence : elle peut, comme lui, modifier la fiche."],
+  ['Logigramme', "Le dessin des étapes d'un cas, de bout en bout : qui fait quoi, dans quel ordre, et où l'on va selon la réponse à chaque question (oui, non, ou d'autres réponses)."],
+  ['Entrée et sortie', "Ce dont un processus a besoin pour démarrer (entrée) et ce qu'il livre (sortie), avec de qui ça vient et pour qui ça part."],
+  ['Sous-processus', "Une étape qui renvoie vers un autre logigramme, utile quand ce travail est déjà décrit ailleurs : on le suit, puis on reprend ici."],
+  ['Point de contrôle', "Un moment du logigramme où l'on vérifie avant de continuer (la marge, la conformité). Il se coche sur l'étape."],
+  ['Exigence', "Ce qu'un processus doit respecter : une demande d'un client, la loi, une norme, une règle de l'entreprise."],
   ['Processus en cause', 'La famille de travail qui a rendu le problème possible (pas la personne qui l\'a vu).'],
   ['Non-qualité', 'Ce que coûtent les défauts : matière jetée, heures refaites, transport en urgence, avoirs.'],
   ['5 Pourquoi', 'Demander « pourquoi ? » plusieurs fois pour trouver la vraie cause, sans chercher de coupable.'],

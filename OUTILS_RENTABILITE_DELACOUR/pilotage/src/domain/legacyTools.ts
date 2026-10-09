@@ -1,14 +1,15 @@
 // Records typed in the previous version of tools 2.1 to 5.3 (tool_page.html, one table of text cells per tool, saved in the
 // browser as DELACOUR_DATA_<tool>) converted into the new records. Offered once, from the settings; nothing is converted silently.
-import type { Action, Analysis, Change, Complaint, Debit, Delivery, Nc, NcCause, Person, Power, Quote, Skill, SkillLevel, State, Supplier } from './types';
-import { DEFAULT_MILESTONES } from './operations';
+import type { Action, Analysis, Complaint, Debit, Delivery, Nc, NcCause, Person, Power, Quote, Skill, SkillLevel, State, Supplier } from './types';
+import { LEGACY_MILESTONES } from './receptions';
+import { linkSuppliers } from './suppliers';
 import { LOCKS } from './commercial';
 import { parseNumber } from './numbers';
 import { isoDate, periodOf } from './periods';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type Legacy = any;
-export const LEGACY_TOOL_IDS = ['2.1', '2.2', '2.3', '3.1', '3.2', '4.1', '4.2', '5.1', '5.2', '5.3'];
+export const LEGACY_TOOL_IDS = ['2.1', '2.3', '3.1', '3.2', '4.1', '4.2', '5.1', '5.2', '5.3'];
 
 const clean = (x: unknown) => String(x ?? '').replace(/[\u{1F300}-\u{1FAFF}☀-➿⭐]️?/gu, '').replace(/\s+/g, ' ').trim();
 const num = (x: unknown) => parseNumber(clean(x).replace(/^[+~]\s*/, '').replace(/\(.*$/, ''));
@@ -26,12 +27,13 @@ const processOf = (x: string) => /commerc|devis|vente|factur/i.test(x) ? 'P2' : 
 const causeOf = (x: string): NcCause | '' => /outil|usure|casse/i.test(x) ? 'outillage' : /plan|lecture/i.test(x) ? 'plan' : /r[ée]glage/i.test(x) ? 'reglage' : /mati[èe]re|fournisseur/i.test(x) ? 'matiere' : /choc|manut|emball/i.test(x) ? 'manipulation' : x ? 'autre' : '';
 const MONTHS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
 
-export interface LegacyImport { counts: Record<string, number>; apply(d: State): void }
+// `apply` returns what it left alone as a sentence of facts ('' when it left nothing alone)
+export interface LegacyImport { counts: Record<string, number>; apply(d: State): string }
 
 export function legacyToolRecords(raw: Record<string, Legacy>, s: State, today = new Date()): LegacyImport {
   const y = today.getFullYear();
   const rate = s.params.hourlyRate || 55;
-  const quotes: Quote[] = [], changes: Change[] = [], complaints: Complaint[] = [], suppliers: Supplier[] = [], debits: Debit[] = [];
+  const quotes: Quote[] = [], complaints: Complaint[] = [], suppliers: Supplier[] = [], debits: Debit[] = [];
   const deliveries: Delivery[] = [], powers: Power[] = [], people: Person[] = [], skills: Skill[] = [], ncs: Nc[] = [], analyses: Analysis[] = [], actions: Action[] = [];
   const cnq: Record<string, number> = {};
 
@@ -44,16 +46,6 @@ export function legacyToolRecords(raw: Record<string, Legacy>, s: State, today =
       derogation: /d[ée]rogation/i.test(clean(r[7])) ? 'Dérogation accordée (ancienne version)' : '', depositReceived: /encaiss/i.test(clean(r[7])), status: 'draft',
       sentAt: '', followedAt: '', decidedAt: '', lostReason: '',
       cost: { material: num(r[1]), hours: num(r[2]) === null ? null : Math.round(num(r[2])! / rate * 10) / 10, subcontract: num(r[3]), other: null },
-    });
-  });
-  rowsOf(raw['2.2']).forEach((r, i) => {
-    const [affaire, client] = split2(r[0]);
-    const accepted = /accord/i.test(clean(r[4])) && !/attente/i.test(clean(r[4]));
-    const inv = clean(r[6]).match(/Facture\s*N°?\s*([\w-]+)/i);
-    changes.push({
-      id: id('av', i, affaire), ref: `AV-ancien-${i + 1}`, affaire, client: client || affaire, askedBy: '', date: date(r[4], y) || isoDate(today), description: clean(r[1]),
-      price: num(r[2]), delayDays: num(r[3]), sentAt: /envoy|pr[êe]t/i.test(clean(r[5])) ? date(r[4], y) || isoDate(today) : '', via: /sms/i.test(clean(r[5])) ? 'sms' : '',
-      answer: accepted ? 'accepted' : '', answeredAt: accepted ? date(r[4], y) : '', startedAt: '', invoiceRef: inv ? inv[1] : '', invoicedAt: inv ? date(r[6], y) || isoDate(today) : '',
     });
   });
   rowsOf(raw['2.3']).forEach((r, i) => {
@@ -95,9 +87,11 @@ export function legacyToolRecords(raw: Record<string, Legacy>, s: State, today =
         { label: 'Première pièce', point: 'Contrôle bloquant de la première pièce', requirement: '', measured: clean(r[4]), ok: /valid/i.test(clean(r[4])) ? true : null, by: '', date: '' },
         { label: 'Cote critique 1', point: clean(r[2]), requirement: '', measured: '', ok: /mesur|conforme/i.test(clean(r[2])) ? true : null, by: '', date: '' },
         { label: 'Cote critique 2', point: clean(r[3]), requirement: '', measured: '', ok: /mesur|conforme/i.test(clean(r[3])) ? true : null, by: '', date: '' },
-        { ...DEFAULT_MILESTONES[3], measured: clean(r[6]), ok: released ? true : null, by: '', date: '' },
+        { ...LEGACY_MILESTONES[3], measured: clean(r[6]), ok: released ? true : null, by: '', date: '' },
       ],
-      releasedBy: released ? 'Ancienne version' : '', releasedAt: released ? isoDate(today) : '',
+      // the old table says "released", not by whom nor when: no release is invented (the order is imported not released: no person, no day, no task to deliver), the line of the journal says what the old table said
+      releasedBy: '', releasedAt: '',
+      ...(released ? { journal: [{ at: `${isoDate(today)}T${String(today.getHours()).padStart(2, '0')}:${String(today.getMinutes()).padStart(2, '0')}`, by: 'Ancienne version', text: 'Libérée dans l\'ancien classeur (date inconnue)' }] } : {}),
       reception: { date: '', name: '', role: '', result: '', reserve: '', retentionPct: null, amount: null, liftedAt: '' },
     });
   });
@@ -113,7 +107,7 @@ export function legacyToolRecords(raw: Record<string, Legacy>, s: State, today =
     const byName: Record<string, string> = Object.fromEntries(Object.values(s.people).map(p => [p.name.toLowerCase(), p.id]));
     const ids = t42.employees.map((n: unknown, i: number) => {
       const name = clean(n);
-      if (byName[name.toLowerCase()]) return byName[name.toLowerCase()];
+      if (Object.hasOwn(byName, name.toLowerCase())) return byName[name.toLowerCase()];
       const p: Person = { id: id('pp', i, name), name, role: '', active: true };
       people.push(p);
       return p.id;
@@ -162,16 +156,22 @@ export function legacyToolRecords(raw: Record<string, Legacy>, s: State, today =
   const kpi = s.kpis.kpi_cnq || Object.values(s.kpis).find(k => k.role === 'cnq');
   const cnqNew = kpi ? Object.keys(cnq).filter(p => s.values[kpi.id]?.[p] === undefined) : [];
   const counts: Record<string, number> = {
-    '2.1': quotes.length, '2.2': changes.length, '2.3': complaints.length, '3.1': suppliers.length + debits.length, '3.4': deliveries.length,
+    '2.1': quotes.length, '2.3': complaints.length, '3.1': suppliers.length + debits.length, '3.4': deliveries.length,
     '4.1': powers.length, '4.2': skills.length, '5.1': ncs.length, '5.2': cnqNew.length, '5.3': analyses.length,
   };
   return {
     counts,
     apply(d: State) {
-      const put = <T extends { id: string }>(into: Record<string, T>, xs: T[]) => xs.forEach(x => { into[x.id] = x; });
-      put(d.quotes, quotes); put(d.changes, changes); put(d.complaints, complaints); put(d.suppliers, suppliers); put(d.debits, debits);
+      // a record already there (taken by a first import and worked on since: its id is the same each time) is never written again
+      let kept = 0;
+      const put = <T extends { id: string }>(into: Record<string, T>, xs: T[]) => xs.forEach(x => { if (Object.hasOwn(into, x.id)) kept++; else into[x.id] = x; });
+      put(d.quotes, quotes); put(d.complaints, complaints); put(d.suppliers, suppliers); put(d.debits, debits);
       put(d.deliveries, deliveries); put(d.powers, powers); put(d.people, people); put(d.skills, skills); put(d.ncs, ncs); put(d.analyses, analyses); put(d.actions, actions);
-      if (kpi) cnqNew.forEach(p => { (d.values[kpi.id] ||= {})[p] = cnq[p]; });
+      if (kpi) cnqNew.forEach(p => { const v = (d.values[kpi.id] ||= {}); if (v[p] === undefined) v[p] = cnq[p]; else kept++; });
+      // the imported suppliers join the directory (1.3) like the others
+      const l = linkSuppliers(d);
+      d.suppliers = l.suppliers; d.orgs = l.orgs; d.contacts = l.contacts; d.debits = l.debits;
+      return kept ? `${kept} ${kept > 1 ? 'éléments déjà repris sont gardés tels quels' : 'élément déjà repris est gardé tel quel'}.` : '';
     },
   };
 }

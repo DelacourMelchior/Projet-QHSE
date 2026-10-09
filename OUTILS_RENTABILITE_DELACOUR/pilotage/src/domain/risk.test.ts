@@ -3,7 +3,7 @@ import { emptyTools } from './base';
 import { describe, expect, it } from 'vitest';
 import type { Action, Risk, State } from './types';
 import {
-  autoThresholds, DEFAULT_SCALE, gravityScale, newRisk, planBGain, riskActionEffectiveness, riskInsights, riskState, riskSummary, score, slowness,
+  applyCalc, autoThresholds, DEFAULT_SCALE, lossPerEvent, gravityScale, newRisk, planBGain, riskActionEffectiveness, riskInsights, riskState, riskSummary, score, slowness,
   staleContacts, suggestedGravity, testDueDate, yearlyExposure, zoneOf,
 } from './risk';
 import { formatDuration, parseDuration } from './duration';
@@ -17,7 +17,7 @@ import { bucketOf, flatten, unflatten } from '../store/flat';
 
 const today = new Date(2026, 8, 25);
 const st = (risks: Risk[], actions: Action[] = []): State => ({
-  settings: { companyName: '', profile: 'industrie', annualBudget: 600000, netMarginPct: 5, avgQuoteValue: 4500 },
+  settings: { companyName: '', profile: 'industrie', annualBudget: 600000, netMarginPct: 5 },
   timeline: { start: '2026-01', end: '2026-12' }, processes: [], kpis: {}, values: {}, contacts: {}, scale: DEFAULT_SCALE, ...emptyTools(),
   actions: Object.fromEntries(actions.map(a => [a.id, a])), risks: Object.fromEntries(risks.map(r => [r.id, r])),
 });
@@ -163,6 +163,25 @@ describe('demo, directory, reflex cards', () => {
     const lines = wrap('Perte de 12 000 € par jour pendant la panne', 60, 11);
     expect(lines.length).toBeGreaterThan(1);
     expect(lines.some(l => l.includes('12 000'))).toBe(true);
+  });
+});
+
+describe('guided cost calculation', () => {
+  it('computes each line from its factors and totals the loss', () => {
+    const c = applyCalc({ perDay: null, daysWithout: null, daysWith: null, planBCost: null, calc: {
+      'margin.sales': 4000, 'margin.rate': 40, 'idle.people': 2, 'idle.hours': 8, 'idle.rate': 30, 'daysWithout.supply': 10, 'daysWithout.repair': 3, 'repair.part': 3500, 'repair.labour': 500 } });
+    expect(c.margin).toBe(1600);
+    expect(c.idle).toBe(480);
+    expect(c.perDay).toBe(2080);
+    expect(c.daysWithout).toBe(13);
+    expect(c.repair).toBe(4000);
+    expect(lossPerEvent(risk({ cost: c }))).toBe(2080 * 13 + 4000);
+  });
+  it('leaves a product line empty while a factor is missing, and keeps typed lines', () => {
+    const c = applyCalc({ perDay: null, daysWithout: 5, daysWith: null, planBCost: null, penalties: 700, calc: { 'margin.sales': 4000 } });
+    expect(c.margin).toBeNull();
+    expect(c.penalties).toBe(700);
+    expect(c.perDay).toBe(700);
   });
 });
 

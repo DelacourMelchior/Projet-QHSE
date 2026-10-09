@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Action, Analysis, Nc, Poka, State } from './types';
 import {
-  analysisActionEffectiveness, analysisState, blamesPerson, cnqMonth, compensatingRevenue, ncCost, ncState, newAnalysis, newNc, newPoka, pokaState, qualityInsights, slowActions, weakAction,
+  analysisActionEffectiveness, analysisState, blamesPerson, cnqMonth, compensatingRevenue, ncCost, ncOrderFocus, ncState, newAnalysis, newNc, newPoka, pokaState, qualityInsights, slowActions, weakAction, workshopOfNc, workshopsToOpen,
 } from './quality';
 import { qualityExamples } from './qualityExamples';
 import { analysisPdf, labelsPdf, pokaPdf } from './qualityPdf';
@@ -15,7 +15,7 @@ import { bucketOf, flatten, unflatten } from '../store/flat';
 
 const now = new Date(2026, 8, 25, 10, 0);
 const st = (over: Partial<State> = {}): State => ({
-  settings: { companyName: '', profile: 'industrie', annualBudget: 600000, netMarginPct: 5, avgQuoteValue: 4500 },
+  settings: { companyName: '', profile: 'industrie', annualBudget: 600000, netMarginPct: 5 },
   timeline: { start: '2026-01', end: '2026-12' }, processes: [], kpis: {}, values: {}, actions: {}, risks: {}, contacts: {}, scale: DEFAULT_SCALE,
   ...emptyTools(), ...over,
 });
@@ -57,6 +57,12 @@ describe('5.2 cost of non-quality', () => {
     expect(m.unqualified).toBe(1);
     expect(m.recovered).toBe(80);
     expect(m.hours).toBe(3);
+  });
+  it('keeps the amounts of a process that no longer exists under "À qualifier"', () => {
+    const s = st({ ncs: { n9: nc({ id: 'n9', at: '2026-09-02T10:00', processId: 'P9', cost: { scrap: 100, lostHours: null, reworkHours: null, logistics: null } }), n3: nc({ id: 'n3', at: '2026-09-03T10:00', processId: 'P3', cost: { scrap: 50, lostHours: null, reworkHours: null, logistics: null } }) } });
+    const m = cnqMonth(s, '2026-09');
+    expect(m.byProcess).toMatchObject({ '': 100, P3: 50 });
+    expect(Object.values(m.byProcess).reduce((a, b) => a + b, 0)).toBe(m.total);
   });
   it('offers the computed figure to the monthly dashboard, never writes it', () => {
     const d = demoState(now);
@@ -144,5 +150,45 @@ describe('examples, messages, documents, storage', () => {
     expect(s.ncs).toEqual({});
     expect(s.params.marginFloorPct).toBe(30);
     expect(s.ged.folders).toHaveLength(5);
+  });
+});
+
+describe('5.3 workshops suggested for the defects declared from an order of 3.4 (L-15, L-20)', () => {
+  // a defect of a milestone names the deliverable of its order in `where`: not a workstation
+  const fromOrder = (id: string, over: Partial<Nc> = {}): Nc => nc({ id, ref: id, where: 'Châssis', at: '2026-09-20T09:00', deliveryId: 'dl', milestoneId: `ms_${id}`, ...over });
+
+  it('does not call defects of one order "similar at the same workstation", but still does for defects declared at a workstation', () => {
+    const s = st({ ncs: { a: fromOrder('a', { description: 'Rayure' }), b: fromOrder('b', { description: 'Étiquette absente' }), c: fromOrder('c', { description: 'Cote hors tolérance' }) } });
+    expect(workshopsToOpen(s, now)).toEqual([]);                                                              // it said 3 times "3 défauts semblables au même poste" before
+    const bin = (id: string) => nc({ id, ref: id, where: 'Soudure 2', at: '2026-09-20T09:00' });
+    expect(workshopsToOpen(st({ ncs: { a: bin('a'), b: bin('b'), c: bin('c') } }), now).map(x => x.why)).toEqual(Array(3).fill('3 défauts semblables au même poste en 90 jours'));
+  });
+
+  it('stops suggesting a workshop for the defect of a reservation once it has a decision, and keeps doing it for the others', () => {
+    const reserve = (over: Partial<Nc> = {}) => fromOrder('r', { milestoneId: undefined, reserveId: 'rv', origin: 'client', ...over });
+    expect(workshopsToOpen(st({ ncs: { r: reserve() } }), now).map(x => x.why)).toEqual(['défaut vu par le client']);        // seen by the customer, nothing decided
+    expect(workshopsToOpen(st({ ncs: { r: reserve({ decision: 'retouche', decidedAt: '2026-09-21T09:00', decidedBy: 'Marc' }) } }), now)).toEqual([]);
+    expect(workshopsToOpen(st({ ncs: { r: reserve({ decision: 'attente' }) } }), now)).toHaveLength(1);                      // waiting for the customer: not decided
+    expect(workshopsToOpen(st({ ncs: { x: nc({ id: 'x', origin: 'client', decision: 'retouche', decidedAt: '2026-09-21T09:00', decidedBy: 'Marc' }) } }), now)).toHaveLength(1);   // a defect of the customer that is not a reservation of 3.4
+    expect(workshopsToOpen(st({ ncs: { r: reserve({ analysisId: 'an' }) } }), now)).toEqual([]);                             // a workshop is open
+  });
+
+  it('opens the order on the reservation of the defect, whichever delivery holds it', () => {
+    expect(ncOrderFocus({ deliveryId: 'dl', reserveId: 'rv' })).toBe('dl:reception:rv');                          // the tab lists the reservations of every delivery
+    expect(ncOrderFocus({ deliveryId: 'dl', milestoneId: 'ms' })).toBe('dl:milestones');
+    expect(ncOrderFocus({ deliveryId: 'dl' })).toBe('dl');
+    expect(ncOrderFocus({})).toBe('');
+  });
+
+  it('gives the workshop already opened for a defect, else a new one that carries the defect', () => {
+    const n = fromOrder('n', { description: 'Fuite au raccord', by: 'Luc', decidedBy: 'Marc', processId: 'P3' });
+    const s = st({ ncs: { n } });
+    const w = workshopOfNc(s, n, now);
+    expect(w.isNew).toBe(true);
+    expect(w.a).toMatchObject({ problem: 'Fuite au raccord', source: { kind: 'nc', id: 'n' }, participants: 'Luc, Marc', processId: 'P3' });
+    const open = { ...w.a, id: 'an1' };
+    const again = workshopOfNc(st({ ncs: { n: { ...n, analysisId: 'an1' } }, analyses: { an1: open } }), { ...n, analysisId: 'an1' }, now);
+    expect(again).toEqual({ a: open, isNew: false });
+    expect(workshopOfNc(st({ ncs: { n } }), { ...n, analysisId: '__proto__' }, now).isNew).toBe(true);           // an address is never a key
   });
 });

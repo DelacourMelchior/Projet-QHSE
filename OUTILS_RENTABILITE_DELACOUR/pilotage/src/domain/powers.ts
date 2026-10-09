@@ -4,7 +4,7 @@
 // neither list still counts (an outside deputy), the screen says it. The life of the tool (a practice, a check, an opening, an absence covered) is one record each, written
 // once, so that two people never overwrite each other; the first version kept a date per deputy in the power, it still counts.
 import type { Contact, Cover, Params, PersonSign, Person, Power, PowerWait, Practice, State, Vault, VaultLog } from './types';
-import { addDays, daysBetween, newId, nowLocal } from './base';
+import { addDays, daysBetween, defaultProcess, newId, nowLocal } from './base';
 import { frDate, isoDate } from './periods';
 import { norm } from './instructions';
 import { plural } from './receptions';
@@ -52,7 +52,7 @@ export function powerCfg(p: Pick<Params, 'power'> | undefined): PowerCfg {
   };
 }
 
-export const newPower = (processId = 'P1', power = ''): Power => ({ id: newId('pw'), processId, power, holder: '', deputies: ['', ''], practiced: ['', ''], access: '' });
+export const newPower = (processId = defaultProcess('P1'), power = ''): Power => ({ id: newId('pw'), processId, power, holder: '', deputies: ['', ''], practiced: ['', ''], access: '' });
 export const activePowers = (s: Pick<State, 'powers'>): Power[] => Object.values(s.powers || {}).filter(p => !p.archivedAt);
 const day = (d: Date) => isoDate(d);
 

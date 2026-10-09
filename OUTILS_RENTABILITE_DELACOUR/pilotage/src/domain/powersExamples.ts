@@ -4,10 +4,9 @@
 import type { Cover, Person, PersonSign, Power, Practice, State, Vault, VaultLog } from './types';
 import { signKey, signNeeds, signText } from './powers';
 import { isoDate } from './periods';
-import { fillEmptyCollections } from './base';
+import { fillEmptyCollections, EXAMPLE_COMPANY } from './base';
 
 export const POWER_EXAMPLE_LEVEL = 2;
-const EXAMPLE_COMPANY = 'Entreprise exemple (fictive)';
 
 // Who is away in the example (days from today, a negative number is ahead); the people of 4.2 carry them
 export const exampleAbsences = (ago: (n: number) => string): Record<string, { from: string; to: string }[]> => ({

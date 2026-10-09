@@ -1,30 +1,30 @@
-// Tools 2.1 to 2.4: feasibility and margin lock of a quote, change orders agreed before they are done,
-// customer complaints called back within 48 h, end-of-job flash review. Pure functions, covered by commercial.test.ts.
-import type { Change, Complaint, Feedback, Params, Quote, State } from './types';
-import { addDays, daysBetween, hoursBetween, nextRef, nowLocal, PROCESS_IDS, rateFor, sum, workHoursBetween, type Insight } from './base';
-import { isoDate } from './periods';
+// Tools 2.1, 2.3 and 2.4: feasibility and margin lock of a quote, customer complaints called back within 48 h,
+// end-of-job flash review. Pure functions, covered by commercial.test.ts.
+import type { Complaint, Delivery, Feedback, FollowUp, Kpi, Params, Period, Quote, State } from './types';
+import { addDays, addWorkHours, daysBetween, hoursCost, nextRef, nowLocal, PROCESS_COLORS, PROCESS_IDS, defaultProcess, processLabel, sum, workHoursBetween, businessOf, type Business, type Insight } from './base';
+import { addMonths, frDate, isoDate } from './periods';
+import { orgKey } from './contacts';
 import { formatValue } from './numbers';
+import { counted, isPostponed, promisedOn, receptionsOf, reservesOf } from './receptions';
 
 const names = <T,>(xs: T[], f: (x: T) => string) => xs.slice(0, 3).map(f).join(', ') + (xs.length > 3 ? ` et ${xs.length - 3} autre(s)` : '');
 const uid = (p: string) => `${p}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 
-// ---- 2.1 the 5 locks, one per process, checked with the technical manager before the offer leaves
+// ---- 2.1 the 5 locks, checked with the technical manager before the offer leaves
 export const LOCKS = [
-  { process: 'P1', label: 'Marge et acompte', point: 'Marge brute calculée, acompte prévu', ideas: ['Marge au-dessus du plancher', 'Acompte de 30 % écrit dans l\'offre', 'Solvabilité du client vérifiée', 'Clause de réception 95/5 dans les conditions générales jointes (outil 3.4)'] },
-  { process: 'P2', label: 'Besoin client', point: 'Cahier des charges, plans et cotes sans ambiguïté', ideas: ['Tolérances écrites', 'Délai demandé réaliste', 'Interlocuteur technique identifié'] },
-  { process: 'P3', label: 'Capacité et délai', point: 'Créneau atelier libre, matière et outillage disponibles', ideas: ['Machine goulet disponible', 'Outillage spécifique approvisionné', 'Sous-traitance réservée'] },
-  { process: 'P4', label: 'Compétences', point: 'Personnes qualifiées présentes sur la période', ideas: ['Opérateur autonome sur le poste (outil 4.2)', 'Pas de congés bloquants'] },
-  { process: 'P5', label: 'Qualité', point: 'Tolérances réalisables avec nos moyens de contrôle', ideas: ['Instrument de contrôle adapté', 'Certificats ou normes exigés connus'] },
+  { n: 1, label: 'Marge et acompte', point: 'Marge brute calculée, acompte prévu', ideas: ['Marge au-dessus du plancher', 'Acompte de 30 % écrit dans l\'offre', 'Solvabilité du client vérifiée', 'Clause de réception 95/5 dans les conditions générales jointes (outil 3.4)'] },
+  { n: 2, label: 'Besoin client', point: 'Cahier des charges, plans et cotes sans ambiguïté', ideas: ['Tolérances écrites', 'Délai demandé réaliste', 'Interlocuteur technique identifié'] },
+  { n: 3, label: 'Capacité et délai', point: 'Créneau atelier libre, matière et outillage disponibles', ideas: ['Machine goulet disponible', 'Outillage spécifique approvisionné', 'Sous-traitance réservée'] },
+  { n: 4, label: 'Compétences', point: 'Personnes qualifiées présentes sur la période', ideas: ['Opérateur autonome sur le poste (outil 4.2)', 'Pas de congés bloquants'] },
+  { n: 5, label: 'Qualité', point: 'Tolérances réalisables avec nos moyens de contrôle', ideas: ['Instrument de contrôle adapté', 'Certificats ou normes exigés connus'] },
 ];
 export const LOCK_STATE = { ok: 'Conforme', reserve: 'Avec réserve', ko: 'Bloquant' } as const;
 
 export const quoteCost = (q: Quote, p: Params): number | null => {
   const c = q.cost;
   if (!c || [c.material, c.hours, c.subcontract, c.other].every(v => v === null)) return null;
-  return sum([c.material, c.subcontract, c.other]) + (c.hours || 0) * rateFor(p, c.rate);
+  return sum([c.material, c.subcontract, c.other]) + hoursCost(c.hours, p);
 };
-// Cost including the overheads of the settings (the margin floor is checked on the direct cost)
-export const quoteFullCost = (q: Quote, p: Params): number | null => { const c = quoteCost(q, p); return c === null ? null : c * (1 + (p.overheadPct || 0) / 100); };
 export function quoteMargin(q: Quote, p: Params): { value: number; pct: number } | null {
   const cost = quoteCost(q, p);
   if (cost === null || !q.amount) return null;
@@ -32,51 +32,14 @@ export function quoteMargin(q: Quote, p: Params): { value: number; pct: number }
 }
 export const needsVisas = (q: Quote, p: Params) => (q.amount ?? 0) >= p.visaThreshold;
 
-// Price ladder: the price to ask, and the prices under which the quote stops paying (cost engine of tools 1.4 and 1.5)
-export interface Ladder {
-  target: number | null;    // prix cible: complete cost plus the net margin aimed at
-  floor: number | null;     // price at the gross margin floor of the settings: under it, a written derogation
-  complete: number;         // complete cost, overheads included: under it the job loses money once the structure is paid
-  variable: number | null;  // variable cost: materials, subcontracting, other costs, what the machines consume: under it every sale costs cash
-}
-// Pay is paid whatever is sold (1.4), so an hour only costs what the machines consume (variableHourly, computed by 1.5).
-// Nothing when only a total cost was typed (express control): it cannot be split.
-export function quoteVariableCost(q: Quote, variableHourly: number): number | null {
-  const c = q.cost;
-  if (!c || (c.material === null && c.hours === null && c.subcontract === null)) return null;
-  return sum([c.material, c.subcontract, c.other]) + (c.hours || 0) * variableHourly;
-}
-// What each hour of the job leaves to pay the structure: price less variable costs, over the hours (1.6 compares it with the value of an hour)
-export function quoteHourMargin(q: Quote, variableHourly: number): number | null {
-  const v = quoteVariableCost(q, variableHourly), hours = q.cost?.hours;
-  return v === null || !q.amount || !hours ? null : (q.amount - v) / hours;
-}
-// targetPct: margin aimed at before tax, % of the price (the decision of the charter of 1.6, else the margin of the accounts)
-export function priceLadder(q: Quote, p: Params, targetPct: number, variableHourly = 0): Ladder | null {
-  const direct = quoteCost(q, p);
-  if (direct === null) return null;
-  const complete = quoteFullCost(q, p)!, n = targetPct;
-  return {
-    target: n < 100 ? complete / (1 - n / 100) : null,
-    floor: p.marginFloorPct < 100 ? direct / (1 - p.marginFloorPct / 100) : null,
-    complete, variable: quoteVariableCost(q, variableHourly),
-  };
-}
-// Largest discount (%) that keeps the price above the gross margin floor and above the complete cost, rounded down to half a point
-export function maxDiscount(price: number | null, l: Ladder): number {
-  if (!price || price <= 0) return 0;
-  const limit = Math.max(l.floor ?? 0, l.complete);
-  return limit >= price ? 0 : Math.floor((1 - limit / price) * 200 + 1e-9) / 2;   // 1e-9: 8 % must not fall to 7.5 % on a rounding error
-}
-
 // What still stops the offer from leaving (empty = ready to send)
 export function quoteIssues(q: Quote, p: Params, money = true): string[] {
   const out: string[] = [];
-  q.locks.forEach((l, i) => { if (l.state === 'ko') out.push(`Verrou ${LOCKS[i].process} bloquant : ${l.note || LOCKS[i].label.toLowerCase()}`); });
+  q.locks.forEach((l, i) => { if (l.state === 'ko') out.push(`Verrou « ${LOCKS[i].label} » bloquant : ${l.note || LOCKS[i].label.toLowerCase()}`); });
   const unset = q.locks.filter(l => !l.state).length;
   if (unset) out.push(`${unset} verrou(s) à vérifier`);
-  [2, 4].forEach(i => { const l = q.locks[i]; if (l?.state && !l.by?.trim()) out.push(`Verrou ${LOCKS[i].process} : vérifié avec qui ?`); });
-  q.locks.forEach((l, i) => { if (l.state === 'reserve' && !l.note.trim()) out.push(`Réserve ${LOCKS[i].process} à écrire`); });
+  [2, 4].forEach(i => { const l = q.locks[i]; if (l?.state && !l.by?.trim()) out.push(`Verrou « ${LOCKS[i].label} » : vérifié avec qui ?`); });
+  q.locks.forEach((l, i) => { if (l.state === 'reserve' && !l.note.trim()) out.push(`Réserve du verrou « ${LOCKS[i].label} » à écrire`); });
   if (!q.amount) out.push('Prix de vente à saisir');
   const m = quoteMargin(q, p);
   if (money && m && m.pct < p.marginFloorPct && !q.derogation.trim()) out.push(`Marge de ${Math.round(m.pct)} % sous le plancher de ${p.marginFloorPct} % : dérogation de la direction nécessaire`);
@@ -116,13 +79,12 @@ export function quoteStats(s: State, period: string, today = new Date()) {
   const won = qs.filter(q => q.status === 'won' && q.decidedAt.slice(0, 7) === period);
   const since = isoDate(new Date(today.getFullYear() - 1, today.getMonth(), today.getDate()));
   const decided = qs.filter(q => (q.status === 'won' || q.status === 'lost') && q.decidedAt >= since);
-  // weighted by the amounts: a thin margin on a big order weighs more than a fat one on a small order
-  const margins = qs.filter(q => q.status === 'won' && q.decidedAt >= since).flatMap(q => { const m = quoteMargin(q, s.params); return m ? [{ value: m.value, amount: q.amount || 0 }] : []; });
+  const margins = qs.filter(q => q.status === 'won' && q.decidedAt >= since).map(q => quoteMargin(q, s.params)).filter((m): m is NonNullable<typeof m> => !!m);
   return {
     sentCount: sent.length, sentAmount: sum(sent.map(q => q.amount)),
     wonCount: won.length, wonAmount: sum(won.map(q => q.amount)),
     conversionPct: decided.length ? Math.round(decided.filter(q => q.status === 'won').length / decided.length * 100) : null,
-    avgMarginPct: margins.length ? sum(margins.map(m => m.value)) / sum(margins.map(m => m.amount)) * 100 : null,
+    avgMarginPct: margins.length ? margins.reduce((a, m) => a + m.pct, 0) / margins.length : null,
     toFollow: qs.filter(q => quoteState(q, s.params, today) === 'to_follow').length,
     pendingAmount: sum(qs.filter(q => q.status === 'sent').map(q => q.amount)),
   };
@@ -151,10 +113,6 @@ export function quoteInsights(s: State, today = new Date(), money = true): Insig
     const low = qs.filter(q => q.status !== 'lost' && q.status !== 'dropped' && !q.derogation.trim() && (quoteMargin(q, s.params)?.pct ?? 100) < s.params.marginFloorPct);
     if (low.length) out.push({ key: 'low', tone: 'warn', title: 'Marge sous le plancher', text: `${names(low, q => `${q.ref} à ${Math.round(quoteMargin(q, s.params)!.pct)} %`)} pour un plancher de ${s.params.marginFloorPct} % : revoir le prix, ou dérogation écrite de la direction.` });
   }
-  if (money) {
-    const below = qs.filter(q => (q.status === 'draft' || q.status === 'sent') && !!q.amount && q.amount < (quoteFullCost(q, s.params) ?? 0));
-    if (below.length) out.push({ key: 'belowcost', tone: 'warn', title: 'Devis sous le coût complet', text: `${names(below, q => `${q.ref} (${q.client})`)} : avec ${Math.round(s.params.overheadPct || 0)} % de frais généraux, ${below.length > 1 ? 'ces offres perdent' : 'cette offre perd'} de l'argent une fois la structure payée. Voir l'échelle de prix de la fiche.` });
-  }
   const noDeposit = qs.filter(q => q.status === 'won' && !q.depositReceived);
   if (noDeposit.length) out.push({ key: 'deposit', tone: 'warn', title: 'Acompte non encaissé', text: `${names(noDeposit, q => `${q.ref} (${q.client})`)} : ne pas commander la matière ni lancer la fabrication avant l'acompte de ${s.params.depositPct} %.` });
   const started = qs.filter(q => q.startedAt && !q.depositReceived);
@@ -166,123 +124,300 @@ export function quoteInsights(s: State, today = new Date(), money = true): Insig
   return out;
 }
 
-// ---- 2.2 change orders: price it, get the agreement, then do it and invoice it
-export type ChangeState = 'to_price' | 'to_send' | 'waiting' | 'accepted' | 'invoiced' | 'refused' | 'offered';
-export const CHANGE_STATE: Record<ChangeState, { label: string; tone: 'ok' | 'warn' | 'alert' | 'pending' }> = {
-  to_price: { label: 'À chiffrer', tone: 'warn' }, to_send: { label: 'Accord à demander', tone: 'warn' }, waiting: { label: 'Accord attendu', tone: 'pending' },
-  accepted: { label: 'Accepté, à facturer', tone: 'warn' }, invoiced: { label: 'Facturé', tone: 'ok' }, refused: { label: 'Refusé', tone: 'pending' },
-  offered: { label: 'Offert', tone: 'pending' },
-};
-export function changeState(c: Change): ChangeState {
-  if (c.offered) return 'offered';
-  if (c.answer === 'refused') return 'refused';
-  if (c.answer === 'accepted') return c.invoicedAt ? 'invoiced' : 'accepted';
-  if (c.price === null) return 'to_price';
-  return c.sentAt ? 'waiting' : 'to_send';
-}
-// Work started before a written agreement: the extra will be hard to invoice
-export const startedWithout = (c: Change) => !c.offered && !!c.startedAt && !(c.answer === 'accepted' && c.answeredAt && c.answeredAt <= c.startedAt);
-export const newChange = (s: State, today = new Date()): Change => ({
-  id: uid('av'), ref: nextRef('AV', Object.values(s.changes), today), affaire: '', client: '', askedBy: '', date: isoDate(today), description: '',
-  price: null, delayDays: null, sentAt: '', via: '', answer: '', answeredAt: '', startedAt: '', invoiceRef: '', invoicedAt: '',
-});
-// Short message to send by text or e-mail, answered by "OK"
-export function agreementMessage(c: Change, company: string): string {
-  const price = c.price === null ? '[montant]' : formatValue(c.price, '€');
-  const delay = c.delayDays ? ` et décale la livraison de ${c.delayDays} jour${c.delayDays > 1 ? 's' : ''}` : ' sans changer le délai';
-  return `Bonjour${c.askedBy ? ` ${c.askedBy}` : ''}, suite à votre demande (${c.description || 'modification'}${c.affaire ? `, affaire ${c.affaire}` : ''}), le supplément est de ${price} HT${delay}. Merci de répondre « OK » pour accord avant que nous lancions le travail. ${company || ''}`.trim();
-}
-export function changeSummary(s: State, today = new Date()) {
-  const y = String(today.getFullYear());
-  const cs = Object.values(s.changes);
-  return {
-    invoiced: sum(cs.filter(c => c.invoicedAt.startsWith(y)).map(c => c.price)),
-    toInvoice: sum(cs.filter(c => changeState(c) === 'accepted').map(c => c.price)),
-    waiting: cs.filter(c => changeState(c) === 'waiting').length,
-    waitingAmount: sum(cs.filter(c => changeState(c) === 'waiting').map(c => c.price)),
-    risky: cs.filter(c => startedWithout(c) && c.answer !== 'refused').length,
-    offered: sum(cs.filter(c => c.offered && c.date.startsWith(y)).map(c => c.price)),
-  };
-}
-// Pricing aid: hours at the hourly cost + material, with the margin floor
-export const changePriceHint = (c: Change, p: Params) => {
-  const cost = (c.hours || 0) * p.hourlyRate + (c.material || 0);
-  return cost ? Math.ceil(Math.round(cost / (1 - p.marginFloorPct / 100)) / 10) * 10 : null;
-};
-// Accepted extras still to invoice, as a file for the accountant (semicolon separated, opens in Excel)
-export function toInvoiceCsv(s: State): string {
-  const rows = Object.values(s.changes).filter(c => changeState(c) === 'accepted');
-  return ['Avenant;Client;Affaire;Description;Montant HT;Accepté le', ...rows.map(c => [c.ref, c.client, c.affaire, c.description, String(c.price ?? '').replace('.', ','), c.answeredAt].map(x => `"${String(x).replace(/"/g, '""')}"`).join(';'))].join('\r\n');
-}
-
-export function changeInsights(s: State, today = new Date()): Insight[] {
-  const out: Insight[] = [];
-  const cs = Object.values(s.changes);
-  const risky = cs.filter(c => startedWithout(c));
-  if (risky.length) out.push({ key: 'risky', tone: 'bad', title: 'Travaux commencés sans accord', text: `${names(risky, c => `${c.ref} (${c.client})`)} : un client paie un supplément avant qu'il soit fait, rarement après.` });
-  const acc = cs.filter(c => changeState(c) === 'accepted');
-  const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate() - today.getDate() <= 5;
-  if (acc.length) out.push({ key: 'invoice', tone: monthEnd ? 'bad' : 'warn', title: monthEnd ? 'Fin de mois : avenants à facturer' : 'Avenants acceptés à facturer', text: `${names(acc, c => c.ref)} : ${formatValue(sum(acc.map(c => c.price)), '€')} à facturer.` });
-  const off = cs.filter(c => c.offered && c.date.startsWith(String(today.getFullYear())));
-  if (off.length) out.push({ key: 'offered', tone: 'warn', title: 'Suppléments offerts', text: `${off.length} geste(s) commercial(aux) cette année : ${formatValue(sum(off.map(c => c.price)), '€')} non facturés.` });
-  const wait = cs.filter(c => changeState(c) === 'waiting' && (daysBetween(c.sentAt, today) ?? 0) > 3);
-  if (wait.length) out.push({ key: 'wait', tone: 'warn', title: 'Accord attendu depuis plus de 3 jours', text: `${names(wait, c => `${c.ref} (${c.client})`)} : relancer avant de commencer.` });
-  const unpriced = cs.filter(c => changeState(c) === 'to_price');
-  if (unpriced.length) out.push({ key: 'price', tone: 'warn', title: 'Demande à chiffrer', text: `${names(unpriced, c => c.ref)}.` });
-  return out;
-}
-
 // ---- 2.3 complaints: written within the hour, customer called back within 48 h, cause qualified, courtesy call
 export const CONTACT_HOURS = 48;
 export const COURTESY_DAYS = 15;
-export type ComplaintState = 'to_contact' | 'late' | 'in_progress' | 'resolved' | 'closed';
+export const LOG_HOURS = 1;     // written in the register within the hour
+export const ACK_HOURS = 24;    // acknowledgement of receipt, unless the customer has been called by then
+export type ComplaintState = 'to_contact' | 'late' | 'in_progress' | 'resolved' | 'unsatisfied' | 'closed';
 export const COMPLAINT_STATE: Record<ComplaintState, { label: string; tone: 'ok' | 'warn' | 'alert' | 'pending' }> = {
-  to_contact: { label: 'À rappeler sous 48 h', tone: 'warn' }, late: { label: 'Rappel en retard', tone: 'alert' },
-  in_progress: { label: 'En traitement', tone: 'warn' }, resolved: { label: 'Appel de courtoisie à faire', tone: 'pending' }, closed: { label: 'Close', tone: 'ok' },
+  to_contact: { label: 'À recontacter sous 48 h', tone: 'warn' }, late: { label: 'Recontact en retard', tone: 'alert' },
+  in_progress: { label: 'En traitement', tone: 'warn' }, resolved: { label: 'Appel de courtoisie à faire', tone: 'pending' },
+  unsatisfied: { label: 'Client pas satisfait', tone: 'alert' }, closed: { label: 'Close', tone: 'ok' },
 };
-export function complaintState(c: Complaint, now = new Date(), business = false): ComplaintState {
-  if (c.courtesyAt) return 'closed';
-  if (c.resolvedAt) return 'resolved';
-  if (c.contactedAt) return 'in_progress';
+// Closed = courtesy call made and the customer satisfied or unreachable (a record closed before the answer was noted counts as satisfied),
+// or closed by the management with a written reason
+export const isClosed = (c: Pick<Complaint, 'courtesyAt' | 'satisfied' | 'forcedClose'>) => (!!c.courtesyAt && c.satisfied !== 'non') || !!c.forcedClose;
+export function complaintState(c: Complaint, now = new Date(), business: Business = false): ComplaintState {
+  if (c.forcedClose) return 'closed';
+  if (c.courtesyAt) return c.satisfied === 'non' ? 'unsatisfied' : 'closed';
+  if (c.contactedAt) return c.resolvedAt ? 'resolved' : 'in_progress';   // "settled" without the call-back is not settled: the 48 h still count
   return (workHoursBetween(c.at, now, business) ?? 0) >= CONTACT_HOURS ? 'late' : 'to_contact';
 }
-export const COMPLAINT_CATEGORIES = { delai: 'Délai', qualite: 'Qualité, défaut', facture: 'Facture, prix', comportement: 'Comportement, propreté', emballage: 'Emballage, transport', autre: 'Autre' } as const;
-// Deliveries of the month: entered in the settings, else counted from the acceptance reports (3.4)
-export const deliveriesOf = (s: State, period: string) => s.params.monthDeliveries?.[period] ?? Object.values(s.deliveries).filter(d => d.reception.date.slice(0, 7) === period).length;
-// Letters to the customer: acknowledgement and closing
-export function complaintLetter(c: Complaint, kind: 'ack' | 'close', company: string): string {
-  return kind === 'ack'
-    ? `Bonjour, nous avons bien reçu votre réclamation du ${c.at.slice(8, 10)}/${c.at.slice(5, 7)} concernant ${c.affaire || 'votre commande'} : « ${c.description} ». ${c.pilot || 'Notre responsable'} la prend en charge et vous rappelle sous 48 heures avec une solution. Merci de votre confiance. ${company}`.trim()
-    : `Bonjour, suite à votre réclamation concernant ${c.affaire || 'votre commande'}, nous avons ${c.immediate || 'traité le problème'}. Nous avons aussi corrigé la cause chez nous pour que cela ne se reproduise pas. N'hésitez pas à nous dire si tout est en ordre. ${company}`.trim();
+// How the customer is contacted again (each company has its habits) and what the check of the file concludes
+export const CONTACT_VIA = { tel: 'Téléphone', mail: 'E-mail', site: 'Sur place', courrier: 'Courrier', sms: 'SMS ou messagerie', autre: 'Autre' } as const;
+export const VERDICTS = { fondee: 'Justifiée', partielle: 'En partie justifiée', non_fondee: 'Non justifiée (à contester)' } as const;
+// Only web addresses are opened from a pasted link
+export const safeUrl = (u: string | undefined) => (/^https?:\/\/\S+$/i.test((u || '').trim()) ? u!.trim() : '');
+// Points to check during the investigation: what the company promised, what was made and delivered, who did it.
+// Each points to the process it would put in cause and to the tool that holds the evidence.
+export interface InvestigationCheck { key: string; label: string; hint: string; process: string; tool?: string }
+const pt = (key: string, label: string, hint: string, process: string, tool?: string): InvestigationCheck => ({ key, label, hint, process, tool });
+// Industry and workshop (the default)
+export const INVESTIGATION: InvestigationCheck[] = [
+  pt('engagement', 'Ce qui a été promis au client', 'Devis ou commande signée, délai annoncé, compléments de commande', 'P2', '2.1'),
+  pt('billing', 'Facture et conditions de paiement', 'Montant, acompte, conditions annoncées', 'P1'),
+  pt('exchange', 'Échanges avec le client', 'E-mails, appels, bilan de fin d\'affaire', 'P2', '2.4'),
+  pt('delivery', 'Livraison et réception', 'Bon de livraison, PV de réception, réserves signées', 'P3', '3.4'),
+  pt('method', 'Instruction de poste', 'Mode opératoire à jour, bien suivi au poste concerné', 'P3', '3.2'),
+  pt('equipment', 'Machine et outillage', 'Contrôle du lundi fait, anomalie ouverte, pièce d\'usure', 'P3', '3.3'),
+  pt('supplier', 'Matière ou pièce du fournisseur', 'Lot reçu conforme, fiche de débit', 'P3', '3.1'),
+  pt('people', 'Compétence de la personne concernée', 'Formation au poste, autorisation, arrivée récente', 'P4', '4.2'),
+  pt('control', 'Contrôle avant expédition', 'Contrôle final fait, défauts mis au bac rouge', 'P5', '5.1'),
+];
+// Points of the models by business profile; "neutre" serves every other trade
+export const INVESTIGATION_PRESETS: Record<string, InvestigationCheck[]> = {
+  industrie: INVESTIGATION,
+  btp: [
+    pt('engagement', 'Ce qui a été promis au client', 'Devis, marché, planning annoncé, travaux supplémentaires acceptés', 'P2', '2.1'),
+    pt('billing', 'Situation de travaux et facture', 'Avancement facturé, retenues, conditions de paiement', 'P1'),
+    pt('exchange', 'Échanges avec le client', 'Comptes rendus de chantier, e-mails, appels, bilan de fin d\'affaire', 'P2', '2.4'),
+    pt('delivery', 'Réception du chantier', 'PV de réception, réserves signées, levée des réserves', 'P3', '3.4'),
+    pt('method', 'Mode opératoire et plans', 'Plans à jour sur le chantier, consignes suivies', 'P3', '3.2'),
+    pt('equipment', 'Matériel et engins', 'Contrôle fait, anomalie ouverte', 'P3', '3.3'),
+    pt('supplier', 'Matériaux et sous-traitants', 'Livraison conforme, travaux sous-traités', 'P3', '3.1'),
+    pt('people', 'Compétence et habilitation de l\'équipe', 'Formation, habilitations, arrivée récente', 'P4', '4.2'),
+    pt('control', 'Autocontrôle avant réception', 'Contrôle fait avant de demander la réception', 'P5', '5.1'),
+  ],
+  services: [
+    pt('engagement', 'Ce qui a été vendu', 'Devis, contrat, cahier des charges, périmètre et délai annoncés', 'P2', '2.1'),
+    pt('billing', 'Facture et conditions de paiement', 'Montant, acompte, jalons facturés', 'P1'),
+    pt('exchange', 'Échanges avec le client', 'E-mails, comptes rendus, appels, bilan de fin de mission', 'P2', '2.4'),
+    pt('delivery', 'Livrable remis', 'Version, date de remise, validation du client', 'P3', '3.4'),
+    pt('method', 'Méthode suivie', 'Procédure ou trame utilisée, à jour', 'P3', '3.2'),
+    pt('equipment', 'Outils, logiciels et accès', 'Outil disponible, accès ouverts, panne en cours', 'P3', '3.3'),
+    pt('supplier', 'Sous-traitant ou partenaire', 'Prestation sous-traitée conforme', 'P3', '3.1'),
+    pt('people', 'Compétence de l\'intervenant', 'Formation, expérience sur ce sujet, arrivée récente', 'P4', '4.2'),
+    pt('control', 'Relecture avant remise', 'Second regard avant l\'envoi au client', 'P5'),
+  ],
+  neutre: [
+    pt('engagement', 'Ce qui a été promis au client', 'Devis, commande, engagement de délai ou de qualité', 'P2', '2.1'),
+    pt('billing', 'Facture et conditions de paiement', 'Montant, conditions annoncées', 'P1'),
+    pt('exchange', 'Échanges avec le client', 'E-mails, appels, bilan de fin d\'affaire', 'P2', '2.4'),
+    pt('delivery', 'Livraison ou prestation rendue', 'Bon de livraison, réception, réserves', 'P3', '3.4'),
+    pt('method', 'Façon de faire', 'Procédure ou consigne à jour et suivie', 'P3', '3.2'),
+    pt('supplier', 'Fournisseur ou sous-traitant', 'Produit ou prestation reçu conforme', 'P3', '3.1'),
+    pt('people', 'Compétence de la personne concernée', 'Formation, autorisation, arrivée récente', 'P4', '4.2'),
+    pt('control', 'Contrôle avant remise au client', 'Contrôle fait avant la livraison ou l\'envoi', 'P5'),
+  ],
+};
+export const PRESET_LABEL: Record<string, string> = { industrie: 'industrie et atelier', btp: 'BTP et chantiers', services: 'services et conseil', neutre: 'autre secteur' };
+export const presetKeyOf = (s: Pick<State, 'settings'>) => (INVESTIGATION_PRESETS[s.settings.profile] ? s.settings.profile : 'neutre');
+// The points the company checks: its own list when it has edited it, else the model of its business profile
+export const investigationOf = (s: Pick<State, 'settings' | 'params'>): InvestigationCheck[] => (s.params.investigation?.length ? s.params.investigation : INVESTIGATION_PRESETS[presetKeyOf(s)]);
+// A tool without any record yet: the link of the investigation says so
+export function toolEmpty(s: State, tool: string): boolean {
+  const col: Record<string, object> = { '2.1': s.quotes, '2.4': s.feedbacks, '3.1': s.suppliers, '3.2': s.sops, '3.3': s.equipments, '3.4': s.deliveries, '4.2': s.skills, '5.1': s.ncs, '5.3': s.analyses };
+  return !!col[tool] && !Object.keys(col[tool]).length;
 }
-export const contactDelay = (c: Complaint) => (c.contactedAt ? hoursBetween(c.at, c.contactedAt) : null);
+export const hasChecks = (c: Complaint) => Object.values(c.checks || {}).some(x => x.state || x.note.trim());
+// Motives of complaint: a neutral list that fits any trade, which each company edits in the settings of 2.3 (add, rename, retire).
+// A motive keeps its key and its colour when renamed; a retired motive that complaints still use stays in the history and the chart.
+export interface Motif { key: string; label: string; slot?: number; retired?: boolean }
+export const DEFAULT_MOTIFS: Motif[] = [
+  { key: 'delai', label: 'Délai ou rendez-vous non tenu', slot: 0 },
+  { key: 'qualite', label: 'Qualité du produit ou du service', slot: 1 },
+  { key: 'facture', label: 'Facture, prix ou paiement', slot: 2 },
+  { key: 'comportement', label: 'Accueil, relation ou information', slot: 3 },
+  { key: 'emballage', label: 'Livraison, remise ou emballage', slot: 4 },
+];
+export const MAX_MOTIFS = 8;
+export const OTHER_MOTIF = 'autre';
+export const motifsOf = (p: Pick<Params, 'motifs'>): Motif[] => (p.motifs?.length ? p.motifs : DEFAULT_MOTIFS);
+export function motifLabel(p: Pick<Params, 'motifs'>, key: string | undefined): string {
+  if (!key) return 'À classer';
+  if (key === OTHER_MOTIF) return 'Autre';
+  return motifsOf(p).find(m => m.key === key)?.label || DEFAULT_MOTIFS.find(m => m.key === key)?.label || 'Motif supprimé';
+}
+// Colours of the chart: the first slots of the categorical palette, then greys (other motives, unqualified, unjustified)
+export const SERIES_COLORS = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#4a3aa7', '#e34948'];
+export const GREY = { other: '#9d9c95', light: '#c9c8c1', dark: '#6f6e69' };
+export const freeSlot = (list: Motif[]) => SERIES_COLORS.findIndex((_, i) => !list.some(m => (m.slot ?? -1) === i));
+// A motive removed from the list: erased when no complaint uses it, else retired (its label and colour stay for the history)
+export const withoutMotif = (list: Motif[], key: string, used: boolean): Motif[] => (used ? list.map(m => (m.key === key ? { ...m, retired: true } : m)) : list.filter(m => m.key !== key));
+// Back to the neutral list; the motives of the company that complaints still use stay as retired ones
+export const resetMotifs = (list: Motif[], usedKeys: string[]): Motif[] => [
+  ...DEFAULT_MOTIFS.map(m => ({ ...m })),
+  ...list.filter(m => !DEFAULT_MOTIFS.some(d => d.key === m.key) && usedKeys.includes(m.key)).map(m => ({ ...m, retired: true })),
+];
+// Deliveries of the month: entered in the settings, else counted from tool 3.4: every delivery of an order dated in the month (the closed lots and the one
+// under way, each once, archived orders included; a delivery that was refused, or put off by a blocking reservation, is not one received)
+export const deliveriesCounted = (s: Pick<State, 'deliveries'>, period: string) =>
+  Object.values(s.deliveries).reduce((n, d) => n + receptionsOf(d).filter(x => x.reception.date.slice(0, 7) === period && x.reception.result !== 'refus' && !isPostponed(x)).length, 0);
+export const deliveriesOf = (s: State, period: string) => s.params.monthDeliveries?.[period] ?? deliveriesCounted(s, period);
+// The number typed for a month, or back to the count of 3.4 (null: the typed number is removed; an emptied box never writes 0)
+export function setMonthDeliveries(d: Pick<State, 'params'>, period: string, v: number | null) {
+  const m = { ...(d.params.monthDeliveries || {}) };
+  if (v === null) delete m[period]; else m[period] = v;
+  d.params.monthDeliveries = m;
+}
+// Letters to the customer: acknowledgement, answer to an unfounded complaint, closing
+export function complaintLetter(c: Complaint, kind: 'ack' | 'contest' | 'close', company: string, business = false): string {
+  const day = `${c.at.slice(8, 10)}/${c.at.slice(5, 7)}`;
+  if (kind === 'ack') return `Bonjour, nous avons bien reçu votre réclamation du ${day} concernant ${c.affaire || 'votre commande'} : « ${c.description} ». ${c.pilot || 'Notre responsable'} la prend en charge et vous recontacte sous ${business ? '2 jours ouvrés' : '48 heures'} avec une solution. Merci de votre confiance. ${company}`.trim();
+  if (kind === 'contest') return `Bonjour, nous avons examiné votre réclamation du ${day} concernant ${c.affaire || 'votre commande'} : « ${c.description} ». Après vérification, nous ne pouvons pas y donner suite : ${c.defense?.trim() || '[à compléter : les faits et les pièces qui le montrent]'}. Nous restons à votre disposition pour en parler. ${company}`.trim();
+  return `Bonjour, suite à votre réclamation concernant ${c.affaire || 'votre commande'} et après vérification de notre côté, voici la solution retenue : ${c.solution?.trim() || c.immediate || 'le problème est traité'}. Nous avons aussi identifié la cause et pris les mesures pour que cela ne se reproduise pas. N'hésitez pas à nous dire si tout est en ordre. ${company}`.trim();
+}
+// Hours between reception and the first contact; working hours when the company counts them so
+export const contactDelay = (c: Complaint, business: Business = false) => (c.contactedAt ? workHoursBetween(c.at, c.contactedAt, business) : null);
+export const contactDeadline = (c: Complaint, business: Business = false) => addWorkHours(c.at, CONTACT_HOURS, business);
 export const courtesyDue = (c: Complaint) => (c.resolvedAt ? addDays(c.resolvedAt, COURTESY_DAYS) : '');
+// Direct costs and hours spent, at the hourly cost (same reading as the red bin, 5.1)
+export const complaintDirect = (c: Complaint) => sum([c.cost, c.credit, c.logistics, c.rework]);
+export const complaintCost = (c: Complaint, p: Params) => complaintDirect(c) + hoursCost(c.hours, p);
+// The management approves a credit above the limit, and (if the company wants it) every answer "unjustified"
+export const needsApproval = (c: Complaint, p: Pick<Params, 'creditLimit' | 'approveContest'>) => (!!p.creditLimit && complaintDirect(c) > p.creditLimit) || (!!p.approveContest && c.verdict === 'non_fondee');
+export const directorName = (s: Pick<State, 'contacts' | 'params'>) => (s.params.directorId ? s.contacts[s.params.directorId]?.name || '' : '');
+export const isBlocked = (c: Complaint) => !!c.blockedInvoice && !c.unblockedAt && !isClosed(c);
+// Who is told when the call-back is late: the backup of the pilot in the call chain of the directory, else the head of the company
+export function escalationOf(s: Pick<State, 'contacts' | 'params'>, c: Complaint): string {
+  const who = (c.pilot || c.receivedBy).trim().toLowerCase();
+  const me = who ? Object.values(s.contacts).find(x => x.name.trim().toLowerCase() === who) : undefined;
+  const boss = (me?.backupId && s.contacts[me.backupId]) || (s.params.directorId ? s.contacts[s.params.directorId] : undefined);
+  return boss && boss.name.trim().toLowerCase() !== who ? boss.name : '';
+}
+// A person is on planned leave that day (staff list of tools 4.x)
+export const isAbsent = (s: Pick<State, 'people'>, name: string, day: string) => {
+  const n = name.trim().toLowerCase();
+  return !!n && Object.values(s.people || {}).some(p => p.active && p.name.trim().toLowerCase() === n && (p.absences || []).some(a => a.from <= day && day <= a.to));
+};
+// Who handles the next step today: the pilot, or the escalation contact when the pilot is on leave
+export function ownerToday(s: Pick<State, 'people' | 'contacts' | 'params'>, c: Complaint, day: string) {
+  const who = c.pilot || c.receivedBy, absent = isAbsent(s, who, day);
+  return { who: absent ? escalationOf(s, c) || who : who, absent };
+}
+// What is still missing before a complaint can be closed: contacted, motive classed, investigation concluded
+// (founded: origin, cause and measure; unfounded: the arguments), customer satisfied
+export function closeBlockers(c: Complaint, hasAction = false, p?: Pick<Params, 'creditLimit' | 'approveContest'>): string[] {
+  const out: string[] = [];
+  if (!c.contactedAt) out.push('recontacter le client (date du contact)');
+  if (!c.category) out.push('classer le motif');
+  else if (c.category === 'autre' && !c.categoryOther?.trim()) out.push('préciser le motif « autre »');
+  if (!c.findings?.trim() && !hasChecks(c)) out.push('documenter l\'enquête (constats ou points vérifiés)');
+  if (!c.verdict) out.push('conclure l\'enquête (réclamation justifiée ou non)');
+  else if (c.verdict === 'non_fondee') { if (!c.defense?.trim()) out.push('écrire les arguments pour contester'); }
+  else {
+    if (!c.processId) out.push('qualifier le processus en cause');
+    if (!c.cause?.trim() && !c.analysisId) out.push('noter la cause trouvée');
+    if (c.severity === 'majeure' && !c.analysisId) out.push('ouvrir l\'atelier 5 Pourquoi (gravité majeure)');
+    if (!c.correction?.trim() && !c.ncId && !c.analysisId && !hasAction) out.push('écrire la mesure pour que cela ne se reproduise pas (ou créer l\'action, ou ouvrir la fiche du bac rouge)');
+  }
+  if (c.blockedInvoice && !c.unblockedAt) out.push('saisir la date de déblocage de la facture');
+  if (p && needsApproval(c, p) && !c.approval?.by) out.push('obtenir la validation de la direction');
+  if (!c.resultSentAt) out.push('informer le client du résultat de l\'enquête');
+  if (!c.satisfied) out.push('noter si le client est satisfait');
+  else if (c.satisfied === 'injoignable' && !c.courtesyNote?.trim()) out.push('noter les tentatives faites pour joindre le client');
+  return out;
+}
+// A customer is recognised by the words of its name (orgKey), as in 1.3, 2.4 and 3.4: "Client A" is "Client A (grand compte)". An order that holds its organisation of the
+// directory (1.3) belongs to it whatever the name was when the order was typed: renaming the organisation there keeps its orders.
+export function clientOrders(s: Pick<State, 'deliveries'> & Partial<Pick<State, 'orgs'>>, name: string, orgId?: string): Delivery[] {
+  const nameOf = (id?: string) => (id && s.orgs && Object.hasOwn(s.orgs, id) ? orgKey(s.orgs[id].name) : '');
+  const keys = [orgKey(name), nameOf(orgId)].filter(Boolean);
+  return Object.values(s.deliveries).filter(d => (!!orgId && d.orgId === orgId) || [orgKey(d.client), nameOf(d.orgId)].some(k => !!k && keys.includes(k)));
+}
+// Records of the customer in the other tools, to consult during the investigation (quotes, acceptance reports, red bin, end-of-job reviews)
+export interface ClientFile { tool: '2.1' | '2.4' | '3.4' | '5.1'; id: string; label: string }
+export function clientFiles(s: State, c: Complaint): ClientFile[] {
+  const k = orgKey(c.client);
+  if (!k) return [];
+  const same = (name: string) => orgKey(name) === k;
+  // the red bin writes the customer inside a free text: match the whole words of the name, not a few letters of another word
+  const named = (text: string) => ` ${text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()} `.includes(` ${k} `);
+  const newest = <T extends { id: string }>(xs: T[], date: (x: T) => string) => xs.sort((a, b) => (date(a) < date(b) ? 1 : -1)).slice(0, 3);
+  return [
+    ...newest(Object.values(s.quotes).filter(q => same(q.client)), q => q.date).map(q => ({ tool: '2.1' as const, id: q.id, label: `Devis ${q.ref} · ${q.object}` })),
+    ...newest(clientOrders(s, c.client), receivedOn).map(x => ({ tool: '3.4' as const, id: x.id, label: `Réception ${x.ref} · ${x.item}` })),
+    ...newest(Object.values(s.ncs).filter(n => n.id !== c.ncId && named(n.item)), n => n.at).map(n => ({ tool: '5.1' as const, id: n.id, label: `Bac rouge ${n.ref} · ${n.description}` })),
+    ...newest(Object.values(s.feedbacks).filter(f => same(f.client)), f => f.date).map(f => ({ tool: '2.4' as const, id: f.id, label: `Bilan de fin · ${f.affaire || f.date}` })),
+  ];
+}
+// The order of 3.4 a complaint is about: the one the person chose in the list of the customer's orders, never one guessed from a text (none chosen: none cited)
+export const complaintDelivery = (s: Pick<State, 'deliveries'>, c: Pick<Complaint, 'deliveryId'>): Delivery | undefined => (c.deliveryId && Object.hasOwn(s.deliveries, c.deliveryId) ? s.deliveries[c.deliveryId] : undefined);
+// What the person chooses from: every order of the customer (archived ones too, the one received last first), and the chosen one when it is another customer's after an edit of the name
+export function complaintChoices(s: Pick<State, 'deliveries'> & Partial<Pick<State, 'orgs'>>, c: Pick<Complaint, 'client' | 'deliveryId'>): Delivery[] {
+  const own = clientOrders(s, c.client).sort((a, b) => (receivedOn(a) < receivedOn(b) ? 1 : receivedOn(a) > receivedOn(b) ? -1 : a.ref.localeCompare(b.ref, 'fr', { numeric: true })));
+  const chosen = complaintDelivery(s, c);
+  return chosen && !own.includes(chosen) ? [...own, chosen] : own;
+}
+// The same cause coming back: other complaints of the same process and motive in the last twelve months
+export function similarComplaints(s: Pick<State, 'complaints'>, c: Complaint, now = new Date()): Complaint[] {
+  if (!c.processId || !c.category) return [];
+  return Object.values(s.complaints).filter(x => x.id !== c.id && x.verdict !== 'non_fondee' && x.processId === c.processId && x.category === c.category && (daysBetween(x.at.slice(0, 10), now) ?? 9999) <= 365)
+    .sort((a, b) => (a.at < b.at ? 1 : -1));
+}
+// Personal data of a closed complaint erased; what serves the statistics (dates, process, motive, costs) is kept
+export const anonymize = (c: Complaint, today = new Date()): Complaint => ({
+  ...c, client: 'Client anonymisé', affaire: '', message: '', email: '', mailLink: '', photo: undefined, ackLink: '', resultLink: '', letters: undefined, courtesyNote: '', contactViaNote: '', resultViaNote: '', immediate: '', anonymizedAt: isoDate(today),
+});
+export const RETENTION_DEFAULT = 5;
+export const closedOn = (c: Complaint) => c.forcedClose?.at.slice(0, 10) || c.courtesyAt;
+export const dueForAnonymizing = (s: Pick<State, 'complaints' | 'params'>, now = new Date()) =>
+  Object.values(s.complaints).filter(c => isClosed(c) && !c.anonymizedAt && (daysBetween(closedOn(c), now) ?? 0) > (s.params.retentionYears ?? RETENTION_DEFAULT) * 365);
 export const newComplaint = (s: State, receivedBy = '', now = new Date()): Complaint => ({
   id: uid('cp'), ref: nextRef('R', Object.values(s.complaints), now), at: nowLocal(now), client: '', affaire: '', channel: '', receivedBy, description: '',
-  severity: 'mineure', processId: '', contactedAt: '', immediate: '', pilot: '', cost: null, resolvedAt: '', courtesyAt: '',
+  severity: 'mineure', processId: '', contactedAt: '', immediate: '', pilot: '', cost: null, resolvedAt: '', courtesyAt: '', loggedAt: nowLocal(now), ackAt: '',
 });
+// Share (%) of a list satisfying a test; null when the list is empty
+const pct = <T,>(xs: T[], ok: (x: T) => boolean) => (xs.length ? Math.round(xs.filter(ok).length / xs.length * 100) : null);
 export function complaintStats(s: State, period: string, now = new Date()) {
   const deliveries = deliveriesOf(s, period);
+  const biz = businessOf(s.params);
   const cs = Object.values(s.complaints).filter(c => c.at.slice(0, 7) === period);
-  const delays = cs.map(contactDelay).filter((d): d is number => d !== null);
+  const delays = cs.map(c => contactDelay(c, biz)).filter((d): d is number => d !== null);
   const byProcess = PROCESS_IDS.map(p => ({ p, n: cs.filter(c => c.processId === p).length })).sort((a, b) => b.n - a.n);
+  const age = (c: Complaint) => workHoursBetween(c.at, now, biz) ?? 0;
   return {
-    count: cs.length, cost: sum(cs.map(c => c.cost)),
+    count: cs.length, cost: sum(cs.map(c => complaintCost(c, s.params))),
     avgDelay: delays.length ? delays.reduce((a, b) => a + b, 0) / delays.length : null,
     // only complaints already called back, or whose 48 h have passed
-    within48Pct: (() => { const due = cs.filter(c => c.contactedAt || (hoursBetween(c.at, now) ?? 0) >= CONTACT_HOURS); return due.length ? Math.round(due.filter(c => (contactDelay(c) ?? Infinity) <= CONTACT_HOURS).length / due.length * 100) : null; })(),
+    within48Pct: pct(cs.filter(c => c.contactedAt || age(c) >= CONTACT_HOURS), c => (contactDelay(c, biz) ?? Infinity) <= CONTACT_HOURS),
     top: byProcess[0]?.n ? byProcess[0] : null,
     deliveries, ratePct: deliveries ? cs.length / deliveries * 100 : null,
-    blocked: sum(Object.values(s.complaints).filter(c => !c.courtesyAt).map(c => c.blockedInvoice)),
-    byCategory: (Object.keys(COMPLAINT_CATEGORIES) as (keyof typeof COMPLAINT_CATEGORIES)[]).map(k => ({ key: k, label: COMPLAINT_CATEGORIES[k], n: cs.filter(c => c.category === k).length })).filter(x => x.n).sort((a, b) => b.n - a.n),
+    blocked: sum(Object.values(s.complaints).filter(isBlocked).map(c => c.blockedInvoice)),
+    byCategory: [...new Set(cs.map(c => c.category).filter((k): k is string => !!k))].map(k => ({ key: k, label: motifLabel(s.params, k), n: cs.filter(c => c.category === k).length })).sort((a, b) => b.n - a.n),
+    // how the method is kept: written within the hour, acknowledged, customer satisfied at the courtesy call
+    loggedPct: pct(cs.filter(c => c.loggedAt), c => (workHoursBetween(c.at, c.loggedAt!, biz) ?? 0) <= LOG_HOURS),
+    ackPct: pct(cs.filter(c => c.ackAt || age(c) >= ACK_HOURS), c => !!c.ackAt),
+    satisfiedPct: pct(cs.filter(c => c.satisfied === 'oui' || c.satisfied === 'non'), c => c.satisfied === 'oui'),
+    unreachable: cs.filter(c => c.satisfied === 'injoignable').length, forced: cs.filter(c => c.forcedClose).length, edited: cs.filter(c => c.atEdited).length,
+    reopened: cs.filter(c => c.rounds?.length).length,
+    // result of the investigation
+    grounded: { yes: cs.filter(c => c.verdict === 'fondee' || c.verdict === 'partielle').length, no: cs.filter(c => c.verdict === 'non_fondee').length, open: cs.filter(c => !c.verdict).length },
   };
+}
+// The dashboard indicator that counts complaints: tool 2.3 draws its trend chart next to it
+export const isComplaintKpi = (k: Kpi) => k.role === 'reclamations' || k.id === 'kpi_reclamations';
+// Complaints per month over the last twelve months, split by motive or by the process at the origin: the trend chart of 2.3 and 1.1
+export type TrendBy = 'motif' | 'origine';
+export const trendSeries = (by: TrendBy, p: Pick<Params, 'motifs'> = {}): { key: string; label: string; color: string }[] => (by === 'motif'
+  ? [...motifsOf(p).map((m, i) => ({ key: m.key, label: m.label, color: SERIES_COLORS[m.slot ?? i] || GREY.other })), { key: OTHER_MOTIF, label: 'Autre ou à classer', color: GREY.other }]
+  : [...PROCESS_IDS.map((id, i) => ({ key: id, label: processLabel(id), color: PROCESS_COLORS[id] || SERIES_COLORS[i % SERIES_COLORS.length] })), { key: 'a_qualifier', label: 'Origine à qualifier', color: GREY.light }, { key: 'non_justifiee', label: 'Réclamation non justifiée', color: GREY.dark }]);
+export function complaintTrend(s: Pick<State, 'complaints'> & { params?: Params }, end: string, by: TrendBy, months = 12) {
+  const periods = Array.from({ length: months }, (_, i) => addMonths(end, i - (months - 1)));
+  const known = new Set(trendSeries('motif', s.params || {}).map(x => x.key));
+  const keyOf = (c: Complaint) => (by === 'motif' ? (c.category && known.has(c.category) ? c.category : OTHER_MOTIF) : c.verdict === 'non_fondee' ? 'non_justifiee' : c.processId || 'a_qualifier');
+  const rows = periods.map(period => ({ period, total: 0, parts: {} as Record<string, number> }));
+  Object.values(s.complaints).forEach(c => {
+    const row = rows.find(r => r.period === c.at.slice(0, 7));
+    if (!row) return;
+    const k = keyOf(c);
+    row.total++; row.parts[k] = (row.parts[k] || 0) + 1;
+  });
+  const series = trendSeries(by, s.params || {}).map(x => ({ ...x, total: rows.reduce((a, r) => a + (r.parts[x.key] || 0), 0) })).filter(x => x.total > 0);
+  const total = rows.reduce((a, r) => a + r.total, 0);
+  const top = series.slice().sort((a, b) => b.total - a.total)[0] || null;
+  const last3 = rows.slice(-3).reduce((a, r) => a + r.total, 0), before3 = rows.slice(-6, -3).reduce((a, r) => a + r.total, 0);
+  return { periods, rows, series, total, top, last3, before3, changePct: before3 ? Math.round((last3 - before3) / before3 * 100) : null };
 }
 export function complaintInsights(s: State, now = new Date()): Insight[] {
   const out: Insight[] = [];
   const cs = Object.values(s.complaints);
-  const biz = !!s.params.businessHours;
+  const biz = businessOf(s.params);
   const late = cs.filter(c => complaintState(c, now, biz) === 'late');
-  if (late.length) out.push({ key: 'late', tone: 'bad', title: 'Client pas rappelé sous 48 h', text: `${names(late, c => `${c.ref} (${c.client})`)} : appeler aujourd'hui, écouter sans se justifier, proposer une solution.` });
+  if (late.length) out.push({ key: 'late', tone: 'bad', title: 'Client pas recontacté sous 48 h', text: `${names(late, c => `${c.ref} (${c.client})`)} : contacter le client aujourd'hui, écouter sans se justifier, proposer une solution. Prévenir : ${[...new Set(late.map(c => escalationOf(s, c) || 'la direction'))].join(', ')}` });
+  const unsat = cs.filter(c => complaintState(c, now, biz) === 'unsatisfied');
+  if (unsat.length) out.push({ key: 'unsat', tone: 'bad', title: 'Client pas satisfait à l\'appel de courtoisie', text: `${names(unsat, c => `${c.ref} (${c.client})`)} : rouvrir la réclamation et proposer une autre solution.` });
   const soon = cs.filter(c => complaintState(c, now, biz) === 'to_contact');
   // third complaint of the same customer within 6 months
   const since = isoDate(new Date(now.getFullYear(), now.getMonth() - 6, now.getDate()));
@@ -290,82 +425,256 @@ export function complaintInsights(s: State, now = new Date()): Insight[] {
   cs.filter(c => c.at.slice(0, 10) >= since).forEach(c => { const k = c.client.trim().toLowerCase(); if (k) byClient[k] = (byClient[k] || 0) + 1; });
   const repeat = Object.entries(byClient).filter(([, n]) => n >= 3);
   if (repeat.length) out.push({ key: 'repeat', tone: 'bad', title: 'Client qui réclame souvent', text: `${repeat.map(([k, n]) => `${cs.find(c => c.client.trim().toLowerCase() === k)!.client} (${n} en 6 mois)`).join(', ')} : rendez-vous de la direction avec ce client.` });
-  const blocked = sum(cs.filter(c => !c.courtesyAt).map(c => c.blockedInvoice));
-  if (blocked) out.push({ key: 'blocked', tone: 'bad', title: 'Factures bloquées par des litiges', text: `${formatValue(blocked, '€')} retenus par des clients mécontents.` });
-  if (soon.length) out.push({ key: 'soon', tone: 'warn', title: 'À rappeler', text: `${names(soon, c => `${c.ref} (${c.client}, reçue le ${c.at.slice(8, 10)}/${c.at.slice(5, 7)})`)}.` });
-  const unq = cs.filter(c => !c.processId && complaintState(c, now) !== 'closed');
+  const held = cs.filter(isBlocked);
+  if (held.length) {
+    const oldest = Math.max(...held.map(c => daysBetween(c.at.slice(0, 10), now) ?? 0));
+    out.push({ key: 'blocked', tone: 'bad', title: 'Factures bloquées par des litiges', text: `${formatValue(sum(held.map(c => c.blockedInvoice)), '€')} retenus par des clients mécontents, le plus ancien depuis ${oldest} jours.` });
+  }
+  if (soon.length) out.push({ key: 'soon', tone: 'warn', title: 'À recontacter', text: `${names(soon, c => `${c.ref} (${c.client}, reçue le ${c.at.slice(8, 10)}/${c.at.slice(5, 7)})`)}.` });
+  const noAck = cs.filter(c => !isClosed(c) && !c.ackAt && !c.contactedAt && (workHoursBetween(c.at, now, biz) ?? 0) >= ACK_HOURS);
+  if (noAck.length) out.push({ key: 'ack', tone: 'warn', title: 'Accusé de réception pas envoyé', text: `${names(noAck, c => `${c.ref} (${c.client})`)} : le client n'a ni accusé ni appel depuis plus de ${ACK_HOURS} h.` });
+  const toTell = cs.filter(c => c.verdict && !c.resultSentAt && !isClosed(c));
+  if (toTell.length) out.push({ key: 'tell', tone: 'warn', title: 'Résultat de l\'enquête à communiquer', text: `${names(toTell, c => `${c.ref} (${c.client})`)} : informer le client du résultat et de la suite.` });
+  const noPilot = cs.filter(c => !c.pilot.trim() && !isClosed(c));
+  if (noPilot.length) out.push({ key: 'nopilot', tone: 'warn', title: 'Réclamation sans pilote', text: `${names(noPilot, c => `${c.ref} (${c.client})`)} : désigner un pilote, sinon personne n'est responsable de la suite.` });
+  const toApprove = cs.filter(c => needsApproval(c, s.params) && !c.approval?.by && !isClosed(c));
+  if (toApprove.length) out.push({ key: 'approval', tone: 'warn', title: 'Validation de la direction attendue', text: `${names(toApprove, c => `${c.ref} (${c.client})`)} : ${directorName(s) || 'la direction'} valide avant que le client soit informé du résultat.` });
+  const since180 = isoDate(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 180));
+  const groups: Record<string, Complaint[]> = {};
+  cs.filter(c => c.processId && c.category && c.verdict !== 'non_fondee' && c.at.slice(0, 10) >= since180).forEach(c => { (groups[`${c.processId}|${c.category}`] ||= []).push(c); });
+  const recurring = Object.entries(groups).filter(([, xs]) => xs.length >= 3);
+  if (recurring.length) out.push({ key: 'recurring', tone: 'warn', title: 'Une cause revient', text: `${recurring.map(([k, xs]) => `${processLabel(k.split('|')[0])} · ${motifLabel(s.params, k.split('|')[1])} (${xs.length} en 6 mois)`).join(', ')} : ouvrir un atelier 5 Pourquoi (outil 5.3) pour traiter la cause commune.` });
+  const old = dueForAnonymizing(s, now);
+  if (old.length) out.push({ key: 'retention', tone: 'warn', title: 'Données de clients à anonymiser', text: `${old.length} fiche(s) close(s) depuis plus de ${s.params.retentionYears ?? RETENTION_DEFAULT} ans : effacer les données personnelles du client (adresse e-mail, messages, photo).` });
+  const unq = cs.filter(c => !c.processId && c.verdict !== 'non_fondee' && !isClosed(c));
   if (unq.length) out.push({ key: 'unq', tone: 'warn', title: 'Processus en cause à qualifier', text: `${names(unq, c => c.ref)} : sans processus d'origine, la cause ne sera pas traitée.` });
-  const major = cs.filter(c => c.severity === 'majeure' && !c.analysisId);
+  const major = cs.filter(c => c.severity === 'majeure' && !c.analysisId && c.verdict !== 'non_fondee' && !isClosed(c));
   if (major.length) out.push({ key: '5p', tone: 'warn', title: 'Réclamation majeure sans analyse', text: `${names(major, c => c.ref)} : ouvrir un atelier 5 Pourquoi (outil 5.3).` });
-  const courtesy = cs.filter(c => complaintState(c, now) === 'resolved' && (daysBetween(courtesyDue(c), now) ?? -1) >= 0);
+  const courtesy = cs.filter(c => complaintState(c, now, biz) === 'resolved' && (daysBetween(courtesyDue(c), now) ?? -1) >= 0);
   if (courtesy.length) out.push({ key: 'courtesy', tone: 'warn', title: 'Appel de courtoisie à J+15', text: `${names(courtesy, c => `${c.ref} (${c.client})`)} : vérifier que le client est satisfait, puis clore.` });
   return out;
 }
 
-// ---- 2.4 end-of-job review: 3 questions on delivery day, final invoice within 24 h
+// ---- 2.4 end-of-job review: 3 questions to the customer at the end of the job, to measure his satisfaction and whether he recommends us
 export const questionsOf = (p: Params) => [0, 1, 2].map(i => p.questions?.[i]?.trim() || QUESTIONS[i]);
-export const NPS_MIN = 10;   // below, the score is not shown (too few answers)
 export const QUESTIONS = [
   'Le livrable répond-il exactement à votre cahier des charges ?',
   'La livraison et les délais ont-ils été respectés comme convenu ?',
-  'Sur une échelle de 0 à 10, recommanderiez-vous notre entreprise à un confrère ?',
+  'Sur une échelle de 0 à 10, à combien êtes-vous satisfait de ce qui vous a été livré ? (0 : très bas, 10 : très haut)',
 ];
-export const isNegative = (f: Feedback) => f.q1 === false || f.q2 === false || (f.q3 !== null && f.q3 <= 6);
-export type FeedbackState = 'to_ask' | 'unhappy' | 'doubt' | 'to_invoice' | 'done';
+// Two settings of the tool: the highest note of an unhappy customer, the share of satisfied customers the company aims for
+export const UNHAPPY_MAX_DEFAULT = 6, SATISFACTION_TARGET_DEFAULT = 90;
+export const satisfactionTargetOf = (p?: Pick<Params, 'satisfactionTarget'>) => p?.satisfactionTarget ?? SATISFACTION_TARGET_DEFAULT;
+export const unhappyMaxOf = (p?: Pick<Params, 'unhappyMax'>) => p?.unhappyMax ?? UNHAPPY_MAX_DEFAULT;
+export const isNegative = (f: Feedback, p?: Pick<Params, 'unhappyMax'>) => f.q1 === false || f.q2 === false || (f.q3 !== null && f.q3 <= unhappyMaxOf(p));
+export type FeedbackState = 'to_ask' | 'unhappy' | 'settled' | 'satisfied';
 export const FEEDBACK_STATE: Record<FeedbackState, { label: string; tone: 'ok' | 'warn' | 'alert' | 'pending' }> = {
-  to_ask: { label: 'Questions à poser', tone: 'pending' }, unhappy: { label: 'Insatisfaction à traiter', tone: 'alert' }, doubt: { label: 'Réserve à régler', tone: 'alert' },
-  to_invoice: { label: 'Facture de solde à émettre', tone: 'warn' }, done: { label: 'Facturé', tone: 'ok' },
+  to_ask: { label: 'Questions à poser', tone: 'pending' }, unhappy: { label: 'Insatisfaction à traiter', tone: 'alert' },
+  settled: { label: 'Insatisfaction réglée', tone: 'ok' }, satisfied: { label: 'Client satisfait', tone: 'ok' },
 };
-// A dissatisfied customer is handled as a complaint (2.3) before the final invoice
-export function feedbackState(f: Feedback, s?: Pick<State, 'complaints'>): FeedbackState {
+// A dissatisfied customer ("no" or a low note) is handled: either the point is settled with him (the day is noted), or it becomes a
+// complaint (2.3) and the review stays open until the complaint is closed
+export function feedbackState(f: Feedback, s?: Pick<State, 'complaints'> & Partial<Pick<State, 'params'>>): FeedbackState {
   if (f.q1 === null || f.q2 === null || f.q3 === null) return 'to_ask';
-  if (!f.invoicedAt && isNegative(f) && !(f.complaintId && s?.complaints[f.complaintId]?.courtesyAt)) return 'unhappy';
-  if (f.doubt.trim() && !f.doubtSolvedAt) return 'doubt';
-  return f.invoicedAt ? 'done' : 'to_invoice';
+  if (!isNegative(f, s?.params)) return 'satisfied';
+  return f.doubtSolvedAt || (f.complaintId && s?.complaints[f.complaintId] && isClosed(s.complaints[f.complaintId])) ? 'settled' : 'unhappy';
 }
-export const invoiceDelay = (f: Feedback) => (f.invoicedAt ? daysBetween(f.date, f.invoicedAt) : null);
-// Net promoter score: share of 9-10 minus share of 0-6
-export function nps(fs: Feedback[]): number | null {
-  const scores = fs.map(f => f.q3).filter((v): v is number => v !== null);
-  if (!scores.length) return null;
-  return Math.round((scores.filter(v => v >= 9).length - scores.filter(v => v <= 6).length) / scores.length * 100);
-}
+// What the customer said was wrong, question by question (a detail only counts for its own negative answer), then the old reservation
+export const detailsOf = (f: Feedback, p?: Pick<Params, 'unhappyMax'>): string[] => [
+  f.q1 === false ? f.q1Detail : '', f.q2 === false ? f.q2Detail : '', f.q3 !== null && f.q3 <= unhappyMaxOf(p) ? f.q3Detail : '', f.doubt,
+].map(x => (x || '').trim()).filter(Boolean);
+// What was asked of a customer who recommends; the data saved before the choice only holds a yes (an online review)
+export const FOLLOW_UP: Record<FollowUp, string> = { avis: 'Avis en ligne', contact: 'Mise en relation', temoignage: 'Témoignage', autre: 'Autre' };
+export const followOf = (f: Feedback): FollowUp | '' => f.followUp ?? (f.reviewAsked ? 'avis' : '');
+// Notes of the customers in three bands: unhappy (up to the threshold of the tool), very satisfied (9 and 10), the others
+export const scoreMix = (scores: number[], p?: Pick<Params, 'unhappyMax'>) => {
+  const max = unhappyMaxOf(p), low = scores.filter(v => v <= max).length, top = scores.filter(v => v >= 9 && v > max).length;
+  return { top, mid: scores.length - low - top, low };
+};
+const round1 = (n: number) => Math.round(n * 10) / 10;
 export const newFeedback = (today = new Date()): Feedback => ({
   id: uid('fb'), date: isoDate(today), client: '', affaire: '', contact: '', channel: 'site', q1: null, q2: null, q3: null,
-  verbatim: '', doubt: '', doubtSolvedAt: '', invoicedAt: '', reviewAsked: false,
+  verbatim: '', doubt: '', doubtSolvedAt: '', reviewAsked: false,
 });
+// The last delivery of an order that was received (with or without reservation, not put off by a blocking one still open): the current one, else the last closed lot
+const lastReceived = (d: Delivery) => receptionsOf(d).map(x => x.reception).filter(counted).pop();
+export const receivedOn = (d: Delivery) => lastReceived(d)?.date ?? '';
+// The review of a delivery received in 3.4: client, order, person who received (with the directory card and e-mail when 3.4 has them) and date come from the record
+export const feedbackFromDelivery = (d: Delivery, today = new Date()): Feedback => {
+  const re = lastReceived(d) ?? d.reception, email = re.email?.trim();
+  return {
+    ...newFeedback(today), deliveryId: d.id, quoteId: d.quoteId, client: d.client, affaire: d.ref || d.item, contact: re.name, date: re.date || isoDate(today),
+    ...(email ? { email } : {}), ...((re.orgId ?? d.orgId) ? { orgId: re.orgId ?? d.orgId } : {}), ...((re.contactId ?? d.contactId) ? { contactId: re.contactId ?? d.contactId } : {}),
+  };
+};
+// The review of an order: the one already made for it, else a new one made from the order. An address or a button used twice (a second device, a link kept) never makes two.
+export const feedbackOfDelivery = (s: Pick<State, 'feedbacks'>, d: Delivery, today = new Date()): { f: Feedback; isNew: boolean } => {
+  const have = Object.values(s.feedbacks).find(f => f.deliveryId === d.id);
+  return have ? { f: have, isNew: false } : { f: feedbackFromDelivery(d, today), isNew: true };
+};
+// "PV n° PV-2026-014 du 04/10/2026 : sans réserve" (a fact for a complaint): the last delivery of the order that has an outcome; '' before any
+export function pvFact(d: Delivery): string {
+  const x = receptionsOf(d).filter(y => y.reception.result).pop();
+  if (!x) return '';
+  const r = x.reception, n = r === d.reception ? reservesOf(d).length : r.reserves?.length ?? (r.reserve?.trim() ? 1 : 0), k = Math.max(1, n);
+  const what = r.result === 'sans' ? 'sans réserve' : r.result === 'refus' ? 'livraison refusée' : `avec ${k} réserve${k > 1 ? 's' : ''}`;
+  return `${r.pvNo ? `PV n° ${r.pvNo}` : 'PV'}${r.date ? ` du ${frDate(r.date)}` : ''} : ${what}`;
+}
+// Orders whose last delivery was received (in whole or in part) in the last two weeks and that have no review yet: the review is easy to forget, so the tool
+// lists them. Not an archived order, not one whose last delivery was refused and not presented again, put off by a blocking reservation, nor one without an outcome.
+// A review of the same customer within a week of the reception counts, even when typed by hand without the link.
+export const FEEDBACK_WINDOW_DAYS = 14;
+export function deliveriesToAsk(s: Pick<State, 'deliveries' | 'feedbacks'>, today = new Date()): Delivery[] {
+  const since = addDays(isoDate(today), -FEEDBACK_WINDOW_DAYS), fbs = Object.values(s.feedbacks);
+  const same = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
+  return Object.values(s.deliveries)
+    .filter(d => {
+      const last = receptionsOf(d).map(x => x.reception).filter(r => r.result).pop();
+      return !d.archivedAt && !!last && counted(last) && last.date >= since
+        && !fbs.some(f => f.deliveryId === d.id || (same(f.client, d.client) && Math.abs(daysBetween(f.date, last.date) ?? 99) <= 7));
+    })
+    .sort((a, b) => (receivedOn(a) < receivedOn(b) ? 1 : -1));
+}
+// Answers pasted from Microsoft Forms or Excel (columns client, contact, q1, q2, q3, comment, date): one review per row. A row identical to
+// one already in the register (same customer, date and answers: the same file pasted twice) is skipped.
+const yesNo = (x: string) => (/^(oui|yes|o|1|vrai)/i.test(x.trim()) ? true : /^(non|no|n|0|faux)/i.test(x.trim()) ? false : null);
+const dateOf = (x: string) => { const m = x.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/); return m ? `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}` : /^\d{4}-\d{2}-\d{2}/.test(x.trim()) ? x.trim().slice(0, 10) : ''; };
+export function importFeedbacks(rows: Record<string, string>[], existing: Feedback[], today = new Date()): { added: Feedback[]; duplicates: number } {
+  const key = (f: Feedback) => [f.client.trim().toLowerCase(), f.date, f.q1, f.q2, f.q3, f.verbatim.trim()].join('|');
+  const seen = new Set(existing.map(key)), added: Feedback[] = [];
+  let duplicates = 0;
+  rows.filter(r => r.client?.trim()).forEach(r => {
+    const q3 = parseInt(r.q3, 10), f = newFeedback(today);
+    const x: Feedback = { ...f, client: r.client.trim(), contact: r.contact || '', channel: 'mail', date: dateOf(r.date || '') || f.date, q1: yesNo(r.q1 || ''), q2: yesNo(r.q2 || ''), q3: Number.isFinite(q3) ? Math.max(0, Math.min(10, q3)) : null, verbatim: r.verbatim || '' };
+    if (seen.has(key(x))) { duplicates++; return; }
+    seen.add(key(x)); added.push(x);
+  });
+  return { added, duplicates };
+}
 export function reviewAskMessage(f: Feedback, company: string, link = ''): string {
   return `Bonjour${f.contact ? ` ${f.contact}` : ''}, merci pour votre note. Si vous avez 1 minute, votre avis nous aiderait beaucoup${link ? ` : ${link}` : ''}. ${company}`.trim();
 }
-export const paymentDelay = (f: Feedback) => (f.paidAt && f.invoicedAt ? daysBetween(f.invoicedAt, f.paidAt) : null);
 export function reviewMessage(f: Feedback, company: string, p?: Params): string {
   if (p?.questions?.some(Boolean)) { const q = questionsOf(p); return `Bonjour${f.contact ? ` ${f.contact}` : ''}, merci pour votre confiance${f.affaire ? ` (affaire ${f.affaire})` : ''}. Trois questions : 1. ${q[0]} 2. ${q[1]} 3. ${q[2]} ${company || ''}`.trim(); }
-  return `Bonjour${f.contact ? ` ${f.contact}` : ''}, merci pour votre confiance${f.affaire ? ` (affaire ${f.affaire})` : ''}. Trois questions, 45 secondes : 1. Le livrable répond-il à votre cahier des charges (oui / non) ? 2. Les délais ont-ils été respectés (oui / non) ? 3. De 0 à 10, nous recommanderiez-vous à un confrère ? ${company || ''}`.trim();
+  return `Bonjour${f.contact ? ` ${f.contact}` : ''}, merci pour votre confiance${f.affaire ? ` (affaire ${f.affaire})` : ''}. Trois questions, 45 secondes : 1. Le livrable répond-il à votre cahier des charges (oui / non) ? 2. Les délais ont-ils été respectés (oui / non) ? 3. De 0 (très bas) à 10 (très haut), à combien êtes-vous satisfait de ce qui vous a été livré ? ${company || ''}`.trim();
+}
+// The e-mail that asks the 3 questions: the model below until the company writes its own (tool settings).
+// Tokens: {contact} {affaire} {entreprise} {questions}.
+export const MAIL_SUBJECT_MODEL = 'Votre avis sur {affaire}';
+export const MAIL_BODY_MODEL = `Bonjour {contact},
+
+Merci pour votre confiance. Pour nous améliorer, trois questions, moins d'une minute :
+
+{questions}
+
+Il suffit de répondre directement à ce message.
+
+Merci d'avance,
+{entreprise}`;
+export function feedbackMail(f: Feedback, company: string, p?: Pick<Params, 'questions' | 'mailSubject' | 'mailBody'>): { to: string; subject: string; body: string } {
+  const q = [0, 1, 2].map(i => p?.questions?.[i]?.trim() || QUESTIONS[i]);
+  const list = `1. ${q[0]} (oui / non)\n2. ${q[1]} (oui / non)\n3. ${q[2]}`;
+  const fill = (t: string, affaire: string) => t
+    .replace(/\{contact\}/g, f.contact.trim()).replace(/\{affaire\}/g, affaire).replace(/\{entreprise\}/g, company.trim()).replace(/\{questions\}/g, list)
+    .replace(/ +([,.])/g, '$1').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+  return { to: (f.email || '').trim(), subject: fill(p?.mailSubject?.trim() || MAIL_SUBJECT_MODEL, f.affaire.trim() || 'notre travail ensemble'), body: fill(p?.mailBody?.trim() || MAIL_BODY_MODEL, f.affaire.trim()) };
 }
 export function feedbackSummary(s: State, today = new Date()) {
   const since = isoDate(new Date(today.getFullYear() - 1, today.getMonth(), today.getDate()));
   const fs = Object.values(s.feedbacks).filter(f => f.date >= since);
   const complete = fs.filter(f => feedbackState(f) !== 'to_ask');
-  const delays = fs.map(invoiceDelay).filter((d): d is number => d !== null);
-  const pays = fs.map(paymentDelay).filter((d): d is number => d !== null);
+  const scores = complete.map(f => f.q3).filter((v): v is number => v !== null);
+  const states = complete.map(f => feedbackState(f, s));
   return {
-    count: fs.length, nps: complete.filter(f => f.q3 !== null).length >= NPS_MIN ? nps(complete) : null, answers: complete.length,
-    avgPayDays: pays.length ? pays.reduce((a, b) => a + b, 0) / pays.length : null,
-    satisfiedPct: complete.length ? Math.round(complete.filter(f => f.q1 && f.q2).length / complete.length * 100) : null,
-    avgInvoiceDays: delays.length ? delays.reduce((a, b) => a + b, 0) / delays.length : null,
-    toInvoice: fs.filter(f => feedbackState(f, s) === 'to_invoice').length,
+    count: fs.length, answers: complete.length, toAsk: fs.length - complete.length,
+    avgScore: scores.length ? round1(sum(scores) / scores.length) : null, mix: scoreMix(scores, s.params),
+    satisfiedPct: complete.length ? Math.round(complete.filter(f => !isNegative(f, s.params)).length / complete.length * 100) : null,
+    unhappy: complete.filter(f => isNegative(f, s.params)).length, settled: states.filter(x => x === 'settled').length, open: states.filter(x => x === 'unhappy').length,
+    noReview: deliveriesToAsk(s, today).length,
   };
+}
+// Reviews of one month for the heading of the list: how many, how many answered, share satisfied, average note
+export function monthSummary(fs: Feedback[], p?: Pick<Params, 'unhappyMax'>) {
+  const complete = fs.filter(f => feedbackState(f) !== 'to_ask');
+  const scores = complete.map(f => f.q3).filter((v): v is number => v !== null);
+  return { count: fs.length, answers: complete.length, satisfiedPct: complete.length ? Math.round(complete.filter(f => !isNegative(f, p)).length / complete.length * 100) : null, avg: scores.length ? round1(sum(scores) / scores.length) : null };
+}
+// Reviews and satisfaction per month over twelve months (month of delivery): the trend chart of 2.4
+export function feedbackTrend(s: Pick<State, 'feedbacks'> & Partial<Pick<State, 'params'>>, end: Period, months = 12) {
+  const periods = Array.from({ length: months }, (_, i) => addMonths(end, i - (months - 1)));
+  const rows = periods.map(period => ({ period, total: 0, satisfied: 0, unhappy: 0, scores: [] as number[] }));
+  Object.values(s.feedbacks).filter(f => feedbackState(f) !== 'to_ask').forEach(f => {
+    const r = rows.find(x => x.period === f.date.slice(0, 7));
+    if (!r) return;
+    r.total++; if (isNegative(f, s.params)) r.unhappy++; else r.satisfied++;
+    if (f.q3 !== null) r.scores.push(f.q3);
+  });
+  const out = rows.map(r => ({ ...r, pct: r.total ? Math.round(r.satisfied / r.total * 100) : null, avg: r.scores.length ? round1(sum(r.scores) / r.scores.length) : null }));
+  const avgOf = (rs: typeof out) => { const sc = rs.flatMap(r => r.scores); return sc.length ? round1(sum(sc) / sc.length) : null; };
+  return { periods, rows: out, total: sum(out.map(r => r.total)), last3: avgOf(out.slice(-3)), before3: avgOf(out.slice(-6, -3)) };
+}
+// The promised day of a review and the day it was delivered, said once for the sheet, the trend and (the same rules) the indicator of 3.4: the promised day of the order of 3.4
+// when the review is linked to one (`promisedOn`: the day entered, else the quote), else of the quote of the review; the delivered day is the reception of the order
+// (empty while it is not received), else the day of the review. null when nothing was promised.
+export function promiseFact(s: State, f: Feedback): { promised: string; done: string; late: boolean } | null {
+  const d = f.deliveryId && Object.hasOwn(s.deliveries, f.deliveryId) ? s.deliveries[f.deliveryId] : undefined;
+  const promised = promisedOn(s, { promisedAt: d?.promisedAt, quoteId: d?.quoteId ?? f.quoteId });
+  if (!promised) return null;
+  const done = d ? receivedOn(d) : f.date;
+  return { promised, done, late: !!done && done > promised };
+}
+// Why customers are not satisfied (12 months), and the delay promised (order of 3.4, else quote) against the delivery date and the customer's answer
+export function feedbackCauses(s: State, today = new Date()) {
+  const since = isoDate(new Date(today.getFullYear() - 1, today.getMonth(), today.getDate()));
+  const fs = Object.values(s.feedbacks).filter(f => f.date >= since && feedbackState(f) !== 'to_ask');
+  const q = questionsOf(s.params), max = unhappyMaxOf(s.params);
+  const recent = (xs: Feedback[], text: (f: Feedback) => string | undefined) => xs.filter(f => text(f)?.trim()).sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 2).map(f => `${f.client} : ${text(f)!.trim()}`);
+  const q1 = fs.filter(f => f.q1 === false), q2 = fs.filter(f => f.q2 === false), q3 = fs.filter(f => f.q3 !== null && f.q3 <= max), dbt = fs.filter(f => f.doubt.trim());
+  const causes = [
+    { key: 'q1', label: `« Non » à la question 1 : ${q[0]}`, n: q1.length, examples: recent(q1, f => f.q1Detail) },
+    { key: 'q2', label: `« Non » à la question 2 : ${q[1]}`, n: q2.length, examples: recent(q2, f => f.q2Detail) },
+    { key: 'q3', label: `Note de satisfaction de ${max} ou moins`, n: q3.length, examples: recent(q3, f => f.q3Detail) },
+    { key: 'doubt', label: 'Réserve notée avant les précisions par question', n: dbt.length, examples: recent(dbt, f => f.doubt) },
+  ];
+  const linked = fs.flatMap(f => { const p = promiseFact(s, f); return p?.done ? [{ f, late: p.late }] : []; });
+  return {
+    total: fs.length, causes,
+    promise: { linked: linked.length, late: linked.filter(x => x.late).length, lateNotNoticed: linked.filter(x => x.late && x.f.q2 === true).length, notLateYet: linked.filter(x => !x.late && x.f.q2 === false).length },
+  };
+}
+// Share of the month's reviews without a negative answer or a low note, offered to the dashboard (1.1)
+export function feedbackMonthPct(s: Pick<State, 'feedbacks'> & Partial<Pick<State, 'params'>>, p: Period): number | null {
+  const fs = Object.values(s.feedbacks).filter(f => f.date.slice(0, 7) === p && feedbackState(f) !== 'to_ask');
+  return fs.length ? Math.round(fs.filter(f => !isNegative(f, s.params)).length / fs.length * 100) : null;
+}
+export const isSatisfactionKpi = (k: Kpi) => k.role === 'satisfaction' || k.id === 'kpi_satisfaction';
+// Adds the indicator "satisfied customers" to the dashboard (process P5, next to the complaints) for a company whose list of indicators
+// was made before the indicator was part of the models; the models of the tool carry it from the start
+export function addSatisfactionKpi(d: Pick<State, 'kpis' | 'processes'>, target = SATISFACTION_TARGET_DEFAULT): string {
+  const have = Object.values(d.kpis).find(isSatisfactionKpi);
+  if (have) return have.id;
+  const id = 'kpi_satisfaction', pid = defaultProcess('P5', d.processes.map(x => x.id));
+  d.kpis[id] = { id, role: 'satisfaction', name: 'Clients satisfaits à la livraison (%)', processId: pid, type: 'Vital', unit: '%', direction: 'higher', aggregation: 'avg', target: `≥ ${target} %`, targetValue: target, confidential: false, source: 'Bilans de fin d\'affaire (2.4)' };
+  d.processes.find(p => p.id === pid)?.kpiIds.push(id);
+  return id;
+}
+// The aim of the company (share of satisfied customers) is written in the settings and, in the same move, as the target of the indicator
+// of the dashboard (1.1); an empty value brings back the default
+export function setSatisfactionTarget(d: Pick<State, 'params' | 'kpis'>, value: number | null) {
+  const t = value === null ? undefined : Math.max(1, Math.min(100, Math.round(value)));
+  d.params.satisfactionTarget = t;
+  const k = Object.values(d.kpis).find(isSatisfactionKpi);
+  if (k) { k.targetValue = t ?? SATISFACTION_TARGET_DEFAULT; k.target = `≥ ${t ?? SATISFACTION_TARGET_DEFAULT} %`; }
 }
 export function feedbackInsights(s: State, today = new Date()): Insight[] {
   const out: Insight[] = [];
   const fs = Object.values(s.feedbacks);
-  const doubt = fs.filter(f => feedbackState(f, s) === 'doubt');
-  if (doubt.length) out.push({ key: 'doubt', tone: 'bad', title: 'Réserve du client à régler', text: `${names(doubt, f => `${f.client} : ${f.doubt}`)}. La régler dans la journée, avant qu'elle ne devienne un motif d'impayé.` });
+  const byClient = (xs: Feedback[]) => xs.filter((f, i) => xs.findIndex(g => g.client === f.client) === i);   // a customer named once
   const neg = fs.filter(f => feedbackState(f, s) === 'unhappy');
-  if (neg.length) out.push({ key: 'neg', tone: 'bad', title: 'Client insatisfait', text: `${names(neg, f => f.client)} : traiter comme une réclamation (outil 2.3) avant la facture de solde.` });
-  const inv = fs.filter(f => feedbackState(f, s) === 'to_invoice' && (daysBetween(f.date, today) ?? 0) > 1);
-  if (inv.length) out.push({ key: 'inv', tone: 'warn', title: 'Facture de solde en attente', text: `${names(inv, f => f.client)} : bilan validé, facturer sous 24 h sans attendre la fin du mois.` });
-  const prom = fs.filter(f => (f.q3 ?? 0) >= 9 && !f.reviewAsked);
-  if (prom.length) out.push({ key: 'review', tone: 'good', title: 'Clients prêts à recommander', text: `${names(prom, f => f.client)} : note de 9 ou 10, demander un avis ou une mise en relation.` });
+  if (neg.length) out.push({ key: 'neg', tone: 'bad', title: 'Client insatisfait', text: `${names(byClient(neg), f => `${f.client}${detailsOf(f, s.params)[0] ? ` (${detailsOf(f, s.params)[0]})` : ''}`)} : régler le point avec le client et noter le jour, ou l'enregistrer comme réclamation (outil 2.3).` });
+  const toAsk = deliveriesToAsk(s, today);
+  if (toAsk.length) out.push({ key: 'toask', tone: 'warn', title: 'Livraison sans bilan', text: `${names(toAsk, d => `${d.client || 'client'} (${d.ref || d.item})`)} : reçue sans que les 3 questions aient été posées.` });
+  const prom = fs.filter(f => (f.q3 ?? 0) >= 9 && !followOf(f));
+  if (prom.length) out.push({ key: 'review', tone: 'good', title: 'Clients très satisfaits', text: `${names(byClient(prom), f => f.client)} : note de 9 ou 10, demander un avis, une mise en relation ou un témoignage.` });
   return out;
 }

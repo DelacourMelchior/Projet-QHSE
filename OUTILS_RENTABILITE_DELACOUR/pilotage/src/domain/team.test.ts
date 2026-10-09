@@ -1,39 +1,21 @@
-// Tools 4.1 to 4.4: deputies practised within the year, key person, welcome path and autonomy test, naming charter.
+// Tools 4.2 to 4.4: key person, welcome path and autonomy test, naming charter (the deputies of 4.1 are in powers.test.ts).
 import { describe, expect, it } from 'vitest';
-import type { Newcomer, Power, State } from './types';
+import type { Newcomer, State } from './types';
 import {
-  autonomous, checkName, chronoOk, coveragePct, envelopeState, fileName, keyPeople, keyPersonRisk, newcomerInsights, newcomerState, newNewcomer, newPower,
-  powerInsights, powerState, skillInsights, skillRisk,
+  autonomous, checkName, chronoOk, coveragePct, fileName, keyPeople, keyPersonRisk, newcomerInsights, newcomerState, newNewcomer, skillInsights, skillRisk,
+  processPeople,
 } from './team';
-import { teamExamples } from './teamExamples';
+import { completeTeamExamples, teamExamples } from './teamExamples';
 import { newcomerPdf } from './teamPdf';
-import { defaultGed, emptyTools } from './base';
+import { defaultGed, emptyTools, PROCESS_IDS } from './base';
 import { DEFAULT_SCALE } from './risk';
 import { feeds } from './feeds';
 
 const now = new Date(2026, 8, 25, 10, 0);
 const st = (over: Partial<State> = {}): State => ({
-  settings: { companyName: '', profile: 'industrie', annualBudget: 600000, netMarginPct: 5, avgQuoteValue: 4500 },
+  settings: { companyName: '', profile: 'industrie', annualBudget: 600000, netMarginPct: 5 },
   timeline: { start: '2026-01', end: '2026-12' }, processes: [], kpis: {}, values: {}, actions: {}, risks: {}, contacts: {}, scale: DEFAULT_SCALE,
   ...emptyTools(), ...over,
-});
-
-describe('4.1 deputies', () => {
-  const p = (over: Partial<Power> = {}): Power => ({ ...newPower('P1', 'Paie'), holder: 'Jean', ...over });
-  it('needs two deputies who did the act within the year', () => {
-    expect(powerState(p(), now)).toBe('no_deputy');
-    expect(powerState(p({ deputies: ['A', ''], practiced: ['2026-09-01', ''] }), now)).toBe('one_deputy');
-    expect(powerState(p({ deputies: ['A', 'B'], practiced: ['2026-09-01', ''] }), now)).toBe('unpracticed');
-    expect(powerState(p({ deputies: ['A', 'B'], practiced: ['2026-09-01', '2025-09-01'] }), now)).toBe('unpracticed');
-    expect(powerState(p({ deputies: ['A', 'B'], practiced: ['2026-09-01', '2025-10-10'] }), now)).toBe('soon');
-    expect(powerState(p({ deputies: ['A', 'B'], practiced: ['2026-09-01', '2026-03-01'] }), now)).toBe('ok');
-  });
-  it('checks the sealed envelope every 6 months', () => {
-    expect(envelopeState({ location: '', checkedAt: '', by: '' }, now)).toBe('never');
-    expect(envelopeState({ location: '', checkedAt: '2026-01-10', by: '' }, now)).toBe('due');
-    expect(envelopeState({ location: '', checkedAt: '2026-06-10', by: '' }, now)).toBe('ok');
-    expect(powerInsights(st(teamExamples(now)), now).map(i => i.key)).toEqual(expect.arrayContaining(['none', 'prac', 'env', 'deleg']));
-  });
 });
 
 describe('4.2 versatility', () => {
@@ -44,7 +26,7 @@ describe('4.2 versatility', () => {
     expect(autonomous(s, cnc).map(p => p.name)).toEqual(['Marc M.']);
     expect(skillRisk(s, s.skills.sk_demo_2)).toBe('ok');
     expect(coveragePct(s)).toBe(25);                                   // critical skills only: 1 of 4
-    expect(keyPeople(s).map(k => k.person.name).sort()).toEqual(['Antoine P.', 'Hélène R.', 'Marc M.', 'Nicolas R.']);
+    expect(keyPeople(s).map(k => k.person.name).sort()).toEqual(['Antoine P.', 'Baptiste G.', 'Hélène R.', 'Marc M.', 'Nicolas R.', 'Thomas M.']);
     s.people.pp_demo_kt.active = false;
     s.people.pp_demo_nr.active = false;
     expect(skillRisk(s, s.skills.sk_demo_2)).toBe('single');            // only David K. left at level 3
@@ -58,6 +40,26 @@ describe('4.2 versatility', () => {
     const kpi = { id: 'kpi_suppleance', name: 'Postes clés doublés', processId: 'P4', type: 'Garde-fou' as const, unit: '%', direction: 'higher' as const, aggregation: 'avg' as const, target: '100 %', targetValue: 100, confidential: false, source: '' };
     expect(feeds({ ...s, kpis: { kpi_suppleance: kpi } }, '2026-09', now)[0].value).toBe(25);
     expect(skillInsights(s).map(i => i.key)).toEqual(expect.arrayContaining(['single', 'plan', 'late']));
+  });
+});
+
+describe('4.2 one matrix per process', () => {
+  it('holds a skill only through the people of its process, in every process of the example', () => {
+    const s = st(teamExamples(now));
+    for (const k of Object.values(s.skills)) {
+      const team = processPeople(s, k.processId).map(p => p.id);
+      expect(Object.entries(k.levels).filter(([, l]) => l > 0).map(([id]) => id).filter(id => !team.includes(id)), k.name).toEqual([]);
+    }
+    expect(PROCESS_IDS.every(id => Object.values(s.skills).some(k => k.processId === id))).toBe(true);
+    expect(processPeople(s, 'P3').map(p => p.name)).not.toContain('Jean-Marc');
+  });
+  it('tops up a fictitious company saved before, once, and leaves a real company alone', () => {
+    const ex = teamExamples(now), old = { skills: { sk_demo_1: ex.skills.sk_demo_1 }, people: Object.fromEntries(Object.entries(ex.people).map(([id, p]) => [id, { ...p, processIds: undefined }])), params: {} as State['params'], settings: { companyName: 'Entreprise exemple (fictive)' } as State['settings'] };
+    const up = completeTeamExamples(old, now);
+    expect(Object.keys(up.skills).length).toBeGreaterThan(10);
+    expect(up.people.pp_demo_mm.processIds).toEqual(['P3']);
+    expect(up.params.teamExampleLevel).toBe(1);
+    expect(completeTeamExamples({ ...old, settings: { companyName: 'Atelier réel' } as State['settings'] }, now).skills).toEqual(old.skills);
   });
 });
 

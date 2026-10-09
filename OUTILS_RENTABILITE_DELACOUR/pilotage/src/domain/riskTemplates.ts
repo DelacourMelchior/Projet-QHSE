@@ -84,6 +84,12 @@ export const EMAILS: Record<string, string> = {
   ct_demo_transport: 'exploitation@transports-rapides.example.com',
   ct_demo_clientB: 'achats@client-b.example.com',
   ct_demo_expert: 'contact@cabinet-comptable.example.com',
+  ct_demo_cl_durand: 'm.durand@client-a.example.com',
+  ct_demo_cl_lopez: 'mme.lopez@batipro.example.com',
+  ct_demo_cl_morel: 'm.morel@agencement-morel.example.com',
+  ct_demo_cl_perrin: 'mme.perrin@maison-perrin.example.com',
+  ct_demo_cl_rey: 'dr.rey@cabinet-rey.example.com',
+  ct_demo_cl_garnier: 'm.garnier@valmont.example.com',
 };
 
 // Fictitious e-mail of an example contact: prénom.initiale@entreprise.example inside, fonction@organisation.example outside
@@ -189,6 +195,13 @@ export function exampleContacts(today = new Date()): Contact[] {
     contact('ct_demo_sst_iprp', 'sante', 'Ergonome (IPRP)', 'Étude de poste, document unique', 'SST interentreprises', '04 00 00 01 25', false, 300),
     contact('ct_demo_insp_ruc', 'administration', 'Responsable de l\'unité de contrôle', 'Si l\'inspectrice est absente', 'Inspection du travail (DREETS)', '04 00 00 01 26', false, 300),
     contact('ct_demo_banque1_dir', 'finance', 'Directeur d\'agence', 'Découvert exceptionnel', 'Banque A', '04 00 00 01 27', false, 230),
+    // the people questioned at the end of a job (2.4), customers of the example: the review of a customer opens its card
+    contact('ct_demo_cl_durand', 'client', 'M. Durand', 'Acheteur principal', 'Client A (grand compte)', '04 00 00 02 20', false, 60),
+    contact('ct_demo_cl_lopez', 'client', 'Mme Lopez', 'Conductrice de travaux', 'BâtiPro', '04 00 00 02 21', false, 60),
+    contact('ct_demo_cl_morel', 'client', 'M. Morel', 'Gérant', 'Agencement Morel', '04 00 00 02 22', false, 60),
+    contact('ct_demo_cl_perrin', 'client', 'Mme Perrin', 'Responsable des travaux', 'Maison Perrin', '04 00 00 02 23', false, 60),
+    contact('ct_demo_cl_rey', 'client', 'Dr Rey', 'Gérant du cabinet', 'Cabinet Rey', '04 00 00 02 24', false, 60),
+    contact('ct_demo_cl_garnier', 'client', 'M. Garnier', 'Service technique de la mairie', 'Collectivité Valmont', '04 00 00 02 25', false, 60),
     { ...contact('ct_demo_vacant_soudeur', 'interne', '', 'Soudeur TIG (recrutement en cours)', 'Interne', '', false, 0), vacant: true },
     contact('ct_demo_expert_compta', 'conseil', 'Collaborateur comptable', 'Saisie, TVA, bilan', 'Cabinet Comptable', '04 00 00 01 28', false, 60),
   ];
@@ -227,6 +240,7 @@ export function exampleContacts(today = new Date()): Contact[] {
     ct_demo_nicolas: { reportsTo: 'ct_demo_eric', backupId: 'ct_demo_karim' },
     // outside hierarchies
     ct_demo_clientA: { reportsTo: 'ct_demo_clientA_dir', backupId: 'ct_demo_clientA_asst' },
+    ct_demo_cl_durand: { reportsTo: 'ct_demo_clientA_dir', hours: 'lun-ven 8 h 30-17 h 30' },
     ct_demo_clientA_asst: { reportsTo: 'ct_demo_clientA', backupId: 'ct_demo_clientA_dir' },
     ct_demo_clientA_qual: { reportsTo: 'ct_demo_clientA_dir' },
     ct_demo_clientC: { reportsTo: 'ct_demo_clientC_dg' },
@@ -302,6 +316,11 @@ export function exampleOrgs(): Org[] {
     org('clientA', 'Client A (grand compte)', 'client', '04 00 00 02 00', 'Zone industrielle Nord, 69100 Villeurbanne', 'Fournisseur n° F-20331', 'achats@client-a.example.com'),
     org('clientB', 'Client B', 'client', '04 00 00 02 01', '5 avenue des Frères Lumière, 69008 Lyon', 'Fournisseur n° 7781'),
     org('clientC', 'Client C', 'client', '04 00 00 02 02', 'Parc d\'activités du Rhône, 69200 Vénissieux', 'Code fournisseur DEL-12'),
+    org('batipro', 'BâtiPro', 'client', '04 00 00 02 11', '8 rue des Chantiers, 69003 Lyon', 'Fournisseur n° BP-310', 'chantiers@batipro.example.com'),
+    org('morel', 'Agencement Morel', 'client', '04 00 00 02 12', '22 rue de l\'Artisanat, 69120 Vaulx-en-Velin', 'Client n° 4471'),
+    org('perrin', 'Maison Perrin', 'client', '04 00 00 02 13', '14 place du Marché, 69005 Lyon', 'Client n° 5230'),
+    org('rey', 'Cabinet Rey', 'client', '04 00 00 02 14', '3 avenue des Platanes, 69006 Lyon', 'Client n° 5412'),
+    org('valmont', 'Collectivité Valmont', 'client', '04 00 00 02 15', 'Mairie de Valmont, 69390 Vourles', 'Marché n° 2026-14'),
     org('acier', 'Aciers du Rhône', 'fournisseur', '04 00 00 02 03', '18 quai Perrache, 69002 Lyon', 'Compte client 10442', 'commandes@aciers-rhone.example.com'),
     org('sst', 'SST interentreprises', 'sante', '04 00 00 02 04', '3 rue de la Santé, 69003 Lyon', 'Adhérent n° 55120'),
     org('dreets', 'Inspection du travail (DREETS)', 'administration', '04 00 00 02 05', 'Unité de contrôle Lyon Est, 69003 Lyon'),
@@ -334,7 +353,7 @@ export function demoRisks(today = new Date()): { risks: State['risks']; actions:
       contactIds: ['ct_demo_it', 'ct_demo_thomas'], notifyIds: ['ct_demo_cyber'], access: 'Disque de sauvegarde J-1 : coffre du bureau direction (code chez Hélène R.)', sacrifice: 'Factures et relances reportées de 48 h',
       testMethod: 'Restauration réelle de la sauvegarde sur un poste de secours', testCriterion: 'ERP restauré et utilisable en moins de 4 h',
       tests: [{ date: ago(40), ok: true, note: 'Restauration complète', by: 'Thomas M.', delay: { value: 3, unit: 'h' }, contactsChecked: true }],
-      cost: { perDay: 6500, daysWithout: 10, daysWith: 1, planBCost: 1800 },
+      cost: { perDay: 6500, margin: 4000, penalties: 1500, idle: 1000, otherDay: 0, repair: 2500, otherOnce: 600, daysWithout: 10, daysWith: 1, planBCost: 1800 },
     }),
     base('risk_demo_banque', {
       processId: 'P1', title: 'Blocage bancaire / fraude au président', resource: 'Trésorerie, virements', signal: 'Virement inhabituel demandé en urgence, compte bloqué',
@@ -367,7 +386,7 @@ export function demoRisks(today = new Date()): { risks: State['risks']; actions:
       holdFor: { value: 3, unit: 'mois' },
       recovery: 'Fin du Plan B quand le carnet de commandes couvre de nouveau 6 semaines de charge.',
       testMethod: 'Revue trimestrielle de la liste des devis relançables', testCriterion: 'Au moins 15 devis relançables à jour',
-      cost: { perDay: 1200, daysWithout: 90, daysWith: 45, planBCost: 0 },
+      cost: { perDay: 1200, margin: 800, penalties: 0, idle: 400, otherDay: 0, repair: 0, otherOnce: 0, daysWithout: 90, daysWith: 45, planBCost: 0 },
     }),
     base('risk_demo_cnc', {
       processId: 'P3', title: 'Casse broche de la machine goulet CNC', resource: 'Centre d\'usinage CNC n°2', signal: 'Bruit anormal, vibrations, arrêt machine',
@@ -389,7 +408,11 @@ export function demoRisks(today = new Date()): { risks: State['risks']; actions:
       contactIds: ['ct_demo_confrere', 'ct_demo_maint'], notifyIds: ['ct_demo_clientA', 'ct_demo_clientC'], access: 'Programmes FAO : dossier partagé « Secours CNC »', sacrifice: 'Petites séries du client C reportées d\'une semaine',
       testMethod: 'Envoi réel d\'un programme et usinage d\'une pièce chez le confrère', testCriterion: 'Pièce conforme reçue en moins de 48 h',
       tests: [{ date: ago(90), ok: false, note: 'Programme refusé : version de post-processeur différente', by: 'David K.', contactsChecked: true }],
-      cost: { perDay: 2800, daysWithout: 15, daysWith: 2, planBCost: 900 },
+      cost: { perDay: 2800, margin: 1600, penalties: 600, idle: 500, otherDay: 100, repair: 4500, otherOnce: 800, daysWithout: 15, daysWith: 2, planBCost: 900, calc: {
+        'margin.sales': 4000, 'margin.rate': 40, 'penalties.orders': 2, 'penalties.amount': 300, 'idle.people': 2, 'idle.hours': 8, 'idle.rate': 31.25,
+        'otherDay.fixed': 100, 'repair.part': 3500, 'repair.labour': 800, 'repair.transport': 200, 'otherOnce.express': 300, 'otherOnce.overtime': 500,
+        'daysWithout.diagnosis': 1, 'daysWithout.supply': 10, 'daysWithout.repair': 3, 'daysWithout.restart': 1,
+        'daysWith.activation': 1, 'daysWith.gap': 1, 'planBCost.setup': 600, 'planBCost.yearly': 300 } },
     }),
     base('risk_demo_tole', {
       processId: 'P3', title: 'Rupture de tôle (matière critique)', resource: 'Fournisseur unique de tôle', signal: 'Retard de livraison annoncé, stock sous le seuil',
@@ -408,7 +431,7 @@ export function demoRisks(today = new Date()): { risks: State['risks']; actions:
       contactIds: ['ct_demo_distrib'], notifyIds: ['ct_demo_clientA'],
       testMethod: 'Commande test chez le distributeur B', testCriterion: 'Livraison en moins de 72 h',
       tests: [{ date: ago(200), ok: true, note: 'Livré en 60 h', by: 'Sophie V.', delay: { value: 60, unit: 'h' }, contactsChecked: true }],
-      cost: { perDay: 1500, daysWithout: 8, daysWith: 1, planBCost: 0 },
+      cost: { perDay: 1500, margin: 900, penalties: 300, idle: 300, otherDay: 0, repair: 0, otherOnce: 0, daysWithout: 8, daysWith: 1, planBCost: 0 },
     }),
     base('risk_demo_expert', {
       processId: 'P4', title: 'Absence du programmeur (compétence unique)', resource: 'Programmeur CN', signal: 'Arrêt maladie, départ',

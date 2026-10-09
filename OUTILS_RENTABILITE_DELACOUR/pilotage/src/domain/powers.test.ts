@@ -3,7 +3,8 @@
 import { describe, expect, it } from 'vitest';
 import { norm } from './instructions';
 import type { Contact, Person, Power, State, Vault, VaultLog } from './types';
-import { emptyTools } from './base';
+import { emptyTools, PROCESS_IDS, PROCESS_NAMES } from './base';
+import { registerProcesses } from './cartography';
 import { DEFAULT_SCALE } from './risk';
 import { demoState } from './templates';
 import { normalize } from './migrate';
@@ -421,6 +422,27 @@ describe('4.1 later additions', () => {
     expect(whoIs(s, 'A', '2026-09-25')).toMatchObject({ absent: null, next: { from: '2026-10-10', to: '2026-10-14' } });
     expect(whoIs(s, 'A', '2026-10-20').next).toBeNull();   // the second leave is more than a month away from that day
     expect(whoIs(s, 'A', '2026-10-11')).toMatchObject({ absent: { from: '2026-10-10', to: '2026-10-14' }, next: null });
+  });
+  it('checks the processes of the map, by name: a deleted P3 is not reported, a new P6 is', () => {
+    const only = (id: string) => st({ powers: { a: p({ id: 'a', processId: id }) } });
+    const saved = PROCESS_IDS.map((id, i) => ({ id, name: PROCESS_NAMES[id], order: i }));
+    try {
+      registerProcesses(['P1', 'P2', 'P4', 'P5', 'P6'].map((id, i) => ({ id, name: id === 'P6' ? 'Achats' : `Processus ${id}`, order: i })));
+      const t = powerInsights(only('P1'), now).find(i => i.key === 'process')!.text;
+      expect(t).toContain('P6 · Achats');
+      expect(t).not.toContain('P3');
+      expect(powerInsights(only('P6'), now).find(i => i.key === 'process')!.text).not.toContain('P6');
+    } finally { registerProcesses(saved); }
+  });
+  it('writes the indicators of 4.1 in the process kept, the first of the map when P4 is gone', () => {
+    const d = { kpis: {}, processes: [{ id: 'P1', name: 'A', color: '#000', order: 0, kpiIds: [] }] } as never as Pick<State, 'kpis' | 'processes'>;
+    const saved = PROCESS_IDS.map((id, i) => ({ id, name: PROCESS_NAMES[id], order: i }));
+    try {
+      registerProcesses(d.processes);
+      expect(addPowerKpis(d)).toBeGreaterThan(0);
+      expect(Object.values(d.kpis).every(k => k.processId === 'P1')).toBe(true);
+      expect(d.processes[0].kpiIds.length).toBe(Object.keys(d.kpis).length);
+    } finally { registerProcesses(saved); }
   });
   it('says when the same two deputies hold several powers', () => {
     const s = st({ powers: { x: p({ id: 'x', power: 'Paie', deputies: ['A', 'B'], practiced: ['2026-09-01', '2026-09-01'] }), y: p({ id: 'y', power: 'Clés', holder: 'Zoé', deputies: ['b', 'a'], practiced: ['2026-09-01', '2026-09-01'] }), z: p({ id: 'z', power: 'Autre', deputies: ['A', 'C'], practiced: ['2026-09-01', '2026-09-01'] }) } });

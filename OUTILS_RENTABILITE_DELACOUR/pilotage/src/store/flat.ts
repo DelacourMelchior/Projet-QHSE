@@ -17,13 +17,13 @@ import { sha256 } from '../domain/sha256';
 export type FlatMap = Record<string, unknown>;
 
 type CollectionKey = 'contacts' | 'complaints' | 'feedbacks' | 'suppliers' | 'debits' | 'sectors' | 'sops' | 'equipments' | 'spares' | 'deliveries'
-  | 'people' | 'skills' | 'newcomers' | 'chronos' | 'ncs' | 'analyses' | 'pokas' | 'logs' | 'orgs' | 'practices' | 'covers' | 'vaults' | 'vlogs';
+  | 'people' | 'skills' | 'newcomers' | 'chronos' | 'ncs' | 'analyses' | 'pokas' | 'logs' | 'orgs' | 'practices' | 'covers' | 'vaults' | 'vlogs' | 'flows';
 // key prefix -> collection of the state (records stored whole, readable by the team)
 export const COLLECTIONS: Record<string, CollectionKey> = {
   contact: 'contacts', complaint: 'complaints', feedback: 'feedbacks', supplier: 'suppliers', debit: 'debits', sector: 'sectors',
   sop: 'sops', equipment: 'equipments', spare: 'spares', delivery: 'deliveries', person: 'people', skill: 'skills',
   newcomer: 'newcomers', chrono: 'chronos', nc: 'ncs', analysis: 'analyses', poka: 'pokas', log: 'logs', org: 'orgs',
-  practice: 'practices', cover: 'covers', vault: 'vaults', vlog: 'vlogs',   // 4.1: one key per line of proof, so two people never overwrite each other (vaults and their lines: direction folder)
+  practice: 'practices', cover: 'covers', vault: 'vaults', vlog: 'vlogs', flow: 'flows',   // 4.1: one key per line of proof, so two people never overwrite each other (vaults and their lines: direction folder)
 };
 const SINGLES = ['params', 'envelope', 'ged'] as const;
 
@@ -135,7 +135,7 @@ function restorePhotos<T>(x: T, m: FlatMap): T {
 }
 
 // Records created, changed or deleted between two states (the journal, not the figures of the month)
-const LOGGED = /^(action|risk|contact|org|quote|complaint|feedback|supplier|debit|sop|equipment|spare|delivery|power|practice|cover|vault|person|skill|newcomer|chrono|nc|analysis|poka|kpi|process)\|/;
+const LOGGED = /^(action|risk|contact|org|quote|complaint|feedback|supplier|debit|sop|equipment|spare|delivery|power|practice|cover|vault|person|skill|newcomer|chrono|nc|analysis|poka|kpi|process|flow)\|/;
 export function changedRecords(a: FlatMap, b: FlatMap): { key: string; what: 'création' | 'modification' | 'suppression' }[] {
   return diffKeys(a, b).filter(k => LOGGED.test(k)).map(k => ({ key: k, what: a[k] === undefined ? 'création' as const : b[k] === undefined ? 'suppression' as const : 'modification' as const }));
 }

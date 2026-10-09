@@ -1,7 +1,7 @@
 // Tool 4.1 seen from outside the tool: the summary of the screen and of the home badge, the findings (facts, never orders), and what is left to do (the queue of the screen,
 // "Mes tâches", the calendar). Each todo knows the address that opens the tool on the right place (`powerFocus`).
 import type { Power, State } from './types';
-import { addDays, type Insight } from './base';
+import { addDays, PROCESS_IDS, processLabel, type Insight } from './base';
 import { frDate, isoDate } from './periods';
 import { plural } from './receptions';
 import { norm } from './instructions';
@@ -121,8 +121,8 @@ export function powerInsights(s: State, today = new Date()): Insight[] {
   const pairs = new Map<string, { names: string; powers: Power[] }>();
   ps.forEach(p => { const d = powerDeputies(p).slice(0, 2); if (d.length === 2) { const k = d.map(x => norm(x.name)).sort().join('|'), e = pairs.get(k) || { names: d.map(x => x.name).join(' et '), powers: [] }; e.powers.push(p); pairs.set(k, e); } });
   [...pairs.values()].filter(e => e.powers.length > 1).forEach((e, i) => out.push({ key: `pair${i}`, tone: 'warn', title: 'Les deux mêmes suppléants', text: `${e.names} pour ${names(e.powers, title)} : l'absence de l'un d'eux touche toutes ces fonctions.` }));
-  const empty = ['P1', 'P2', 'P3', 'P4', 'P5'].filter(id => ps.length && !ps.some(p => p.processId === id));
-  if (empty.length) out.push({ key: 'process', tone: 'warn', title: 'Processus sans fonction décrite', text: `${empty.join(', ')}.` });
+  const empty = PROCESS_IDS.filter(id => ps.length && !ps.some(p => p.processId === id));
+  if (empty.length) out.push({ key: 'process', tone: 'warn', title: 'Processus sans fonction décrite', text: `${empty.map(processLabel).join(', ')}.` });
   const due = ps.filter(p => reviewDue(p, today, cfg.reviewMonths));
   if (due.length) { const last = ps.map(p => p.reviewedAt || '').filter(Boolean).sort().pop(), m = last ? monthsSince(last, today) : null; out.push({ key: 'review', tone: 'warn', title: 'Liste à relire', text: m === null ? `${plural(due.length, 'fonction')} jamais relue${due.length > 1 ? 's' : ''}.` : `${plural(due.length, 'fonction')} sans relecture depuis ${cfg.reviewMonths} mois ; dernière relecture il y a ${plural(m, 'mois', 'mois')}.` }); }
   if (!out.length && ps.length) out.push({ key: 'good', tone: 'good', title: 'Rien à signaler', text: `${plural(ps.length, 'fonction clé', 'fonctions clés')} avec deux suppléants pratiqués dans l'année.` });

@@ -455,6 +455,18 @@
       "actionDone": true
      },
      {
+      "id": "kpi_satisfaction",
+      "name": "Clients satisfaits à la livraison (%)",
+      "source": "Bilans de fin d'affaire (2.4)",
+      "type": "Vital",
+      "unit": "%",
+      "calcType": "avg",
+      "goalDirection": "higher",
+      "targetVal": 90,
+      "target": "≥ 90 %",
+      "isConfidential": false
+     },
+     {
       "id": "kpi_actions_j30",
       "name": "Actions Correctives Clôturées J+30 (%)",
       "source": "Suivi des Actions",
@@ -977,6 +989,18 @@
        "isConfidential": false
       },
       {
+       "id": "kpi_satisfaction",
+       "name": "Clients satisfaits à la livraison (%)",
+       "source": "Bilans de fin d'affaire (2.4)",
+       "type": "Vital",
+       "unit": "%",
+       "calcType": "avg",
+       "goalDirection": "higher",
+       "targetVal": 90,
+       "target": "≥ 90 %",
+       "isConfidential": false
+      },
+      {
        "id": "kpi_actions_j30",
        "name": "Actions Correctives Clôturées J+30 (%)",
        "source": "Suivi des Actions",
@@ -1161,6 +1185,18 @@
        "targetVal": 1,
        "target": "< 1",
        "isConfidential": false
+      },
+      {
+       "id": "kpi_satisfaction",
+       "name": "Clients satisfaits à la livraison (%)",
+       "source": "Bilans de fin d'affaire (2.4)",
+       "type": "Vital",
+       "unit": "%",
+       "calcType": "avg",
+       "goalDirection": "higher",
+       "targetVal": 90,
+       "target": "≥ 90 %",
+       "isConfidential": false
       }
      ]
     }
@@ -1334,6 +1370,18 @@
        "goalDirection": "lower",
        "targetVal": 1,
        "target": "< 1",
+       "isConfidential": false
+      },
+      {
+       "id": "kpi_satisfaction",
+       "name": "Clients satisfaits à la livraison (%)",
+       "source": "Bilans de fin d'affaire (2.4)",
+       "type": "Vital",
+       "unit": "%",
+       "calcType": "avg",
+       "goalDirection": "higher",
+       "targetVal": 90,
+       "target": "≥ 90 %",
        "isConfidential": false
       }
      ]

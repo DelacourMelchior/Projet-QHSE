@@ -14,6 +14,7 @@ export type KpiRole = 'ca' | 'marge' | 'treso' | 'cnq' | 'devis_attente' | 'otif
   | 'power_ready' | 'power_practised' | 'power_vault';   // three proposed by tool 4.1
 
 export interface Kpi {
+  origin?: StepOrigin;      // created from a step of a flowchart (tool 1.4)
   id: string;
   role?: KpiRole;
   name: string;
@@ -34,6 +35,74 @@ export interface Process {
   color: string;
   order: number;
   kpiIds: string[];
+  // tool 1.4 (process map): everything below is filled once and reviewed each year; absent on data saved before
+  band?: MapBand;
+  purpose?: string;          // one sentence: why the process exists
+  pilotId?: string;          // Person.id (staff list, linked to the directory)
+  deputyId?: string;         // Person.id
+  trigger?: string;          // first event that starts it
+  result?: string;           // last result it delivers
+  inputs?: MapIo[];          // what comes in, from whom
+  outputs?: MapIo[];         // what goes out, for whom
+  requirements?: MapReq[];   // client, legal, standard, internal requirements
+  software?: string[];
+  equipmentIds?: string[];   // equipment of tool 3.3
+  docs?: string[];           // documents and records, as named in the filing plan of tool 4.4
+  docLinks?: FlowLink[];     // tools of the application that keep a document or a trace of the process (a quote, a report of reception, a work instruction…)
+  notes?: string;            // management notes (hidden from the team unless the company shows them)
+  reviewedAt?: string;       // ISO date of the last review
+  reviewedBy?: string;
+  reviews?: MapReview[];     // the last reviews, newest last
+}
+
+// ---- 1.4 process map
+export type MapBand = 'management' | 'realisation' | 'support' | 'transverse';
+// A record of another tool created from a step of a flowchart keeps where it comes from (the flowchart is the starting point; the record then lives in its own tool)
+export interface StepOrigin { flowId: string; stepId: string }
+export interface MapIo { what: string; party: string; processId?: string }   // party: free name, or the process it comes from / goes to
+export interface MapReq { kind: 'client' | 'legal' | 'standard' | 'internal' | 'other'; text: string; all?: boolean; id?: string }   // all: applies to every process of the company, written once
+export interface MapReview { at: string; by: string; note: string }
+export type StepKind = 'start' | 'action' | 'decision' | 'document' | 'subprocess' | 'end';
+// A step of a flowchart. Steps are listed in order: after a step comes the next one of the list, unless `goto` says another (a step id).
+// A decision has any number of outcomes (`branches`, at least two): each has its own wording and the step it leads to; an outcome without a target is the next step when it is the
+// first one, and a point to correct otherwise. (`yes` / `no` are the two outcomes of the first version, read as branches "Oui" and "Non".)
+// A sub-process step points to another flow (`flowId`). A step can link to any number of tools of the application, each one to the whole tool or to one of its records.
+export interface FlowBranch { label: string; to: string }
+export interface FlowLink { tool: string; id?: string }   // tool: "2.1"; id: a record of that tool (an indicator, a risk, a contact, an instruction…) when the tool has records to choose from
+export interface FlowStep {
+  id: string; kind: StepKind; label: string;
+  role: string;              // who does it (a lane of the diagram)
+  roleRef?: { kind: 'skill' | 'person'; id: string };   // the role is a skill of tool 4.2 or a person of the staff list: `role` then holds its name, read again from it
+  goto?: string; branches?: FlowBranch[]; yes?: string; no?: string;
+  links?: FlowLink[];
+  doc?: string;              // document produced or read
+  flowId?: string;           // sub-process
+  note?: string;
+  control?: boolean;         // check point
+  reqs?: string[];           // ids of the requirements of the flowchart that this step meets
+}
+export interface FlowVersion { version: number; at: string; by: string; note: string; name: string; trigger: string; steps: FlowStep[]; links?: FlowLink[]; sheet?: FlowSheet }
+export type FlowSheet = Partial<Pick<Flow, 'purpose' | 'result' | 'inputs' | 'outputs' | 'requirements'>>   // the sheet of the flowchart, kept with each version
+export interface Flow {
+  id: string; processId: string; name: string;
+  trigger: string;           // what starts it
+  ownerId?: string;          // Person.id
+  purpose?: string;          // what this case is for, in a sentence
+  result?: string;           // what it delivers at the end
+  inputs?: MapIo[];          // what comes in for this case, from whom
+  outputs?: MapIo[];         // what goes out of this case, for whom
+  requirements?: MapReq[];   // what applies to this case (client, law, standard, internal)
+  links?: FlowLink[];        // the tools of the application the flowchart as a whole relies on or concerns (equipment, indicator, risk, instruction, key function, skill…): optional
+  steps: FlowStep[];
+  version: number; updatedAt: string; updatedBy: string;
+  history: FlowVersion[];    // the previous versions, oldest first (the last 20)
+}
+export type MapRight = 'none' | 'view' | 'own' | 'admin';
+export type MapHideable = 'targets' | 'risks' | 'notes';
+export interface MapSettings {
+  rights?: Record<string, MapRight>;    // per person (lower-cased name); no table = everybody administers (one user)
+  shown?: MapHideable[];                // blocks the team (right "view") sees; absent = none of them
+  reviewMonths?: number;                // a sheet not reviewed for this long is old; absent = 12
 }
 
 export type Dim5M = 'main_oeuvre' | 'methode' | 'materiel' | 'matiere' | 'milieu';
@@ -116,6 +185,7 @@ export interface State {
   ncs: Record<string, Nc>;                // 5.1, costed by 5.2
   analyses: Record<string, Analysis>;     // 5.3
   pokas: Record<string, Poka>;            // 5.4
+  flows: Record<string, Flow>;            // 1.4, the flowcharts of the processes
   logs: Record<string, LogEntry>;         // who created, changed or deleted what
   orgs: Record<string, Org>;              // outside organisations of the directory (1.3)
 }
@@ -147,6 +217,7 @@ export interface Params {
   receptionExampleLevel?: number;  // same, for the orders of tool 3.4 (internal)
   power?: PowerSettings;           // settings of tool 4.1
   powerExampleLevel?: number;      // same, for the powers of tool 4.1 (internal)
+  teamExampleLevel?: number;       // same, for the skills of tool 4.2 (internal)
   reviewLink?: string;     // online review page of the company (2.4)
   questions?: string[];    // wording of the 3 end-of-job questions (2.4)
   unhappyMax?: number;     // highest recommendation note that counts as an unhappy customer (2.4); absent = 6
@@ -161,6 +232,8 @@ export interface Params {
   cnqTrigger?: number;     // cost from which a five whys workshop is expected (5.3)
   siteAccess?: string;     // how the emergency services find and enter the site (1.3)
   directorId?: string;     // top of the internal org chart when no role says it (1.3)
+  map?: MapSettings;       // rights and settings of tool 1.4
+  mapExampleLevel?: number;   // same, for the sheets and flowcharts of tool 1.4 (internal)
 }
 
 // Signature drawn with the finger: strokes of points in a 300 x 100 box
@@ -414,6 +487,7 @@ export interface SopSnap {
   steps: { op: string; how: string; watch: string; check: string; critical?: string; values: string; fps: string[] }[];
 }
 export interface Sop {
+  origin?: StepOrigin;      // created from a step of a flowchart (tool 1.4)
   id: string;
   processId: string;
   poste: string;
@@ -508,6 +582,7 @@ export interface EqDoc { label: string; photo?: string; url?: string }
 export interface EqHelper { id: string; role: string; contactId?: string; name?: string; phone?: string; hours?: string }
 export interface Contract { provider: string; contactId?: string; until: string; response?: string; note?: string }
 export interface Equipment {
+  origin?: StepOrigin;      // created from a step of a flowchart (tool 1.4)
   id: string;
   name: string;
   location: string;
@@ -671,6 +746,7 @@ export interface ReceptionTodo { id: string; kind: ReceptionTodoKind; text: stri
 // ---- 4.1 emergency deputies
 export type PowerWait = 'day' | 'days3' | 'week' | 'more' | 'other';
 export interface Power {
+  origin?: StepOrigin;      // created from a step of a flowchart (tool 1.4)
   id: string;
   processId: string;
   power: string;           // the act without which the company stops
@@ -775,8 +851,10 @@ export interface PowerSettings {
 
 // ---- 4.2 versatility matrix
 export type SkillLevel = 0 | 1 | 2 | 3 | 4;
-export interface Person { id: string; name: string; role: string; active: boolean; team?: string; absences?: { from: string; to: string }[] }
+export interface Person { id: string; name: string; role: string; active: boolean; team?: string; processIds?: string[];   // processes the person works in (set in the directory); absent = deduced from the skills she holds
+  absences?: { from: string; to: string }[] }
 export interface Skill {
+  origin?: StepOrigin;      // created from a step of a flowchart (tool 1.4)
   id: string;
   name: string;
   processId: string;
@@ -960,13 +1038,21 @@ export interface RiskScale { gravity: string[]; likelihood: string[] }  // 4 tex
 
 // Money figures, stored in the "direction" folder (never shown in team view)
 export interface RiskCost {
-  perDay: number | null;      // margin lost + penalties per day of outage (€)
+  perDay: number | null;      // total loss per day of outage (€) = sum of the detailed lines below when filled
+  margin?: number | null;     // per day: margin lost on orders not delivered
+  penalties?: number | null;  // per day: customer penalties
+  idle?: number | null;       // per day: wages and fixed costs paid for nothing
+  otherDay?: number | null;   // per day: other losses
+  repair?: number | null;     // one-off: repair or replacement
+  otherOnce?: number | null;  // one-off: other (emergency transport, rental, overtime to catch up…)
+  calc?: Record<string, number | null>; // detail factors, key `<line>.<factor>`; a line with any factor filled is computed from them
   daysWithout: number | null; // outage duration without Plan B (days)
   daysWith: number | null;    // outage duration with Plan B (days)
   planBCost: number | null;   // one-off cost to set the Plan B up (€)
 }
 
 export interface Risk {
+  origin?: StepOrigin;      // created from a step of a flowchart (tool 1.4)
   id: string;
   processId: string;
   createdAt: string;

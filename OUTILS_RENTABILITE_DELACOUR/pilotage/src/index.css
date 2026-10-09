@@ -4,12 +4,17 @@
 
 /* Browser surfaces themed from the palette */
 ::selection { background: #C5A065; color: #11352A; }
-:focus-visible { outline: 2px solid #C5A065; outline-offset: 2px; }
+:focus-visible { outline: 2px solid #9E7A3E; outline-offset: 2px; }   /* 4:1 on white and on slate-100 (the gold #C5A065 was 2,4:1) */
+header :focus-visible { outline-color: #DFBF87; }                      /* 5,5:1 on the green bar */
+::placeholder { color: #5b6b82; opacity: 1; }                          /* 5,4:1 (the default grey was 2,5:1) */
 input, select, textarea { caret-color: #1B4D3E; }
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
 .font-mono { font-variant-numeric: tabular-nums; }
 
 @media print {
-  body { background: #fff; }
+  body { background: #fff !important; }   /* the class bg-slate-100 of the body is more specific: without the "!important" the blue-grey is printed under the document when "background graphics" is ticked */
   @page { size: A4 landscape; margin: 10mm; }
 }
 

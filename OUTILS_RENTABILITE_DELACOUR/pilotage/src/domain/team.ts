@@ -1,84 +1,24 @@
-// Tools 4.1 to 4.4: emergency deputies of the vital powers, versatility matrix and key person, welcome path
-// with the 3-question autonomy test, naming charter and 30-second test. Pure functions, covered by team.test.ts.
-import type { ChronoTest, Envelope, Ged, Newcomer, Person, Power, Risk, Skill, SkillLevel, State } from './types';
-import { addDays, daysBetween, type Insight } from './base';
+// Tools 4.2 to 4.4: versatility matrix and key person, welcome path with the 3-question autonomy test, naming charter and 30-second test.
+// Pure functions, covered by team.test.ts. Tool 4.1 (emergency deputies) is in powers.ts.
+import type { ChronoTest, Ged, Newcomer, Person, Risk, Skill, SkillLevel, State } from './types';
+import { addDays, daysBetween, defaultProcess, PROCESS_IDS, type Insight } from './base';
 import { isoDate } from './periods';
 import { newRisk } from './risk';
 
 const names = <T,>(xs: T[], f: (x: T) => string) => xs.slice(0, 3).map(f).join(', ') + (xs.length > 3 ? ` et ${xs.length - 3} autre(s)` : '');
 const uid = (p: string) => `${p}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 
-// ---- 4.1 one vital power per process, two deputies who really did it within the year, access under sealed envelope
-export const DEFAULT_POWERS: [string, string][] = [
-  ['P1', 'Signature bancaire et virement des salaires'],
-  ['P2', 'Validation des devis engageants et des avenants'],
-  ['P3', 'Lancement des fabrications et planning atelier'],
-  ['P4', 'Clés des locaux, alarme et contrats intérimaires'],
-  ['P5', 'Libération des produits et sortie du bac rouge'],
-];
-export const PRACTICE_DAYS = 365;
-export const ENVELOPE_DAYS = 183;
-export const newPower = (processId = 'P1', power = ''): Power => ({ id: uid('pw'), processId, power, holder: '', deputies: ['', ''], practiced: ['', ''], access: '' });
-
-export type PowerState = 'no_deputy' | 'one_deputy' | 'unpracticed' | 'soon' | 'ok';
-export const POWER_STATE: Record<PowerState, { label: string; tone: 'ok' | 'warn' | 'alert' }> = {
-  no_deputy: { label: 'Aucun suppléant', tone: 'alert' }, one_deputy: { label: 'Un seul suppléant', tone: 'warn' },
-  unpracticed: { label: 'Pratique à refaire', tone: 'warn' }, soon: { label: 'Pratique à planifier', tone: 'warn' }, ok: { label: 'Suppléance prête', tone: 'ok' },
-};
-// Days before the practice of a deputy expires (negative when expired, null when never practised)
-export const practiceLeft = (date: string, today = new Date(), period = PRACTICE_DAYS) => { const d = daysBetween(date, today); return d === null ? null : period - d; };
-// Every deputy of a power: the two main ones, then the others (external people included)
-export const powerDeputies = (p: Power) => [...p.deputies.map((name, i) => ({ name, practiced: p.practiced[i] || '' })), ...(p.extra || []).map((name, i) => ({ name, practiced: p.extraPracticed?.[i] || '' }))].filter(x => x.name.trim());
-export function powerState(p: Power, today = new Date()): PowerState {
-  const deps = powerDeputies(p).map(x => ({ d: x.name.trim(), left: practiceLeft(x.practiced, today, p.periodDays || PRACTICE_DAYS) }));
-  if (!deps.length) return 'no_deputy';
-  if (deps.length < 2) return 'one_deputy';
-  // two deputies practised in time are enough, even with more listed
-  const fresh = deps.filter(x => x.left !== null && x.left >= 0);
-  if (fresh.length < 2) return 'unpracticed';
-  if (deps.length > 2) return fresh.filter(x => x.left! > 30).length >= 2 ? 'ok' : 'soon';
-  return deps.some(x => x.left! <= 30) ? 'soon' : 'ok';
-}
-// The day X is absent: the powers X holds and who can do them
-export function absenceView(s: State, name: string, today = new Date()) {
-  const n = name.trim().toLowerCase();
-  return Object.values(s.powers).filter(p => p.holder.trim().toLowerCase() === n).map(p => ({
-    power: p, ready: powerDeputies(p).filter(d => { const l = practiceLeft(d.practiced, today, p.periodDays || PRACTICE_DAYS); return l !== null && l >= 0 && d.name.trim().toLowerCase() !== n; }),
-  }));
-}
-export const envelopeState = (e: Envelope, today = new Date()): 'never' | 'due' | 'ok' => {
-  if (!e.checkedAt) return 'never';
-  return (daysBetween(e.checkedAt, today) ?? 0) > ENVELOPE_DAYS ? 'due' : 'ok';
-};
-// People holding several powers: their absence stops more than one process
-export const overloaded = (s: State) => {
-  const count: Record<string, number> = {};
-  Object.values(s.powers).forEach(p => { const h = p.holder.trim(); if (h) count[h] = (count[h] || 0) + 1; });
-  return Object.entries(count).filter(([, n]) => n >= 3).map(([name, n]) => ({ name, n }));
-};
-export function powerInsights(s: State, today = new Date()): Insight[] {
-  const out: Insight[] = [];
-  const ps = Object.values(s.powers);
-  const none = ps.filter(p => powerState(p, today) === 'no_deputy');
-  if (none.length) out.push({ key: 'none', tone: 'bad', title: 'Pouvoir sans suppléant', text: `${names(none, p => p.power)} : si le titulaire est absent, cet acte ne peut plus être fait.` });
-  const one = ps.filter(p => powerState(p, today) === 'one_deputy');
-  if (one.length) out.push({ key: 'one', tone: 'warn', title: 'Un seul suppléant', text: `${names(one, p => p.power)} : nommer un second suppléant.` });
-  const prac = ps.filter(p => ['unpracticed', 'soon'].includes(powerState(p, today)));
-  if (prac.length) out.push({ key: 'prac', tone: 'warn', title: 'Suppléant à entraîner', text: `${names(prac, p => p.power)} : une demi-journée par an où le suppléant fait réellement l'acte.` });
-  const env = envelopeState(s.envelope, today);
-  if (env !== 'ok') out.push({ key: 'env', tone: 'warn', title: 'Enveloppe des accès', text: env === 'never' ? "Aucune vérification enregistrée : codes et mots de passe sous pli scellé, à vérifier chaque semestre." : "Vérification de plus de 6 mois : codes à jour ? suppléants toujours à l'aise avec les outils ?" });
-  const deleg = ps.filter(p => p.processId === 'P1' && !(p.delegationSigned && p.bankInformed));
-  if (deleg.length) out.push({ key: 'deleg', tone: 'warn', title: 'Délégation écrite à faire', text: `${names(deleg, p => p.power)} : délégation de signature signée et banque informée, sinon le suppléant ne pourra pas agir.` });
-  const ov = overloaded(s);
-  if (ov.length) out.push({ key: 'over', tone: 'warn', title: 'Titulaire de plusieurs pouvoirs', text: `${ov.map(x => `${x.name} (${x.n})`).join(', ')} : son absence arrête plusieurs processus à la fois.` });
-  return out;
-}
-
 // ---- 4.2 versatility: levels 0 to 4, at least 2 people autonomous (level 3 or 4) on every key skill
 export const LEVELS: { level: SkillLevel; label: string; short: string }[] = [
   { level: 0, label: 'Non formé', short: '0' }, { level: 1, label: 'Débutant, supervisé', short: '1' }, { level: 2, label: 'Autonome sur le courant', short: '2' },
   { level: 3, label: 'Autonome complet', short: '3' }, { level: 4, label: 'Formateur', short: '4' },
 ];
+// Short names of the processes, for the tabs of the matrix and the directory
+export const PROCESS_SHORT: Record<string, string> = { P1: 'Direction', P2: 'Commercial', P3: 'Opérations', P4: 'RH', P5: 'Qualité' };
+// Processes a person works in: the ones chosen in the directory, else the ones of the skills she already holds
+export const processesOf = (s: State, p: Person) => p.processIds ?? PROCESS_IDS.filter(id => Object.values(s.skills).some(k => k.processId === id && (k.levels[p.id] ?? 0) > 0));
+// Columns of the matrix of a process: the people who work in it (the skill belongs to the process, so does the team that holds it)
+export const processPeople = (s: State, id: string) => activePeople(s).filter(p => processesOf(s, p).includes(id));
 export const activePeople = (s: State) => Object.values(s.people).filter(p => p.active).sort((a, b) => a.name.localeCompare(b.name));
 export const autonomous = (s: State, k: Skill) => activePeople(s).filter(p => (k.levels[p.id] ?? 0) >= 3);
 export type SkillRisk = 'none' | 'single' | 'short' | 'ok';
@@ -93,21 +33,6 @@ export const LEVEL_CRITERIA = [
   'Fait seul tout le travail du poste, y compris les réglages et les cas difficiles.',
   'Forme les autres et fait évoluer la méthode.',
 ];
-// People absent on a date (holidays, leave)
-const absentOn = (p: Person, day: string) => (p.absences || []).some(a => a.from <= day && day <= a.to);
-// Planned absences that leave a skill under its required number of autonomous people, within 120 days
-export function absenceGaps(s: State, today = new Date()) {
-  const out: { skill: Skill; from: string; available: number }[] = [];
-  Object.values(s.skills).forEach(k => {
-    const aut = autonomous(s, k);
-    for (let i = 0; i < 120; i++) {
-      const day = addDays(isoDate(today), i);
-      const n = aut.filter(p => !absentOn(p, day)).length;
-      if (aut.length >= (k.required || 2) && n < (k.required || 2)) { out.push({ skill: k, from: day, available: n }); break; }
-    }
-  });
-  return out;
-}
 export const staleLevels = (s: State, today = new Date()) => Object.values(s.skills).filter(k => Object.entries(k.levels).some(([id, l]) => l >= 3 && s.people[id]?.active && (daysBetween(k.levelDates?.[id] || '', today) ?? 9999) > 365));
 export const coveragePct = (s: State) => {
   const all = Object.values(s.skills);
@@ -122,7 +47,7 @@ export const keyPeople = (s: State) => {
 };
 export const PLAN_SESSIONS = 6;   // after 6 tutoring sessions, 2 days alone on the job validate level 3
 export const newPerson = (name = ''): Person => ({ id: uid('pp'), name, role: '', active: true });
-export const newSkill = (processId = 'P3'): Skill => ({ id: uid('sk'), name: '', processId, levels: {}, plan: null });
+export const newSkill = (processId = defaultProcess('P3')): Skill => ({ id: uid('sk'), name: '', processId, levels: {}, plan: null });
 export const bestTutor = (s: State, k: Skill) => activePeople(s).filter(p => (k.levels[p.id] ?? 0) === 4)[0] || activePeople(s).filter(p => (k.levels[p.id] ?? 0) === 3)[0];
 
 // Risk of tool 1.2 for a key person: absence of the only autonomous one, covered by a trained double
@@ -141,8 +66,6 @@ export function skillInsights(s: State): Insight[] {
   if (noPlan.length) out.push({ key: 'plan', tone: 'warn', title: 'Doublure à organiser', text: `${names(noPlan, k => k.name)} : choisir un tuteur, un apprenant et un créneau fixe.` });
   const late = ks.filter(k => k.plan?.target && (daysBetween(k.plan.target, new Date()) ?? -1) > 0 && skillRisk(s, k) !== 'ok');
   if (late.length) out.push({ key: 'late', tone: 'warn', title: 'Doublure en retard', text: `${names(late, k => k.name)} : date cible dépassée sans passage au niveau 3.` });
-  const gaps = absenceGaps(s);
-  if (gaps.length) out.push({ key: 'gaps', tone: 'warn', title: 'Absences prévues', text: `${names(gaps, g => `${g.skill.name} le ${g.from.slice(8, 10)}/${g.from.slice(5, 7)} (${g.available} autonome(s))`)} : décaler une absence ou accélérer une doublure.` });
   const stale = staleLevels(s);
   if (stale.length) out.push({ key: 'stale', tone: 'warn', title: 'Niveaux à réévaluer', text: `${names(stale, k => k.name)} : évaluation de plus d'un an.` });
   const noRisk = single.filter(k => !Object.values(s.risks).some(r => r.resource.includes(k.name)));

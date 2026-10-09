@@ -9,8 +9,8 @@ const now = new Date(2026, 8, 25, 10, 0);
 describe('tool status', () => {
   it('the demo gives every tool something to show', () => {
     const s = demoState(now);
-    TOOLS.forEach(t => expect(toolBadge(s, t.id, '2026-09', now).tone, t.id).not.toBe('pending'));
-  });
+    TOOLS.forEach(t => expect(toolBadge(s, t.id, '2026-09', now).text, t.id).not.toBe('Pas encore utilisé'));
+  }, 30000);   // (X-21: it builds the whole demo and reads every tool: it ran past the 5 s of the default once, in a batch of five files)
   it('counts a newcomer once, even without tutor and with a failed test', () => {
     const s = demoState(now);
     expect(toolBadge(s, '4.3', '2026-09', now)).toMatchObject({ n: 1, tone: 'alert' });
@@ -18,6 +18,6 @@ describe('tool status', () => {
   it('a new company starts with empty tools and a month to enter', () => {
     const s = blankState('industrie', now);
     expect(toolBadge(s, '1.1', '2026-09', now).text).toBe('Chiffres du mois à saisir');
-    TOOLS.filter(t => !['1.1', '1.4', '1.5', '1.6', '4.4'].includes(t.id)).forEach(t => expect(toolBadge(s, t.id, '2026-09', now).text, t.id).toBe('Pas encore utilisé'));
+    TOOLS.filter(t => !['1.1', '4.4'].includes(t.id)).forEach(t => expect(toolBadge(s, t.id, '2026-09', now).text, t.id).toBe('Pas encore utilisé'));
   });
 });

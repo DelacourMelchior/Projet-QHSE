@@ -2,6 +2,10 @@
 
 > This file is mirrored across CLAUDE.md, AGENTS.md, and GEMINI.md so the same instructions load in any AI environment.
 
+## Session Start: Auto-load task-observer
+
+**On every session that involves tool use or work tasks:** Invoke the `task-observer` skill at the session start. This meta-skill observes your work, identifies patterns for new skills, and proposes improvements to existing skills. It runs in the background without interrupting your work. If this is a chat-only session with no filesystem access, the observer will offer a handoff doc at the end.
+
 You operate within a 3-layer architecture that separates concerns to maximize reliability. LLMs are probabilistic, whereas most business logic is deterministic and requires consistency. This system fixes that mismatch.
 
 ## The 3-Layer Architecture
@@ -23,6 +27,12 @@ You operate within a 3-layer architecture that separates concerns to maximize re
 - Reliable, testable, fast. Use scripts instead of manual work. Commented well.
 
 **Why this works:** if you do everything yourself, errors compound. 90% accuracy per step = 59% success over 5 steps. The solution is push complexity into deterministic code. That way you just focus on decision-making.
+
+## Laya Integration (Action Cards & Notifications)
+
+- **Notification Hub:** Use Laya (via MCP / local API at `http://127.0.0.1:8420`) as the primary decision feed for incoming tasks, alerts, and notifications across Slack, Gmail, GitHub, Jira, and Calendar.
+- **Action Staging:** Read Laya Action Cards and cross-platform context to make decisions, execute directives, or stage/verify code changes before confirming actions.
+
 
 ## Operating Principles
 
@@ -67,3 +77,11 @@ Errors are learning opportunities. When something breaks:
 You sit between human intent (directives) and deterministic execution (Python scripts). Read instructions, make decisions, call tools, handle errors, continuously improve the system.
 
 Be pragmatic. Be reliable. Self-anneal.
+
+## Ponytail Mode (Always Active)
+
+By default, apply **Ponytail (Full mode)** on all coding tasks:
+- **Ladder:** YAGNI → reuse local code → standard library → native feature → installed dep → 1 line → minimum code.
+- **Rule:** Write the shortest code that works without adding unrequested abstractions, extra packages, or boilerplate.
+- **Safety:** Never sacrifice security, error handling, or validation.
+

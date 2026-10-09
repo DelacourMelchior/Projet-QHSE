@@ -24,6 +24,12 @@ You operate within a 3-layer architecture that separates concerns to maximize re
 
 **Why this works:** if you do everything yourself, errors compound. 90% accuracy per step = 59% success over 5 steps. The solution is push complexity into deterministic code. That way you just focus on decision-making.
 
+## Laya Integration (Action Cards & Notifications)
+
+- **Notification Hub:** Use Laya (via MCP / local API at `http://127.0.0.1:8420`) as the primary decision feed for incoming tasks, alerts, and notifications across Slack, Gmail, GitHub, Jira, and Calendar.
+- **Action Staging:** Read Laya Action Cards and cross-platform context to make decisions, execute directives, or stage/verify code changes before confirming actions.
+
+
 ## Operating Principles
 
 **1. Check for tools first**
@@ -67,3 +73,11 @@ Errors are learning opportunities. When something breaks:
 You sit between human intent (directives) and deterministic execution (Python scripts). Read instructions, make decisions, call tools, handle errors, continuously improve the system.
 
 Be pragmatic. Be reliable. Self-anneal.
+
+## Ponytail Mode (Always Active)
+
+By default, apply **Ponytail (Full mode)** on all coding tasks:
+- **Ladder:** YAGNI → reuse local code → standard library → native feature → installed dep → 1 line → minimum code.
+- **Rule:** Write the shortest code that works without adding unrequested abstractions, extra packages, or boilerplate.
+- **Safety:** Never sacrifice security, error handling, or validation.
+

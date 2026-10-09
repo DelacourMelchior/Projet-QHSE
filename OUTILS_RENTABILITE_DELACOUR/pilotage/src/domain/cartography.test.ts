@@ -4,7 +4,7 @@ import type { Flow, Process, State } from './types';
 import {
   moveKpi, moveRisk, branchesOf, callersOf, linkItems, linkLabel, orphanRights, partnersOf, readOnlyReason, registerProcesses, removeStep, reviewBlockers, rightKey, setMapRight,
   bandOf, canAdmin, canEditProcess, canSee, canDeleteProcess, completeness, deleteProcess, exitsOf, flowIssues, layoutFlow, mapSummary, newFlow, newProcess, newStep, nextProcessId,
-  effectiveIo, effectiveRequirements, requirementSuggestions, sharedFlows, borrowedFlows, exchanges, withReqIds, reqGaps, flowDuplicates, dropFlowDuplicates, stepsMeeting, stepCountFor, pruneStepReqs, flowResources, processIssues, processUsage, reassignProcess, moveStep, parseQuickSteps, restoreVersion, reviewProcess, rightOf, saveVersion, soundFlow, soundProcess, soundMap, bareName, plainName, personGone,
+  effectiveIo, effectiveRequirements, requirementSuggestions, sharedFlows, borrowedFlows, exchanges, withReqIds, reqGaps, flowDuplicates, dropFlowDuplicates, stepsMeeting, stepCountFor, pruneStepReqs, flowResources, processIssues, processUsage, reassignProcess, moveStep, restoreVersion, reviewProcess, rightOf, saveVersion, soundFlow, soundProcess, soundMap, bareName, plainName, personGone,
 } from './cartography';
 import { defaultGed, emptyTools } from './base';
 import { DEFAULT_SCALE } from './risk';
@@ -151,17 +151,7 @@ describe('flowcharts', () => {
   });
 });
 
-describe('quick entry and lanes', () => {
-  it('reads one step per line: role and label, a question is a decision, ends are added', () => {
-    const t = parseQuickSteps('Commercial : Qualifier la demande\nDirection : Marge suffisante ?\nEnvoyer le devis\nFin : Commande signée', 'Demande reçue');
-    expect(t.map(s => [s.kind, s.role, s.label])).toEqual([
-      ['start', '', 'Demande reçue'], ['action', 'Commercial', 'Qualifier la demande'], ['decision', 'Direction', 'Marge suffisante ?'], ['action', '', 'Envoyer le devis'], ['end', '', 'Commande signée'],
-    ]);
-    expect(new Set(t.map(s => s.id)).size).toBe(5);
-    expect(parseQuickSteps('A\nB').map(s => s.kind)).toEqual(['start', 'action', 'action', 'end']);
-    expect(parseQuickSteps('  \n ')).toEqual([]);
-    expect(parseQuickSteps('Début : x\nFin : y').map(s => s.kind)).toEqual(['start', 'end']);
-  });
+describe('lanes', () => {
   it('puts an end in the lane of the step that leads to it, not in a lane of its own', () => {
     const f = flow([step('s', 'start', 'Début'), step('d', 'decision', 'Ok ?', 'Direction', { no: 'h' }), step('i', 'end', 'Signée'), step('h', 'end', 'Abandonnée')]);
     const l = layoutFlow(f);
@@ -198,12 +188,6 @@ describe('decisions with any number of outcomes, and links to the other tools', 
     expect(t).toContain('Que décider ? : une réponse n’a pas de nom');
     f.steps[2].branches = [{ label: 'Seule', to: '' }];
     expect(flowIssues(f).map(i => i.text)).toContain('Que décider ? : une décision a au moins deux réponses');
-  });
-  it('reads outcomes in the brackets of a quick entry line', () => {
-    const t = parseQuickSteps('Direction : Que décider ? [Retenu / À revoir / Refusé]\nMarge suffisante ?\nCommercial : Chiffrer');
-    expect(t[1]).toMatchObject({ kind: 'decision', role: 'Direction', label: 'Que décider ?', branches: [{ label: 'Retenu', to: '' }, { label: 'À revoir', to: '' }, { label: 'Refusé', to: '' }] });
-    expect(t[2]).toMatchObject({ kind: 'decision', label: 'Marge suffisante ?' });
-    expect(t[2].branches).toBeUndefined();
   });
   it('turns the yes and no and the single links of the first version into outcomes and links when it reads them', () => {
     const f = soundFlow('f', { steps: [{ id: 'a', kind: 'decision', label: 'Ok ?', yes: 'b', no: 'c', toolId: '2.1', kpiId: 'k', riskId: 'r' }, { id: 'b', kind: 'action', label: 'B' }, { id: 'c', kind: 'end', label: 'C', links: [{ tool: '3.2', id: 'sop' }, { tool: '3.2', id: 'sop' }, { tool: 5 }] }] });
@@ -516,11 +500,6 @@ describe('flowcharts: removing a step, loops with no way out, quick entry traps,
     const sub = flow([step('s', 'start', 'Début'), step('p', 'subprocess', 'Fabriquer', 'Atelier'), step('e', 'end', 'Fin')]);
     const t = flowIssues(sub, st()).map(i => i.text).filter(x => x.startsWith('Fabriquer'));
     expect(t).toEqual(['Fabriquer : quel logigramme appelle-t-elle ? À choisir dans ses détails']);
-  });
-  it('does not take a time or a bullet for a role, and names an empty start and end', () => {
-    expect(parseQuickSteps('Appeler le client à 14:30').map(x => [x.kind, x.role, x.label])[1]).toEqual(['action', '', 'Appeler le client à 14:30']);
-    expect(parseQuickSteps('- Commercial : Chiffrer\n1. Direction : Valider\n• Envoyer').map(x => [x.role, x.label]).slice(1, 4)).toEqual([['Commercial', 'Chiffrer'], ['Direction', 'Valider'], ['', 'Envoyer']]);
-    expect(parseQuickSteps('Début :\nFaire\nFin :').map(x => [x.kind, x.label])).toEqual([['start', 'Début'], ['action', 'Faire'], ['end', 'Fin']]);
   });
   it('gives the channel of every backward arrow room on the left, even with many loops', () => {
     const steps = [step('s', 'start', 'Début')];

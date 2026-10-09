@@ -26,7 +26,7 @@ export function processCover(s: State, processId: string, now = new Date()): Pro
 }
 
 // What a step says about who can do it: its skills (links to 4.2 and a role that is a skill), its key functions (links to 4.1), a role that is a person
-export interface StepCover { kind: 'skill' | 'power' | 'person'; id: string; name: string; text: string; tone: Tone; tool: '4.1' | '4.2' | '1.3' }
+export interface StepCover { kind: 'skill' | 'power' | 'person'; id: string; name: string; text: string; tone: Tone; tool: '4.1' | '4.2' | '1.3'; why?: string }   // why: the short cause of a key function that is not ready (shown next to the step)
 // The skills a step relies on: its links to tool 4.2 and its role when the role is a skill (one list for the cover of a step and for the holes of the matrix)
 export const skillIds = (st: Pick<FlowStep, 'links' | 'roleRef'>): string[] => [...new Set([...(st.roleRef?.kind === 'skill' ? [st.roleRef.id] : []), ...(st.links || []).flatMap(l => (l.tool === '4.2' && l.id ? [l.id] : []))])];
 export const hasSkill = (st: Pick<FlowStep, 'links' | 'roleRef'>): boolean => skillIds(st).length > 0;
@@ -45,7 +45,7 @@ export function stepCover(s: State, st: Pick<FlowStep, 'links' | 'roleRef'>, now
     if (!p || p.archivedAt || seen.has(`p${p.id}`)) return;
     seen.add(`p${p.id}`);
     const c = powerCover(s, p, now), away = c.holder ? whoIs(s, c.holder, isoDate(now)).absent : null;
-    out.push({ kind: 'power', id: p.id, name: p.power, tone: away && c.tone === 'ok' ? 'warn' : c.tone, tool: '4.1', text: `${c.holder ? `titulaire ${c.holder}${away ? ' (absent)' : ''}` : 'sans titulaire'} · ${c.label.toLowerCase()}` });
+    out.push({ kind: 'power', id: p.id, name: p.power, tone: away && c.tone === 'ok' ? 'warn' : c.tone, tool: '4.1', why: away && c.tone === 'ok' ? 'titulaire absent' : c.tone === 'ok' ? undefined : c.label.toLowerCase(), text: `${c.holder ? `titulaire ${c.holder}${away ? ' (absent)' : ''}` : 'sans titulaire'} · ${c.label.toLowerCase()}` });
   });
   if (st.roleRef?.kind === 'person') {
     const p = s.people[st.roleRef.id];
@@ -56,6 +56,24 @@ export function stepCover(s: State, st: Pick<FlowStep, 'links' | 'roleRef'>, now
 // The steps of a flowchart that stop, or are weak, if one person is missing
 export function flowRisks(f: Flow, s: State, now = new Date()): { stepId: string; text: string; tone: Tone }[] {
   return f.steps.flatMap((st, i) => stepCover(s, st, now).filter(c => c.tone !== 'ok').map(c => ({ stepId: st.id, tone: c.tone, text: `${st.label.trim() || `Étape ${i + 1}`} : ${c.kind === 'skill' ? 'compétence' : c.kind === 'power' ? 'fonction clé' : 'personne'} « ${c.name} », ${c.text}` })));
+}
+
+// The key functions (4.1) a flowchart relies on that are not ready (no deputy, signatures missing, practice to redo, holder away), with the steps (numbered from 1) that depend on them
+export interface PowerIssue { id: string; name: string; why: string; tone: Tone; steps: number[] }
+export function flowPowerIssues(f: Flow, s: State, now = new Date()): PowerIssue[] {
+  const by = new Map<string, PowerIssue>();
+  f.steps.forEach((st, i) => stepCover(s, st, now).forEach(c => {
+    if (c.kind !== 'power' || c.tone === 'ok') return;
+    const x = by.get(c.id) ?? { id: c.id, name: c.name, why: c.why || '', tone: c.tone, steps: [] };
+    x.steps.push(i + 1); by.set(c.id, x);
+  }));
+  return [...by.values()];
+}
+// The flowcharts that use a record, one line per flowchart with the numbers of its steps (whole: the flowchart as a whole links to it)
+export function usedByFlow(s: Pick<State, 'flows'>, tool: string, id: string): { flow: Flow; steps: number[]; whole: boolean }[] {
+  const out = new Map<string, { flow: Flow; steps: number[]; whole: boolean }>();
+  usedInFlows(s, tool, id).forEach(u => { const x = out.get(u.flow.id) ?? { flow: u.flow, steps: [], whole: false }; if (u.step) x.steps.push(u.index + 1); else x.whole = true; out.set(u.flow.id, x); });
+  return [...out.values()];
 }
 
 // The flowcharts that pass through a tool as a whole (a link to the tool, without a record): the flowchart itself or one of its steps

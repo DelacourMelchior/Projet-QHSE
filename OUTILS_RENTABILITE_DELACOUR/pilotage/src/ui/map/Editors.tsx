@@ -4,6 +4,7 @@ import type { MapIo, MapReq, Process } from '../../domain/types';
 import { plainName, REQ_KINDS, requirementSuggestions } from '../../domain/cartography';
 import { newId } from '../../domain/base';
 import { Button, inputCls } from '../common';
+import { ColHead } from './MapBits';
 
 export function IoEditor({ kind, rows, onChange, others, disabled }: { kind: 'inputs' | 'outputs'; rows: MapIo[]; onChange(v: MapIo[]): void; others: Process[]; disabled?: boolean }) {
   const inn = kind === 'inputs', party = inn ? 'De qui' : 'Pour qui', upd = (i: number, v: Partial<MapIo>) => onChange(rows.map((r, j) => (j === i ? { ...r, ...v } : r)));
@@ -28,10 +29,12 @@ export function IoEditor({ kind, rows, onChange, others, disabled }: { kind: 'in
 
 export function ReqEditor({ rows, onChange, disabled, processId, meets, allowAll }: { rows: MapReq[]; onChange(v: MapReq[]): void; disabled?: boolean; processId: string; meets?: (r: MapReq) => number; allowAll?: boolean }) {
   const sugg = requirementSuggestions(processId, rows);
+  const cols = `10rem minmax(0,1fr)${meets ? ' 6.5rem' : ''}${allowAll ? ' 10.5rem' : ''} 2.5rem`;
   return (
     <div className="space-y-1.5">
+      {rows.length > 0 && <ColHead edge="px-0.5" gap="gap-x-1.5" cols={cols} labels={['Nature', 'Exigence', ...(meets ? ['Étapes'] : []), ...(allowAll ? ['Portée'] : []), '']} />}
       {rows.map((r, i) => (
-        <div key={i} className="grid gap-1.5 sm:items-center sm:[grid-template-columns:var(--cols)]" style={{ '--cols': `10rem 1fr${meets ? ' auto' : ''}${allowAll ? ' auto' : ''} auto` } as React.CSSProperties}>
+        <div key={i} className="grid gap-1.5 sm:items-center sm:[grid-template-columns:var(--cols)]" style={{ '--cols': cols } as React.CSSProperties}>
           <select className={inputCls} disabled={disabled} aria-label={`Nature de l'exigence ${i + 1}`} value={r.kind} onChange={e => onChange(rows.map((q, j) => (j === i ? { ...q, kind: e.target.value as MapReq['kind'] } : q)))}>{REQ_KINDS.map(k => <option key={k.key} value={k.key}>{k.label}</option>)}</select>
           <input className={inputCls} disabled={disabled} aria-label={`Exigence ${i + 1}`} value={r.text} placeholder={r.kind === 'other' ? 'Précisez' : r.kind === 'client' ? 'Par exemple : livraison sous 5 jours promise au client' : r.kind === 'legal' ? 'Par exemple : conservation des factures pendant la durée légale' : r.kind === 'standard' ? 'Par exemple : ISO 9001, point 8.5' : 'Par exemple : visa de la direction au-dessus de 10 000 €'} onChange={e => onChange(rows.map((q, j) => (j === i ? { ...q, text: e.target.value } : q)))} />
           {meets && (() => { const n = r.text.trim() ? meets(r) : -1; return n < 0 ? <span className="hidden sm:block" /> : <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${n ? 'border-emerald-200 bg-emerald-50 text-emerald-900' : 'border-amber-200 bg-amber-50 text-amber-950'}`} title={n ? 'Étapes de ce logigramme qui respectent cette exigence (à cocher dans l\'étape)' : 'Aucune étape ne dit encore comment elle respecte cette exigence : ouvrir une étape et la cocher'}>{n ? `${n} étape${n > 1 ? 's' : ''}` : 'Aucune étape'}</span>; })()}

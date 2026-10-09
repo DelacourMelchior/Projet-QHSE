@@ -45,8 +45,9 @@ export function StepPanel({ f, rf, i, can, nav, skills, people, roles, others, p
               return <div className="space-y-1.5 sm:col-span-2">
                 <span className="block text-xs font-semibold text-slate-700">Les réponses de la décision</span>
                 <p className="text-xs text-slate-500">Oui et non, ou autant de réponses que nécessaire, avec les mots que l'on veut. Chaque réponse dit où l'on va ensuite. La première peut aller à « l'étape suivante » ; les autres demandent une étape.</p>
+                <div aria-hidden className="hidden gap-1.5 px-0.5 text-[11px] font-bold uppercase tracking-wide text-slate-600 sm:grid sm:grid-cols-[9rem_minmax(0,1fr)_2.5rem]"><span>Réponse</span><span>Où l'on va ensuite</span><span /></div>
                 {br.map((b, k) => (
-                  <div key={k} className="grid gap-1.5 sm:grid-cols-[9rem_minmax(0,1fr)_auto]">
+                  <div key={k} className="grid gap-1.5 sm:grid-cols-[9rem_minmax(0,1fr)_2.5rem]">
                     <input className={inputCls} aria-label={`Nom de la réponse ${k + 1}`} value={b.label} placeholder="Réponse (Oui, Retenu…)" onChange={e => setBranches(st.id, br.map((x, j) => (j === k ? { ...x, label: e.target.value } : x)))} />
                     <select className={inputCls} aria-label={`Où va la réponse ${b.label || k + 1}`} value={b.to} onChange={e => setBranches(st.id, br.map((x, j) => (j === k ? { ...x, to: e.target.value } : x)))}><option value="">{k === 0 ? "L'étape suivante" : 'Choisir une étape'}</option>{targets}</select>
                     <Button kind="ghost" aria-label={`Retirer la réponse ${b.label || k + 1}`} disabled={br.length <= 2} onClick={() => setBranches(st.id, br.filter((_, j) => j !== k))}><Trash2 size={14} /></Button>

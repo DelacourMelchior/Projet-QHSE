@@ -10,6 +10,15 @@ import { processCover } from '../../domain/mapCover';
 import { activePeople } from '../../domain/team';
 import { Button, inputCls } from '../common';
 
+// Column titles of a list whose rows are grids: the header and every row take the same columns (`cols`, a grid-template-columns value) so each title sits over its column.
+// From the width of a tablet only; the titles are decoration for the eye (aria-hidden), the rows keep their own labels.
+export const colStyle = (cols: string) => ({ '--cols': cols }) as React.CSSProperties;
+export const ROW = 'grid items-center gap-x-3 gap-y-1 md:[grid-template-columns:var(--cols)]';
+export const HEAD = 'text-[11px] font-bold uppercase tracking-wide text-slate-600';
+export function ColHead({ cols, labels, edge = 'px-[13px]', gap = 'gap-x-3' }: { cols: string; labels: string[]; edge?: string; gap?: string }) {
+  return <div aria-hidden style={colStyle(cols)} className={`hidden ${gap} pb-1 md:grid md:[grid-template-columns:var(--cols)] ${edge} ${HEAD}`}>{labels.map((l, i) => <span key={i} className="min-w-0">{l}</span>)}</div>;
+}
+
 // A list of short texts (software, documents): one line each, a button to add one
 export function StrList({ value, onChange, label, add, placeholder, list, disabled }: { value: string[]; onChange(v: string[]): void; label: string; add: string; placeholder?: string; list?: string; disabled?: boolean }) {
   return (

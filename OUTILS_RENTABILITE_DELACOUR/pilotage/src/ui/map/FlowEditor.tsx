@@ -1,9 +1,9 @@
-// One flowchart of tool 1.4: the steps are typed as a list (or in quick entry, one line per step), the diagram is drawn from the list (a column per role) and stays in view while the list scrolls.
+// One flowchart of tool 1.4: the steps are typed as a list the diagram is drawn from the list (a column per role) and stays in view while the list scrolls.
 // The list is also the text version of the diagram. On a phone the flowchart is read, not edited (the editing rows are shown from the width of a tablet).
 import { useEffect, useState } from 'react';
-import { ArrowDown, ArrowLeft, ArrowUp, ChevronRight, ExternalLink, GripVertical, History, ListPlus, Lock, Plus, Save, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowLeft, ArrowUp, ChevronRight, ExternalLink, GripVertical, History, Lock, Plus, Save, Trash2 } from 'lucide-react';
 import type { Flow, FlowBranch, FlowLink, FlowStep, StepKind } from '../../domain/types';
-import { arrowsInto, branchesOf, callersOf, canEditProcess, exitsOf, flowIssues, layoutFlow, moveStep, newStep, parseQuickSteps, plainName, removeStep, sortedProcesses, canSee, linkLabel, stepsMeeting, pruneStepReqs, withRoles, restoreVersion, saveVersion, STEP_KINDS } from '../../domain/cartography';
+import { arrowsInto, branchesOf, callersOf, canEditProcess, exitsOf, flowIssues, layoutFlow, moveStep, newStep, plainName, removeStep, sortedProcesses, canSee, linkLabel, stepsMeeting, pruneStepReqs, withRoles, restoreVersion, saveVersion, STEP_KINDS } from '../../domain/cartography';
 import { frDate } from '../../domain/periods';
 import { flowRisks, stepCover } from '../../domain/mapCover';
 import { activePeople } from '../../domain/team';
@@ -54,7 +54,7 @@ function CreatedList({ items }: { items: Created[] }) {
 
 export function FlowEditor({ id, nav, onBack, onOpenFlow }: { id: string; nav: Nav; onBack(): void; onOpenFlow(id: string): void }) {
   const { state, update, author, teamView } = useStore();
-  const [saving, setSaving] = useState(false), [history, setHistory] = useState(false), [removing, setRemoving] = useState(false), [alsoDelete, setAlsoDelete] = useState(false), [askStep, setAskStep] = useState<{ stepId: string; items: Created[] } | null>(null), [quick, setQuick] = useState(false), [note, setNote] = useState(''), [text, setText] = useState('');
+  const [saving, setSaving] = useState(false), [history, setHistory] = useState(false), [removing, setRemoving] = useState(false), [alsoDelete, setAlsoDelete] = useState(false), [askStep, setAskStep] = useState<{ stepId: string; items: Created[] } | null>(null), [note, setNote] = useState('');
   const [open, setOpen] = useState(''), [hot, setHot] = useState(''), [focusId, setFocusId] = useState(''), [hotLink, setHotLink] = useState(''), [drag, setDrag] = useState<number | null>(null), [over, setOver] = useState<number | null>(null), [said, setSaid] = useState(''), [refocus, setRefocus] = useState<{ id: string; dir: 'up' | 'down' } | null>(null);
   const f = state?.flows[id], proc = state?.processes.find(p => p.id === f?.processId), count = f?.steps.length ?? 0;
   // after a step is added with Enter, the cursor goes to its label
@@ -107,7 +107,6 @@ export function FlowEditor({ id, nav, onBack, onOpenFlow }: { id: string; nav: N
   const roleList = [...new Map([...f.steps.map(x => x.role), ...Object.values(state.flows).flatMap(x => x.steps.map(y => y.role)), ...Object.values(state.people).map(x => x.role)].map(r => r.trim().replace(/\s+/g, ' ')).filter(Boolean).map(r => [r.toLowerCase(), r] as const)).values()].sort((x, y) => x.localeCompare(y, 'fr'));   // a role is written once, whatever its case
   const jump = (sid: string) => { setOpen(sid); window.setTimeout(() => document.getElementById(`step-${sid}`)?.scrollIntoView?.({ block: 'nearest' }), 0); };
   const others = Object.values(state.flows).filter(x => x.id !== id).sort((a, b) => a.processId.localeCompare(b.processId) || a.name.localeCompare(b.name, 'fr'));
-  const blank = f.steps.every(s => !s.label.trim());
   const callers = callersOf(state, id);
   // what the sheet of the flowchart holds, said on its folded line
   const linked = (tool: string) => new Set([...(f.links || []), ...f.steps.flatMap(x => x.links || [])].filter(l => l.tool === tool && l.id).map(l => l.id)).size;
@@ -120,7 +119,6 @@ export function FlowEditor({ id, nav, onBack, onOpenFlow }: { id: string; nav: N
   const setBranches = (sid: string, b: FlowBranch[]) => patch(sid, { branches: b, yes: undefined, no: undefined });
   const lit = (sid: string) => sid === hot || sid === open;
   const beforeEnd = f.steps.length - 1 - (f.steps.at(-1)?.kind === 'end' ? 1 : 0);
-  const applyQuick = () => { const steps = parseQuickSteps(text, f.trigger); if (!steps.length) return; edit(x => { if (!blank) saveVersion(x, author, 'Avant la saisie rapide'); x.steps = steps; }); setQuick(false); setText(''); setOpen(''); };
 
   return (
     <div className="space-y-4">
@@ -146,11 +144,6 @@ export function FlowEditor({ id, nav, onBack, onOpenFlow }: { id: string; nav: N
       </Card>
 
       {!can && (f.links || []).length > 0 && <div className="flex flex-wrap items-center gap-1.5" aria-label="Liens du logigramme"><span className="text-xs font-semibold text-slate-700">Ce logigramme s'appuie sur :</span>{(f.links || []).map((l, k) => <ChipButton key={k} title="Ouvrir dans un nouvel onglet" onClick={() => openLinkHere(l)}><ExternalLink size={10} aria-hidden />{linkTextHere(l)}</ChipButton>)}</div>}
-      {can && blank && <Card className="hidden items-center gap-3 border-delacour-golddark/60 bg-amber-50/50 p-4 md:flex">
-        <ListPlus size={20} className="shrink-0 text-delacour-primary" aria-hidden />
-        <p className="min-w-0 flex-1 text-xs text-slate-800"><strong>Le plus rapide :</strong> écrire les étapes d'un seul coup, une par ligne, puis affiner ensuite.</p>
-        <Button kind="primary" onClick={() => setQuick(true)}>Saisie rapide</Button>
-      </Card>}
 
       {risks.length > 0 && <details aria-label="Étapes à risque" className="rounded-lg border border-red-200 bg-red-50 text-xs text-red-950">
         <summary className="flex min-h-[44px] cursor-pointer list-none items-center gap-1.5 px-3 py-2 font-bold sm:min-h-0">{risks.length} étape{risks.length > 1 ? 's' : ''} à risque si une personne manque (voir)</summary>
@@ -228,7 +221,7 @@ export function FlowEditor({ id, nav, onBack, onOpenFlow }: { id: string; nav: N
 
         <div className="min-w-0 space-y-2">
           <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="text-xs font-bold text-slate-900">Les étapes, dans l'ordre</h3>
-            {can && !blank && <Button className="hidden md:inline-flex" onClick={() => setQuick(true)} title="Remplace toutes les étapes par un texte, une étape par ligne"><ListPlus size={13} />Saisie rapide</Button>}</div>
+</div>
           <p className="hidden text-xs text-slate-600 md:block">L'ordre de la liste compte : sans indication contraire, on passe à l'étape du dessous. Pour revenir en arrière, sauter une étape ou voir ce qu'il faut pour la faire, ouvrir l'étape (flèche à droite). Une étape de travail sans instruction ou sans compétence est signalée en orange.</p>
           {issues.some(i => !i.stepId) && <ul className="hidden space-y-1 md:block" aria-label="Points à corriger pour tout le logigramme">{issues.filter(i => !i.stepId).map((i, k) => <li key={k} className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-950">{i.text}</li>)}</ul>}
           {issues.length > 0 && <ul className="space-y-1 md:hidden" aria-label="Points à corriger">{issues.map((i, k) => <li key={k} className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs text-amber-950">{i.text}</li>)}</ul>}
@@ -267,7 +260,10 @@ export function FlowEditor({ id, nav, onBack, onOpenFlow }: { id: string; nav: N
                     {!!st.reqs?.length && <Chip>{st.reqs.length} exigence{st.reqs.length > 1 ? 's' : ''}</Chip>}
                     {st.doc && <Chip>{st.doc}</Chip>}
                     {st.kind === 'subprocess' && (st.flowId && state.flows[st.flowId] ? <ChipButton title="Ouvrir ce logigramme" onClick={() => openFlow(st.flowId!)}>↳ {state.flows[st.flowId].name || 'Sans nom'}</ChipButton> : <Chip>Logigramme à choisir</Chip>)}
-                    {stepCover(state, st).some(c => c.tone !== 'ok') && <button type="button" onClick={() => setOpen(st.id)} className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${stepCover(state, st).some(c => c.tone === 'alert') ? 'border-red-300 bg-red-50 text-red-900' : 'border-amber-300 bg-amber-50 text-amber-950'}`}>À risque si une personne manque</button>}
+                    {(() => {
+                      const weak = stepCover(state, st).filter(c => c.tone !== 'ok'), pw = weak.find(c => c.kind === 'power' && c.why);
+                      return weak.length > 0 && <button type="button" onClick={() => setOpen(st.id)} title={weak.map(c => `${c.name} : ${c.text}`).join(' · ')} className={`max-w-full truncate rounded-full border px-2 py-0.5 text-[11px] font-semibold ${weak.some(c => c.tone === 'alert') ? 'border-red-300 bg-red-50 text-red-900' : 'border-amber-300 bg-amber-50 text-amber-950'}`}>À risque si une personne manque{pw?.why ? ` · ${pw.why[0].toUpperCase()}${pw.why.slice(1)} : fonction clé « ${pw.name} »` : ''}</button>;
+                    })()}
                   </div>}
                   {bad.length > 0 && <p className="hidden px-2.5 pb-2 pl-11 text-[11px] font-semibold text-amber-900 md:block">{bad.map(b => b.text.replace(/^[^:]+ : /, '')).join(' · ')}</p>}
                   {can && i < f.steps.length - 1 && <div className="hidden justify-center md:flex"><button type="button" onClick={() => add(i, 'action', 'label')} aria-label={`Insérer une étape après l'étape ${i + 1}`} title="Insérer une étape ici"
@@ -315,20 +311,6 @@ export function FlowEditor({ id, nav, onBack, onOpenFlow }: { id: string; nav: N
 
       {open && idx(open) >= 0 && <StepPanel f={f} rf={rf} i={idx(open)} can={can} nav={nav} skills={skillList} people={personList} roles={roleList} others={others} patch={patch} setLinks={setLinks} setBranches={setBranches} changeKind={changeKind}
         remove={remove} openFlow={openFlow} onGo={j => setOpen(f.steps[j].id)} onClose={() => setOpen('')} />}
-      {quick && <Modal onClose={() => setQuick(false)} title="Saisie rapide" subtitle="Une étape par ligne. Tout se corrige ensuite dans la liste."
-        footer={<><Button onClick={() => setQuick(false)}>Annuler</Button><Button kind={blank ? 'primary' : 'danger'} disabled={!text.trim()} onClick={applyQuick}>{blank ? 'Créer les étapes' : 'Remplacer toutes les étapes'}</Button></>}>
-        <div className="space-y-3">
-          <ul className="list-disc space-y-0.5 pl-4 text-xs text-slate-700">
-            <li><strong>Rôle : intitulé</strong> pour dire qui fait l'étape (Commercial : Qualifier la demande). Sans rôle, l'étape sera signalée « qui la fait ? ».</li>
-            <li>Une ligne qui finit par <strong>?</strong> est une décision, oui ou non (Marge suffisante ?).</li>
-            <li>Pour d'autres réponses, les mettre entre crochets : Que décider ? [Retenu / À revoir / Refusé]. La première réponse va à la ligne suivante, les autres se relient ensuite dans la liste.</li>
-            <li>Le début et la fin sont ajoutés tout seuls. Pour les nommer : « Début : … », « Fin : … ».</li>
-          </ul>
-          <p className="text-xs text-slate-600">Disponible sur ordinateur.</p>
-          <textarea className={`${inputCls} font-mono`} rows={10} autoFocus value={text} onChange={e => setText(e.target.value)} placeholder={'Commercial : Qualifier la demande\nCommercial : Chiffrer le devis\nDirection : Marge suffisante ?\nCommercial : Envoyer le devis\nFin : Commande signée'} aria-label="Les étapes, une par ligne" />
-          {!blank && <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-900">Les étapes actuelles sont remplacées, avec toutes leurs flèches (réponses, retours), leurs liens vers les outils, leurs documents et leurs remarques. Une version est gardée automatiquement : on pourra revenir en arrière dans « Versions ».</p>}
-        </div>
-      </Modal>}
       {saving && <Modal onClose={() => setSaving(false)} title="Marquer une version" subtitle="La version actuelle est gardée : on pourra y revenir."
         footer={<><Button onClick={() => setSaving(false)}>Annuler</Button><Button kind="primary" onClick={() => { edit(x => saveVersion(x, author, note.trim())); setSaving(false); setNote(''); }}>Marquer la version</Button></>}>
         <Field label="Ce qui a changé" hint="Quelques mots pour s'en souvenir dans un an."><input className={inputCls} autoFocus value={note} onChange={e => setNote(e.target.value)} /></Field>

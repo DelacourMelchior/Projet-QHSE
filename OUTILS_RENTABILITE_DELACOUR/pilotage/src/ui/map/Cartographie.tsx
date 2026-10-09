@@ -11,7 +11,7 @@ import type { ScreenProps } from '../screens';
 import { processCover } from '../../domain/mapCover';
 import { loadMapExample } from '../../domain/mapExamples';
 import { supportGaps } from '../../domain/mapSupport';
-import { CodeBadge, Completeness } from './MapBits';
+import { CodeBadge, ColHead, colStyle, Completeness, ROW } from './MapBits';
 import { FlowEditor } from './FlowEditor';
 import { MapReview } from './MapReview';
 import { MapSettings } from './MapSettings';
@@ -88,7 +88,7 @@ export function Cartographie({ focus, clearFocus, nav }: ScreenProps) {
         <ol className="list-decimal space-y-1 border-t border-amber-200 px-8 py-3">
           <li>Ouvrir un processus et nommer son <strong>pilote</strong> : la personne qui répond de ce travail.</li>
           <li>Écrire en une phrase <strong>à quoi il sert</strong>, ce qui le <strong>déclenche</strong> et ce qu'il <strong>livre</strong>.</li>
-          <li>Décrire <strong>un seul cas courant</strong> (par exemple du devis à la commande) : onglet Logigrammes, Nouveau logigramme, puis Saisie rapide, une étape par ligne.</li>
+          <li>Décrire <strong>un seul cas courant</strong> (par exemple du devis à la commande) : onglet Logigrammes, Nouveau logigramme, puis écrire les étapes une à une.</li>
           <li>Une fois par an, <strong>relire</strong> chaque fiche (Revue des fiches). Inutile de tout remplir d'un coup.</li>
         </ol>
       </details>}
@@ -133,7 +133,8 @@ export function Cartographie({ focus, clearFocus, nav }: ScreenProps) {
         </div>
         {flows2.length > 0 && <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
           <details className="min-w-0 flex-1 text-xs text-slate-700"><summary className="cursor-pointer font-semibold text-delacour-primary">Échanges entre processus ({flows2.length})</summary>
-            <ul className="mt-2 space-y-1">{flows2.map(x => <li key={`${x.from}>${x.to}`}><strong>{x.from} vers {x.to}</strong> : {x.what.join(', ')}</li>)}</ul>
+            <div className="mt-2"><ColHead edge="px-0" cols="9rem minmax(0,1fr)" labels={['De vers', 'Ce qui passe']} />
+              <ul className="space-y-1">{flows2.map(x => <li key={`${x.from}>${x.to}`} style={colStyle('9rem minmax(0,1fr)')} className={ROW}><strong>{x.from} vers {x.to}</strong><span className="min-w-0">{x.what.join(', ')}</span></li>)}</ul></div>
           </details>
         </div>}
       </Card>

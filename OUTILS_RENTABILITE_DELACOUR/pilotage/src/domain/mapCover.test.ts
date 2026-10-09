@@ -1,7 +1,7 @@
 // Tool 1.4 with 4.1 and 4.2: what a process, a step and a flowchart say about who can do the work; where a skill or a function is used; a role that is a skill or a person.
 import { describe, expect, it } from 'vitest';
 import type { State } from './types';
-import { flowRisks, processCover, skillCover, stepCover, usedInFlows } from './mapCover';
+import { flowPowerIssues, flowRisks, processCover, skillCover, stepCover, usedByFlow, usedInFlows } from './mapCover';
 import { flowIssues, layoutFlow, soundFlow, withRoles } from './cartography';
 import { completeMapExamples } from './mapExamples';
 import { demoState } from './templates';
@@ -91,5 +91,25 @@ describe('a role that is a skill or a person', () => {
     expect(Object.keys(out.flows)).toHaveLength(26);
     Object.values(out.flows).forEach(f => f.steps.forEach(st => (st.links || []).forEach(l => expect(['4.1', '4.2'].includes(l.tool) && l.id).toBeFalsy())));
     Object.values(out.flows).forEach(f => expect(flowIssues(f, out as State), f.name).toEqual(f.id === 'fl_demo_4' ? flowIssues(f, out as State) : []));
+  });
+});
+
+describe('key functions that are not ready, seen from the flowcharts', () => {
+  it('names the cause on the step and counts each function once with its steps', () => {
+    const s = demo();
+    expect(stepCover(s, { links: [{ tool: '4.1', id: 'pw_demo_3' }] }, now)[0]).toMatchObject({ kind: 'power', tone: 'warn', why: 'signatures manquantes' });
+    expect(stepCover(s, { links: [{ tool: '4.1', id: 'pw_demo_1' }] }, now)[0].why).toBeUndefined();
+    const issues = flowPowerIssues(s.flows.fl_demo_3, s, now);
+    expect(issues.find(x => x.id === 'pw_demo_3')).toMatchObject({ why: 'signatures manquantes', steps: [2], tone: 'warn' });
+    expect(issues.find(x => x.id === 'pw_demo_6')).toMatchObject({ why: 'aucun suppléant', tone: 'alert' });
+    expect(new Set(issues.map(x => x.id)).size).toBe(issues.length);
+    expect(flowPowerIssues(s.flows.fl_demo_8, s, now)).toEqual([]);
+    // the count of the list agrees with the steps at risk of the same flowchart
+    expect(flowRisks(s.flows.fl_demo_3, s, now).filter(r => /fonction clé/.test(r.text)).length).toBe(issues.reduce((n, x) => n + x.steps.length, 0));
+  });
+  it('gives, per flowchart, the numbers of the steps that use a record', () => {
+    const s = demo();
+    expect(usedByFlow(s, '4.1', 'pw_demo_3')).toEqual([{ flow: s.flows.fl_demo_3, steps: [2], whole: false }]);
+    expect(usedByFlow(s, '4.1', 'nope')).toEqual([]);
   });
 });

@@ -8,6 +8,7 @@ import { useStore } from '../../store/StoreContext';
 import { TOOLS, type Nav, type ToolId } from '../tools';
 import { withLink } from '../../domain/mapSupport';
 import { Button, inputCls } from '../common';
+import { ColHead } from './MapBits';
 
 export const openLink = (nav: Nav, l: FlowLink) => { if (l.tool === '1.2' && l.id) nav.openRisk(l.id, 2); else nav.open(l.tool as ToolId, l.id); };
 export const linkText = (s: Parameters<typeof linkLabel>[0], l: FlowLink) => `${l.tool} ${TOOLS.find(t => t.id === l.tool)?.label ?? l.tool}${l.id ? ` · ${linkLabel(s, l) ?? 'introuvable'}` : ''}`;
@@ -35,6 +36,7 @@ export function LinkPicker({ processId, onAdd, onCancel }: { processId?: string;
   );
 }
 
+const LINK_COLS = 'minmax(0,1fr) minmax(0,1fr) 6rem 2.5rem';
 export function LinksEditor({ links, onChange, nav, title, hint, add = 'Ajouter un lien', disabled, processId }: { links: FlowLink[]; onChange(v: FlowLink[]): void; nav: Nav; title?: string; hint?: string; add?: string; disabled?: boolean; processId?: string }) {
   const { state } = useStore(), [adding, setAdding] = useState(false);
   if (!state) return null;
@@ -42,10 +44,11 @@ export function LinksEditor({ links, onChange, nav, title, hint, add = 'Ajouter 
     <div className="space-y-1.5">
       {title && <span className="block text-xs font-semibold text-slate-700">{title}</span>}
       {hint && <p className="text-xs text-slate-500">{hint}</p>}
+      {links.length > 0 && <ColHead edge="px-0" gap="gap-x-1.5" cols={LINK_COLS} labels={['Outil', 'Fiche liée', '', '']} />}
       {links.map((l, k) => {
         const items = LINK_KINDS[l.tool] ? linkItems(state, l.tool, processId) : [], mineItems = items.filter(x => x.mine), rest = items.filter(x => !x.mine), option = (x: { id: string; label: string }) => <option key={x.id} value={x.id}>{LINK_KINDS[l.tool]} : {x.label}</option>, upd = (v: FlowLink) => onChange(links.map((x, j) => (j === k ? v : x)));
         return (
-          <div key={k} className="grid gap-1.5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_auto]">
+          <div key={k} className="grid gap-1.5 md:[grid-template-columns:var(--cols)]" style={{ '--cols': LINK_COLS } as React.CSSProperties}>
             <select className={inputCls} disabled={disabled} aria-label={`Outil du lien ${k + 1}`} value={l.tool} onChange={e => upd({ tool: e.target.value })}>{TOOLS.filter(t => t.id !== '1.4' || l.tool === '1.4').map(t => <option key={t.id} value={t.id}>{t.id} · {t.label}</option>)}</select>
             {LINK_KINDS[l.tool] ? <select className={inputCls} disabled={disabled} aria-label={`Fiche du lien ${k + 1}`} value={l.id || ''} onChange={e => upd({ tool: l.tool, ...(e.target.value ? { id: e.target.value } : {}) })}>
               <option value="">Tout l'outil</option>{l.id && !items.some(x => x.id === l.id) && <option value={l.id}>(introuvable)</option>}{mineItems.length > 0 ? <><optgroup label="De ce processus">{mineItems.map(option)}</optgroup>{rest.length > 0 && <optgroup label="Des autres processus">{rest.map(option)}</optgroup>}</> : items.map(option)}</select> : <span className="self-center text-xs text-slate-500">Tout l'outil</span>}

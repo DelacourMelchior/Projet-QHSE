@@ -8,7 +8,9 @@ import { useStore } from '../../store/StoreContext';
 import type { Nav, ToolId } from '../tools';
 import { Button, Modal } from '../common';
 import { SupportCell } from './Support';
+import { ColHead, colStyle, ROW } from './MapBits';
 
+const LOST_COLS = '10rem minmax(0,1fr) 6rem';
 export function MapMatrix({ processId, nav, can }: { processId: string; nav: Nav; can: boolean }) {
   const { state, update } = useStore();
   const [more, setMore] = useState(false), [pick, setPick] = useState<{ row: MatrixRow; def: SupportDef } | null>(null);
@@ -61,8 +63,9 @@ export function MapMatrix({ processId, nav, can }: { processId: string; nav: Nav
       {lost.length > 0 && <section aria-label="Fiches non reliées à un logigramme" className="space-y-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
         <h3 className="text-xs font-bold text-slate-900">Fiches non reliées à un logigramme ({lost.length})</h3>
         <p className="text-xs text-slate-600">Des instructions, compétences ou fonctions clés de ce processus qu'aucune étape n'utilise. Pour les mettre sur une étape : « + » dans la case de la matrice, puis « Rattacher ».</p>
-        <ul className="space-y-0.5">{lost.map(o => <li key={`${o.kind}${o.id}`} className="flex flex-wrap items-center gap-2 text-xs"><span className="min-w-0 flex-1 text-slate-800"><strong>{SUPPORTS.find(d => d.kind === o.kind)!.column}</strong> · {o.label}</span>
-          <Button onClick={() => nav.open(o.tool as ToolId, o.id)}>Ouvrir <ExternalLink size={12} aria-hidden /><span className="sr-only"> (s'ouvre dans un nouvel onglet)</span></Button></li>)}</ul>
+        <ColHead edge="px-0" cols={LOST_COLS} labels={['Sorte de fiche', 'Fiche', '']} />
+        <ul className="space-y-0.5">{lost.map(o => <li key={`${o.kind}${o.id}`} style={colStyle(LOST_COLS)} className={`${ROW} text-xs`}><strong className="min-w-0">{SUPPORTS.find(d => d.kind === o.kind)!.column}</strong><span className="min-w-0 text-slate-800">{o.label}</span>
+          <span className="flex justify-end"><Button onClick={() => nav.open(o.tool as ToolId, o.id)}>Ouvrir <ExternalLink size={12} aria-hidden /><span className="sr-only"> (s'ouvre dans un nouvel onglet)</span></Button></span></li>)}</ul>
       </section>}
     </div>
   );

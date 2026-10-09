@@ -254,7 +254,7 @@ describe('1.4 with 4.1 and 4.2', () => {
     expect(html).toContain('Programmation de la CNC 5 axes');
     expect(html).toContain('Programmation CNC 5 axes');
     expect(html).toContain('Homme-clé');
-    expect(html).toContain('Autonomes : ');
+    expect(html).toContain('Personnes autonomes');
     expect(html).toMatch(/Ressources et remplaçants<span[^>]*>\d+<span class="sr-only"> à compléter/);
     expect(sheet('P99' as never, 'cover')).toContain('n&#x27;existe plus');
   });
@@ -424,8 +424,8 @@ describe('1.4 flowcharts linked to the other tools', () => {
   });
   it('says on the sheet of a process how many tools each flowchart is linked to', () => {
     fresh();
-    expect(sheet('P3', 'flows')).toMatch(/S&#x27;appuie sur : \d\.\d/);   // the tools are named, not counted
-    expect(sheet('P2', 'flows')).toMatch(/S&#x27;appuie sur : \d/);
+    expect(sheet('P3', 'flows')).toMatch(/S&#x27;appuie sur<\/span>[\s\S]*\d\.\d [A-Za-zÀ-ÿ]/);   // a column of the list: the tools are named, not counted
+    expect(sheet('P2', 'flows')).toContain('S&#x27;appuie sur');
   });
   it('tells an equipment, an instruction, an indicator or a risk which flowcharts rely on it, and stays silent when none does', () => {
     fresh();
@@ -670,5 +670,53 @@ describe('1.4 lot 4: desktop accessibility and UX', () => {
     fresh();
     const html = sheet('P2', 'identity');
     expect(html).toMatch(/role="tab"[^>]*id="sheet-panel-tab-identity"[^>]*tabindex="0"/); expect(html).toMatch(/id="sheet-panel-tab-io"[^>]*tabindex="-1"/);
+  });
+});
+
+
+describe('1.4 sticky tabs, column titles, where a key function is used', () => {
+  it('keeps the tabs in the sticky bar, under the name of the process, before the points to complete', () => {
+    fresh();
+    const html = sheet('P3', 'flows'), a = html.indexOf('data-sticky-head'), t = html.indexOf('role="tablist"'), todo = html.indexOf('aria-label="Points à compléter"');
+    expect(a).toBeGreaterThan(-1);
+    expect(t).toBeGreaterThan(a);
+    expect(html.slice(a, t)).toContain('La carte');
+    expect(html.slice(a, html.indexOf('</div></div>', a))).toContain('role="tablist"');   // the tabs close inside the same sticky block
+    expect(todo).toBeGreaterThan(html.indexOf('</div></div>', a));                         // the block of points to complete is outside it, it scrolls
+  });
+  it('puts titles over the columns of the lists, on the same grid as the rows', () => {
+    fresh();
+    const cols = (html: string) => [...new Set([...html.matchAll(/style="--cols:([^"]+)"/g)].map(m => m[1]))];
+    const flows = sheet('P3', 'flows');
+    ['Logigramme', 'Étapes · version · déclencheur', 'À surveiller', 'État'].forEach(t => expect(flows).toContain(t));
+    expect(flows).toMatch(/aria-hidden="true"[^>]*class="hidden[^"]*uppercase/);
+    expect(cols(flows)).toHaveLength(1);                                                     // header and rows share one template
+    const res = sheet('P3', 'resources');
+    ['Fonction clé', 'Titulaire et suppléants', 'Utilisée dans les logigrammes', 'Compétence', 'Personnes autonomes', 'Équipement'].forEach(t => expect(res).toContain(t));
+    expect(cols(res).length).toBeGreaterThanOrEqual(2);
+    const ind = sheet('P1', 'indicators');
+    ['Indicateur', 'Cible', 'Risque'].forEach(t => expect(ind).toContain(t));
+    expect(draw(<MapReview onBack={noop} onOpen={noop} />)).toContain('Où en est la fiche');
+    expect(sheet('P3', 'identity')).toContain('Exigence');
+  });
+  it('says, on a key function, which flowcharts use it and with which steps; and says so calmly when none does', () => {
+    const s = fresh();
+    const res = sheet('P3', 'resources');
+    expect(res).toMatch(/Signatures manquantes/);
+    expect(res).toMatch(/Fabriquer et livrer une commande · étape 2/);                       // pw_demo_3, used by the step 2 of flowchart 3
+    s.powers.pw_demo_3.processId = 'P3'; s.flows.fl_demo_3.steps.forEach(st => { st.links = (st.links || []).filter(l => !(l.tool === '4.1' && l.id === 'pw_demo_3')); });
+    expect(sheet('P3', 'resources')).toContain('Aucun logigramme ne l&#x27;utilise');
+  });
+  it('shows in the list of flowcharts the key functions to complete, with the cause', () => {
+    fresh();
+    const html = sheet('P3', 'flows');
+    expect(html).toMatch(/\d+ fonctions? clés? à compléter/);
+    expect(html).toContain('Lancement de l&#x27;activité du jour et planning : signatures manquantes');
+    expect(html).toMatch(/\d+ étapes? à risque/);
+  });
+  it('tells in the step row why it is at risk', () => {
+    fresh();
+    const html = draw(<FlowEditor id="fl_demo_3" nav={nav} onBack={noop} onOpenFlow={noop} />);
+    expect(html).toContain('Signatures manquantes : fonction clé « Lancement de l&#x27;activité du jour et planning »');
   });
 });

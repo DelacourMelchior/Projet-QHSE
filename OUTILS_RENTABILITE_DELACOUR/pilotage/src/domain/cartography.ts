@@ -215,26 +215,6 @@ export const newStep = (kind: StepKind = 'action', role = ''): FlowStep => ({ id
 export function newFlow(processId: string, name = '', now = new Date()): Flow {
   return { id: newId('fl'), processId, name, trigger: '', steps: [newStep('start'), newStep('action'), newStep('end')], version: 1, updatedAt: isoDate(now), updatedBy: '', history: [] };
 }
-// Quick entry: one step per line. "Rôle : intitulé" is an action of that role, a line that ends with "?" a decision, "Début : …" and "Fin : …" the ends.
-// A start and an end are added when the text has none (the start from the trigger of the flowchart).
-export function parseQuickSteps(text: string, trigger = ''): FlowStep[] {
-  const steps = text.split('\n').map(l => l.trim().replace(/^([-•*–]|\d+[.)])\s+/, '')).filter(Boolean).map(line => {
-    // "Rôle : intitulé"; a colon after a number (14:30) or after nothing is not a role
-    const m = /^([^:?[\d]{1,40}?)\s*:\s*(.*)$/.exec(line), word = m?.[1].trim().toLowerCase();
-    const raw = (m && (m[2].trim() || word === 'début' || word === 'debut' || word === 'fin') ? m[2] : line).trim(), role = m && (m[2].trim() || word === 'début' || word === 'debut' || word === 'fin') ? m[1].trim() : '';
-    // "Question ? [Oui / Non / À revoir]": the outcomes of the decision, in the brackets
-    const out = /^(.*\?)\s*\[([^\]]+)\]$/.exec(raw), label = out ? out[1].trim() : raw;
-    if (word === 'début' || word === 'debut') return { ...newStep('start'), label: label || 'Début' };
-    if (word === 'fin') return { ...newStep('end'), label: label || 'Fin' };
-    const step = { ...newStep(label.endsWith('?') ? 'decision' : 'action', role), label };
-    const names = out ? out[2].split('/').map(x => x.trim()).filter(Boolean) : [];
-    return step.kind === 'decision' && names.length >= 2 ? { ...step, branches: names.map(n => ({ label: n, to: '' })) } : step;
-  });
-  if (steps.length && steps[0].kind !== 'start') steps.unshift({ ...newStep('start'), label: trigger.trim() || 'Début' });
-  if (steps.length && steps[steps.length - 1].kind !== 'end') steps.push({ ...newStep('end'), label: 'Fin' });
-  return steps;
-}
-
 // The exits of a step: where each arrow goes ('' = nowhere yet). Steps are read in order: no goto means the next step of the list.
 export interface Exit { to: string; label: string }
 // The outcomes of a decision: its own, or "Oui" and "Non" of the first version

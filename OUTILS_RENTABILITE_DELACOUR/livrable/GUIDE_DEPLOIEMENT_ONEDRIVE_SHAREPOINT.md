@@ -32,8 +32,8 @@ Le dossier `donnees` n'est pas livré : il est créé au premier lancement (éta
 ## 4. Premier lancement (direction)
 
 1. Dans le dossier synchronisé, faites un clic droit sur `pilotage.html`, puis **Ouvrir avec** et **Microsoft Edge** (ou Chrome).
-2. Choisissez **Démarrer mon tableau** : votre métier, 8 à 10 indicateurs, leurs cibles et vos hypothèses (objectif de CA, marge nette, montant moyen d'un devis). Comptez environ 5 minutes.
-3. Ouvrez **Réglages** (icône en haut à droite), section **Partage des données** :
+2. Choisissez **Démarrer mon tableau** : votre métier, 8 à 10 indicateurs, leurs cibles et vos hypothèses (objectif de CA, marge nette). Comptez environ 5 minutes.
+3. Ouvrez **Réglages** (icône en haut à droite), onglet **Données**, section **Partage des données** :
    - saisissez votre nom : il signe toutes vos saisies ;
    - cliquez sur **Choisir le dossier de données** ;
    - dans la fenêtre qui s'ouvre, créez un dossier **donnees** dans **Pilotage Delacour**, sélectionnez-le, puis autorisez la modification.
@@ -74,34 +74,34 @@ Conseil : sur chaque poste, faites un clic droit sur le dossier `donnees`, puis 
 - **L'accueil** (le carré D en haut à gauche) montre les 19 outils, chacun avec ce qui demande attention aujourd'hui (devis à relancer, client à rappeler, pièce en quarantaine depuis plus de 24 h…).
 - **Les processus**, sous le nom de l'entreprise : **Pilotage**, **Commercial**, **Opérations**, **RH**, **Qualité**. Chaque processus affiche ses outils en onglets, avec un compteur rouge ou orange quand il y a quelque chose à faire :
   - **Pilotage** : **Indicateurs** (synthèse, alertes, graphiques), **Saisie** (les chiffres du mois), **Plans B** (matrice de criticité, tests, fiches réflexes en PDF), **Annuaire** (numéros de crise) ;
-  - **Commercial** : **Devis** (5 verrous, marge, visas, relance à 7 jours), **Avenants** (message à valider par « OK » avant de faire, puis facture), **Réclamations** (rappel sous 48 h, processus en cause), **Bilan de fin** (3 questions, facture sous 24 h) ;
+  - **Commercial** : **Devis** (5 verrous, marge, visas, relance à 7 jours), **Avenants** (message à valider par « OK » avant de faire, puis facture), **Réclamations** (rappel sous 48 h, processus en cause) ;
   - **Opérations** : **Fournisseurs** (fiche de débit sous 48 h, note annuelle A, B, C), **Instructions** (fiche A4 avec photos, versions, personnes habilitées), **Maintenance** (routine du lundi, armoire de survie), **Réceptions** (jalons, PV de réception, retenue de 5 % au plus) ;
   - **RH** : **Suppléances** (2 suppléants entraînés, enveloppe des accès), **Polyvalence** (matrice 0 à 4, homme-clé), **Accueil** (parcours de 15 jours, test en 3 questions), **Classement** (nom des fichiers, plan de classement, test des 30 secondes) ;
-  - **Qualité** : **Bac rouge** (étiquette, décision sous 24 h), **Non-qualité** (coût du mois par processus), **5 Pourquoi** (cause racine sans coupable), **Détrompeurs** (contrôle sur le terrain à J+30).
+  - **Qualité** : **Bac rouge** (étiquette, décision sous 24 h), **Non-qualité** (coût du mois par processus), **5 Pourquoi** (cause racine sans coupable), **Détrompeurs** (contrôle sur le terrain à J+30), **Bilan de fin** (3 questions pour mesurer la satisfaction client de 0 à 10, livraisons sans bilan, courbe de satisfaction, liste mois par mois ou par client, reliée à l'annuaire).
 - **Mes tâches** (en haut à droite) : tout ce que chacun a à faire dans les 19 outils, par échéance. **Agenda** produit un fichier à ouvrir dans Outlook ou Google Agenda ; **Semaine (PDF)** une liste à imprimer.
 - **Rapport du mois** (accueil) : chiffres clés et état de chaque outil pour la réunion de direction.
-- **Saisie depuis un téléphone** : les saisies restent sur le téléphone ; exportez la sauvegarde dans OneDrive, puis sur un poste connecté : **Réglages, Fusionner un fichier de saisies**.
-- **Droits** : dans Réglages, choisir les outils réservés à la direction et si l'équipe peut supprimer des fiches ; le journal montre qui a modifié quoi.
+- **Saisie depuis un téléphone** : les saisies restent sur le téléphone ; exportez la sauvegarde dans OneDrive, puis sur un poste connecté : **Réglages, onglet Données, Fusionner un fichier de saisies**.
+- **Droits** : dans Réglages (onglet Entreprise), choisir les outils réservés à la direction et si l'équipe peut supprimer des fiches ; le journal (Réglages, onglet Données) montre qui a modifié quoi.
 - **Un seul plan d'actions** : l'onglet Actions de chaque processus montre les actions créées depuis ses outils ; le filtre permet de tout afficher.
 - **Les outils se complètent** : une réclamation ouvre une fiche du bac rouge et un atelier 5 Pourquoi, un défaut fournisseur devient une fiche de débit, le coût de chaque fiche remonte dans la non-qualité. Les chiffres calculés (coût de non-qualité, réclamations, devis, postes doublés) sont proposés dans l'écran **Saisie** du tableau de pilotage : un clic sur **Reprendre** les recopie.
 - **Imprimer** : chaque outil produit ses documents (PDF ou impression A4) : étiquettes du bac rouge, fiche de débit, bon pour accord d'un avenant, PV de réception, instruction de poste, feuille de routine d'une machine, parcours d'accueil, charte de classement.
-- **Cotez les risques ensemble** : Plans B, **Coter les risques**, puis gravité et probabilité de chaque risque (les définitions sont affichées ; montants et textes réglables dans Réglages). Les risques proposés par l'outil arrivent sans cotation.
+- **Cotez les risques ensemble** : Plans B, **Coter les risques**, puis gravité et probabilité de chaque risque (les définitions sont affichées ; montants et textes réglables sous « Réglages de cet outil », en bas de l'écran des Plans B). Les risques proposés par l'outil arrivent sans cotation.
 - **Fiches réflexes** : Plans B, **Fiches réflexes (PDF)**. Imprimez-les et gardez-en une copie papier près des postes : le jour d'une panne informatique, l'application peut être inaccessible.
 - **Annuaire** : chaque numéro n'est saisi qu'une fois et sert à toutes les fiches réflexes. Deux vues : **Organigramme** (un arbre pour l'entreprise, et un par organisation extérieure : clients, fournisseurs, prestataires, banques, médecine du travail, inspection du travail…, imprimable en A4 paysage) et **Liste** (second numéro, horaires, référence à donner à l'appel, contact vital, relais, rattachement). Pour rattacher une personne à son responsable, glissez sa carte sur celle du responsable, ou utilisez le + d'une carte pour ajouter quelqu'un en dessous. La consigne ou le mot de passe à dire à l'appel reste dans le dossier `direction`. Remplissez l'adresse du site et l'accès pour les secours. **Vers les contacts du téléphone** crée un fichier .vcf à ouvrir sur le téléphone ; **Carte de poche** imprime 4 cartes à découper avec les numéros vitaux. Chaque mois, 4 numéros à vérifier arrivent dans « Mes tâches ». Préférez les numéros professionnels et prévenez les personnes concernées (RGPD).
 - **Chacun saisit librement.** Chaque personne écrit dans son propre fichier (`pilotage-<nom>.json`) : deux personnes ne peuvent pas s'écraser mutuellement, et OneDrive ne crée pas de copies en conflit.
-- **Les chiffres des collègues arrivent** en quelques secondes à quelques minutes, selon la synchronisation OneDrive. L'application relit le dossier quand vous revenez sur la fenêtre ; **Réglages → Actualiser** force la relecture.
+- **Les chiffres des collègues arrivent** en quelques secondes à quelques minutes, selon la synchronisation OneDrive. L'application relit le dossier quand vous revenez sur la fenêtre ; **Réglages → Données → Actualiser** force la relecture.
 - **Si deux personnes modifient la même valeur**, la modification la plus récente est conservée.
 
 ## 8. Sauvegarde et historique
 
 - SharePoint conserve l'historique des versions de chaque fichier : en cas d'erreur, restaurez la version précédente depuis SharePoint.
-- **Réglages → Exporter une sauvegarde (.json)** produit une copie complète des 19 outils, à archiver. Les sauvegardes de l'ancienne version de l'outil 1.1 peuvent être restaurées.
+- **Réglages → Données → Exporter une sauvegarde (.json)** produit une copie complète des 19 outils, à archiver. Les sauvegardes de l'ancienne version de l'outil 1.1 peuvent être restaurées.
 
 ## 9. Reprise de l'ancienne version
 
 - Données restées sur un poste : au premier lancement de `pilotage.html` dans le même navigateur, le bouton **Reprendre mes données** apparaît.
 - Risques de l'ancien outil 1.2 restés sur un poste : ouvrez **Plans B** dans le même navigateur ; la cartographie vide propose **Reprendre les risques de l'ancienne version**. Complétez ensuite chaque fiche (gravité, probabilité, fiche réflexe, test).
-- Tableaux des anciens outils 2.1 à 5.3 restés sur un poste (devis, avenants, réclamations, fournisseurs, autocontrôle, suppléances, polyvalence, bac rouge, coût de non-qualité, ateliers 5 Pourquoi) : ouvrez **Réglages** dans le même navigateur ; la section **Ancienne version des outils 2 à 5** indique ce qui a été trouvé et propose **Reprendre ces données**. Rien n'est effacé ; vérifiez ensuite chaque outil. L'ancienne « fiche de poste » (3.3) n'a pas d'équivalent : ses informations se retrouvent dans les instructions de poste (3.2) et la polyvalence (4.2).
+- Tableaux des anciens outils 2.1 à 5.3 restés sur un poste (devis, avenants, réclamations, fournisseurs, autocontrôle, suppléances, polyvalence, bac rouge, coût de non-qualité, ateliers 5 Pourquoi) : ouvrez **Réglages**, onglet **Données**, dans le même navigateur ; la section **Ancienne version des outils 2 à 5** indique ce qui a été trouvé et propose **Reprendre ces données**. Rien n'est effacé ; vérifiez ensuite chaque outil. L'ancienne « fiche de poste » (3.3) n'a pas d'équivalent : ses informations se retrouvent dans les instructions de poste (3.2) et la polyvalence (4.2).
 - Dossier partagé déjà utilisé par l'ancienne version (fichiers `journal-*.json`) : ils sont lus et convertis automatiquement à la première connexion, puis republiés au nouveau format (`pilotage-*.json`). Les anciens fichiers ne sont ni modifiés ni supprimés.
 
 ## 10. Limites actuelles
@@ -115,7 +115,12 @@ Conseil : sur chaque poste, faites un clic droit sur le dossier `donnees`, puis 
 | Symptôme | Solution |
 |---|---|
 | « Ce dossier ne contient pas de sous-dossier equipe » | Vous avez choisi `Pilotage Delacour` au lieu de `donnees` : recommencez en sélectionnant `donnees`. |
-| « Sur ce poste » en haut à droite | Aucun dossier n'est connecté : **Réglages → Choisir le dossier de données**. |
-| Les chiffres d'un collègue n'apparaissent pas | Vérifiez que l'icône OneDrive indique « à jour », puis **Réglages → Actualiser**. |
+| « Sur ce poste » en haut à droite | Aucun dossier n'est connecté : **Réglages → Données → Choisir le dossier de données**. |
+| Les chiffres d'un collègue n'apparaissent pas | Vérifiez que l'icône OneDrive indique « à jour », puis **Réglages → Données → Actualiser**. |
 | Montants « Masqué » et bouton Vue direction grisé | Vous n'avez pas accès au dossier `direction` : c'est voulu (étape 5). |
 | Bouton « Choisir le dossier » absent | Vous utilisez Safari ou Firefox : ouvrez le fichier avec Edge ou Chrome. |
+
+## 12. Fichier ouvert depuis le disque, adresses des QR codes et mise en ligne
+
+- **Un fichier ouvert depuis le disque partage ses données avec les autres.** Les navigateurs donnent la même origine à tous les fichiers HTML ouverts depuis le disque d'un poste (adresse en `file://`). Un autre fichier `.html` ouvert depuis ce disque peut donc lire les données que l'application garde dans le navigateur, tous les PV compris, et il partage avec elles les mêmes 5 millions de caractères de stockage. L'hébergement en ligne règle la question : l'application y a sa propre origine, que les autres fichiers du disque ne partagent pas. D'ici là, la sauvegarde `.json` reste la copie qui ne dépend pas du navigateur.
+- **L'adresse sous un QR code est celle de la page au moment de l'impression** : domaine, chemin et fiche, jamais les paramètres de l'adresse (ce qui suit un `?`). Une adresse de fichier du disque, de réseau local (`192.168…`, `10…`, `172.16…`), de test (`localhost`, `.local`, `.test`) ne répond plus à la mise en ligne : les fiches imprimées avant cette date ont un QR code qui ne mène plus à rien, et l'application le dit sous le QR code. Une adresse stable (nom de domaine définitif, ou lien court géré par l'entreprise) est à fixer avant d'imprimer les fiches destinées aux postes et aux étiquettes.

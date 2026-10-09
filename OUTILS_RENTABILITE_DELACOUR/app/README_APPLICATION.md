@@ -1,6 +1,6 @@
 # Outils Delacour : guide développeur et consultant
 
-Les 22 outils de pilotage pour PME (un par question de l'audit des 5 processus, plus l'annuaire de crise, le seuil de rentabilité, les coûts horaires et la charte de prix) forment une seule application, livrée en un seul fichier HTML, sans serveur et sans appel à internet.
+Les 19 outils de pilotage pour PME (un par question de l'audit des 5 processus, plus l'annuaire de crise) forment une seule application, livrée en un seul fichier HTML, sans serveur et sans appel à internet.
 
 ## Structure
 
@@ -33,10 +33,12 @@ Dossier partagé du client (OneDrive, SharePoint, Google Drive, Nextcloud…) : 
 
 ## Utilisation en rendez-vous
 
-Voir `../SCENARIO_DEMO_OUTIL_1_1.md`. Pour afficher des données : premier lancement, **Voir un exemple** (une entreprise fictive avec des données dans les 22 outils), ou **Réglages**, **Charger l'exemple de démonstration**. Chaque outil vide propose aussi **Voir un exemple traité**.
+Voir `../SCENARIO_DEMO_OUTIL_1_1.md`. Pour afficher des données : premier lancement, **Voir un exemple** (une entreprise fictive avec des données dans les 19 outils), ou **Réglages**, onglet **Données**, **Charger l'exemple de démonstration**. Chaque outil vide propose aussi **Voir un exemple traité**.
 
 ## Limites connues
 
 - Pas de connexion directe à Microsoft 365 ou Google (API) : le partage passe par le dossier synchronisé.
 - Enregistrer dans le dossier partagé demande Microsoft Edge ou Google Chrome ; sur téléphone, les données restent sur l'appareil.
+- Les QR codes imprimés (instruction de poste 3.2, routine 3.3, fiche suiveuse de commande 3.4) portent l'adresse de l'application : imprimés depuis l'adresse d'un ordinateur, ils ne s'ouvrent pas sur les autres téléphones (l'outil le signale), et ce qu'un téléphone enregistre (contrôles, réception et signatures de 3.4) reste sur ce téléphone : exporter la sauvegarde, puis la fusionner sur un poste connecté (la fusion reprend aussi les contrôles et les PV signés d'une commande déjà présente, sans jamais défaire une signature ; un numéro de PV porté par deux commandes est dit en fait).
+- 3.4 Réceptions ne calcule ni n'affiche aucun montant : la règle 95/5 y est une mention de clause (coche, pourcentage maximum, délai de levée, réglages de l'outil) recopiée sur le PV, sans facturation ; les anciennes valeurs de montant restent dans les données sans être lues.
 - Les photos des instructions de poste alourdissent les fichiers partagés (environ 60 Ko par photo) : quelques photos par poste suffisent.

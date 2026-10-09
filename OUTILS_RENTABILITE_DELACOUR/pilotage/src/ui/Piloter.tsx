@@ -1,6 +1,6 @@
 // Screen 1 — "Où en est-on ?": executive summary, analysis messages, one block per process (table + chart).
 import { useState } from 'react';
-import { AlertTriangle, ArrowRight, CheckCircle2, TrendingDown, TrendingUp } from 'lucide-react';
+import { AlertTriangle, ArrowRight, CheckCircle2, Plus, TrendingDown, TrendingUp } from 'lucide-react';
 import type { Kpi, Period, Process, State } from '../domain/types';
 import {
   actionsOf, insights, isOpen, kpiByRole, openActionWithPilot, statusAt, synthesis, timelinePeriods, trend, valueOf, yearSummary,
@@ -8,8 +8,14 @@ import {
 import { formatCompact, formatPct, formatValue } from '../domain/numbers';
 import { addMonths, periodLabel, periodShort } from '../domain/periods';
 import { useStore } from '../store/StoreContext';
-import { Button, Card, LEVEL_STYLE, StatusBadge } from './common';
+import { Button, Card, Field, LEVEL_STYLE, NumInput, StatusBadge, ToolSettings } from './common';
 import { ChartLegend, KpiChart, useWidth } from './KpiChart';
+import { NEW_KPI_NAME } from './KpiDetail';
+import { plainName, sortedProcesses } from '../domain/cartography';
+import { createKpi } from '../domain/mapSupport';
+import { ComplaintTrend } from './commercial/ComplaintTrend';
+import { FeedbackTrend } from './commercial/FeedbackTrend';
+import { isComplaintKpi, isSatisfactionKpi } from '../domain/commercial';
 
 const COLORS = ['#059669', '#B8893F', '#2563EB', '#7C3AED', '#DC2626', '#0891B2'];
 const shortName = (k: Kpi) => k.name.replace(/\s*\(.*\)\s*$/, '');
@@ -17,18 +23,34 @@ const shortName = (k: Kpi) => k.name.replace(/\s*\(.*\)\s*$/, '');
 export function Piloter({ onOpenKpi, onNewAction, onOpenAction, goSaisir }: {
   onOpenKpi(id: string): void; onNewAction(kpiId: string): void; onOpenAction(id: string): void; goSaisir(): void;
 }) {
-  const { state, period, teamView } = useStore();
+  const { state, period, teamView, update } = useStore();
   if (!state) return null;
   const syn = synthesis(state, period);
   const empty = !Object.keys(state.values).length;
+  const addKpi = (processId: string) => {
+    let id = '';
+    update(d => { id = createKpi(d, processId, NEW_KPI_NAME); });
+    onOpenKpi(id);
+  };
 
   return (
     <div className="space-y-4">
       {empty ? <EmptyState goSaisir={goSaisir} /> : <Summary state={state} period={period} team={teamView} />}
-      {[...state.processes].sort((a, b) => a.order - b.order).map(p => (
+      {sortedProcesses(state).map(p => (
         <ProcessBlock key={p.id} s={state} period={period} team={teamView} process={p} open={onOpenKpi} newAction={onNewAction} openAction={onOpenAction} />
       ))}
-      {syn.total === 0 && <p className="text-xs text-slate-500">Aucun indicateur : ajoutez-en depuis Réglages.</p>}
+      {syn.total === 0 && <p className="text-xs text-slate-500">Aucun indicateur : ajoutez-en ci-dessous.</p>}
+      <Card className="flex flex-wrap items-center gap-2 p-3 print:hidden">
+        <span className="text-[11px] font-semibold text-slate-700">Ajouter un indicateur à</span>
+        {state.processes.map(p => <Button key={p.id} onClick={() => addKpi(p.id)}><Plus size={14} />{plainName(p.name)}</Button>)}
+      </Card>
+      <ToolSettings>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Objectif de CA annuel (€ HT)" hint="Le CA cumulé est comparé à l'objectif à date et la fin d'année est projetée. Sert aussi à l'objectif trimestriel des devis (2.1) et aux seuils de gravité des Plans B (1.2).">
+            <NumInput value={state.settings.annualBudget} onChange={v => update(d => { d.settings.annualBudget = v ?? 0; })} />
+          </Field>
+        </div>
+      </ToolSettings>
     </div>
   );
 }
@@ -97,7 +119,7 @@ function ProcessBlock({ s, period, team, process, open, newAction, openAction }:
       <Card className="p-3 sm:p-4">
         <div className="mb-3 flex items-center gap-2">
           <span className="h-2.5 w-2.5 rounded-full" style={{ background: process.color }} />
-          <h2 className="text-sm font-bold text-slate-900">{process.name}</h2>
+          <h2 className="text-sm font-bold text-slate-900">{plainName(process.name)}</h2>
           {alerts > 0 && <span className="rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-700">{alerts} en alerte</span>}
         </div>
 
@@ -197,6 +219,14 @@ function ProcessBlock({ s, period, team, process, open, newAction, openAction }:
           ) : kpis.filter(k => k.id === sel).map(k => <ChartBlock key={k.id} s={s} k={k} period={period} masked={masked(k)} open={open} color={COLORS[kpis.indexOf(k) % COLORS.length]} />)}
           <ChartLegend />
         </div>
+        {/* the causes of the complaints, only when the complaints indicator is the one on display */}
+        {(() => { const ck = kpis.find(isComplaintKpi); return ck && sel === ck.id && !masked(ck) && Object.keys(s.complaints).length > 0 && (
+          <div className="mt-3 rounded-lg border border-slate-200 bg-white p-3"><ComplaintTrend end={period} compact /></div>
+        ); })()}
+        {/* the same for the satisfaction of the customers (2.4) */}
+        {(() => { const sk = kpis.find(isSatisfactionKpi); return sk && sel === sk.id && !masked(sk) && Object.keys(s.feedbacks).length > 0 && (
+          <div className="mt-3 rounded-lg border border-slate-200 bg-white p-3"><FeedbackTrend end={period} compact /></div>
+        ); })()}
       </Card>
     );
 }

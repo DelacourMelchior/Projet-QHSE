@@ -23,14 +23,14 @@ export function StatusBadge({ level, text }: { level: Level; text: string }) {
 
 type BtnKind = 'primary' | 'secondary' | 'ghost' | 'danger';
 const BTN: Record<BtnKind, string> = {
-  primary: 'bg-delacour-primary text-white hover:bg-delacour-dark border-delacour-primary',
-  secondary: 'bg-white text-slate-700 hover:bg-slate-50 border-slate-300',
-  ghost: 'bg-transparent text-slate-600 hover:bg-slate-100 border-transparent',
-  danger: 'bg-white text-red-700 hover:bg-red-50 border-red-200',
+  primary: 'bg-delacour-primary text-white hover:bg-delacour-dark border-delacour-primary disabled:border-slate-200 disabled:bg-slate-200 disabled:text-slate-600',
+  secondary: 'bg-white text-slate-700 hover:bg-slate-50 border-slate-300 disabled:opacity-50',
+  ghost: 'bg-transparent text-slate-600 hover:bg-slate-100 border-transparent disabled:opacity-50',
+  danger: 'bg-white text-red-700 hover:bg-red-50 border-red-200 disabled:opacity-50',
 };
 export function Button({ kind = 'secondary', className = '', ...p }: React.ButtonHTMLAttributes<HTMLButtonElement> & { kind?: BtnKind }) {
   return <button type="button" {...p}
-    className={`inline-flex items-center justify-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-delacour-golddark disabled:opacity-50 max-sm:min-h-[44px] [@media(pointer:coarse)]:min-h-[44px] ${BTN[kind]} ${className}`} />;
+    className={`inline-flex items-center justify-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-delacour-golddark max-sm:min-h-[44px] [@media(pointer:coarse)]:min-h-[44px] ${BTN[kind]} ${className}`} />;
 }
 
 export function Field({ label, hint, children }: { label: string; hint?: ReactNode; children: ReactNode }) {
@@ -100,10 +100,10 @@ export function Card({ children, className = '' }: { children: ReactNode; classN
 export const TONE = { good: 'border-emerald-200 bg-emerald-50 text-emerald-900', warn: 'border-amber-200 bg-amber-50 text-amber-950', bad: 'border-red-200 bg-red-50 text-red-900' };
 
 // Key figure of a summary; tone colours the tile only when the figure calls for attention
-export function Tile({ title, value, sub, tone, onClick, active }: { title: string; value: string; sub: string; tone?: 'ok' | 'warn' | 'alert'; onClick?(): void; active?: boolean }) {
+export function Tile({ title, value, sub, tone, onClick, active, newTab }: { title: string; value: string; sub: string; tone?: 'ok' | 'warn' | 'alert'; onClick?(): void; active?: boolean; newTab?: boolean }) {
   const cls = tone === 'ok' ? 'border-emerald-200 bg-emerald-50/60' : tone === 'warn' ? 'border-amber-300 bg-amber-50/70' : tone === 'alert' ? 'border-red-300 bg-red-50/70' : 'border-slate-200 bg-white';
   const body = <>
-    <div className="text-xs font-semibold text-slate-600">{title}</div>
+    <div className="text-xs font-semibold text-slate-600">{title}{newTab && onClick && <> <NewTab size={11} /></>}</div>
     <div className="font-mono text-lg font-bold text-slate-900">{value}</div>
     <div className="text-xs text-slate-600">{sub}</div>
   </>;
@@ -147,14 +147,20 @@ export function Summary({ title, tiles, insights, max = 4, list = false, answer 
   );
 }
 
-// Filter pills with their count
-export function Chips<T extends string>({ value, onChange, items }: { value: T; onChange(v: NoInfer<T>): void; items: [NoInfer<T>, string, number?][] }) {
+// Filter pills with their count. As tabs with `panelId`: the tab panel carries that id, and the arrow keys, Home and End move from tab to tab.
+export function Chips<T extends string>({ value, onChange, items, tabs, label, panelId }: { value: T; onChange(v: NoInfer<T>): void; items: [NoInfer<T>, string, number?][]; tabs?: boolean; label?: string; panelId?: string }) {
+  const keys = (e: React.KeyboardEvent<HTMLButtonElement>) => {
+    const i = items.findIndex(([k]) => k === value), to = e.key === 'ArrowRight' ? (i + 1) % items.length : e.key === 'ArrowLeft' ? (i - 1 + items.length) % items.length : e.key === 'Home' ? 0 : e.key === 'End' ? items.length - 1 : -1;
+    if (to < 0) return;
+    e.preventDefault(); onChange(items[to][0]);
+    window.setTimeout(() => document.getElementById(`${panelId}-tab-${items[to][0]}`)?.focus(), 0);
+  };
   return (
-    <div className="flex flex-wrap items-center gap-1.5 print:hidden">
+    <div className="flex flex-wrap items-center gap-1.5 print:hidden" role={tabs ? 'tablist' : undefined} aria-label={tabs ? label : undefined}>
       {items.map(([k, l, n]) => (
-        <button key={k} type="button" onClick={() => onChange(k)} aria-pressed={value === k}
+        <button key={k} type="button" onClick={() => onChange(k)} {...(tabs ? { role: 'tab', 'aria-selected': value === k, ...(panelId ? { id: `${panelId}-tab-${k}`, 'aria-controls': panelId, tabIndex: value === k ? 0 : -1, onKeyDown: keys } : {}) } : { 'aria-pressed': value === k })}
           className={`rounded-full border px-2.5 py-1 text-xs font-semibold max-sm:min-h-[44px] max-sm:px-3 [@media(pointer:coarse)]:min-h-[44px] ${value === k ? 'border-delacour-primary bg-delacour-primary text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'}`}>
-          {l}{n !== undefined && <span className="opacity-75"> {n}</span>}
+          {l}{n !== undefined && (tabs ? <span className={`ml-1.5 rounded-full px-1.5 text-[11px] font-bold ${value === k ? 'bg-white text-delacour-primary' : 'bg-amber-500 text-slate-900'}`}>{n}<span className="sr-only"> à compléter</span></span> : <span className="opacity-75"> {n}</span>)}
         </button>
       ))}
     </div>

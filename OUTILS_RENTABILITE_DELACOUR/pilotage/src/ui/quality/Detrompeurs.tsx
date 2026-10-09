@@ -10,7 +10,7 @@ import { daysBetween, PROCESS_IDS, processLabel, sum, type Insight } from '../..
 import { formatValue } from '../../domain/numbers';
 import { frDate, isoDate } from '../../domain/periods';
 import { useStore } from '../../store/StoreContext';
-import { Button, DeleteButton, Card, Chips, Empty, Field, inputCls, Method, Modal, NumInput, Row, StatusBadge, SubTitle, Summary, Tile, ToolHeader, YesNo } from '../common';
+import { Button, DeleteButton, Card, Chips, Empty, Field, inputCls, Method, Modal, NewTab, NumInput, Row, StatusBadge, SubTitle, Summary, Tile, ToolHeader, YesNo } from '../common';
 import { downloadFile, fileSlug } from '../download';
 import type { ScreenProps } from '../screens';
 import type { Nav } from '../tools';
@@ -21,7 +21,7 @@ export function Detrompeurs({ nav, focus, clearFocus }: ScreenProps) {
   const { state, update } = useStore();
   const [open, setOpen] = useState<Poka | null>(null);
   const [filter, setFilter] = useState<Filter>('todo');
-  useEffect(() => { if (focus && state?.pokas[focus]) { setOpen(state.pokas[focus]); clearFocus(); } }, [focus]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (focus && state && Object.hasOwn(state.pokas, focus)) { setOpen(state.pokas[focus]); clearFocus(); } }, [focus]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!state) return null;
   const now = new Date();
   const all = Object.values(state.pokas).map(p => ({ p, st: pokaState(p, now) })).sort((a, b) => (checkDate(a.p) || '9') < (checkDate(b.p) || '9') ? -1 : 1);
@@ -86,6 +86,7 @@ export function PokaSheet({ initial, onClose, nav }: { initial: Poka; onClose():
   const { state, update, author } = useStore();
   const [p, setP] = useState<Poka>(() => structuredClone(initial));
   const [ideas, setIdeas] = useState(false);
+  const [saved, setSaved] = useState(() => JSON.stringify(initial));   // what is written: the sheet stays open when a link opens another tool in a new tab
   const [error, setError] = useState('');
   if (!state) return null;
   const isNew = !state.pokas[p.id];
@@ -96,7 +97,8 @@ export function PokaSheet({ initial, onClose, nav }: { initial: Poka; onClose():
   const since = ncsSince(state, p);
   const days = p.installedAt ? daysBetween(p.installedAt, new Date()) ?? 0 : null;
   const an = p.analysisId ? state.analyses[p.analysisId] : undefined;
-  const close = () => { if (JSON.stringify(p) === JSON.stringify(initial) || window.confirm('Fermer sans enregistrer ? Vos modifications seront perdues.')) onClose(); };
+  const close = () => { if (JSON.stringify(p) === saved || window.confirm('Fermer sans enregistrer ? Vos modifications seront perdues.')) onClose(); };
+  const write = () => { update(d => { d.pokas[p.id] = p; }); setSaved(JSON.stringify(p)); };
   const save = () => {
     if (!p.defect.trim()) return setError('Décrivez le défaut à éliminer.');
     if (p.check && p.check.defects === null && (p.check.seen ?? null) === null) return setError('Contrôle J+30 : le défaut a-t-il été revu (ou combien de défauts) ?');
@@ -132,7 +134,7 @@ export function PokaSheet({ initial, onClose, nav }: { initial: Poka; onClose():
               </select>
             </Field>
           </div>
-          {an && <p className="text-[11px] text-slate-500">Cause racine : {an.rootCause || 'à trouver'}. <button type="button" className="font-semibold text-delacour-primary hover:underline" onClick={() => { update(d => { d.pokas[p.id] = p; }); onClose(); nav.tool('5.3', an.id); }}>Ouvrir l'atelier {an.ref}</button></p>}
+          {an && <p className="text-[11px] text-slate-500">Cause racine : {an.rootCause || 'à trouver'}. <button type="button" className="inline-flex items-center gap-1 font-semibold text-delacour-primary hover:underline" onClick={() => { write(); nav.open('5.3', an.id); }}>Ouvrir l'atelier {an.ref}<NewTab /></button></p>}
         </section>
 
         <section className="space-y-2">
@@ -148,7 +150,7 @@ export function PokaSheet({ initial, onClose, nav }: { initial: Poka; onClose():
                   {cat.ideas.map(t => <button key={t} type="button" onClick={() => set({ description: t })} className="block w-full rounded border border-slate-200 bg-white px-2 py-1 text-left text-[11px] text-slate-700 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-950">{t}</button>)}
                 </div>
               ))}
-              {(POKA_IDEAS[p.processId] || []).concat(p.processId !== 'P3' ? POKA_IDEAS.P3 : []).map(t => (
+              {(POKA_IDEAS[p.processId] || []).concat(p.processId !== 'P3' ? POKA_IDEAS.P3 || [] : []).map(t => (
                 <button key={t} type="button" onClick={() => set({ description: t })} className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-left text-[11px] text-slate-700 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-950">{t}</button>
               ))}
             </div>
@@ -222,7 +224,7 @@ export function PokaSheet({ initial, onClose, nav }: { initial: Poka; onClose():
           <section className="space-y-1.5">
             {pb && <p className="rounded-lg bg-emerald-50 px-2.5 py-1.5 text-[11px] text-emerald-900">Ce défaut a coûté {formatValue(pb.yearly, '€')} sur les 12 mois avant le dispositif{pb.months !== null ? ` : le détrompeur (${formatValue(p.cost, '€')}) est remboursé en ${pb.months < 1 ? 'moins d\'un mois' : `${Math.ceil(pb.months)} mois`}` : ''}.</p>}
             {p.installedAt && (sop
-              ? <button type="button" className="text-[11px] font-semibold text-delacour-primary hover:underline" onClick={() => { update(d => { d.pokas[p.id] = p; }); onClose(); nav.tool('3.2', sop.id); }}>Mettre à jour l'instruction du poste {sop.poste} ({sop.version > 0 ? `V${String(sop.version).padStart(2, '0')}` : ''}) avec le détrompeur</button>
+              ? <button type="button" className="inline-flex items-center gap-1 text-[11px] font-semibold text-delacour-primary hover:underline" onClick={() => { write(); nav.open('3.2', sop.id); }}>Mettre à jour l'instruction du poste {sop.poste} ({sop.version > 0 ? `V${String(sop.version).padStart(2, '0')}` : ''}) avec le détrompeur<NewTab /></button>
               : <p className="text-[11px] text-slate-500">Pas d'instruction de poste « {p.poste || '…'} » (outil 3.2) : pensez à la créer avec le détrompeur.</p>)}
           </section>
         ); })()}

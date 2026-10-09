@@ -8,13 +8,13 @@ import {
 } from '../../domain/quality';
 import { applyQualityExample } from '../../domain/qualityExamples';
 import { analysisPdf, blankAnalysisPdf } from '../../domain/qualityPdf';
-import { recurrences, workshopsToOpen } from '../../domain/quality';
+import { recurrences, workshopOfNc, workshopsToOpen } from '../../domain/quality';
 import { DIMS } from '../ActionSheet';
 import { Search } from 'lucide-react';
-import { addDays, PROCESS_IDS, processLabel } from '../../domain/base';
+import { addDays, defaultProcess, PROCESS_IDS, processLabel } from '../../domain/base';
 import { frDate } from '../../domain/periods';
 import { useStore } from '../../store/StoreContext';
-import { Button, DeleteButton, Card, Chips, Empty, Field, inputCls, Method, Modal, Row, StatusBadge, SubTitle, Summary, Tile, ToolHeader } from '../common';
+import { Button, DeleteButton, Card, Chips, Empty, Field, inputCls, Method, Modal, NewTab, NumInput, Row, StatusBadge, SubTitle, Summary, Tile, ToolHeader, ToolSettings } from '../common';
 import { STATUS_LABEL } from '../ActionSheet';
 import { downloadFile, fileSlug } from '../download';
 import type { ScreenProps } from '../screens';
@@ -36,11 +36,17 @@ export function Ateliers({ nav, focus, clearFocus }: ScreenProps) {
   const [open, setOpen] = useState<Analysis | null>(null);
   const [filter, setFilter] = useState<Filter>('open');
   const [q, setQ] = useState('');
-  useEffect(() => { if (focus && state?.analyses[focus]) { setOpen(state.analyses[focus]); clearFocus(); } }, [focus]); // eslint-disable-line react-hooks/exhaustive-deps
+  // a workshop, or `new:nc:<defect>` (from an order of 3.4): the workshop of that defect, opened if it has none (the defect carries it)
+  useEffect(() => {
+    if (!focus || !state) return;
+    const nc = focus.startsWith('new:nc:') && Object.hasOwn(state.ncs, focus.slice(7)) ? state.ncs[focus.slice(7)] : undefined;
+    if (Object.hasOwn(state.analyses, focus)) { setOpen(state.analyses[focus]); clearFocus(); }
+    else if (nc) { const { a, isNew } = workshopOfNc(state, nc); if (isNew) update(d => { d.analyses[a.id] = a; d.ncs[nc.id].analysisId = a.id; }); setOpen(a); clearFocus(); }
+  }, [focus]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!state) return null;
   const now = new Date();
   const all = Object.values(state.analyses).sort((a, b) => (a.date < b.date ? 1 : -1));
-  const start = () => setOpen(newAnalysis(state, { kind: 'free', id: '' }, '', 'P3'));
+  const start = () => setOpen(newAnalysis(state, { kind: 'free', id: '' }, '', defaultProcess('P3')));
   if (!all.length) {
     return (
       <div className="space-y-4">
@@ -48,6 +54,7 @@ export function Ateliers({ nav, focus, clearFocus }: ScreenProps) {
           <Button kind="primary" onClick={start}><Plus size={14} />Nouvel atelier</Button>
           <Button onClick={() => update(d => applyQualityExample(d))}>Voir un exemple traité</Button>
         </Empty>
+        <WorkshopSettings />
         {open && <AnalysisSheet initial={open} onClose={() => setOpen(null)} nav={nav} />}
       </div>
     );
@@ -61,7 +68,7 @@ export function Ateliers({ nav, focus, clearFocus }: ScreenProps) {
   const toOpen = workshopsToOpen(state, now);
   const openFrom = (x: (typeof toOpen)[number]) => {
     const src = x.kind === 'nc' ? state.ncs[x.id] : state.complaints[x.id];
-    const a = newAnalysis(state, { kind: x.kind, id: x.id }, x.kind === 'nc' ? (src as typeof state.ncs[string]).description : `${(src as typeof state.complaints[string]).client} : ${src.description}`, (src as { processId: string }).processId || 'P3');
+    const a = newAnalysis(state, { kind: x.kind, id: x.id }, x.kind === 'nc' ? (src as typeof state.ncs[string]).description : `${(src as typeof state.complaints[string]).client} : ${src.description}`, (src as { processId: string }).processId || defaultProcess('P3'));
     update(d => { d.analyses[a.id] = a; if (x.kind === 'nc') d.ncs[x.id].analysisId = a.id; else d.complaints[x.id].analysisId = a.id; });
     setOpen(a);
   };
@@ -100,11 +107,25 @@ export function Ateliers({ nav, focus, clearFocus }: ScreenProps) {
           </ul>
         )}
       </Card>
+      <WorkshopSettings />
       <Method rule="Ne blâmez jamais la personne. Si quelqu'un a pu se tromper, c'est que le processus a rendu l'erreur possible : c'est lui qu'on corrige."
         steps={[['15 minutes debout, sous 2 h', "Réunir l'opérateur, le régleur et le responsable devant la machine, tant que les faits sont frais."], ['Demander pourquoi', "Interdire « il n'a pas fait attention ». Chercher pourquoi le mauvais geste était possible."], ['Une action physique sous 7 jours', "Une butée, un gabarit, un blocage. Jamais seulement « on lui a redit »."]]}
         tips={['Test à rebours : lire de la cause racine vers le problème avec « donc ». Si chaque lien tient, la cause est la bonne.', "L'efficacité se vérifie sur le terrain 30 jours plus tard (outil 5.4)."]} />
       {open && <AnalysisSheet initial={open} onClose={() => setOpen(null)} nav={nav} />}
     </div>
+  );
+}
+
+// Cost of a defect from which a workshop is expected
+function WorkshopSettings() {
+  const { state, update } = useStore();
+  if (!state) return null;
+  return (
+    <ToolSettings>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Field label="Atelier 5 Pourquoi dès (€)" hint="Coût d'un défaut qui déclenche un atelier."><NumInput value={state.params.cnqTrigger ?? 500} onChange={v => update(d => { d.params.cnqTrigger = v ?? 500; })} /></Field>
+      </div>
+    </ToolSettings>
   );
 }
 
@@ -132,8 +153,7 @@ export function AnalysisSheet({ initial, onClose, nav }: { initial: Analysis; on
     commit(a);
     const p = { ...newPoka(a), owner: a.pilot || author };
     update(d => { d.pokas[p.id] = p; });
-    onClose();
-    nav.tool('5.4', p.id);
+    nav.open('5.4', p.id);
   };
   const pdf = () => downloadFile(`Atelier-5P-${fileSlug(a.ref)}.pdf`, analysisPdf(withA, a, { company: state.settings.companyName, date: new Date() }), 'application/pdf');
   const srcTool = a.source.kind === 'nc' && state.ncs[a.source.id] ? '5.1' : a.source.kind === 'complaint' && state.complaints[a.source.id] ? '2.3' : null;
@@ -165,7 +185,7 @@ export function AnalysisSheet({ initial, onClose, nav }: { initial: Analysis; on
               </Field>
               <Field label="Pilote"><input className={inputCls} value={a.pilot} list="people" onChange={e => set({ pilot: e.target.value })} /></Field>
             </div>
-            {srcTool && <button type="button" className="text-[11px] font-semibold text-delacour-primary hover:underline" onClick={() => { if (valid()) { commit(a); onClose(); nav.tool(srcTool, a.source.id); } }}>Ouvrir la fiche d'origine ({sourceText(state, a)})</button>}
+            {srcTool && <button type="button" className="inline-flex items-center gap-1 text-[11px] font-semibold text-delacour-primary hover:underline" onClick={() => { if (valid()) { commit(a); nav.open(srcTool, a.source.id); } }}>Ouvrir la fiche d'origine ({sourceText(state, a)})<NewTab /></button>}
           </section>
 
           <section className="space-y-2">
@@ -239,8 +259,8 @@ export function AnalysisSheet({ initial, onClose, nav }: { initial: Analysis; on
               const ps = pokaState(p);
               return (
                 <li key={p.id}>
-                  <button type="button" onClick={() => { commit(a); onClose(); nav.tool('5.4', p.id); }} className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-left text-[11px] hover:bg-slate-50">
-                    <span className="flex items-center gap-1 text-slate-800"><ShieldCheck size={13} className="text-delacour-primary" />Détrompeur : {p.description || p.defect}</span>
+                  <button type="button" onClick={() => { commit(a); nav.open('5.4', p.id); }} className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-left text-[11px] hover:bg-slate-50">
+                    <span className="flex items-center gap-1 text-slate-800"><ShieldCheck size={13} className="text-delacour-primary" />Détrompeur : {p.description || p.defect}<NewTab /></span>
                     <StatusBadge level={POKA_STATE[ps].tone} text={POKA_STATE[ps].label} />
                   </button>
                 </li>
@@ -249,7 +269,7 @@ export function AnalysisSheet({ initial, onClose, nav }: { initial: Analysis; on
           </ul>
           <div className="flex flex-wrap gap-1.5">
             <Button className="!px-2 !py-1" onClick={addAction}><Plus size={13} />Action</Button>
-            <Button className="!px-2 !py-1" onClick={addPoka}><ShieldCheck size={13} />Détrompeur (5.4)</Button>
+            <Button className="!px-2 !py-1" onClick={addPoka}><ShieldCheck size={13} />Détrompeur (5.4)<NewTab /></Button>
           </div>
           <p className="text-[11px] text-slate-500">Les actions apparaissent aussi dans l'onglet Actions. Échéance conseillée : avant le {frDate(addDays(a.date, 9))}.</p>
         </aside>

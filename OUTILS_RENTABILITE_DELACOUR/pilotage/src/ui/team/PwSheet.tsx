@@ -7,6 +7,7 @@ import { ChevronDown, Plus, X } from 'lucide-react';
 import type { Power } from '../../domain/types';
 import type { Nav } from '../tools';
 import { PROCESS_IDS, processLabel } from '../../domain/base';
+import { FlowUses } from '../map/FlowUses';
 import { newRisk } from '../../domain/risk';
 import {
   depInfo, depViews, linkRef, wantedOf, signOf, signPerson, signStatus, unsignPerson, type SignNeed, formDone, formsOf, lostByDeleting, placeError, powerCfg, powerState, removeExtra, reviewPower, setDeputy, swapDeputies, waitText, WAITS, type DepView,
@@ -78,6 +79,7 @@ export function PwSheet({ id, draft, tab: first = 'act', nav, onClose }: { id: s
         </div>
       </div>
       <Field label="Compétence liée (outil 4.2)" hint="Le niveau de chaque suppléant sur cette compétence s'affiche dans ses détails."><select className={FIELD} value={p.skillId || ''} onChange={e => set({ skillId: e.target.value || undefined })}><option value="">Aucune</option>{Object.values(state.skills).sort((a, b) => a.name.localeCompare(b.name, 'fr')).map(x => <option key={x.id} value={x.id}>{x.name}</option>)}</select></Field>
+      {state.powers[p.id] && <FlowUses tool="4.1" id={p.id} />}
       <div className="flex flex-wrap items-center gap-3 text-xs text-slate-700">
         {risk ? <button type="button" className={`font-semibold text-delacour-primary hover:underline ${TOUCH}`} onClick={() => nav.openRisk(risk.id)}>Ouvrir le risque dans les Plans B (1.2)</button>
           : p.power.trim() && <button type="button" className={`font-semibold text-delacour-primary hover:underline ${TOUCH}`} onClick={makeRisk}>Inscrire le risque dans les Plans B (1.2)</button>}
@@ -133,7 +135,7 @@ export function PwSheet({ id, draft, tab: first = 'act', nav, onClose }: { id: s
         })}
       </div>
       <Button kind="ghost" className="mt-2 !py-1" onClick={() => change(c => ({ ...c, extra: [...(c.extra || []), ''], extraPracticed: [...(c.extraPracticed || []), ''] }))}><Plus size={13} />Ajouter un autre suppléant</Button>
-      {people.length === 0 && <p className="mt-2 text-xs text-slate-600">La liste du personnel est vide : le personnel se saisit dans la polyvalence (4.2).</p>}
+      {people.length === 0 && <p className="mt-2 text-xs text-slate-600">La liste du personnel est vide : le personnel se saisit dans l'annuaire (1.3).</p>}
     </div>
   );
 

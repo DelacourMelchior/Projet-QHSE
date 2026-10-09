@@ -15,7 +15,7 @@ export function parseTable(text: string, cols: Column[]): Record<string, string>
   return lines.slice(1).map(l => { const cells = l.split(sep).map(x => x.trim().replace(/^"|"$/g, '')); return Object.fromEntries(cols.map((c, i) => [c.key, idx[i] >= 0 ? cells[idx[i]] || '' : ''])); });
 }
 
-export function PasteImport({ title, cols, onImport, label = 'Importer' }: { title: string; cols: Column[]; onImport(rows: Record<string, string>[]): number; label?: string }) {
+export function PasteImport({ title, cols, onImport, label = 'Importer', check }: { title: string; cols: Column[]; onImport(rows: Record<string, string>[]): number; label?: string; check?(rows: Record<string, string>[]): string }) {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState('');
   const [msg, setMsg] = useState('');
@@ -29,6 +29,7 @@ export function PasteImport({ title, cols, onImport, label = 'Importer' }: { tit
           <div className="space-y-3">
             <p className="text-[11px] text-slate-600">Colonnes reconnues : {cols.map(c => c.label).join(', ')}. Les colonnes absentes restent vides.</p>
             <textarea className="min-h-[140px] w-full rounded-lg border border-slate-300 p-2 font-mono text-[11px]" value={text} onChange={e => { setText(e.target.value); setMsg(''); }} aria-label="Cellules collées" placeholder={cols.map(c => c.label).join('\t')} />
+            {rows.length > 0 && check?.(rows) && <p role="status" className="rounded-lg bg-amber-50 px-2.5 py-1.5 text-[11px] font-semibold text-amber-900">{check(rows)}</p>}
             {rows.length > 0 && (
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-[11px]">

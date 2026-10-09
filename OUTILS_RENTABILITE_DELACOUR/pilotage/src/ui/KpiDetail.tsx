@@ -2,20 +2,27 @@
 import { useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import type { Aggregation, Direction, Kpi, KpiType } from '../domain/types';
-import { actionsOf, effectiveness, statusAt, timelinePeriods, trend, valueOf, yearSummary } from '../domain/engine';
+import { processName } from '../domain/cartography';
+import { actionsOf, deleteKpi, effectiveness, statusAt, timelinePeriods, trend, valueOf, yearSummary } from '../domain/engine';
 import { formatValue, parseNumber } from '../domain/numbers';
 import { periodLabel } from '../domain/periods';
 import { useStore } from '../store/StoreContext';
 import { Button, Field, inputCls, Modal, StatusBadge } from './common';
 import { ChartLegend, KpiChart } from './KpiChart';
 import { STATUS_LABEL } from './ActionSheet';
+import { ComplaintTrend } from './commercial/ComplaintTrend';
+import { FeedbackTrend } from './commercial/FeedbackTrend';
+import { FlowUses } from './map/FlowUses';
+import { isComplaintKpi, isSatisfactionKpi } from '../domain/commercial';
+
+export const NEW_KPI_NAME = 'Nouvel indicateur';   // a KPI just added opens on its definition
 
 export function KpiDetail({ kpiId, onClose, onOpenAction, onNewAction }: {
   kpiId: string; onClose(): void; onOpenAction(id: string): void; onNewAction(kpiId: string): void;
 }) {
   const { state, period, teamView, update } = useStore();
-  const [tab, setTab] = useState<'suivi' | 'definition'>('suivi');
   const k0 = state?.kpis[kpiId];
+  const [tab, setTab] = useState<'suivi' | 'definition'>(k0?.name === NEW_KPI_NAME ? 'definition' : 'suivi');
   const [def, setDef] = useState<Kpi | undefined>(k0 && { ...k0 });
   if (!state || !k0 || !def) return null;
   const k = k0;
@@ -30,16 +37,15 @@ export function KpiDetail({ kpiId, onClose, onOpenAction, onNewAction }: {
   const remove = () => {
     if (!window.confirm(`Supprimer l'indicateur « ${k.name} », ses valeurs et ses actions ?`)) return;
     update(d => {
-      delete d.kpis[k.id]; delete d.values[k.id];
-      d.processes.forEach(p => { p.kpiIds = p.kpiIds.filter(id => id !== k.id); });
-      Object.values(d.actions).filter(a => a.kpiId === k.id).forEach(a => { delete d.actions[a.id]; });
+      deleteKpi(d, k.id);
     });
     onClose();
   };
 
   return (
     <Modal wide onClose={onClose} title={k.name}
-      subtitle={<span>{state.processes.find(p => p.id === k.processId)?.name} · cible {masked ? '···' : k.target} · {k.type}{k.confidential ? ' · confidentiel' : ''}</span>}>
+      subtitle={<span>{processName(state, k.processId)} · cible {masked ? '···' : k.target} · {k.type}{k.confidential ? ' · confidentiel' : ''}</span>}>
+      <div className="mb-3 empty:hidden"><FlowUses quiet tool="1.1" id={k.id} /></div>
       <div className="mb-3 flex gap-1.5" role="tablist">
         {(['suivi', 'definition'] as const).map(x => (
           <button key={x} role="tab" aria-selected={tab === x} type="button" onClick={() => setTab(x)}
@@ -61,6 +67,8 @@ export function KpiDetail({ kpiId, onClose, onOpenAction, onNewAction }: {
           </div>
           <KpiChart state={state} kpi={k} period={period} color="#1B4D3E" height={260} />
           <ChartLegend />
+          {isComplaintKpi(k) && Object.keys(state.complaints).length > 0 && <div className="rounded-lg border border-slate-200 p-3"><ComplaintTrend end={period} /></div>}
+          {isSatisfactionKpi(k) && Object.keys(state.feedbacks).length > 0 && <div className="rounded-lg border border-slate-200 p-3"><FeedbackTrend end={period} /></div>}
 
           <div>
             <div className="mb-1.5 flex items-center justify-between">

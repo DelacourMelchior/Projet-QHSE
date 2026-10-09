@@ -1,280 +1,192 @@
-// Tool 3.3 "Maintenance": 10 minutes of sensory inspection every Monday on each bottleneck machine (look, listen, smell, levels),
-// anomalies written at the first leak, and the survival cabinet: the critical wear parts kept under lock, reordered the day one is used.
-import { useEffect, useState } from 'react';
-import { FileDown, Minus, Plus, Trash2, Wrench, X } from 'lucide-react';
-import type { Equipment, Inspection } from '../../domain/types';
-import {
-  anomalies, equipmentInsights, INSPECTION_STATE, inspectionState, lastInspection, lowParts, newEquipment, routineRate,
-} from '../../domain/operations';
-import { applyOperationsExample } from '../../domain/operationsExamples';
-import { downtime, LEGAL_TASKS, resultOf, taskDue } from '../../domain/operations';
-import { contactLabel } from '../../domain/contacts';
-import { daysBetween } from '../../domain/base';
-import { formatValue } from '../../domain/numbers';
-import { routinePdf } from '../../domain/operationsPdf';
-import { frDate, isoDate } from '../../domain/periods';
+// Tool 3.3 "Maintenance": each piece of equipment looked at on a short routine, a problem reported by anyone in seconds, stops and breakdowns noted with a touch,
+// ONE common cabinet of critical spare parts, and the calendar of the periodic checks.
+// Screen: summary (4 figures that say what the cards and the queue say), what is left to do, then the equipment as cards, a list, the cabinet, the checks or the plan.
+import { useEffect, useRef, useState } from 'react';
+import { Plus, Search } from 'lucide-react';
+import type { Equipment, Spare } from '../../domain/types';
+import { eqStatus, kindLabel, kindOf, txt, urgency } from '../../domain/maintenance';
+import { maintInsights, maintMatcher, maintSummary, type MaintFilter } from '../../domain/maintenanceAll';
+import { applyMaintenanceExample } from '../../domain/maintenanceExamples';
+import { followedSpares } from '../../domain/maintenanceSpares';
+import { norm } from '../../domain/instructions';
+import { addMaintKpis, isMaintKpi } from '../../domain/maintenanceFeeds';
+import { periodOfDate } from '../../domain/periods';
 import { useStore } from '../../store/StoreContext';
-import { Button, DeleteButton, Card, Empty, Field, inputCls, Method, Modal, NumInput, Row, StatusBadge, SubTitle, Summary, Tile, ToolHeader } from '../common';
-import { downloadFile, fileSlug } from '../download';
+import { Button, Card, Chips, Empty, inputCls, Method, Summary, Tile, ToolHeader, Modal } from '../common';
+import { FeedBox } from '../Feed';
+import { usePrintOne } from '../PrintOne';
 import type { ScreenProps } from '../screens';
-import type { Nav } from '../tools';
+import { CabinetView } from './EqCabinet';
+import { ChecksView } from './EqChecksView';
+import { EqCard, EqLine, eqName, plural } from './EqCards';
+import { onPhone, useUndo } from './EqBits';
+import { EqNew } from './EqNew';
+import { EqPlan } from './EqPlan';
+import { EQ_PAGE, EqPrint } from './EqPrint';
+import type { EqTab } from './EqProps';
+import { EqQueue } from './EqQueue';
+import { EqRoutine } from './EqRoutine';
+import { ReportDialog } from './EqReport';
+import { EqSettings } from './EqSettings';
+import { EqSheet } from './EqSheet';
+import { SpareSheet } from './EqSpareSheet';
+
+type View = 'cards' | 'list' | 'cabinet' | 'checks' | 'plan';
+type Filter = MaintFilter;
+const PAGE = 24;
+const TABS: EqTab[] = ['routine', 'issues', 'cabinet', 'checks', 'sheet'];
 
 export function Maintenance({ nav, focus, clearFocus }: ScreenProps) {
   const { state, update } = useStore();
-  const [open, setOpen] = useState<Equipment | null>(null);
-  useEffect(() => { if (focus && state?.equipments[focus]) { setOpen(state.equipments[focus]); clearFocus(); } }, [focus]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [open, setOpen] = useState<{ eq: Equipment; tab?: EqTab } | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [station, setStation] = useState(''), [report, setReport] = useState(''), [spareId, setSpareId] = useState('');
+  const [fresh, setFresh] = useState<Spare | null>(null);   // a new part lives in its window until it has a name or a reference
+  const seen = useRef<Spare>(undefined);   // the part as last seen: a window opened on it stays when the record is deleted elsewhere (it says so, see SpareSheet)
+  const [missing, setMissing] = useState<'' | 'equipment' | 'spare'>('');   // an address that names nothing (an old link, a deleted record, a trapped id)
+  // under 640 px the list is the default view (a card is too tall for a phone), and the messages and the queue are folded: the equipment comes first
+  const [view, setView] = useState<View>(() => (onPhone() ? 'list' : 'cards'));
+  const [filter, setFilter] = useState<Filter>('service'), [group, setGroup] = useState(''), [q, setQ] = useState(''), [limit, setLimit] = useState(PAGE);
+  const [printNode, print] = usePrintOne();
+  const { bar, offer } = useUndo();
+  // "Réglages de cet outil" is a closed panel at the bottom of the screen: open it and bring it into view
+  function openSettings() {
+    const el = document.getElementById('reglages-3-3'), d = el instanceof HTMLDetailsElement ? el : el?.querySelector('details');
+    if (d) d.open = true;
+    el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+  // a link opens a sheet (on a tab), the routine full screen (the QR code stuck on the equipment), the report of a problem or a part, the cabinet, the settings of the
+  // tool, the Plan B of a stop; the id comes from the address: only an id the data really holds is used (never "__proto__", "constructor", "toString"), any other opens
+  // one window that says so
+  useEffect(() => {
+    if (!focus || !state) return;
+    const eqs = state.equipments, has = (id: string) => Object.hasOwn(eqs, id);
+    if (focus === 'cabinet') setView('cabinet');
+    else if (focus === 'settings') openSettings();
+    else if (focus.startsWith('risk:')) { const id = focus.slice(5); if (Object.hasOwn(state.risks, id)) nav.openRisk(id, 2); }
+    else if (focus.startsWith('station:')) { const id = focus.slice(8); if (has(id)) setStation(id); else setMissing('equipment'); }
+    else if (focus.startsWith('report:')) { const id = focus.slice(7); if (has(id)) setReport(id); else setMissing('equipment'); }
+    else if (focus.startsWith('spare:')) { const id = focus.slice(6); if (Object.hasOwn(state.spares, id)) setSpareId(id); else setMissing('spare'); }
+    else {
+      const [id, tab] = focus.split(':');
+      if (has(id)) setOpen({ eq: eqs[id], tab: TABS.find(t => t === tab) }); else setMissing('equipment');
+    }
+    clearFocus();
+  }, [focus, !!state]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!state) return null;
-  const now = new Date();
-  const all = Object.values(state.equipments).sort((a, b) => a.name.localeCompare(b.name));
+  const company = state.settings.companyName, all = Object.values(state.equipments);
+  const eqOf = (id: string) => (id && Object.hasOwn(state.equipments, id) ? state.equipments[id] : undefined);
+  const stationEq = eqOf(station), reportEq = eqOf(report);
+  const found = spareId && Object.hasOwn(state.spares, spareId) ? state.spares[spareId] : undefined;
+  if (found) seen.current = found;
+  const spare = found ?? (spareId && seen.current?.id === spareId ? seen.current : undefined) ?? fresh ?? undefined;
+  const lost = !!missing || (station && !stationEq) || (report && !reportEq);
+  const closeLost = () => { setStation(''); setReport(''); setMissing(''); };
+  const printEq = (e: Equipment) => print(<EqPrint e={e} company={company} state={state} />, EQ_PAGE);
+  const openEq = (id: string, tab?: EqTab) => { const eq = eqOf(id); if (eq) setOpen({ eq, tab }); };
+  const overlays = <>
+    {open && <EqSheet key={open.eq.id} initial={open.eq} tab={open.tab} nav={nav} onClose={() => setOpen(null)} onCopy={(c: Equipment) => setOpen({ eq: c })} offerBack={offer} />}
+    {creating && <EqNew onClose={() => setCreating(false)} onStart={(e: Equipment) => { setCreating(false); setOpen({ eq: e }); }} />}
+    {stationEq && <EqRoutine eq={stationEq} nav={nav} onClose={() => setStation('')} />}
+    {reportEq && <ReportDialog eq={reportEq} nav={nav} onClose={() => setReport('')} />}
+    {lost && <Modal onClose={closeLost} title={missing === 'spare' ? 'Pièce introuvable' : 'Équipement introuvable'} footer={<Button onClick={closeLost}>Fermer</Button>}><p className="text-xs text-slate-700">{missing === 'spare' ? 'Cette pièce' : 'Cet équipement'} n'existe pas sur cet appareil. {missing === 'spare' ? 'Elle a' : 'Il a'} peut-être été supprimé{missing === 'spare' ? 'e' : ''}, ou les données de l'entreprise ne sont pas encore chargées ici.</p></Modal>}
+    {spare && <SpareSheet key={spare.id} initial={spare} nav={nav} offerBack={offer} onClose={() => { setSpareId(''); setFresh(null); }} />}
+    {printNode}{bar}
+  </>;
   if (!all.length) {
     return (
       <div className="space-y-4">
-        <Empty title="Maintenance : 10 minutes le lundi pour ne pas perdre 3 jours en plein pic" text="Pour chaque machine goulet : 5 points à regarder, écouter, sentir chaque lundi avant le lancement, et une armoire de survie avec les 3 pièces d'usure critiques sous clé.">
-          <Button kind="primary" onClick={() => setOpen(newEquipment())}><Plus size={14} />Ajouter une machine</Button>
-          <Button onClick={() => update(d => applyOperationsExample(d))}>Voir un exemple traité</Button>
-        </Empty>
-        {open && <EquipmentSheet initial={open} onClose={() => setOpen(null)} nav={nav} />}
+        <div>
+          <h1 className="sr-only">Maintenance</h1>
+          <Empty title="Maintenance : une routine courte au pied de chaque équipement, et des pièces prêtes quand il en faut" text="Pour chaque équipement important : quelques points à regarder à chaque routine, avec la photo de ce qui est normal, un QR code collé dessus, les pannes notées d'un toucher, une armoire commune des pièces critiques et le calendrier des contrôles.">
+            <Button kind="primary" onClick={() => setCreating(true)}><Plus size={14} />Nouvel équipement</Button>
+            <Button onClick={() => update(d => applyMaintenanceExample(d))}>Voir un exemple traité</Button>
+          </Empty>
+        </div>
+        {overlays}
       </div>
     );
   }
-  const upToDate = all.filter(e => inspectionState(e, now) === 'ok').length;
-  const ano = all.reduce((n, e) => n + anomalies(e).length, 0);
-  const low = all.reduce((n, e) => n + lowParts(e).length, 0);
+
+  const now = new Date(), sm = maintSummary(state, now), todos = sm.todos, insights = maintInsights(state, now, todos);
+  const toDo = sm.routineTotal - sm.routineDone, cabinet = followedSpares(state).length, hasChecks = all.some(e => e.tasks?.length);
+  const match = maintMatcher(state, todos);   // the same definition counts the chips and fills the list
+  const count = (f: Filter) => all.filter(e => match(f, e)).length;
+  const groups = [...new Set(all.map(e => e.group?.trim()).filter(Boolean))].sort((a, b) => a!.localeCompare(b!, 'fr')) as string[];
+  const hay = (e: Equipment) => norm([e.name, kindLabel(kindOf(e)), e.group, e.location, e.maker, e.model, e.serial, e.operator, txt(e.deputy), e.manager].join(' '));
+  const words = norm(q).split(/\s+/).filter(Boolean);
+  const shown = all.filter(e => match(filter, e) && (!group || e.group?.trim() === group) && words.every(w => hay(e).includes(w)))
+    .sort((a, b) => Number(eqStatus(a) === 'retired') - Number(eqStatus(b) === 'retired') || urgency(todos, b.id) - urgency(todos, a.id) || eqName(a).localeCompare(eqName(b), 'fr'));
+  const listed = shown.slice(0, limit);
+  const pick = (f: Filter) => { setFilter(f); setLimit(PAGE); };
+  const go = (f: Filter) => { setView(v => (v === 'list' ? v : 'cards')); pick(f); };
+  const filters: [Filter, string, number][] = [['service', 'Suivis', count('service')], ['todo', 'Routine à faire', count('todo')], ['stopped', "À l'arrêt", count('stopped')], ['anomalies', 'Avec anomalie', count('anomalies')], ['spares', 'Avec pièce courte', count('spares')], ['checks', 'Avec contrôle à suivre', count('checks')], ['retired', 'Retirés', count('retired')]];
+  const card = (e: Equipment) => <EqCard key={e.id} e={e} state={state} todos={todos} now={now} onOpen={() => openEq(e.id)} onRoutine={() => setStation(e.id)} onPrint={() => printEq(e)} onReport={() => setReport(e.id)} />;
+  const line = (e: Equipment) => <EqLine key={e.id} e={e} state={state} todos={todos} now={now} onOpen={() => openEq(e.id)} onRoutine={() => setStation(e.id)} onPrint={() => printEq(e)} onReport={() => setReport(e.id)} />;
+  const sheets = view === 'cards' || view === 'list';
+  const plan = !!state.params.sop?.plan;
+
   return (
     <div className="space-y-4">
-      <Summary title="Les machines goulets sont-elles surveillées ?" insights={equipmentInsights(state, now)} tiles={<>
-        <Tile title="Machines suivies" value={String(all.length)} sub={`${all.filter(e => state.risks[e.riskId]).length} reliée(s) à un Plan B (1.2)`} />
-        <Tile title="Inspectées cette semaine" value={`${upToDate} / ${all.length}`} sub="routine du lundi" tone={upToDate === all.length ? 'ok' : 'warn'} />
-        <Tile title="Anomalies ouvertes" value={String(ano)} sub="relevées à la dernière inspection" tone={ano ? 'alert' : undefined} />
-        <Tile title="Pièces sous le stock mini" value={String(low)} sub="armoire de survie" tone={low ? 'alert' : 'ok'} />
+      <div>
+      <h1 className="sr-only">Maintenance</h1>
+      <Summary title="Les équipements sont-ils surveillés et l'armoire est-elle prête ?" insights={[]} tiles={<>
+        <Tile title="Routines à jour" value={`${sm.routineDone} / ${sm.routineTotal}`} sub={`${toDo ? plural(toDo, 'routine à faire ou en retard', 'routines à faire ou en retard') : sm.routineTotal ? 'toutes faites pour leur période' : 'aucun équipement en service'}${sm.stopped ? ` (${plural(sm.stopped, "équipement à l'arrêt ne compte pas", "équipements à l'arrêt ne comptent pas")})` : ''}`}
+          tone={toDo ? 'warn' : sm.routineTotal ? 'ok' : undefined} onClick={toDo ? () => go('todo') : undefined} active={sheets && filter === 'todo'} />
+        <Tile title="Anomalies ouvertes" value={String(sm.anomalies)} sub={[sm.dangers ? `dont ${plural(sm.dangers, 'danger')}` : '', sm.stopped ? `${plural(sm.stopped, 'équipement')} à l'arrêt` : 'aucun équipement à l\'arrêt'].filter(Boolean).join(', ')}
+          tone={sm.dangers || sm.stopped ? 'alert' : sm.anomalies ? 'warn' : sm.equipments ? 'ok' : undefined} onClick={sm.anomalies ? () => go('anomalies') : sm.stopped ? () => go('stopped') : undefined} active={sheets && (filter === 'anomalies' || filter === 'stopped')} />
+        <Tile title="Pièces sous le mini ou en rupture" value={String(sm.sparesLow + sm.sparesOut)} sub={sm.sparesOut ? `dont ${sm.sparesOut} en rupture` : cabinet ? 'pièces critiques, aucune en rupture' : 'armoire sans pièce'}
+          tone={sm.sparesOut ? 'alert' : sm.sparesLow ? 'warn' : cabinet ? 'ok' : undefined} onClick={sm.sparesLow + sm.sparesOut ? () => go('spares') : undefined} active={sheets && filter === 'spares'} />
+        <Tile title="Contrôles échus" value={String(sm.checksLate)} sub={[sm.checksLateLegal ? `dont ${plural(sm.checksLateLegal, 'obligatoire')}` : '', sm.checksSoon ? `${plural(sm.checksSoon, 'contrôle')} à planifier ou planifié${sm.checksSoon > 1 ? 's' : ''}` : '', sm.checksNoDate ? `${plural(sm.checksNoDate, 'contrôle')} sans date` : ''].filter(Boolean).join(', ') || (hasChecks ? 'aucun à planifier' : 'aucun contrôle suivi')}
+          tone={sm.checksLateLegal ? 'alert' : sm.checksLate || sm.checksSoon || sm.checksNoDate ? 'warn' : hasChecks ? 'ok' : undefined} onClick={sm.checksLate || sm.checksSoon ? () => go('checks') : undefined} active={sheets && filter === 'checks'} />
       </>} />
-      <Card className="space-y-3 p-3 sm:p-4">
-        <ToolHeader title="Machines goulets" text="Celles dont l'arrêt bloque l'atelier. L'opérateur nettoie, surveille, graisse ; la maintenance spécialisée fait les révisions lourdes.">
-          <Button kind="primary" onClick={() => setOpen(newEquipment())}><Plus size={14} />Ajouter une machine</Button>
-        </ToolHeader>
-        <ul className="divide-y divide-slate-100">
-          {all.map(e => {
-            const st = inspectionState(e, now);
-            const a = anomalies(e), l = lowParts(e), last = lastInspection(e);
-            return (
-              <Row key={e.id} onClick={() => setOpen(e)}
-                title={`${e.name || 'Machine à nommer'}${e.location ? ` · ${e.location}` : ''}`}
-                sub={a.length ? <span className="font-semibold text-red-700">Anomalie : {a.map(c => c.label.toLowerCase()).join(', ')}</span> : l.length ? <span className="font-semibold text-red-700">À commander : {l.map(p => p.name).join(', ')}</span> : `Routine suivie ${routineRate(e, now)} % des semaines sur 12 · ${e.parts.length} pièce(s) de survie`}
-                right={<><span className="block font-semibold text-slate-800">{e.operator || 'Opérateur à nommer'}</span>{last ? `inspectée le ${frDate(last.date)}` : 'jamais inspectée'}</>}
-                badge={<StatusBadge level={a.length || l.length ? 'alert' : INSPECTION_STATE[st].tone} text={a.length ? 'Anomalie' : l.length ? 'Pièce à commander' : INSPECTION_STATE[st].label} />} />
-            );
-          })}
-        </ul>
-      </Card>
-      <Method rule="10 minutes d'inspection le lundi évitent 3 jours d'arrêt en plein pic de commandes."
-        steps={[['Routine du lundi', "L'opérateur consacre les 10 premières minutes de sa semaine à regarder, écouter, sentir et vérifier les niveaux."], ['Alerte au premier suintement', "Une anomalie s'écrit tout de suite, sans attendre la casse."], ['Armoire de survie', "Les pièces d'usure critiques sont sous clé ; la commande part le jour où l'une d'elles sort."]]}
-        tips={['Ne jamais « emprunter » une pièce de survie pour une autre machine.']} />
-      {open && <EquipmentSheet initial={open} onClose={() => setOpen(null)} nav={nav} />}
-    </div>
-  );
-}
-
-function EquipmentSheet({ initial, onClose, nav }: { initial: Equipment; onClose(): void; nav: Nav }) {
-  const { state, update, author } = useStore();
-  const [e, setE] = useState<Equipment>(() => structuredClone(initial));
-  const [insp, setInsp] = useState<Inspection>(() => ({ date: isoDate(new Date()), by: initial.operator || author, results: initial.checkpoints.map(() => 'ok'), note: '' }));
-  const [doing, setDoing] = useState(false);
-  const [error, setError] = useState('');
-  const [info, setInfo] = useState('');
-  if (!state) return null;
-  const isNew = !state.equipments[e.id];
-  const set = (x: Partial<Equipment>) => { setE(y => ({ ...y, ...x })); setInfo(''); };
-  const valid = () => { if (!e.name.trim()) { setError('Nommez la machine.'); return false; } return true; };
-  const commit = (x: Equipment) => update(d => { d.equipments[x.id] = x; });
-  const close = () => { if (JSON.stringify(e) === JSON.stringify(initial) || window.confirm('Fermer sans enregistrer ? Vos modifications seront perdues.')) onClose(); };
-  const save = () => { if (valid()) { commit(e); onClose(); } };
-  const remove = () => { if (window.confirm(`Supprimer ${e.name} ?`)) { update(d => { delete d.equipments[e.id]; }); onClose(); } };
-  const addInspection = () => {
-    if (!valid()) return;
-    const results = e.checkpoints.map((_, i) => insp.results[i] || 'ok');
-    const ids = e.checkpoints.map((c, i) => c.id || `cp${i}_${Date.now().toString(36)}`);
-    const open = e.anomalies || [];
-    // every point out of order opens an anomaly (unless one is already open on it), closed later when repaired
-    const fresh = e.checkpoints.filter((c, i) => results[i] === 'ko' && !open.some(a => !a.closedAt && a.label === c.label))
-      .map((c, i) => ({ id: `an_${Date.now().toString(36)}${i}`, label: c.label, date: insp.date, note: insp.note, closedAt: '' }));
-    const x = { ...e, checkpoints: e.checkpoints.map((c, i) => ({ ...c, id: ids[i] })), anomalies: [...open, ...fresh], inspections: [...e.inspections, { ...insp, results, ids }] };
-    setE(x); commit(x); setDoing(false);
-    setInfo(insp.results.includes('ko') ? 'Inspection enregistrée avec anomalie : ouvrez une action.' : 'Inspection enregistrée.');
-  };
-  const action = () => { if (!valid()) return; commit(e); nav.newAction({ ref: { kind: 'equipment', id: e.id }, constat: `${e.name} : ${anomalies(e).map(c => c.label.toLowerCase()).join(', ') || 'anomalie relevée'}` }); };
-  const setPart = (i: number, x: Partial<Equipment['parts'][number]>) => set({ parts: e.parts.map((p, j) => (j === i ? { ...p, ...x } : p)) });
-  const last8 = [...e.inspections].sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 8).reverse();
-  const pdf = () => downloadFile(`Routine-${fileSlug(e.name)}.pdf`, routinePdf(e, { company: state.settings.companyName, date: new Date() }), 'application/pdf');
-  const ano = anomalies(e);
-
-  return (
-    <Modal xwide onClose={close} title={isNew ? 'Nouvelle machine goulet' : e.name}
-      subtitle={<StatusBadge level={INSPECTION_STATE[inspectionState(e)].tone} text={INSPECTION_STATE[inspectionState(e)].label} />}
-      footer={<>
-        {!isNew && <DeleteButton onClick={remove} className="mr-auto"><Trash2 size={14} />Supprimer</DeleteButton>}
-        {error && <span role="alert" className="mr-2 text-[11px] font-semibold text-red-700">{error}</span>}
-        {info && !error && <span role="status" className="mr-2 text-[11px] font-semibold text-emerald-700">{info}</span>}
-        <Button onClick={pdf}><FileDown size={14} />Feuille à afficher</Button>
-        <Button onClick={close}>Annuler</Button>
-        <Button kind="primary" onClick={save}>Enregistrer</Button>
-      </>}>
-      <div className="space-y-5">
-        <section className="grid gap-3 sm:grid-cols-4">
-          <div className="sm:col-span-2"><Field label="Machine"><input className={inputCls} value={e.name} onChange={x => set({ name: x.target.value })} /></Field></div>
-          <Field label="Emplacement"><input className={inputCls} value={e.location} onChange={x => set({ location: x.target.value })} /></Field>
-          <Field label="Plan B (outil 1.2)">
-            <select className={inputCls} value={e.riskId} onChange={x => set({ riskId: x.target.value })}>
-              <option value="">Aucun</option>
-              {e.riskId && !state.risks[e.riskId] && <option value={e.riskId}>Risque supprimé</option>}
-              {Object.values(state.risks).sort((a, b) => a.title.localeCompare(b.title)).map(r => <option key={r.id} value={r.id}>{r.title}</option>)}
-            </select>
-          </Field>
-          <Field label="Opérateur titulaire"><input className={inputCls} value={e.operator} list="people" onChange={x => set({ operator: x.target.value })} /></Field>
-          <Field label="Responsable"><input className={inputCls} value={e.manager} list="people" onChange={x => set({ manager: x.target.value })} /></Field>
-          <Field label="SAV (annuaire 1.3)">
-            <select className={inputCls} value={e.contactId || ''} onChange={x => set({ contactId: x.target.value || undefined })}>
-              <option value="">Aucun</option>{Object.values(state.contacts).map(c => <option key={c.id} value={c.id}>{contactLabel(c)} · {c.phone}</option>)}
-            </select>
-          </Field>
-          <Field label="Notice : où elle est"><input className={inputCls} value={e.manual || ''} onChange={x => set({ manual: x.target.value })} /></Field>
-          <Field label="Dernière révision complète"><input type="date" className={inputCls} value={e.lastRevision || ''} onChange={x => set({ lastRevision: x.target.value })} /></Field>
-        </section>
-
-        <section className="space-y-2">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <SubTitle>Routine du lundi</SubTitle>
-            {!doing && <Button kind="primary" className="!px-2 !py-1" onClick={() => { setInsp({ date: isoDate(new Date()), by: e.operator || author, results: e.checkpoints.map(() => 'ok'), note: '' }); setDoing(true); }}>Faire l'inspection</Button>}
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[560px] border-separate border-spacing-0 text-left text-[11px]">
-              <thead>
-                <tr className="text-slate-500">
-                  <th className="border-b border-slate-200 px-1.5 py-1 font-semibold">Point</th>
-                  <th className="border-b border-slate-200 px-1.5 py-1 font-semibold">Bon fonctionnement</th>
-                  {last8.map((x, i) => <th key={i} className="border-b border-slate-200 px-1 py-1 text-center font-mono font-normal">{frDate(x.date).slice(0, 5)}</th>)}
-                  {doing && <th className="border-b border-slate-200 px-1.5 py-1 font-semibold text-delacour-primary">Aujourd'hui</th>}
-                  <th className="border-b border-slate-200" />
-                </tr>
-              </thead>
-              <tbody>
-                {e.checkpoints.map((c, i) => (
-                  <tr key={i}>
-                    <td className="border-b border-slate-100 px-1.5 py-1"><input className={`${inputCls} !py-1`} value={c.label} aria-label={`Point ${i + 1}`} onChange={x => set({ checkpoints: e.checkpoints.map((y, j) => (j === i ? { ...y, label: x.target.value } : y)) })} /></td>
-                    <td className="border-b border-slate-100 px-1.5 py-1"><input className={`${inputCls} !py-1`} value={c.criterion} aria-label={`Critère ${i + 1}`} onChange={x => set({ checkpoints: e.checkpoints.map((y, j) => (j === i ? { ...y, criterion: x.target.value } : y)) })} /></td>
-                    {last8.map((x, k) => { const r = resultOf(e, x, i); return <td key={k} className="border-b border-slate-100 text-center"><span title={r === 'ko' ? 'Anomalie' : r === 'ok' ? 'OK' : 'Point absent ce jour-là'} className={`inline-block h-2.5 w-2.5 rounded-full ${r === 'ko' ? 'bg-red-600' : r === 'ok' ? 'bg-emerald-600' : 'bg-slate-200'}`} /></td>; })}
-                    {doing && (
-                      <td className="border-b border-slate-100 px-1.5 py-1">
-                        <div className="flex gap-1" role="radiogroup" aria-label={`Aujourd'hui : ${c.label}`}>
-                          {(['ok', 'ko'] as const).map(v => (
-                            <button key={v} type="button" role="radio" aria-checked={insp.results[i] === v} onClick={() => setInsp({ ...insp, results: e.checkpoints.map((_, j) => (j === i ? v : insp.results[j] || 'ok')) })}
-                              className={`rounded border px-1.5 py-0.5 text-[11px] font-semibold ${insp.results[i] === v ? (v === 'ok' ? 'border-emerald-700 bg-emerald-600 text-white' : 'border-red-700 bg-red-600 text-white') : 'border-slate-300 bg-white text-slate-700'}`}>{v === 'ok' ? 'OK' : 'Anomalie'}</button>
-                          ))}
-                        </div>
-                      </td>
-                    )}
-                    <td className="border-b border-slate-100"><button type="button" aria-label={`Retirer le point ${c.label}`} onClick={() => set({ checkpoints: e.checkpoints.filter((_, j) => j !== i) })} className="rounded p-1 text-slate-400 hover:text-red-600"><X size={13} /></button></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <Button kind="ghost" className="!px-2 !py-1" onClick={() => set({ checkpoints: [...e.checkpoints, { label: '', criterion: '' }] })}><Plus size={13} />Ajouter un point</Button>
-          {doing && (
-            <div className="grid items-end gap-2 rounded-lg bg-slate-50 p-2.5 sm:grid-cols-[auto_1fr_2fr_auto]">
-              <Field label="Date"><input type="date" className={inputCls} value={insp.date} onChange={x => setInsp({ ...insp, date: x.target.value })} /></Field>
-              <Field label="Par"><input className={inputCls} value={insp.by} list="people" onChange={x => setInsp({ ...insp, by: x.target.value })} /></Field>
-              <Field label="Anomalie constatée, action"><input className={inputCls} value={insp.note} onChange={x => setInsp({ ...insp, note: x.target.value })} /></Field>
-              <div className="flex gap-1.5"><Button onClick={() => setDoing(false)}>Annuler</Button><Button kind="primary" onClick={addInspection}>Enregistrer</Button></div>
-            </div>
-          )}
-          {ano.length > 0 && !doing && (
-            <div className="space-y-1 rounded-lg bg-red-50 px-2.5 py-1.5 text-[11px] text-red-800">
-              <div className="font-semibold">Anomalies ouvertes : restent ouvertes jusqu'à la réparation.</div>
-              {(e.anomalies || []).filter(a => !a.closedAt).map(a => (
-                <div key={a.id} className="flex flex-wrap items-center gap-2">
-                  <span className="min-w-0 flex-1">{a.label} · relevée le {frDate(a.date)}{a.note ? ` (${a.note})` : ''}</span>
-                  <button type="button" className="font-semibold underline" onClick={() => set({ anomalies: e.anomalies!.map(y => (y.id === a.id ? { ...y, closedAt: isoDate(new Date()) } : y)) })}>Réparée aujourd'hui</button>
-                </div>
-              ))}
-              {!e.anomalies && <span>{ano.map(c => c.label.toLowerCase()).join(', ')}{lastInspection(e)?.note ? ` (${lastInspection(e)!.note})` : ''}</span>}
-              <button type="button" className="inline-flex items-center gap-1 font-semibold underline" onClick={action}><Wrench size={12} />Ouvrir une action</button>
-            </div>
-          )}
-        </section>
-
-        <section className="space-y-2">
-          <SubTitle>Contrôles périodiques et réglementaires</SubTitle>
-          <ul className="space-y-1">
-            {(e.tasks || []).map((tk, i) => { const due = taskDue(tk); const late = (daysBetween(due, new Date()) ?? -1) >= 0; return (
-              <li key={tk.id} className="grid items-center gap-1.5 sm:grid-cols-[2fr_auto_auto_auto_auto_auto]">
-                <input className={inputCls} value={tk.label} aria-label="Contrôle" onChange={x => set({ tasks: e.tasks!.map((y, j) => (j === i ? { ...y, label: x.target.value } : y)) })} />
-                <span className="flex items-center gap-1 text-[11px] text-slate-600">tous les <NumInput className="!w-16 !py-1 text-right" value={tk.everyDays} aria-label="Fréquence en jours" onChange={v => set({ tasks: e.tasks!.map((y, j) => (j === i ? { ...y, everyDays: Math.max(1, v ?? 30) } : y)) })} /> j</span>
-                <label className="flex items-center gap-1 text-[11px] text-slate-600"><input type="checkbox" checked={tk.legal} onChange={x => set({ tasks: e.tasks!.map((y, j) => (j === i ? { ...y, legal: x.target.checked } : y)) })} />obligatoire</label>
-                <span className={`text-[11px] ${late ? 'font-semibold text-red-700' : 'text-slate-600'}`}>{tk.lastDone ? `fait le ${frDate(tk.lastDone)}, ` : ''}prochain {frDate(due)}</span>
-                <Button className="!px-2 !py-1" onClick={() => set({ tasks: e.tasks!.map((y, j) => (j === i ? { ...y, lastDone: isoDate(new Date()) } : y)) })}>Fait</Button>
-                <button type="button" aria-label="Retirer ce contrôle" onClick={() => set({ tasks: e.tasks!.filter((_, j) => j !== i) })} className="rounded p-1 text-slate-400 hover:text-red-600"><X size={14} /></button>
-              </li>
-            ); })}
-          </ul>
-          <div className="flex flex-wrap gap-1.5">
-            <Button className="!px-2 !py-1" onClick={() => set({ tasks: [...(e.tasks || []), { id: `tk_${Date.now().toString(36)}`, label: '', everyDays: 30, lastDone: '', legal: false }] })}><Plus size={13} />Contrôle</Button>
-            <select className="rounded-lg border border-slate-300 bg-white px-2 py-1 text-[11px]" value="" aria-label="Ajouter un contrôle réglementaire" onChange={x => { const l = LEGAL_TASKS.find(y => y.label === x.target.value); if (l) set({ tasks: [...(e.tasks || []), { id: `tk_${Date.now().toString(36)}`, label: l.label, everyDays: l.everyDays, lastDone: '', legal: true }] }); }}>
-              <option value="">Contrôles réglementaires courants…</option>{LEGAL_TASKS.map(l => <option key={l.label} value={l.label}>{l.label}</option>)}
-            </select>
-          </div>
-        </section>
-
-        <section className="space-y-2">
-          <SubTitle>Pannes</SubTitle>
-          {(() => { const dt = downtime(e); return <p className="text-[11px] text-slate-600">12 derniers mois : {dt.count} panne(s), {dt.hours} h d'arrêt, {formatValue(dt.cost, '€')}.</p>; })()}
-          <ul className="space-y-1">
-            {(e.breakdowns || []).map((b, i) => (
-              <li key={b.id} className="grid items-center gap-1.5 sm:grid-cols-[auto_1fr_auto_auto_auto]">
-                <input type="date" className={inputCls} value={b.date} aria-label="Date de la panne" onChange={x => set({ breakdowns: e.breakdowns!.map((y, j) => (j === i ? { ...y, date: x.target.value } : y)) })} />
-                <input className={inputCls} value={b.cause} placeholder="Cause" aria-label="Cause" onChange={x => set({ breakdowns: e.breakdowns!.map((y, j) => (j === i ? { ...y, cause: x.target.value } : y)) })} />
-                <span className="flex items-center gap-1 text-[11px]"><NumInput className="!w-16 !py-1 text-right" value={b.hours} aria-label="Heures d'arrêt" onChange={v => set({ breakdowns: e.breakdowns!.map((y, j) => (j === i ? { ...y, hours: v } : y)) })} />h</span>
-                <span className="flex items-center gap-1 text-[11px]"><NumInput className="!w-20 !py-1 text-right" value={b.cost} aria-label="Coût" onChange={v => set({ breakdowns: e.breakdowns!.map((y, j) => (j === i ? { ...y, cost: v } : y)) })} />€</span>
-                <button type="button" aria-label="Retirer" onClick={() => set({ breakdowns: e.breakdowns!.filter((_, j) => j !== i) })} className="rounded p-1 text-slate-400 hover:text-red-600"><X size={14} /></button>
-              </li>
-            ))}
-          </ul>
-          <Button className="!px-2 !py-1" onClick={() => set({ breakdowns: [...(e.breakdowns || []), { id: `bd_${Date.now().toString(36)}`, date: isoDate(new Date()), hours: null, cost: null, cause: '' }] })}><Plus size={13} />Panne</Button>
-        </section>
-
-        <section className="space-y-2">
-          <SubTitle>Armoire de survie : pièces d'usure critiques sous clé</SubTitle>
-          {e.parts.length === 0 && <p className="text-[11px] text-slate-500">Les 3 pièces dont la casse arrête la machine plus d'un jour, faute de stock chez le fournisseur.</p>}
-          <ul className="space-y-1.5">
-            {e.parts.map((p, i) => {
-              const lowNow = p.stock < p.min;
-              return (
-                <li key={i} className={`grid items-center gap-1.5 rounded-lg border p-1.5 sm:grid-cols-[1.4fr_1fr_1fr_0.8fr_auto_auto] ${lowNow ? 'border-red-200 bg-red-50/50' : 'border-slate-200'}`}>
-                  <input className={inputCls} value={p.name} placeholder="Pièce" aria-label="Pièce" onChange={x => setPart(i, { name: x.target.value })} />
-                  <input className={inputCls} value={p.ref} placeholder="Référence" aria-label="Référence" onChange={x => setPart(i, { ref: x.target.value })} />
-                  <input className={inputCls} value={p.supplier} placeholder="Fournisseur" aria-label="Fournisseur" onChange={x => setPart(i, { supplier: x.target.value })} />
-                  <input className={inputCls} value={p.leadTime} placeholder="Délai" aria-label="Délai de réapprovisionnement" onChange={x => setPart(i, { leadTime: x.target.value })} />
-                  <span className="flex items-center gap-1 text-[11px] text-slate-600">
-                    mini <NumInput className="!w-12 !px-1.5 !py-1 text-right" value={p.min} aria-label="Stock minimum" onChange={v => setPart(i, { min: v ?? 0 })} />
-                    stock
-                    <button type="button" aria-label="Une pièce sortie de l'armoire" onClick={() => setPart(i, { stock: Math.max(0, p.stock - 1) })} className="rounded border border-slate-300 p-0.5 hover:bg-slate-50"><Minus size={12} /></button>
-                    <strong className={`w-5 text-center font-mono ${lowNow ? 'text-red-700' : 'text-slate-900'}`}>{p.stock}</strong>
-                    <button type="button" aria-label="Une pièce rangée dans l'armoire" onClick={() => setPart(i, { stock: p.stock + 1, ...(p.stock + 1 >= p.min ? { orderedAt: '', expectedAt: '' } : {}) })} className="rounded border border-slate-300 p-0.5 hover:bg-slate-50"><Plus size={12} /></button>
-                  </span>
-                  <button type="button" aria-label="Retirer cette pièce" onClick={() => set({ parts: e.parts.filter((_, j) => j !== i) })} className="rounded p-1 text-slate-400 hover:text-red-600"><X size={14} /></button>
-                  {lowNow && (
-                    <span className="flex flex-wrap items-center gap-2 text-[11px] sm:col-span-6">
-                      {p.orderedAt ? <span className="text-amber-800">Commandée le {frDate(p.orderedAt)}{p.expectedAt ? `, attendue le ${frDate(p.expectedAt)}` : ''}.</span>
-                        : <><span className="font-semibold text-red-700">Sous le stock mini : commander aujourd'hui ({p.leadTime || 'délai à connaître'}).</span><button type="button" className="font-semibold text-delacour-primary underline" onClick={() => setPart(i, { orderedAt: isoDate(new Date()) })}>Commandée aujourd'hui</button></>}
-                      {p.orderedAt && <label className="flex items-center gap-1">Livraison prévue <input type="date" className="rounded border border-slate-300 px-1 text-[11px]" value={p.expectedAt || ''} onChange={x => setPart(i, { expectedAt: x.target.value })} /></label>}
-                    </span>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-          <Button className="!px-2 !py-1" onClick={() => set({ parts: [...e.parts, { name: '', ref: '', supplier: '', leadTime: '', min: 1, stock: 1 }] })}><Plus size={13} />Ajouter une pièce</Button>
-        </section>
       </div>
-    </Modal>
+
+      <EqQueue state={state} todos={todos} insights={insights} nav={nav} offer={offer} onEq={(id, tab) => openEq(id, tab)} onRoutine={setStation} onSpare={setSpareId} onSettings={openSettings} />
+
+      <Card className="space-y-3 p-3 sm:p-4">
+        {view !== 'cabinet' && (   // the cabinet has its own title: no title inside a title
+          <ToolHeader title="Équipements" text="Une fiche par équipement : routine, anomalies et pannes, pièces et contrôles. Le QR code collé sur l'équipement ouvre sa routine en plein écran.">
+            <Button kind="primary" onClick={() => setCreating(true)}><Plus size={14} />Nouvel équipement</Button>
+          </ToolHeader>
+        )}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <Chips value={view} onChange={setView} items={[['cards', 'Cartes'], ['list', 'Liste'], ['cabinet', 'Armoire'], ['checks', 'Contrôles'], ...(plan ? [['plan', 'Plan'] as ['plan', string]] : [])]} />
+          {sheets && (
+            <>
+              {/* one list for the filter at every width: seven pills made a wall; the tiles above already filter */}
+              <select className={`${inputCls} !w-auto`} value={filter} aria-label="Afficher" onChange={e => pick(e.target.value as Filter)}>{filters.map(([k, l, n]) => <option key={k} value={k}>{l} {n}</option>)}</select>
+              {groups.length > 0 && <select className={`${inputCls} !w-auto`} value={group} aria-label="Groupe" onChange={e => { setGroup(e.target.value); setLimit(PAGE); }}><option value="">Tous les groupes</option>{groups.map(g => <option key={g} value={g}>{g}</option>)}</select>}
+              <label className="relative"><Search size={13} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" /><input className={`${inputCls} !w-48 !pl-7`} value={q} placeholder="Chercher un équipement" aria-label="Chercher un équipement" onChange={e => { setQ(e.target.value); setLimit(PAGE); }}
+            onKeyDown={e => { if (e.key === 'Enter' && shown.length === 1) { e.preventDefault(); openEq(shown[0].id); } }} /></label>
+            </>
+          )}
+        </div>
+        {sheets && (shown.length
+          ? <>
+            {view === 'cards' ? <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">{listed.map(card)}</div> : <ul className="divide-y divide-slate-100">{listed.map(line)}</ul>}
+            {shown.length > limit && (
+              <div className="flex flex-wrap items-center justify-center gap-3 pt-1">
+                <span className="text-[11px] text-slate-500">{listed.length} équipements affichés sur {shown.length}</span>
+                <Button onClick={() => setLimit(limit + PAGE)}>Afficher {Math.min(PAGE, shown.length - limit)} de plus</Button>
+              </div>
+            )}
+          </>
+          : <p className="py-6 text-center text-xs text-slate-500">Aucun équipement pour ce filtre.</p>)}
+        {view === 'cabinet' && <CabinetView state={state} onOpen={setSpareId} onNew={setFresh} />}
+        {view === 'checks' && <ChecksView state={state} onOpen={(id: string, tab: EqTab) => openEq(id, tab)} />}
+        {view === 'plan' && <EqPlan state={state} todos={todos} onOpen={e => openEq(e.id)} />}
+      </Card>
+
+      {Object.values(state.kpis).some(isMaintKpi)
+        ? <FeedBox tool="3.3" period={periodOfDate(new Date())} />
+        : <Card className="flex flex-wrap items-center gap-2 p-3 text-[11px] text-slate-700 sm:p-4">Suivre ces chiffres chaque mois dans le tableau de pilotage (1.1) : routines faites, anomalies anciennes, heures d'arrêt, contrôles à jour, pièces au stock mini. Les valeurs sont proposées, jamais écrites sans accord.<Button className="!px-2 !py-1" onClick={() => update(d => { addMaintKpis(d); })}>Ajouter au tableau de pilotage</Button></Card>}
+
+      <Method rule="Un équipement regardé quelques minutes à chaque période tombe moins souvent en panne, et une panne dure moins quand la pièce est déjà là."
+        steps={[['Une routine courte, au pied de l\'équipement', 'Quelques points à regarder, écouter, sentir ou mesurer, avec la photo de ce qui est normal. Le QR code collé sur l\'équipement ouvre la routine en plein écran, un point par écran.'], ['Une anomalie notée dès qu\'on la voit', 'Chacun peut signaler un problème en quelques secondes. Un point « à surveiller » deux routines de suite devient une anomalie ; elle se ferme quand le point est de nouveau en ordre.'], ['Une armoire commune et un calendrier', 'Les pièces critiques sont comptées une seule fois pour toute l\'entreprise, avec leur mini et leur délai. Chaque contrôle périodique garde son historique et son rapport.']]}
+        tips={['Ce qui est tapé une fois (points, personnes, périodicités) reste ; les gestes du terrain sont enregistrés à l\'instant.', 'Un équipement qui a un historique se retire du service plutôt que de se supprimer.']} />
+      <EqSettings />
+      {overlays}
+    </div>
   );
 }

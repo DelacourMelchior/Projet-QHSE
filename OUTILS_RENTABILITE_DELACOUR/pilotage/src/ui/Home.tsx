@@ -5,7 +5,7 @@ import { GLOSSARY } from '../domain/base';
 import { periodLabel, periodOfDate } from '../domain/periods';
 import { downloadFile } from './download';
 import { Button } from './common';
-import { toolBadge } from '../domain/status';
+import { safeBadge } from '../domain/status';
 import { useStore } from '../store/StoreContext';
 import { Card, LEVEL_STYLE } from './common';
 import { PROCESSES, toolsOf, type Nav } from './tools';
@@ -28,7 +28,7 @@ export function Home({ nav }: { nav: Nav }) {
           <h2 className="flex items-baseline gap-2 text-sm font-bold text-slate-900"><span className="rounded bg-delacour-primary px-1.5 py-0.5 font-mono text-[11px] text-white">{p.key}</span>{p.name}</h2>
           <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
             {toolsOf(p.key).map(t => {
-              const st = toolBadge(state, t.id, month, new Date(), !teamView);
+              const st = safeBadge(state, t.id, month);
               return (
                 <li key={t.id}>
                   <button type="button" onClick={() => nav.tool(t.id)} className="flex h-full w-full flex-col gap-1.5 rounded-lg border border-slate-200 p-2.5 text-left transition hover:border-delacour-gold hover:bg-slate-50">

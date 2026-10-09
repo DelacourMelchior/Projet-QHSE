@@ -1,12 +1,13 @@
 // First launch: start from a job template (choose 8 to 10 KPIs and their targets), open the example,
-// take over the previous version's data, or join a shared folder that already holds data.
-import { useMemo, useState } from 'react';
+// take over the previous version's data, restore a backup, or join a shared folder that already holds data.
+import { useMemo, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, FolderSync } from 'lucide-react';
 import { toolDef, toolOfHash } from './tools';
 import type { State } from '../domain/types';
 import { blankState, demoState, PROFILES, type ProfileKey } from '../domain/templates';
 import { parseNumber } from '../domain/numbers';
-import { legacyLocal } from '../store/local';
+import { legacyLocal, stateOfFile } from '../store/local';
+import { unpackPhotos } from '../photo/backup';
 import { useStore } from '../store/StoreContext';
 import { Button, Card, Field, inputCls } from './common';
 
@@ -21,7 +22,19 @@ export function Onboarding() {
   const [draft, setDraft] = useState<State | null>(null);
   const [picked, setPicked] = useState<Record<string, boolean>>({});
   const [targets, setTargets] = useState<Record<string, string>>({});
-  const [money, setMoney] = useState({ annualBudget: '600 000', netMarginPct: '5', avgQuoteValue: '4 500' });
+  const [money, setMoney] = useState({ annualBudget: '600 000', netMarginPct: '5' });
+  const [msg, setMsg] = useState('');
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  // A backup of this application (or the copy of unreadable data it gave), with its photos: there is no data to ask about replacing here
+  const restore = async (f: File) => {
+    try {
+      const j = JSON.parse(await f.text()), next = stateOfFile(j);
+      if (!next) return setMsg(j?.app === 'delacour-pilotage' && j.photos ? "Ce fichier ne porte que des photos : restaurer d'abord le premier fichier de la sauvegarde." : "Ce fichier n'est pas une sauvegarde du tableau de pilotage.");
+      await unpackPhotos(j.photos);
+      replace(next);
+    } catch { setMsg('Fichier illisible.'); }
+  };
 
   const chooseProfile = (p: ProfileKey) => {
     setProfile(p);
@@ -45,7 +58,6 @@ export function Onboarding() {
       ...s.settings, companyName: company.trim(), profile,
       annualBudget: parseNumber(money.annualBudget) ?? 600000,
       netMarginPct: parseNumber(money.netMarginPct) ?? 5,
-      avgQuoteValue: parseNumber(money.avgQuoteValue) ?? 4500,
     };
     replace(s);
   };
@@ -55,8 +67,8 @@ export function Onboarding() {
       <div>
         <h1 className="text-xl font-bold text-delacour-primary">{tool ? `${tool.id} · ${tool.title}` : 'Outils Delacour : mise en route'}</h1>
         <p className="mt-1 text-xs text-slate-600">{tool
-          ? `${tool.desc} La mise en route prépare l'entreprise pour les 22 outils, dont le tableau d'indicateurs (outil 1.1) qui partage le même plan d'actions.`
-          : "Vos indicateurs clés, vos Plans B, vos devis, vos réclamations, votre bac rouge : 22 outils qui partagent un seul plan d'actions."} Vos données restent sur ce poste ou dans le dossier partagé de votre entreprise.</p>
+          ? `${tool.desc} La mise en route prépare l'entreprise pour les 19 outils, dont le tableau d'indicateurs (outil 1.1) qui partage le même plan d'actions.`
+          : "Vos indicateurs clés, vos Plans B, vos devis, vos réclamations, votre bac rouge : 19 outils qui partagent un seul plan d'actions."} Vos données restent sur ce poste ou dans le dossier partagé de votre entreprise.</p>
       </div>
 
       {step === 0 && (
@@ -64,6 +76,8 @@ export function Onboarding() {
           <Choice title="Démarrer mon tableau" text="Choisir mon métier, 8 à 10 indicateurs et leurs cibles. Environ 5 minutes." onClick={() => { chooseProfile(profile); setStep(1); }} primary />
           <Choice title="Voir un exemple" text="Une entreprise fictive avec une année complète de chiffres et d'actions." onClick={() => replace(demoState())} />
           {legacy && <Choice title="Reprendre mes données" text="Des données de l'ancienne version de l'outil ont été trouvées sur ce poste." onClick={() => replace(legacy)} />}
+          <Choice title="Restaurer une sauvegarde" text="Un fichier .json fait avec « Exporter une sauvegarde » (Réglages), ou la copie de données illisibles téléchargée." onClick={() => fileRef.current?.click()} />
+          <input ref={fileRef} type="file" accept=".json,application/json" className="hidden" aria-label="Fichier de sauvegarde" onChange={e => { const f = e.target.files?.[0]; if (f) restore(f); e.target.value = ''; }} />
           {folder.status !== 'unsupported' && (
             <Card className="space-y-2 p-4">
               <h2 className="text-sm font-bold text-slate-900">Rejoindre le dossier partagé</h2>
@@ -74,6 +88,8 @@ export function Onboarding() {
           )}
         </div>
       )}
+
+      {step === 0 && msg && <p role="alert" className="rounded-lg bg-amber-50 px-3 py-2 text-[11px] font-semibold text-amber-900">{msg}</p>}
 
       {step === 1 && (
         <Card className="space-y-4 p-4">
@@ -122,11 +138,10 @@ export function Onboarding() {
       {step === 3 && (
         <Card className="space-y-4 p-4">
           <h2 className="text-sm font-bold text-slate-900">3. Vos hypothèses</h2>
-          <p className="text-[11px] text-slate-600">Elles servent aux messages d'analyse ; vous pourrez les modifier dans Réglages.</p>
-          <div className="grid gap-3 sm:grid-cols-3">
+          <p className="text-[11px] text-slate-600">Elles servent aux messages d'analyse ; vous pourrez les modifier dans les réglages de l'outil 1.1 (objectif) et de l'outil 5.2 (marge).</p>
+          <div className="grid gap-3 sm:grid-cols-2">
             <Field label="Objectif de CA annuel (€ HT)"><input className={inputCls} value={money.annualBudget} onChange={e => setMoney({ ...money, annualBudget: e.target.value })} /></Field>
             <Field label="Marge nette habituelle (%)"><input className={inputCls} value={money.netMarginPct} onChange={e => setMoney({ ...money, netMarginPct: e.target.value })} /></Field>
-            <Field label="Montant moyen d'un devis (€ HT)"><input className={inputCls} value={money.avgQuoteValue} onChange={e => setMoney({ ...money, avgQuoteValue: e.target.value })} /></Field>
           </div>
           <Nav back={() => setStep(2)} next={finish} nextLabel="Créer mon tableau" />
         </Card>

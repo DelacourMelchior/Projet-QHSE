@@ -1,36 +1,34 @@
-// Tool 2.1 "Devis": 5 locks checked with the technical manager, a margin checked against the floor and a price ladder (target price,
-// floor, complete cost, variable cost, largest discount), 3 visas above the threshold, then the follow-up until won or lost.
-// Costs and margins are reserved to management: the team only sees the largest discount it may give.
-import { useEffect, useState } from 'react';
+// Tool 2.1 "Devis": 5 locks checked with the technical manager, a margin checked against the floor,
+// 3 visas above the threshold, then the follow-up until won or lost. Costs and margins are reserved to management.
+import { useEffect, useRef, useState } from 'react';
 import { Check, FileDown, Lightbulb, Plus, Printer, Send, Trash2 } from 'lucide-react';
 import type { Quote, QuoteCost, State } from '../../domain/types';
 import {
-  FOLLOW_DAYS, forecast, LOCK_STATE, LOCKS, LOST_CATEGORIES, lostStats, needsVisas, newQuote, priceLadder, QUOTE_STATE, quoteCost, quoteFullCost, quoteInsights, quoteHourMargin, quoteIssues, quoteMargin, quoteState, quoteStats,
+  FOLLOW_DAYS, forecast, LOCK_STATE, LOCKS, LOST_CATEGORIES, lostStats, needsVisas, newQuote, QUOTE_STATE, quoteCost, quoteInsights, quoteIssues, quoteMargin, quoteState, quoteStats,
 } from '../../domain/commercial';
-import { variableRate } from '../../domain/hourly';
-import { chartModel, hourValues } from '../../domain/charter';
-import { PriceLadder } from './PriceLadder';
 import { parseNumber } from '../../domain/numbers';
 import { PasteImport } from '../PasteImport';
 import { applyCommercialExample } from '../../domain/commercialExamples';
 import { quotePdf } from '../../domain/commercialPdf';
+import { DELIVERY_STATE, deliveryState } from '../../domain/receptions';
 import { daysBetween } from '../../domain/base';
 import { formatValue } from '../../domain/numbers';
 import { frDate, isoDate, periodLabel, periodOfDate } from '../../domain/periods';
 import { useStore } from '../../store/StoreContext';
-import { Button, DeleteButton, Card, Chips, Empty, Field, inputCls, Method, Modal, NumInput, Row, StatusBadge, SubTitle, Summary, Tile, ToolHeader } from '../common';
+import { Button, DeleteButton, Card, Chips, Empty, Field, inputCls, Method, Modal, NewTab, NumInput, Row, StatusBadge, SubTitle, Summary, Tile, ToolHeader, ToolSettings } from '../common';
 import { FeedBox } from '../Feed';
 import { downloadFile, fileSlug } from '../download';
 import type { ScreenProps } from '../screens';
+import type { Nav } from '../tools';
 
 type Filter = 'open' | 'won' | 'lost' | 'all';
 const OPEN = ['draft', 'ready', 'sent', 'to_follow'];
 
-export function Devis({ focus, clearFocus }: ScreenProps) {
+export function Devis({ nav, focus, clearFocus }: ScreenProps) {
   const { state, update, teamView } = useStore();
   const [open, setOpen] = useState<Quote | null>(null);
   const [filter, setFilter] = useState<Filter>('open');
-  useEffect(() => { if (focus && state?.quotes[focus]) { setOpen(state.quotes[focus]); clearFocus(); } }, [focus]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (focus && state && Object.hasOwn(state.quotes, focus)) { setOpen(state.quotes[focus]); clearFocus(); } }, [focus]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!state) return null;
   const now = new Date();
   const money = !teamView;
@@ -42,7 +40,8 @@ export function Devis({ focus, clearFocus }: ScreenProps) {
           <Button kind="primary" onClick={() => setOpen(newQuote(state))}><Plus size={14} />Nouveau devis</Button>
           <Button onClick={() => update(d => applyCommercialExample(d))}>Voir un exemple traité</Button>
         </Empty>
-        {open && <QuoteSheet initial={open} onClose={() => setOpen(null)} />}
+        <QuoteSettings />
+        {open && <QuoteSheet initial={open} onClose={() => setOpen(null)} nav={nav} />}
       </div>
     );
   }
@@ -78,7 +77,7 @@ export function Devis({ focus, clearFocus }: ScreenProps) {
                   lead={<span className="w-[92px] shrink-0 font-mono text-[11px] font-semibold text-slate-700">{q.ref}</span>}
                   title={`${q.client || 'Client à saisir'}${q.object ? ` · ${q.object}` : ''}`}
                   sub={st === 'draft' ? quoteIssues(q, state.params, money)[0] : st === 'lost' ? [q.lostCategory ? LOST_CATEGORIES[q.lostCategory] : '', q.lostReason].filter(Boolean).join(' : ') : [q.weeks ? `${q.weeks} semaine(s)` : '', q.sentAt ? `envoyé le ${frDate(q.sentAt)}` : '', st === 'won' && !q.depositReceived ? 'acompte non encaissé' : ''].filter(Boolean).join(' · ')}
-                  right={<><span className="block font-mono font-semibold text-slate-800">{formatValue(q.amount, '€')}</span>{m ? <span className={m.pct < state.params.marginFloorPct ? 'font-semibold text-red-700' : ''}>marge {Math.round(m.pct)} %</span> : q.maxDiscountPct != null ? `remise max ${formatValue(q.maxDiscountPct, '%')}` : frDate(q.date)}</>}
+                  right={<><span className="block font-mono font-semibold text-slate-800">{formatValue(q.amount, '€')}</span>{m ? <span className={m.pct < state.params.marginFloorPct ? 'font-semibold text-red-700' : ''}>marge {Math.round(m.pct)} %</span> : frDate(q.date)}</>}
                   badge={<StatusBadge level={QUOTE_STATE[st].tone} text={QUOTE_STATE[st].label} />} />
               );
             })}
@@ -98,23 +97,42 @@ export function Devis({ focus, clearFocus }: ScreenProps) {
         </Card>
       </div>
       <FeedBox tool="2.1" period={month} />
+      <QuoteSettings />
       <Method rule="Mieux vaut perdre un devis que signer une affaire qui détruit la marge. 5 verrous cochés en 3 minutes protègent l'entreprise."
         steps={[['5 verrous en 3 minutes', "Avant d'envoyer, le commercial vérifie les 5 points avec le responsable technique."], ['Marge au-dessus du plancher', 'En dessous, le devis ne part qu\'avec une dérogation écrite de la direction.'], ['Acompte avant de lancer', `Ni matière commandée ni fabrication lancée avant l'acompte de ${state.params.depositPct} % encaissé.`]]}
         tips={['La sous-traitance oubliée dans le chiffrage (peinture, galvanisation, transport) mange la marge.', 'Relancer à 7 jours : un devis non relancé est un devis à moitié perdu.']} />
-      {open && <QuoteSheet initial={open} onClose={() => setOpen(null)} />}
+      {open && <QuoteSheet initial={open} onClose={() => setOpen(null)} nav={nav} />}
     </div>
+  );
+}
+
+// Rules of the quote review, filled once
+function QuoteSettings() {
+  const { state, update } = useStore();
+  if (!state) return null;
+  const p = state.params;
+  return (
+    <ToolSettings>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Field label="Marge brute plancher (%)" hint="En dessous, un devis ne part qu'avec une dérogation."><NumInput value={p.marginFloorPct} onChange={v => update(d => { d.params.marginFloorPct = v ?? 0; })} /></Field>
+        <Field label="Acompte à la commande (%)"><NumInput value={p.depositPct} onChange={v => update(d => { d.params.depositPct = v ?? 0; })} /></Field>
+        <Field label="Visas obligatoires dès (€ HT)" hint="Commercial, technique et direction."><NumInput value={p.visaThreshold} onChange={v => update(d => { d.params.visaThreshold = v ?? 0; })} /></Field>
+      </div>
+      <p className="text-[11px] text-slate-500">Le coût horaire se règle dans l'outil 5.2.</p>
+    </ToolSettings>
   );
 }
 
 const emptyCost: QuoteCost = { material: null, hours: null, subcontract: null, other: null };
 
-function QuoteSheet({ initial, onClose }: { initial: Quote; onClose(): void }) {
+export function QuoteSheet({ initial, onClose, nav }: { initial: Quote; onClose(): void; nav: Nav }) {
   const { state, update, teamView, author } = useStore();
   const [q, setQ] = useState<Quote>(() => structuredClone(initial));
   const [ideas, setIdeas] = useState<number | null>(null);
   const [error, setError] = useState('');
   const [express, setExpress] = useState(() => !!initial.cost && initial.cost.material === null && initial.cost.hours === null && initial.cost.subcontract === null && initial.cost.other !== null);
   const [note, setNote] = useState('');
+  const saved = useRef(initial);   // what is written: the sheet stays open after the button to 3.4 wrote the quote, closing must not warn about it
   if (!state) return null;
   const money = !teamView;
   const p = state.params;
@@ -128,14 +146,15 @@ function QuoteSheet({ initial, onClose }: { initial: Quote; onClose(): void }) {
   const st = quoteState(q, p, new Date(), money);
   const m = quoteMargin(q, p);
   const total = quoteCost(q, p);
-  // the margin aimed at is the decision of the charter (1.6), else the margin of the accounts
-  const model = money ? chartModel(state) : null, variableHourly = variableRate(state.settings.hourly, cost.rate || '');
-  const ladder = money ? priceLadder(q, p, model?.marginPct ?? state.settings.netMarginPct, variableHourly) : null;
   const today = isoDate(new Date());
   // in team view the costs are neither shown nor overwritten
   const commit = (x: Quote) => update(d => { d.quotes[x.id] = money ? x : { ...x, cost: d.quotes[x.id]?.cost }; });
-  const close = () => { if (JSON.stringify(q) === JSON.stringify(initial) || window.confirm('Fermer sans enregistrer ? Vos modifications seront perdues.')) onClose(); };
-  const save = (x = q) => { if (!x.client.trim()) return setError('Indiquez le client.'); commit(x); onClose(); };
+  const close = () => { if (JSON.stringify(q) === JSON.stringify(saved.current) || window.confirm('Fermer sans enregistrer ? Vos modifications seront perdues.')) onClose(); };
+  const save = (x = q) => { if (!x.client.trim()) return setError('Client à saisir.'); commit(x); onClose(); };
+  // a won quote leads to its order in 3.4 (new from the quote, or the one already followed); nothing but the quote's id goes there, no amount
+  const order = Object.values(state.deliveries).filter(x => x.quoteId === q.id).sort((a, b) => Number(!!a.archivedAt) - Number(!!b.archivedAt))[0];
+  const orderState = order && deliveryState(order, new Date(), p);
+  const toOrder = () => { if (!q.client.trim()) return setError('Client à saisir.'); commit(q); saved.current = q; setError(''); nav.open('3.4', order ? order.id : `new:quote:${q.id}`); };
   const remove = () => { if (window.confirm(`Supprimer le devis ${q.ref} ?`)) { update(d => { delete d.quotes[q.id]; }); onClose(); } };
   const send = () => {
     if (issues.length && !window.confirm(`Envoyer malgré ${issues.length} point(s) ouvert(s) ?\n\n- ${issues.join('\n- ')}`)) return;
@@ -181,12 +200,12 @@ function QuoteSheet({ initial, onClose }: { initial: Quote; onClose(): void }) {
             {LOCKS.map((l, i) => {
               const lk = q.locks[i] || { state: '', note: '' };
               return (
-                <li key={l.process} className="space-y-1.5 rounded-lg border border-slate-200 p-2">
+                <li key={l.n} className="space-y-1.5 rounded-lg border border-slate-200 p-2">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="w-8 shrink-0 font-mono text-[11px] font-bold text-delacour-primary">{l.process}</span>
+                    <span className="w-8 shrink-0 font-mono text-[11px] font-bold text-delacour-primary">{l.n}</span>
                     <span className="min-w-0 flex-1 text-xs"><strong className="text-slate-900">{l.label}</strong> <span className="text-slate-600">· {l.point}</span></span>
                     <button type="button" aria-label="Idées" aria-expanded={ideas === i} onClick={() => setIdeas(ideas === i ? null : i)} className="rounded p-1 text-slate-400 hover:text-amber-700"><Lightbulb size={14} /></button>
-                    <div className="flex gap-1" role="radiogroup" aria-label={`Verrou ${l.process}`}>
+                    <div className="flex gap-1" role="radiogroup" aria-label={`Verrou ${l.label}`}>
                       {(['ok', 'reserve', 'ko'] as const).map(k => (
                         <button key={k} type="button" role="radio" aria-checked={lk.state === k} onClick={() => setLock(i, { state: lk.state === k ? '' : k })}
                           className={`rounded-lg border px-2 py-1 text-[11px] font-semibold ${lk.state === k ? (k === 'ok' ? 'border-emerald-700 bg-emerald-600 text-white' : k === 'reserve' ? 'border-amber-600 bg-amber-400 text-amber-950' : 'border-red-700 bg-red-600 text-white') : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'}`}>
@@ -196,8 +215,8 @@ function QuoteSheet({ initial, onClose }: { initial: Quote; onClose(): void }) {
                     </div>
                   </div>
                   {ideas === i && <p className="pl-10 text-[11px] text-slate-600">À vérifier : {l.ideas.join(' · ')}.</p>}
-                  {lk.state && <input className={`${inputCls} ml-10 !w-[calc(100%-2.5rem)]`} value={lk.by || ''} list="people" placeholder={i === 2 || i === 4 ? 'Vérifié avec (obligatoire)' : 'Vérifié avec'} aria-label={`Verrou ${l.process} vérifié avec`} onChange={e => setLock(i, { by: e.target.value })} />}
-                  {(lk.state === 'reserve' || lk.state === 'ko' || lk.note) && <input className={`${inputCls} ml-10 !w-[calc(100%-2.5rem)]`} value={lk.note} placeholder={lk.state === 'ko' ? 'Ce qui bloque' : 'La réserve, écrite'} aria-label={`Réserve ${l.process}`} onChange={e => setLock(i, { note: e.target.value })} />}
+                  {lk.state && <input className={`${inputCls} ml-10 !w-[calc(100%-2.5rem)]`} value={lk.by || ''} list="people" placeholder={i === 2 || i === 4 ? 'Vérifié avec (obligatoire)' : 'Vérifié avec'} aria-label={`Verrou ${l.label} vérifié avec`} onChange={e => setLock(i, { by: e.target.value })} />}
+                  {(lk.state === 'reserve' || lk.state === 'ko' || lk.note) && <input className={`${inputCls} ml-10 !w-[calc(100%-2.5rem)]`} value={lk.note} placeholder={lk.state === 'ko' ? 'Ce qui bloque' : 'La réserve, écrite'} aria-label={`Réserve du verrou ${l.label}`} onChange={e => setLock(i, { note: e.target.value })} />}
                 </li>
               );
             })}
@@ -206,40 +225,26 @@ function QuoteSheet({ initial, onClose }: { initial: Quote; onClose(): void }) {
 
         <section className="space-y-2">
           <SubTitle>3. Marge</SubTitle>
-          {!money ? (
-            <>
-              <p className="text-[11px] text-slate-500">Coûts et marge réservés à la direction.</p>
-              {q.maxDiscountPct != null && !!q.amount && <p className="rounded-lg bg-emerald-50 px-3 py-2 text-[11px] text-emerald-900">Remise maximale accordée par la direction : <strong>{formatValue(q.maxDiscountPct, '%')}</strong>, soit un prix minimum de <strong className="font-mono">{formatValue(q.amount * (1 - q.maxDiscountPct / 100), '€')}</strong>.</p>}
-            </>
-          ) : (
+          {!money ? <p className="text-[11px] text-slate-500">Coûts et marge réservés à la direction.</p> : (
             <>
               <label className="flex items-center gap-2 text-[11px] text-slate-700"><input type="checkbox" checked={express} onChange={e => { setExpress(e.target.checked); if (e.target.checked) setCost({ material: null, hours: null, subcontract: null, other: total }); }} />Contrôle express : je saisis seulement le coût de revient total calculé par mon logiciel de devis</label>
               {express ? (
                 <div className="grid gap-2 sm:grid-cols-4"><Field label="Coût de revient total (€ HT)"><NumInput value={cost.other} onChange={v => setCost({ other: v })} /></Field></div>
               ) : (
-                <div className="grid gap-2 sm:grid-cols-5">
+                <div className="grid gap-2 sm:grid-cols-4">
                   <Field label="Matière et fournitures (€)"><NumInput value={cost.material} onChange={v => setCost({ material: v })} /></Field>
-                  <Field label="Heures de main-d'œuvre"><NumInput value={cost.hours} onChange={v => setCost({ hours: v })} /></Field>
-                  <Field label="Au taux de">
-                    <select className={inputCls} value={cost.rate || ''} onChange={e => setCost({ rate: e.target.value })}>
-                      <option value="">Général ({formatValue(p.hourlyRate, '€')}/h)</option>
-                      {(p.rates || []).map(r => <option key={r.name} value={r.name}>{r.name} ({formatValue(r.rate, '€')}/h)</option>)}
-                    </select>
-                  </Field>
+                  <Field label="Heures de main-d'œuvre" hint={`à ${formatValue(p.hourlyRate, '€')} de l'heure (réglé dans 5.2)`}><NumInput value={cost.hours} onChange={v => setCost({ hours: v })} /></Field>
                   <Field label="Sous-traitance (€)" hint="Peinture, galvanisation, transport dédié…"><NumInput value={cost.subcontract} onChange={v => setCost({ subcontract: v })} /></Field>
                   <Field label="Autres frais directs (€)"><NumInput value={cost.other} onChange={v => setCost({ other: v })} /></Field>
                 </div>
               )}
               <p className="rounded-lg bg-slate-50 px-3 py-2 text-[11px] text-slate-700">
                 {total === null || !m ? 'Saisissez le prix et les coûts pour calculer la marge.'
-                  : <>Coût direct <strong className="font-mono">{formatValue(total, '€')}</strong>, marge brute <strong className={`font-mono ${m.pct < p.marginFloorPct ? 'text-red-700' : 'text-emerald-800'}`}>{formatValue(m.value, '€')} ({Math.round(m.pct)} %)</strong> pour un plancher de {p.marginFloorPct} % (marge brute = prix moins coûts directs : matière, heures, sous-traitance).{p.overheadPct ? <> Après {p.overheadPct} % de frais généraux : <strong className="font-mono">{formatValue((q.amount || 0) - (quoteFullCost(q, p) || 0), '€')}</strong>.</> : ''}</>}
+                  : <>Coût direct <strong className="font-mono">{formatValue(total, '€')}</strong>, marge brute <strong className={`font-mono ${m.pct < p.marginFloorPct ? 'text-red-700' : 'text-emerald-800'}`}>{formatValue(m.value, '€')} ({Math.round(m.pct)} %)</strong> pour un plancher de {p.marginFloorPct} % (marge brute = prix moins coûts directs : matière, heures, sous-traitance).</>}
               </p>
               {m && m.pct < p.marginFloorPct && (
                 <Field label="Dérogation de la direction (qui, pourquoi)"><input className={inputCls} value={q.derogation} placeholder="Ex. : Jean-Marc, client stratégique, première commande" onChange={e => set({ derogation: e.target.value })} /></Field>
               )}
-              {ladder && <PriceLadder q={q} ladder={ladder} p={p} targetPct={model?.marginPct ?? state.settings.netMarginPct} machines={!!state.settings.hourly?.stations.length}
-                hourMargin={quoteHourMargin(q, variableHourly)} hv={hourValues(state, model)}
-                onPrice={v => set({ amount: v })} onDiscount={v => set({ maxDiscountPct: v === null ? null : Math.max(0, Math.min(100, v)) })} />}
             </>
           )}
         </section>
@@ -303,6 +308,13 @@ function QuoteSheet({ initial, onClose }: { initial: Quote; onClose(): void }) {
             {q.status === 'won' && <Field label="Encaissé le"><input type="date" className={inputCls} value={q.depositAt || ''} onChange={e => set({ depositAt: e.target.value, depositReceived: !!e.target.value })} /></Field>}
             {q.status === 'won' && <Field label="Fabrication lancée le"><input type="date" className={inputCls} value={q.startedAt || ''} onChange={e => set({ startedAt: e.target.value })} /></Field>}
             {q.status === 'won' && q.startedAt && !q.depositReceived && <p className="text-[11px] font-semibold text-red-700 sm:col-span-4">Fabrication lancée sans acompte encaissé.</p>}
+            {q.status === 'won' && (
+              <div className="flex flex-wrap items-center gap-2 sm:col-span-4">
+                <Button onClick={toOrder}>{order ? 'Voir la commande' : 'Suivre la commande'}<NewTab /></Button>
+                {order ? <StatusBadge level={DELIVERY_STATE[orderState!].tone} text={`Commande ${order.ref || order.item || 'sans numéro'} (3.4) : ${DELIVERY_STATE[orderState!].label}`} />
+                  : <span className="text-[11px] text-slate-500">Commande pas encore suivie dans l'outil 3.4.</span>}
+              </div>
+            )}
           </div>
         </section>
       </div>
@@ -312,4 +324,9 @@ function QuoteSheet({ initial, onClose }: { initial: Quote; onClose(): void }) {
 }
 
 // Clients already typed in tools 2.1 to 2.4
-export const clientsOf = (s: State) => [...new Set([...Object.values(s.quotes), ...Object.values(s.changes), ...Object.values(s.complaints), ...Object.values(s.feedbacks), ...Object.values(s.deliveries)].map(x => x.client).filter(Boolean))].sort();
+// (and the customers of the directory, 1.3: its organisations and the companies of its customer cards)
+export const clientsOf = (s: State) => [...new Set([
+  ...Object.values(s.quotes), ...Object.values(s.complaints), ...Object.values(s.feedbacks), ...Object.values(s.deliveries),
+  ...Object.values(s.orgs || {}).filter(o => o.category === 'client').map(o => ({ client: o.name })),
+  ...Object.values(s.contacts || {}).filter(c => c.category === 'client').map(c => ({ client: c.company })),
+].map(x => x.client.trim()).filter(Boolean))].sort();

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { ArrowLeft, Plus } from 'lucide-react';
 import type { Power } from '../../domain/types';
-import { PROCESS_IDS, processLabel } from '../../domain/base';
+import { defaultProcess, PROCESS_IDS, processLabel } from '../../domain/base';
 import { norm } from '../../domain/instructions';
 import { isoDate, frDate } from '../../domain/periods';
 import { plural } from '../../domain/receptions';
@@ -20,7 +20,7 @@ export function PwSetup({ onClose, onDone }: { onClose(): void; onDone(ids: stri
   const cfg = state ? powerCfg(state.params) : powerCfg(undefined), have = new Set(Object.values(state?.powers || {}).map(p => norm(p.power)));
   const [items, setItems] = useState<Item[]>(() => cfg.library.map((x, i) => ({ key: `l${i}`, process: x.process, text: x.text })));
   const [on, setOn] = useState<Set<string>>(() => new Set(have.size ? [] : items.filter(x => START_POWERS.some(s => s.text === x.text)).map(x => x.key)));
-  const [step, setStep] = useState<1 | 2>(1), [names, setNames] = useState<Record<string, Names>>({}), [text, setText] = useState(''), [process, setProcess] = useState('P1');
+  const [step, setStep] = useState<1 | 2>(1), [names, setNames] = useState<Record<string, Names>>({}), [text, setText] = useState(''), [process, setProcess] = useState(defaultProcess('P1'));
   if (!state) return null;
   const chosen = items.filter(x => on.has(x.key) && !have.has(norm(x.text))), at = (k: string): Names => names[k] || { holder: '', d1: '', d2: '' };
   const put = (k: string, x: Partial<Names>) => setNames(n => ({ ...n, [k]: { ...at(k), ...x } }));

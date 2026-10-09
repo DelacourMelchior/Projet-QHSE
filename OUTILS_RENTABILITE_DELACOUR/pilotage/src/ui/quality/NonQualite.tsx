@@ -2,8 +2,7 @@
 // imputed to the process at its origin; 12-month trend; link with the non-quality KPI of tool 1.1.
 import { useEffect, useState } from 'react';
 import { Printer } from 'lucide-react';
-import type { State } from '../../domain/types';
-import { cnqItems, cnqMonth, cnqSeries, compensatingRevenue, compensatingRevenueVariable, declarationsPerWeek, qualityInsights } from '../../domain/quality';
+import { cnqItems, cnqMonth, cnqSeries, compensatingRevenue, declarationsPerWeek, qualityInsights } from '../../domain/quality';
 import { valueOf } from '../../domain/engine';
 import { monthlyReportPdf } from '../../domain/reportPdf';
 import { downloadFile } from '../download';
@@ -13,7 +12,7 @@ import { kpiByRole } from '../../domain/engine';
 import { formatValue } from '../../domain/numbers';
 import { addMonths, periodLabel, periodOfDate } from '../../domain/periods';
 import { useStore } from '../../store/StoreContext';
-import { Button, Card, Empty, Method, NumInput, Summary, Tile, ToolHeader } from '../common';
+import { Button, Card, Empty, Field, Method, NewTab, NumInput, Summary, Tile, ToolHeader, ToolSettings } from '../common';
 import { MonthBars, ShareBars } from '../Bars';
 import { FeedBox } from '../Feed';
 import type { ScreenProps } from '../screens';
@@ -29,9 +28,9 @@ export function NonQualite({ nav }: ScreenProps) {
   if (!state) return null;
   if (!Object.keys(state.ncs).length && !Object.keys(state.complaints).length && !Object.keys(state.debits).length) {
     return (
-      <Empty title="Coût de non-qualité : chaque défaut chiffré en euros" text="Le coût se calcule tout seul à partir des fiches du bac rouge (5.1), des réclamations (2.3) et des fiches de débit fournisseurs (3.1) : matière jetée, heures perdues et de retouche, transport en urgence, avoirs.">
-        <Button kind="primary" onClick={() => nav.tool('5.1')}>Déclarer un premier défaut (5.1)</Button>
-      </Empty>
+      <div className="space-y-4"><Empty title="Coût de non-qualité : chaque défaut chiffré en euros" text="Le coût se calcule tout seul à partir des fiches du bac rouge (5.1), des réclamations (2.3) et des fiches de débit fournisseurs (3.1) : matière jetée, heures perdues et de retouche, transport en urgence, avoirs.">
+        <Button kind="primary" onClick={() => nav.open('5.1')}>Déclarer un premier défaut (5.1)<NewTab /></Button>
+      </Empty><CostSettings /></div>
     );
   }
   const m = cnqMonth(state, period);
@@ -52,7 +51,7 @@ export function NonQualite({ nav }: ScreenProps) {
     <div className="space-y-4">
       <Summary title={`Combien a coûté la non-qualité en ${periodLabel(period)} ?`} insights={insights} tiles={<>
         <Tile title="Coût du mois" value={formatValue(m.total + m.indirect, '€')} sub={`${kpi?.targetValue ? `cible ${kpi.target} · ` : ''}${m.indirect ? `dont ${formatValue(m.indirect, '€')} indirects · ` : ''}net après avoirs ${formatValue(m.net, '€')}${caMonth ? ` · ${((m.total + m.indirect) / caMonth * 100).toFixed(1).replace('.', ',')} % du CA` : ''}`} tone={kpi?.targetValue ? (m.total > kpi.targetValue ? 'alert' : 'ok') : undefined} />
-        <Tile title="CA à refaire pour compenser" value={formatValue(compensatingRevenue(m.total + m.indirect, state.settings.netMarginPct), '€')} sub={`lecture stricte (marge nette ${state.settings.netMarginPct} %)${compensatingRevenueVariable(m.total + m.indirect, state.params.variableMarginPct ?? 0) !== null ? ` ; ${formatValue(compensatingRevenueVariable(m.total + m.indirect, state.params.variableMarginPct!), '€')} en marge sur coûts variables (${state.params.variableMarginPct} %)` : ''}`} />
+        <Tile title="CA à refaire pour compenser" value={formatValue(compensatingRevenue(m.total + m.indirect, state.settings.netMarginPct), '€')} sub={`marge nette ${state.settings.netMarginPct} %`} />
         <Tile title="Heures perdues et retouches" value={`${formatValue(m.hours, '')} h`} sub={`à ${formatValue(state.params.hourlyRate, '€')} de l'heure`} />
         <Tile title="Récupéré sur les fournisseurs" value={formatValue(m.recovered, '€')} sub="avoirs reçus dans le mois (3.1)" tone={m.recovered ? 'ok' : undefined} />
       </>} />
@@ -73,7 +72,6 @@ export function NonQualite({ nav }: ScreenProps) {
 
       <Card className="space-y-3 p-3 sm:p-4">
         <ToolHeader title={`Détail de ${periodLabel(period)}${proc !== null ? ` · ${proc ? processLabel(proc) : 'à qualifier'}` : ''}`} text="Chaque ligne vient d'une fiche : cliquez sur la référence pour l'ouvrir.">
-          <HourlyRate s={state} onChange={v => update(d => { d.params.hourlyRate = v; })} />
           <Button kind="ghost" onClick={() => downloadFile(`Rapport-${period}.pdf`, monthlyReportPdf(state, period, { company: state.settings.companyName, date: new Date(), money: !teamView }), 'application/pdf')}><FileDown size={14} />Rapport du mois (PDF)</Button>
           <Button kind="ghost" onClick={() => window.print()}><Printer size={14} />Imprimer</Button>
         </ToolHeader>
@@ -85,7 +83,7 @@ export function NonQualite({ nav }: ScreenProps) {
                 {items.map(i => (
                   <tr key={i.kind + i.id}>
                     <td className="whitespace-nowrap border-b border-slate-100 px-2 py-2 text-slate-600">{frStamp(i.date.slice(0, 10))}</td>
-                    <td className="border-b border-slate-100 px-2 py-2"><button type="button" onClick={() => nav.tool(TOOL[i.kind], i.id)} className="font-mono font-semibold text-delacour-primary hover:underline">{i.ref}</button></td>
+                    <td className="border-b border-slate-100 px-2 py-2"><button type="button" onClick={() => nav.open(TOOL[i.kind], i.id)} className="inline-flex items-center gap-1 font-mono font-semibold text-delacour-primary hover:underline">{i.ref}<NewTab size={11} /></button></td>
                     <td className="border-b border-slate-100 px-2 py-2 text-slate-600">{KIND[i.kind]}</td>
                     <td className="max-w-[320px] truncate border-b border-slate-100 px-2 py-2 text-slate-800">{i.label}</td>
                     <td className="border-b border-slate-100 px-2 py-2">
@@ -119,17 +117,28 @@ export function NonQualite({ nav }: ScreenProps) {
         </Card>
       </div>
       <FeedBox tool={['5.2', '5.1']} period={period} />
+      <CostSettings />
       <Method rule="Tant qu'un défaut est décrit avec des mots, il est négligé. Chiffré en euros et imputé à son processus, il finance sa propre disparition."
         steps={[['Chiffrer en 3 minutes', "Dès qu'une pièce est rebutée ou retouchée : matière, heures perdues, heures de retouche, frais d'urgence."], ['Imputer au processus', "Quel maillon a rendu le défaut possible ? Sans complaisance, mais sans chercher de coupable."], ['Arbitrer chaque mois', 'Le cumul du mois finance en priorité les détrompeurs et les formations qui suppriment les causes.']]}
-        tips={['P1 : devis sous-évalué, achats de dépannage au prix fort.', "P2 : avenant oublié, commande incomplète qui oblige à reprendre.", 'P3 : matière mal coupée, heures de reprise passées sous silence.', 'P4 : temps du chef d\'équipe à rattraper les erreurs des recrues.', 'P5 : défaut vu trop tard, toute la série au rebut au lieu d\'une pièce.']} />
+        tips={['Devis sous-évalué, achats de dépannage au prix fort.', "Avenant oublié, commande incomplète qui oblige à reprendre.", 'Matière mal coupée, heures de reprise passées sous silence.', 'Temps du chef d\'équipe à rattraper les erreurs des recrues.', 'Défaut vu trop tard, toute la série au rebut au lieu d\'une pièce.']} />
     </div>
   );
 }
 
-function HourlyRate({ s, onChange }: { s: State; onChange(v: number): void }) {
+// The two figures that turn hours and losses into euros, read by 2.1, 2.3, 3.1, 4.2, 5.1 and 5.2
+function CostSettings() {
+  const { state, update } = useStore();
+  if (!state) return null;
   return (
-    <label className="flex items-center gap-1.5 text-[11px] text-slate-600">Coût horaire chargé
-      <NumInput className="!w-20 !py-1 text-right" value={s.params.hourlyRate} onChange={v => v !== null && v > 0 && onChange(v)} aria-label="Coût horaire chargé (€ par heure)" />€/h
-    </label>
+    <ToolSettings>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Field label="Coût horaire chargé (€/h)" hint="Valorise les heures perdues, de retouche, de reprise et de traitement dans les outils 2.1, 2.3, 3.1, 4.2, 5.1 et 5.2.">
+          <NumInput value={state.params.hourlyRate} onChange={v => v !== null && v > 0 && update(d => { d.params.hourlyRate = v; })} />
+        </Field>
+        <Field label="Marge nette habituelle (%)" hint="CA à refaire pour compenser 1 € perdu = 100 / marge nette (5.1, 5.2, synthèse 1.1).">
+          <NumInput value={state.settings.netMarginPct} onChange={v => v !== null && v > 0 && update(d => { d.settings.netMarginPct = v; })} />
+        </Field>
+      </div>
+    </ToolSettings>
   );
 }

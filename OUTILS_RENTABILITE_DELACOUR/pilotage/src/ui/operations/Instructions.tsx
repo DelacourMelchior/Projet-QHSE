@@ -1,272 +1,131 @@
-// Tool 3.2 "Instructions visuelles au poste": the 4 standard steps of a workstation, the right gesture and the trap in pictures,
-// protective equipment, the people allowed to work alone (3-question test), a version that follows every defect (living standard).
+// Tool 3.2 "Instructions visuelles au poste": the right gesture and the trap in pictures, posted at the workstation, read and signed by the people allowed
+// to work alone. A living standard: it changes after a defect at the workstation, a remark of the people who work there or a periodic review.
+// Screen: summary, what is left to do, then the sheets as cards, a list, a "who can work where" grid or the plan of the workshop.
 import { useEffect, useState } from 'react';
-import { ArrowUp, Plus, Printer, Trash2, X } from 'lucide-react';
-import type { Sop, SopStep, State } from '../../domain/types';
-import { DEFAULT_PPE, ncsSinceVersion, newSop, photoCount, sopInsights, sopVersion } from '../../domain/operations';
-import { applyOperationsExample } from '../../domain/operationsExamples';
-import { PROCESS_IDS, processLabel } from '../../domain/base';
-import { frDate, isoDate } from '../../domain/periods';
+import { Plus, Printer, Search } from 'lucide-react';
+import type { Sop } from '../../domain/types';
+import { norm, sopInsights, sopPhase, sopSummary, urgency, type SopTab } from '../../domain/instructions';
+import { applySopExample } from '../../domain/instructionsExamples';
+import { sopCfg } from '../../domain/instructions';
 import { useStore } from '../../store/StoreContext';
-import { Button, DeleteButton, Card, Empty, Field, inputCls, Method, Modal, Row, StatusBadge, SubTitle, Summary, Tile, ToolHeader } from '../common';
-import { PhotoBox } from '../PhotoBox';
-import { PpeIcon } from '../Ppe';
+import { Button, Card, Chips, Empty, inputCls, Method, Modal, Summary, Tile, ToolHeader } from '../common';
 import { usePrintOne } from '../PrintOne';
 import type { ScreenProps } from '../screens';
+import { SopCard, SopLine } from './SopCards';
+import { SopMatrix } from './SopMatrix';
+import { SopNew } from './SopNew';
+import { SopPlan } from './SopPlan';
+import { pageOf, SopPrint, SopPrintBatch, type PrintFormat } from './SopPrint';
+import { SopQueue } from './SopQueue';
+import { SopSettings } from './SopSettings';
+import { SopSheet } from './SopSheet';
+import { SopStation } from './SopStation';
 
-const sopStatus = (stale: number, s: Sop) => (stale ? { tone: 'alert' as const, label: 'À mettre à jour' } : !s.validatedBy.trim() ? { tone: 'warn' as const, label: 'À valider' } : { tone: 'ok' as const, label: 'À jour' });
+type View = 'cards' | 'list' | 'matrix' | 'plan';
+type Filter = 'all' | 'todo' | 'draft' | 'review' | 'archived';
+const A4: PrintFormat = { size: 'A4', landscape: false };
 
-export function Instructions({ focus, clearFocus }: ScreenProps) {
+export function Instructions({ nav, focus, clearFocus }: ScreenProps) {
   const { state, update } = useStore();
-  const [open, setOpen] = useState<Sop | null>(null);
+  const [open, setOpen] = useState<{ sop: Sop; tab?: SopTab } | null>(null);
+  const [creating, setCreating] = useState<string | null>(null);   // the poste to start from, '' for none
+  const [station, setStation] = useState('');
+  const [view, setView] = useState<View>('cards'), [filter, setFilter] = useState<Filter>('all'), [group, setGroup] = useState(''), [q, setQ] = useState('');
   const [printNode, print] = usePrintOne();
-  useEffect(() => { if (focus && state?.sops[focus]) { setOpen(state.sops[focus]); clearFocus(); } }, [focus]); // eslint-disable-line react-hooks/exhaustive-deps
+  // a link opens a sheet, or the sheet full screen at the workstation (the QR code of the printed sheet: "station:" and its id)
+  useEffect(() => {
+    if (!focus || !state) return;
+    if (focus.startsWith('station:')) setStation(focus.slice(8));
+    else if (Object.hasOwn(state.sops, focus)) setOpen({ sop: state.sops[focus] });
+    clearFocus();
+  }, [focus]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!state) return null;
-  const all = Object.values(state.sops).sort((a, b) => a.poste.localeCompare(b.poste));
+  const company = state.settings.companyName, all = Object.values(state.sops);
+  const stationSop = station && Object.hasOwn(state.sops, station) ? state.sops[station] : undefined;
+  const overlays = <>
+    {open && <SopSheet key={open.sop.id} initial={open.sop} tab={open.tab} nav={nav} onClose={() => setOpen(null)} onCopy={c => setOpen({ sop: c })} />}
+    {creating !== null && <SopNew firstPoste={creating} onClose={() => setCreating(null)} onStart={s => { setCreating(null); setOpen({ sop: s }); }} />}
+    {stationSop && <SopStation sop={stationSop} nav={nav} onClose={() => setStation('')} />}
+    {station && !stationSop && <Modal onClose={() => setStation('')} title="Instruction introuvable" footer={<Button onClick={() => setStation('')}>Fermer</Button>}><p className="text-xs text-slate-700">Cette instruction n'existe pas sur cet appareil. Elle a peut-être été supprimée, ou les données de l'entreprise ne sont pas encore chargées ici.</p></Modal>}
+    {printNode}
+  </>;
   if (!all.length) {
     return (
       <div className="space-y-4">
-        <Empty title="Instructions visuelles : le bon geste affiché au poste" text="Photographier les gestes du meilleur opérateur, écrire avec lui des phrases courtes, afficher la fiche A4 face au poste. Avant qu'une recrue travaille seule, elle passe le test en 3 questions.">
-          <Button kind="primary" onClick={() => setOpen(newSop())}><Plus size={14} />Nouvelle instruction</Button>
-          <Button onClick={() => update(d => applyOperationsExample(d))}>Voir un exemple traité</Button>
+        <Empty title="Instructions visuelles : le bon geste affiché au poste" text="Photographier les gestes du meilleur opérateur, écrire avec lui des phrases courtes, afficher la fiche au poste avec son QR code. Chaque personne lit la fiche, et avant de travailler seule, passe le test en 3 questions.">
+          <Button kind="primary" onClick={() => setCreating('')}><Plus size={14} />Nouvelle instruction</Button>
+          <Button onClick={() => update(d => applySopExample(d))}>Voir un exemple traité</Button>
         </Empty>
-        {open && <SopSheet initial={open} onClose={() => setOpen(null)} onPrint={s => print(<SopPrint s={s} company={state.settings.companyName} state={state} />)} />}
-        {printNode}
+        {overlays}
       </div>
     );
   }
-  const stale = all.filter(x => ncsSinceVersion(state, x).length);
-  const habil = all.reduce((n, x) => n + x.habilitations.length, 0);
+  const now = new Date(), sm = sopSummary(state, now), todos = sm.todos, min = sopCfg(state.params).minPeople, cfg = sopCfg(state.params);
+  const withTodo = new Set(todos.map(t => t.sopId));
+  const groups = [...new Set(all.map(x => x.group).filter(Boolean))].sort() as string[];
+  const phase = (x: Sop) => sopPhase(x);
+  const count = (f: Filter) => all.filter(x => (f === 'all' ? phase(x) !== 'archived' : f === 'todo' ? withTodo.has(x.id) : phase(x) === f)).length;
+  const hay = (x: Sop) => norm([x.poste, x.operation, x.group, x.author, x.owner].join(' '));
+  const shown = all.filter(x => (filter === 'all' ? phase(x) !== 'archived' : filter === 'todo' ? withTodo.has(x.id) : phase(x) === filter) && (!group || x.group === group) && (!q.trim() || hay(x).includes(norm(q))))
+    .sort((a, b) => urgency(todos, b.id) - urgency(todos, a.id) || a.poste.localeCompare(b.poste));
+  const toPost = todos.filter(t => t.kind === 'display').map(t => state.sops[t.sopId]).filter(Boolean);
+  const inGroup = group ? all.filter(x => x.group === group && phase(x) === 'active') : [];
+  const printMany = (xs: Sop[]) => print(<SopPrintBatch items={xs} company={company} state={state} format={A4} />, pageOf(A4));
+  const openSheet = (sop: Sop, tab?: SopTab) => setOpen({ sop, tab });
+  const insights = sopInsights(state, now);
+  const card = (x: Sop) => <SopCard key={x.id} s={x} state={state} todos={todos} now={now} onOpen={() => openSheet(x)} onStation={() => setStation(x.id)} onPrint={() => print(<SopPrint s={x} company={company} state={state} format={A4} />, pageOf(A4))} />;
+
   return (
     <div className="space-y-4">
-      <Summary title="Les bons gestes sont-ils affichés au poste ?" insights={sopInsights(state)} tiles={<>
-        <Tile title="Postes avec instruction" value={String(all.length)} sub={`${all.filter(x => x.validatedBy.trim()).length} validée(s)`} />
-        <Tile title="À mettre à jour" value={String(stale.length)} sub="défaut déclaré au poste depuis la version" tone={stale.length ? 'alert' : 'ok'} />
-        <Tile title="Personnes habilitées" value={String(habil)} sub="test en 3 questions réussi" />
-        <Tile title="Photos" value={String(all.reduce((n, x) => n + photoCount(x), 0))} sub={`${all.filter(x => !photoCount(x)).length} instruction(s) sans photo`} tone={all.some(x => !photoCount(x)) ? 'warn' : undefined} />
+      <Summary title="Les bons gestes sont-ils affichés, lus et connus au poste ?" insights={insights} max={3} list tiles={<>
+        <Tile title="Postes couverts" value={`${sm.live} / ${sm.live + sm.uncovered.length}`} sub={sm.uncovered.length ? `${sm.uncovered.length} cité(s) ailleurs sans instruction` : 'tous les postes cités ont une instruction'} tone={sm.uncovered.length ? 'warn' : sm.live ? 'ok' : undefined} />
+        <Tile title="Fiches à jour" value={`${sm.upToDate} / ${sm.active}`} sub={sm.stale ? `${sm.stale} à mettre à jour` : sm.avgMonths !== null ? `âge moyen : ${sm.avgMonths} mois` : 'aucune en vigueur'} tone={sm.stale ? 'alert' : sm.upToDate < sm.active ? 'warn' : sm.active ? 'ok' : undefined} onClick={todos.length ? () => { setView('cards'); setFilter('todo'); } : undefined} active={filter === 'todo'} />
+        <Tile title="Lecture de la version en vigueur" value={sm.readRate === null ? '—' : `${sm.readRate} %`} sub="« lu et compris » des personnes concernées" tone={sm.readRate !== null && sm.readRate < 100 ? 'warn' : sm.readRate === 100 ? 'ok' : undefined} />
+        <Tile title={`Postes avec ${min} habilités ou plus`} value={`${sm.covered} / ${sm.active}`} sub="personnes autorisées à travailler seules" tone={sm.active && sm.covered < sm.active ? 'warn' : sm.active ? 'ok' : undefined} />
       </>} />
+
+      <SopQueue state={state} todos={todos} onOpen={openSheet} />
+
       <Card className="space-y-3 p-3 sm:p-4">
-        <ToolHeader title="Instructions de poste" text="Une fiche A4 par poste sensible, plastifiée face à l'opérateur. Elle change dans les 48 h qui suivent un défaut au poste.">
-          <Button kind="primary" onClick={() => setOpen(newSop())}><Plus size={14} />Nouvelle instruction</Button>
+        <ToolHeader title="Instructions de poste" text="Une fiche par poste sensible, posée face à l'opérateur avec son QR code. Elle change dans les heures qui suivent un défaut au poste.">
+          {toPost.length > 0 && <Button onClick={() => printMany(toPost)}><Printer size={14} />Imprimer les fiches à remplacer ({toPost.length})</Button>}
+          {inGroup.length > 0 && <Button onClick={() => printMany(inGroup)}><Printer size={14} />Imprimer « {group} » ({inGroup.length})</Button>}
+          <Button kind="primary" onClick={() => setCreating('')}><Plus size={14} />Nouvelle instruction</Button>
         </ToolHeader>
-        <ul className="divide-y divide-slate-100">
-          {all.map(x => {
-            const n = ncsSinceVersion(state, x).length;
-            const st = sopStatus(n, x);
-            return (
-              <Row key={x.id} onClick={() => setOpen(x)}
-                lead={<span className="w-12 shrink-0 font-mono text-[11px] font-semibold text-slate-700">{sopVersion(x)}</span>}
-                title={`${x.poste || 'Poste à nommer'} · ${x.operation || 'Opération à décrire'}`}
-                sub={n ? `${n} défaut(s) déclaré(s) au poste depuis le ${frDate(x.versionDate)}` : `${x.steps.length} étape(s) · ${photoCount(x)} photo(s) · ${x.habilitations.length} habilité(s)`}
-                right={<><span className="block font-semibold text-slate-800">{x.author || 'Rédacteur à nommer'}</span>version du {frDate(x.versionDate)}</>}
-                badge={<StatusBadge level={st.tone} text={st.label} />} />
-            );
-          })}
-        </ul>
-      </Card>
-      <Method rule="Sans standard affiché, la qualité dépend de l'humeur et de la mémoire de chacun."
-        steps={[['Observer le meilleur', 'Photographier les gestes du meilleur opérateur : le bon geste, et le piège classique.'], ['Une fiche A4 au poste', 'Des phrases courtes, 80 % d\'images, plastifiée face aux yeux de l\'opérateur.'], ['Habiliter en 3 questions', 'Montre-moi le standard, explique-moi le piège, fais la pièce devant moi (outil 4.3).']]}
-        tips={['Une photo avec une flèche verte et une croix rouge vaut mieux qu\'un paragraphe.', 'Standard vivant : un défaut au poste, la fiche change sous 48 h.']} />
-      {open && <SopSheet initial={open} onClose={() => setOpen(null)} onPrint={s => print(<SopPrint s={s} company={state.settings.companyName} state={state} />)} />}
-      {printNode}
-    </div>
-  );
-}
-
-function SopSheet({ initial, onClose, onPrint }: { initial: Sop; onClose(): void; onPrint(s: Sop): void }) {
-  const { state, update } = useStore();
-  const [s, setS] = useState<Sop>(() => structuredClone(initial));
-  const [reason, setReason] = useState('');
-  const [ack, setAck] = useState('');
-  const [hab, setHab] = useState({ person: '', tutor: '', date: isoDate(new Date()) });
-  const [error, setError] = useState('');
-  if (!state) return null;
-  const isNew = !state.sops[s.id];
-  const set = (x: Partial<Sop>) => setS(y => ({ ...y, ...x }));
-  const setStep = (i: number, x: Partial<SopStep>) => set({ steps: s.steps.map((st, j) => (j === i ? { ...st, ...x } : st)) });
-  const up = (i: number) => { const n = [...s.steps]; [n[i - 1], n[i]] = [n[i], n[i - 1]]; set({ steps: n }); };
-  const stale = ncsSinceVersion(state, s);
-  const fromSkill = habilitedFromSkill(state, s);
-  const acked = (s.acks || []).filter(a => a.v === s.version).map(a => a.person);
-  const notAcked = [...new Set([...fromSkill, ...s.habilitations.map(h => h.person)])].filter(n => !acked.includes(n));
-  const valid = () => { if (!s.poste.trim()) { setError('Nommez le poste.'); return false; } return true; };
-  const close = () => { if (JSON.stringify(s) === JSON.stringify(initial) || window.confirm('Fermer sans enregistrer ? Vos modifications seront perdues.')) onClose(); };
-  const save = () => { if (valid()) { update(d => { d.sops[s.id] = s; }); onClose(); } };
-  const remove = () => { if (window.confirm(`Supprimer l'instruction du poste ${s.poste} ?`)) { update(d => { delete d.sops[s.id]; }); onClose(); } };
-  const bump = () => {
-    if (!reason.trim()) return setError('Indiquez ce qui change dans la nouvelle version.');
-    const today = isoDate(new Date());
-    set({ version: s.version + 1, versionDate: today, history: [...(s.history.length ? s.history : [{ v: s.version, date: s.versionDate, reason: 'Création' }]), { v: s.version + 1, date: today, reason: reason.trim() }] });
-    setReason(''); setError('');
-  };
-  const togglePpe = (p: string) => set({ ppe: s.ppe.includes(p) ? s.ppe.filter(x => x !== p) : [...s.ppe, p] });
-
-  return (
-    <Modal xwide onClose={close} title={isNew ? 'Nouvelle instruction de poste' : `Instruction · ${s.poste}`}
-      subtitle={`${sopVersion(s)} du ${frDate(s.versionDate)} · ${processLabel(s.processId)}`}
-      footer={<>
-        {!isNew && <DeleteButton onClick={remove} className="mr-auto"><Trash2 size={14} />Supprimer</DeleteButton>}
-        {error && <span role="alert" className="mr-2 text-[11px] font-semibold text-red-700">{error}</span>}
-        <Button onClick={() => valid() && onPrint(s)}><Printer size={14} />Fiche A4</Button>
-        <Button onClick={close}>Annuler</Button>
-        <Button kind="primary" onClick={save}>Enregistrer</Button>
-      </>}>
-      <div className="space-y-5">
-        {stale.length > 0 && (
-          <p className="rounded-lg bg-red-50 px-3 py-2 text-[11px] text-red-800"><strong>Standard à mettre à jour :</strong> {stale.map(n => `${n.ref} (${n.description})`).join(', ')} déclaré(s) au poste depuis cette version. Ajoutez la parade et passez à la version suivante.</p>
-        )}
-        <section className="grid gap-3 sm:grid-cols-4">
-          <Field label="Poste"><input className={inputCls} value={s.poste} onChange={e => set({ poste: e.target.value })} /></Field>
-          <div className="sm:col-span-2"><Field label="Opération"><input className={inputCls} value={s.operation} onChange={e => set({ operation: e.target.value })} /></Field></div>
-          <Field label="Processus"><select className={inputCls} value={s.processId} onChange={e => set({ processId: e.target.value })}>{PROCESS_IDS.map(p => <option key={p} value={p}>{processLabel(p)}</option>)}</select></Field>
-          <Field label="Rédigée avec (meilleur opérateur)"><input className={inputCls} value={s.author} list="people" onChange={e => set({ author: e.target.value })} /></Field>
-          <Field label="Validée par"><input className={inputCls} value={s.validatedBy} list="people" onChange={e => set({ validatedBy: e.target.value })} /></Field>
-        </section>
-
-        <section className="space-y-2">
-          <SubTitle>Les étapes du poste</SubTitle>
-          <ol className="space-y-2">
-            {s.steps.map((st, i) => (
-              <li key={i} className="grid gap-2 rounded-lg border border-slate-200 p-2 sm:grid-cols-[1fr_140px]">
-                <div className="grid gap-1.5 sm:grid-cols-2">
-                  <div className="flex items-center gap-1.5 sm:col-span-2">
-                    <span className="w-5 shrink-0 text-xs font-bold text-delacour-primary">{i + 1}.</span>
-                    <input className={inputCls} value={st.op} placeholder="Opération clé" aria-label={`Étape ${i + 1} : opération`} onChange={e => setStep(i, { op: e.target.value })} />
-                    <button type="button" aria-label="Monter cette étape" disabled={i === 0} onClick={() => up(i)} className="rounded p-1 text-slate-400 hover:text-slate-700 disabled:opacity-30"><ArrowUp size={14} /></button>
-                    <button type="button" aria-label="Retirer cette étape" onClick={() => set({ steps: s.steps.filter((_, j) => j !== i) })} className="rounded p-1 text-slate-400 hover:text-red-600"><X size={14} /></button>
-                  </div>
-                  <input className={inputCls} value={st.how} placeholder="Comment faire (phrase courte)" aria-label={`Étape ${i + 1} : comment`} onChange={e => setStep(i, { how: e.target.value })} />
-                  <input className={inputCls} value={st.watch} placeholder="Point de vigilance" aria-label={`Étape ${i + 1} : vigilance`} onChange={e => setStep(i, { watch: e.target.value })} />
-                  <input className={`${inputCls} sm:col-span-2`} value={st.check} placeholder="Autocontrôle" aria-label={`Étape ${i + 1} : autocontrôle`} onChange={e => setStep(i, { check: e.target.value })} />
-                </div>
-                <PhotoBox value={st.photo} label={`Étape ${i + 1}`} onChange={v => setStep(i, { photo: v })} />
-              </li>
-            ))}
-          </ol>
-          <Button className="!px-2 !py-1" onClick={() => set({ steps: [...s.steps, { op: '', how: '', watch: '', check: '', photo: '' }] })}><Plus size={13} />Ajouter une étape</Button>
-        </section>
-
-        <section className="grid gap-3 sm:grid-cols-2">
-          <div className="space-y-1.5 rounded-lg border-2 border-emerald-200 p-2">
-            <span className="text-xs font-bold text-emerald-800">Le bon geste</span>
-            <textarea className={`${inputCls} min-h-[56px]`} value={s.good} onChange={e => set({ good: e.target.value })} aria-label="Le bon geste" />
-            <PhotoBox value={s.goodPhoto} label="Le bon geste" onChange={v => set({ goodPhoto: v })} />
-          </div>
-          <div className="space-y-1.5 rounded-lg border-2 border-red-200 p-2">
-            <span className="text-xs font-bold text-red-800">Le piège à éviter</span>
-            <textarea className={`${inputCls} min-h-[56px]`} value={s.trap} onChange={e => set({ trap: e.target.value })} aria-label="Le piège à éviter" />
-            <PhotoBox value={s.trapPhoto} label="Le piège à éviter" onChange={v => set({ trapPhoto: v })} />
-          </div>
-        </section>
-
-        <section className="space-y-1.5">
-          <SubTitle>Équipements de protection obligatoires</SubTitle>
-          <div className="flex flex-wrap gap-1.5">
-            {[...new Set([...DEFAULT_PPE, 'Protections auditives', 'Masque', 'Blouse ou tablier', ...s.ppe])].map(p => (
-              <button key={p} type="button" aria-pressed={s.ppe.includes(p)} onClick={() => togglePpe(p)}
-                className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-1 text-[11px] font-semibold ${s.ppe.includes(p) ? 'border-delacour-primary bg-delacour-primary text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'}`}><PpeIcon label={p} size={16} />{p}</button>
-            ))}
-          </div>
-        </section>
-
-        <section className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-1.5">
-            <SubTitle>Personnes habilitées au poste</SubTitle>
-            <Field label="Compétence de la matrice de polyvalence (4.2)" hint="Les personnes au niveau 2 ou plus sur cette compétence sont habilitées d'office.">
-              <select className={inputCls} value={s.skillId || ''} onChange={e => set({ skillId: e.target.value || undefined })}>
-                <option value="">Aucune</option>{Object.values(state.skills).map(k => <option key={k.id} value={k.id}>{k.name}</option>)}
-              </select>
-            </Field>
-            {fromSkill.length > 0 && <p className="text-[11px] text-slate-700">Depuis la polyvalence : <strong>{fromSkill.join(', ')}</strong>.</p>}
-            {s.habilitations.length === 0 && !fromSkill.length && <p className="text-[11px] text-slate-500">Personne pour l'instant.</p>}
-            <ul className="space-y-1">
-              {s.habilitations.map((h, i) => (
-                <li key={i} className="flex items-center gap-2 text-[11px] text-slate-700">
-                  <span className="min-w-0 flex-1"><strong>{h.person}</strong>, tuteur {h.tutor || '—'}, le {frDate(h.date)}</span>
-                  <button type="button" aria-label={`Retirer ${h.person}`} onClick={() => set({ habilitations: s.habilitations.filter((_, j) => j !== i) })} className="rounded p-0.5 text-slate-400 hover:text-red-600"><X size={13} /></button>
-                </li>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <Chips value={view} onChange={setView} items={[['cards', 'Cartes'], ['list', 'Liste'], ['matrix', 'Qui sait quoi'], ...(cfg.plan ? [['plan', 'Plan'] as ['plan', string]] : [])]} />
+          {(view === 'cards' || view === 'list') && (
+            <>
+              <Chips value={filter} onChange={setFilter} items={[['all', 'En cours', count('all')], ['todo', 'À traiter', count('todo')], ['draft', 'Brouillons', count('draft')], ['review', 'À valider', count('review')], ['archived', 'Archivées', count('archived')]]} />
+              {groups.length > 0 && <select className={`${inputCls} !w-auto`} value={group} aria-label="Atelier, ligne ou zone" onChange={e => setGroup(e.target.value)}><option value="">Tous les ateliers</option>{groups.map(g => <option key={g} value={g}>{g}</option>)}</select>}
+              <label className="relative"><Search size={13} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" /><input className={`${inputCls} !w-48 !pl-7`} value={q} placeholder="Chercher un poste" aria-label="Chercher un poste" onChange={e => setQ(e.target.value)} /></label>
+            </>
+          )}
+        </div>
+        {sm.uncovered.length > 0 && (view === 'cards' || view === 'list') && (
+          <div className="space-y-1">
+            <span className="text-[11px] font-semibold text-slate-700">Postes cités ailleurs, sans instruction</span>
+            <div className="flex flex-wrap gap-1.5">
+              {sm.uncovered.slice(0, 8).map(u => (
+                <button key={u.name} type="button" onClick={() => setCreating(u.name)} title="Écrire l'instruction de ce poste" className="rounded-full border border-dashed border-slate-400 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:border-delacour-gold hover:bg-amber-50 max-sm:min-h-[44px]">
+                  {u.name}<span className="font-normal text-slate-600"> · {u.ncs ? `${u.ncs} défaut(s)` : u.machine ? 'machine' : 'compétence'}</span>
+                </button>
               ))}
-            </ul>
-            <div className="grid grid-cols-[1fr_1fr_auto] gap-1.5">
-              <input className={inputCls} value={hab.person} placeholder="Personne" list="people" aria-label="Personne habilitée" onChange={e => setHab({ ...hab, person: e.target.value })} />
-              <input className={inputCls} value={hab.tutor} placeholder="Tuteur" list="people" aria-label="Tuteur" onChange={e => setHab({ ...hab, tutor: e.target.value })} />
-              <Button className="!px-2" disabled={!hab.person.trim()} onClick={() => { set({ habilitations: [...s.habilitations, { ...hab, person: hab.person.trim() }] }); setHab({ person: '', tutor: '', date: isoDate(new Date()) }); }}><Plus size={13} /></Button>
-            </div>
-            <p className="text-[11px] text-slate-500">Habilitée = test en 3 questions réussi au poste (outil 4.3).</p>
-          </div>
-          <div className="space-y-1.5">
-            <SubTitle>Affichage et lecture de la {sopVersion(s)}</SubTitle>
-            <div className="flex flex-wrap items-end gap-2">
-              <Field label="Fiche affichée au poste le"><input type="date" className={inputCls} value={s.displayedAt || ''} onChange={e => set({ displayedAt: e.target.value })} /></Field>
-              <Button className="!px-2" onClick={() => set({ displayedAt: isoDate(new Date()) })}>Contrôlée aujourd'hui</Button>
-            </div>
-            {s.displayedAt && s.displayedAt < s.versionDate && <p className="text-[11px] font-semibold text-red-700">La fiche affichée est antérieure à la {sopVersion(s)} : réimprimer et remplacer.</p>}
-            <p className="text-[11px] text-slate-600">Lu et compris : {acked.length ? acked.join(', ') : 'personne'}{notAcked.length ? <> · <span className="font-semibold text-amber-800">à faire lire : {notAcked.join(', ')}</span></> : ''}.</p>
-            <div className="flex gap-1.5">
-              <input className={inputCls} value={ack} list="people" placeholder="Nom de la personne qui a lu" aria-label="Lu et compris par" onChange={e => setAck(e.target.value)} />
-              <Button className="shrink-0 !px-2" disabled={!ack.trim()} onClick={() => { set({ acks: [...(s.acks || []), { person: ack.trim(), v: s.version, date: isoDate(new Date()) }] }); setAck(''); }}>Lu et compris</Button>
+              {sm.uncovered.length > 8 && <span className="self-center text-[11px] text-slate-500">et {sm.uncovered.length - 8} autre(s)</span>}
             </div>
           </div>
-          <div className="space-y-1.5 sm:col-span-2">
-            <SubTitle>Versions</SubTitle>
-            <ul className="space-y-0.5 text-[11px] text-slate-700">
-              {(s.history.length ? s.history : [{ v: s.version, date: s.versionDate, reason: 'Création' }]).map(h => <li key={h.v}><span className="font-mono font-semibold">{sopVersion({ version: h.v })}</span> · {frDate(h.date)} · {h.reason}</li>)}
-            </ul>
-            <div className="flex gap-1.5">
-              <input className={inputCls} value={reason} placeholder="Ce qui change (ex. : parade après la NC-2026-007)" aria-label="Motif de la nouvelle version" onChange={e => setReason(e.target.value)} />
-              <Button className="shrink-0 !px-2" onClick={bump}>Nouvelle version</Button>
-            </div>
-          </div>
-        </section>
-      </div>
-    </Modal>
-  );
-}
+        )}
+        {view === 'cards' && (shown.length ? <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">{shown.map(card)}</div> : <p className="py-6 text-center text-xs text-slate-500">Aucune instruction pour ce filtre.</p>)}
+        {view === 'list' && (shown.length ? <ul className="divide-y divide-slate-100">{shown.map(x => <SopLine key={x.id} s={x} state={state} todos={todos} now={now} onOpen={() => openSheet(x)} />)}</ul> : <p className="py-6 text-center text-xs text-slate-500">Aucune instruction pour ce filtre.</p>)}
+        {view === 'matrix' && <SopMatrix state={state} />}
+        {view === 'plan' && <SopPlan state={state} onOpen={x => openSheet(x)} />}
+      </Card>
 
-// The A4 sheet posted at the workstation
-function SopPrint({ s, company, state }: { s: Sop; company: string; state: State }) {
-  return (
-    <div className="space-y-3 p-2 text-[10pt]">
-      <header className="flex items-end justify-between border-b-2 border-delacour-primary pb-1.5">
-        <div>
-          <div className="text-[8pt] font-semibold text-slate-500">{company ? `${company} · ` : ''}Instruction de poste</div>
-          <h1 className="text-[16pt] font-bold text-delacour-primary">{s.poste} · {s.operation}</h1>
-        </div>
-        <div className="text-right text-[8pt] text-slate-600"><span className="block rounded border-2 border-delacour-primary px-2 font-mono text-[20pt] font-black text-delacour-primary">{sopVersion(s)}</span>du {frDate(s.versionDate)}<br />Rédigée avec {s.author || '—'} · validée par {s.validatedBy || '—'}</div>
-      </header>
-      <ol className="grid grid-cols-2 gap-2">
-        {s.steps.map((st, i) => (
-          <li key={i} className="break-inside-avoid rounded border border-slate-300 p-1.5">
-            {st.photo && <img src={st.photo} alt="" className="mb-1 h-32 w-full rounded object-cover" />}
-            <div className="text-[11pt] font-bold"><span className="text-delacour-primary">{i + 1}.</span> {st.op}</div>
-            <div>{st.how}</div>
-            {st.watch && <div className="text-[9pt] font-semibold text-amber-800">Attention : {st.watch}</div>}
-            {st.check && <div className="text-[9pt] text-slate-600">Autocontrôle : {st.check}</div>}
-          </li>
-        ))}
-      </ol>
-      <div className="grid grid-cols-2 gap-2">
-        <div className="break-inside-avoid rounded border-2 border-emerald-600 p-1.5">
-          <div className="font-bold text-emerald-800">Le bon geste</div>
-          {s.goodPhoto && <img src={s.goodPhoto} alt="" className="my-1 h-28 w-full rounded object-cover" />}
-          <div>{s.good}</div>
-        </div>
-        <div className="break-inside-avoid rounded border-2 border-red-600 p-1.5">
-          <div className="font-bold text-red-800">Le piège à éviter</div>
-          {s.trapPhoto && <img src={s.trapPhoto} alt="" className="my-1 h-28 w-full rounded object-cover" />}
-          <div>{s.trap}</div>
-        </div>
-      </div>
-      <footer className="flex justify-between border-t border-slate-300 pt-1 text-[9pt]">
-        <span className="flex flex-wrap items-center gap-1.5"><strong>Protections obligatoires :</strong> {s.ppe.map(x => <span key={x} className="inline-flex items-center gap-1"><PpeIcon label={x} size={26} />{x}</span>)}</span>
-        <span>Habilités : {[...new Set([...habilitedFromSkill(state, s), ...s.habilitations.map(h => h.person)])].join(', ') || '—'}</span>
-      </footer>
+      <Method rule="Sans standard affiché, la qualité dépend de l'humeur et de la mémoire de chacun."
+        steps={[['Observer le meilleur', 'Photographier les gestes du meilleur opérateur : le bon geste, le piège, la pièce bonne et la pièce à rebuter.'], ['Une fiche au poste, avec son QR code', 'Des phrases courtes, 80 % d\'images, un cadre de couleur différente à chaque version. Le QR code ouvre la dernière version en plein écran.'], ['Lire, habiliter, faire vivre', 'Chaque personne signe « lu et compris », passe le test en 3 questions avant de travailler seule, et la fiche change dès qu\'un défaut ou une remarque le demande.']]}
+        tips={['Une photo avec une flèche verte et une croix rouge vaut mieux qu\'un paragraphe.', 'Standard vivant : un défaut au poste, un motif, une nouvelle version. La relecture annuelle vaut aussi version.', 'Une fiche peut se faire en quelques minutes avec le téléphone : « pas à pas avec des photos ».']} />
+      <SopSettings />
+      {overlays}
     </div>
   );
-}
-
-// People at level 2 or more on the skill linked to the workstation (versatility matrix, 4.2)
-function habilitedFromSkill(s: State, sop: Sop): string[] {
-  const k = sop.skillId ? s.skills[sop.skillId] : undefined;
-  return k ? Object.entries(k.levels).filter(([id, l]) => l >= 2 && s.people[id]?.active).map(([id]) => s.people[id].name) : [];
 }

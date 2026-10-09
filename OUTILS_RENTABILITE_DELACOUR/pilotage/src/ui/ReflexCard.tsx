@@ -6,6 +6,7 @@ import { familyLabel } from '../domain/riskTemplates';
 import { formatDuration } from '../domain/duration';
 import { noDot, sentence } from '../domain/reflexPdf';
 import { chainOf, contactLabel, telOf } from '../domain/contacts';
+import { mailtoOf, plainEmail } from './commercial/BilanClients';   // an e-mail typed in the directory ends up in a link: encoded, never a header
 
 export function ReflexCard({ r, s }: { r: Risk; s: State }) {
   const who = (ids: string[]) => ids.map(id => s.contacts[id]).filter(Boolean);
@@ -80,7 +81,7 @@ export function ContactList({ list, s }: { list: Contact[]; s?: State }) {
             <div className="flex flex-wrap items-baseline justify-between gap-x-2">
               <span><strong>{contactLabel(c)}</strong>{c.role ? <span className="text-slate-600"> · {c.role}</span> : ''}{(c.always || c.hours) ? <span className="text-slate-600"> · {c.always ? '24 h/24' : c.hours}</span> : ''}{c.reference ? <span className="text-slate-600"> · donner : {c.reference}</span> : ''}</span>
               <span className="flex flex-wrap items-baseline gap-x-3">
-                {c.email && <a href={`mailto:${c.email}`} className="inline-flex items-center gap-1 text-delacour-primary hover:underline"><Mail size={12} />{c.email}</a>}
+                {c.email && (plainEmail(c.email) ? <a href={mailtoOf(c.email)} className="inline-flex items-center gap-1 text-delacour-primary hover:underline"><Mail size={12} />{c.email}</a> : <span className="inline-flex items-center gap-1 text-slate-600"><Mail size={12} />{c.email}</span>)}
                 {c.phone && <a href={`tel:${telOf(c.phone)}`} className="inline-flex items-center gap-1 font-mono font-semibold text-delacour-primary hover:underline"><Phone size={12} />{c.phone}</a>}
                 {c.phone2 && <a href={`tel:${telOf(c.phone2)}`} className="font-mono text-delacour-primary hover:underline">{c.phone2}</a>}
               </span>

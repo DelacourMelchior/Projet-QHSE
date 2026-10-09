@@ -12,8 +12,9 @@ import { formatValue } from '../domain/numbers';
 import { frDate, isoDate } from '../domain/periods';
 import { legacyLocalRisks } from '../store/local';
 import { useStore } from '../store/StoreContext';
-import { Button, Card, StatusBadge } from './common';
+import { Button, Card, NewTab, StatusBadge } from './common';
 import { ScalePicker, ScoreBadge, ZONE_STYLE } from './RiskSheet';
+import { RiskScaleSettings } from './RiskScaleSettings';
 import { reflexCardsPdf } from '../domain/reflexPdf';
 import { downloadFile } from './download';
 
@@ -67,7 +68,7 @@ export function Risques({ onOpenRisk, onNewRisk, onOpenDirectory }: { onOpenRisk
         {rating ? <Button kind="primary" onClick={() => setRating(null)}>Terminer la cotation</Button>
           : <Button onClick={startRating}><SlidersVertical size={14} />Coter les risques</Button>}
         <span className="mx-1 hidden h-5 w-px bg-slate-300 sm:block" />
-        <Button onClick={onOpenDirectory}><BookUser size={14} />Annuaire</Button>
+        <Button onClick={onOpenDirectory}><BookUser size={14} />Annuaire<NewTab /></Button>
         <Button onClick={cardsPdf}><FileDown size={14} />Fiches réflexes (PDF)</Button>
         <Button kind="ghost" onClick={() => window.print()} aria-label="Imprimer la cartographie"><Printer size={14} />Imprimer</Button>
       </div>
@@ -118,6 +119,7 @@ export function Risques({ onOpenRisk, onNewRisk, onOpenDirectory }: { onOpenRisk
           )}
         </Card>
       </div>
+      <RiskScaleSettings />
     </div>
   );
 }

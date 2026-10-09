@@ -4,7 +4,7 @@
 import type { ReactNode } from 'react';
 import { ChevronDown, Plus, RotateCcw, X } from 'lucide-react';
 import type { PowerSettings } from '../../domain/types';
-import { PROCESS_IDS, processLabel } from '../../domain/base';
+import { defaultProcess, PROCESS_IDS, processLabel } from '../../domain/base';
 import { DEFAULT_FORMS, ENVELOPE_DAYS, LONG_HOURS, LOAD_MAX, POWER_LIBRARY, powerCfg, REVIEW_MONTHS } from '../../domain/powers';
 import { useStore } from '../../store/StoreContext';
 import { Button, Field, NumInput, ToolSettings } from '../common';
@@ -75,7 +75,7 @@ export function PwSettings() {
               </div>
             ))}
             <div className="flex flex-wrap gap-2">
-              <Button className="!py-1" onClick={() => setLib([...library, { process: 'P1', text: '' }])}><Plus size={13} />Ajouter une suggestion</Button>
+              <Button className="!py-1" onClick={() => setLib([...library, { process: defaultProcess('P1'), text: '' }])}><Plus size={13} />Ajouter une suggestion</Button>
               {saved.library && <Button kind="ghost" className="!py-1" onClick={() => setS({ library: undefined })}><RotateCcw size={13} />Remettre la liste de départ</Button>}
             </div>
           </Sec>

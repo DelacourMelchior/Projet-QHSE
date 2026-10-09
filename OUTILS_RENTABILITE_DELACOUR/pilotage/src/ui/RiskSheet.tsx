@@ -1,14 +1,17 @@
 // Risk sheet (tool 1.2), 4 steps: what stops, why and how serious, Plan B, reflex card and test.
 import { useState } from 'react';
 import { ArrowUp, Check, FileDown, Lightbulb, Phone, Plus, Trash2, X } from 'lucide-react';
+import { plainName } from '../domain/cartography';
+import { processLabel } from '../domain/base';
 import type { Contact, Duration, DurationUnit, ReflexStep, Risk, RiskCost, Scale, State } from '../domain/types';
 import {
-  actionsOfRisk, gravityScale, likelihoodScale, lossPerEvent, planBGain, riskState, riskZone, score, STATE_INFO, suggestedGravity, testDueDate,
+  actionsOfRisk, applyCalc, calcLine, COST_LINES, costPerDay, DAY_PARTS, type CostLineKey, gravityScale, likelihoodScale, lossPerEvent, planBGain, riskState, riskZone, score, STATE_INFO, suggestedGravity, testDueDate,
   ZONE_LABEL, zoneOf, type ScaleLevel,
 } from '../domain/risk';
 import { FAMILIES } from '../domain/riskTemplates';
 import { contactLabel } from '../domain/contacts';
 import { formatValue, parseNumber } from '../domain/numbers';
+import { FlowUses } from './map/FlowUses';
 import { frDate, isoDate } from '../domain/periods';
 import { formatDuration, hoursOf, UNITS } from '../domain/duration';
 import { cardPdf } from '../domain/reflexPdf';
@@ -51,7 +54,35 @@ export function RiskSheet({ initial, startStep = 0, onClose, onNewAction, onOpen
   const set = (patch: Partial<Risk>) => { setR(x => ({ ...x, ...patch })); setInfo(''); };
   const rate = (patch: Partial<Pick<Risk, 'gravity' | 'likelihood'>>) => set({ ...patch, ratedBy: author, ratedAt: today() });
   const cost: RiskCost = r.cost || { perDay: null, daysWithout: null, daysWith: null, planBCost: null };
-  const setCost = (patch: Partial<RiskCost>) => set({ cost: { ...cost, ...patch } });
+  // A figure kept from before the detailed lines moves into "autres pertes par jour"; perDay is always the sum
+  const setCost = (patch: Partial<RiskCost>) => {
+    const next = { ...cost, ...patch };
+    if (!DAY_PARTS.some(k => cost[k] != null) && cost.perDay != null && !('otherDay' in patch)) next.otherDay = cost.perDay;
+    set({ cost: applyCalc(next) });
+  };
+  // One cost line: typed directly, or computed from detail factors opened under it
+  const costLine = (k: CostLineKey, label: string, hint?: string) => {
+    const def = COST_LINES[k], computed = calcLine(cost, k);
+    const shown = cost[k] ?? (k === 'otherDay' && !DAY_PARTS.some(d => cost[d] != null) ? cost.perDay : null);
+    return (
+      <div className="space-y-1">
+        <Field label={label} hint={computed !== undefined ? 'Calculé avec le détail ci-dessous. Videz le détail pour saisir directement.' : hint}>
+          <input inputMode="decimal" className={`${inputCls} ${computed !== undefined ? 'bg-slate-50 font-mono' : ''}`} readOnly={computed !== undefined} value={shown ?? ''} onChange={e => setCost({ [k]: num(e.target.value) })} />
+        </Field>
+        <details className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1" open={computed !== undefined}>
+          <summary className="cursor-pointer text-[11px] font-semibold text-slate-600">Détailler le calcul ({def.mode === 'product' ? 'on multiplie' : 'on additionne'})</summary>
+          <p className="mt-1 text-[11px] text-slate-500">{def.help}</p>
+          <div className="mt-1.5 grid gap-2 sm:grid-cols-2">
+            {def.factors.map(f => (
+              <Field key={f.key} label={f.label} hint={f.hint}>
+                <input inputMode="decimal" className={inputCls} value={cost.calc?.[`${k}.${f.key}`] ?? ''} onChange={e => setCost({ calc: { ...cost.calc, [`${k}.${f.key}`]: num(e.target.value) } })} />
+              </Field>
+            ))}
+          </div>
+        </details>
+      </div>
+    );
+  };
   const money = !teamView;
   const withR: State = { ...state, risks: { ...state.risks, [r.id]: r } };
   const st = STATE_INFO[riskState(withR, r)];
@@ -109,6 +140,7 @@ export function RiskSheet({ initial, startStep = 0, onClose, onNewAction, onOpen
         <Button kind="primary" onClick={save}>Enregistrer</Button>
       </>}>
       <div className="space-y-4">
+        {!isNew && <FlowUses quiet tool="1.2" id={r.id} />}
         <nav className="grid grid-cols-2 gap-1 sm:grid-cols-4" aria-label="Étapes">
           {STEPS.map((l, i) => (
             <button key={l} type="button" onClick={() => setStep(i)} aria-current={step === i ? 'step' : undefined}
@@ -123,8 +155,8 @@ export function RiskSheet({ initial, startStep = 0, onClose, onNewAction, onOpen
             <Field label="Ce qui s'arrête (le risque)"><input className={inputCls} value={r.title} placeholder="Ex. : casse de la machine goulet" onChange={e => set({ title: e.target.value })} /></Field>
             <Field label="Processus">
               <select className={inputCls} value={r.processId} onChange={e => set({ processId: e.target.value })}>
-                {state.processes.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                {!state.processes.some(p => p.id === r.processId) && <option value={r.processId}>{r.processId}</option>}
+                {state.processes.map(p => <option key={p.id} value={p.id}>{plainName(p.name)}</option>)}
+                {!state.processes.some(p => p.id === r.processId) && <option value={r.processId}>{processLabel(r.processId)}</option>}
               </select>
             </Field>
             <Field label="Ressource vitale concernée" hint="Machine, personne, fournisseur, logiciel, client…"><input className={inputCls} value={r.resource} onChange={e => set({ resource: e.target.value })} /></Field>
@@ -151,13 +183,37 @@ export function RiskSheet({ initial, startStep = 0, onClose, onNewAction, onOpen
             {money && (
               <div className="space-y-2 rounded-lg border border-slate-200 p-2.5">
                 <div className="text-[11px] font-semibold text-slate-700">Coût d'un arrêt (facultatif, réservé à la direction)</div>
+                <p className="text-[11px] text-slate-500">Pour chaque ligne : tapez un chiffre, ou ouvrez « Détailler le calcul » pour le construire pas à pas. Une ligne qu'on ne sait pas chiffrer reste vide.</p>
+                <div className="text-[11px] font-semibold text-slate-600">1. Ce qu'on perd chaque jour d'arrêt</div>
                 <div className="grid gap-2 sm:grid-cols-2">
-                  <Field label="Perte par jour d'arrêt (€)" hint="Marge perdue + pénalités + heures payées à ne rien faire."><input inputMode="decimal" className={inputCls} value={cost.perDay ?? ''} onChange={e => setCost({ perDay: num(e.target.value) })} /></Field>
-                  <Field label="Durée d'arrêt sans Plan B (jours)"><input inputMode="decimal" className={inputCls} value={cost.daysWithout ?? ''} onChange={e => setCost({ daysWithout: num(e.target.value) })} /></Field>
+                  {costLine('margin', 'Marge perdue (€ / jour)', 'Commandes non livrées ou non facturées.')}
+                  {costLine('penalties', 'Pénalités clients (€ / jour)')}
+                  {costLine('idle', 'Salaires et charges payés à l\'arrêt (€ / jour)', 'Heures payées à ne rien faire.')}
+                  {costLine('otherDay', 'Charges fixes et autres pertes (€ / jour)')}
                 </div>
+                {costPerDay(cost) != null && <p className="text-[11px] text-slate-700">Perte par jour d'arrêt : <strong className="font-mono">{formatValue(costPerDay(cost)!, '€')}</strong></p>}
+                <div className="text-[11px] font-semibold text-slate-600">2. Combien de temps ça dure</div>
+                {costLine('daysWithout', 'Durée d\'arrêt sans Plan B (jours)', 'Du jour de la panne au retour à la normale.')}
+                <div className="text-[11px] font-semibold text-slate-600">3. Ce qu'on paie une seule fois par incident</div>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {costLine('repair', 'Réparation ou remplacement (€)')}
+                  {costLine('otherOnce', 'Autres frais exceptionnels (€)')}
+                </div>
+                <details className="rounded-md border border-amber-200 bg-amber-50 px-2 py-1">
+                  <summary className="cursor-pointer text-[11px] font-semibold text-amber-900">Avez-vous pensé à… ?</summary>
+                  <ul className="mt-1 list-disc space-y-0.5 pl-4 text-[11px] text-amber-900">
+                    <li>Un client qui ne revient pas après un retard : combien pèse-t-il sur l'année ?</li>
+                    <li>Les commandes qui s'accumulent : peut-on les rattraper, ou sont-elles perdues ?</li>
+                    <li>Le personnel redéployé sur autre chose : alors les salaires ne sont pas perdus.</li>
+                    <li>Le chômage partiel ou l'assurance (perte d'exploitation) : ce qui est remboursé se retire.</li>
+                    <li>Les arrêts en chaîne : une autre machine ou un autre poste s'arrête-t-il aussi ?</li>
+                    <li>Les stocks tampons : combien de jours tient-on avant que le client soit touché ?</li>
+                  </ul>
+                </details>
                 {loss !== null && sug && (
                   <p className="flex flex-wrap items-center gap-2 text-[11px] text-slate-700">
-                    Perte par incident : <strong className="font-mono">{formatValue(loss, '€')}</strong>, soit une gravité {sug} ({gravityScale(state)[sug - 1].label.toLowerCase()}).
+                    Perte par incident : <strong className="font-mono">{formatValue(loss, '€')}</strong>
+                    {cost.daysWithout != null && costPerDay(cost) != null && <span className="text-slate-500">({formatValue(costPerDay(cost)!, '€')} × {cost.daysWithout} j{((cost.repair ?? 0) + (cost.otherOnce ?? 0)) > 0 && <> + {formatValue((cost.repair ?? 0) + (cost.otherOnce ?? 0), '€')} de frais</>})</span>}, soit une gravité {sug} ({gravityScale(state)[sug - 1].label.toLowerCase()}).
                     {sug !== r.gravity && <button type="button" className="font-semibold text-delacour-primary hover:underline" onClick={() => rate({ gravity: sug })}>Appliquer</button>}
                   </p>
                 )}
@@ -239,8 +295,8 @@ export function RiskSheet({ initial, startStep = 0, onClose, onNewAction, onOpen
             {money && (
               <div className="space-y-2 rounded-lg border border-slate-200 p-2.5">
                 <div className="grid gap-2 sm:grid-cols-2">
-                  <Field label="Durée d'arrêt avec le Plan B (jours)"><input inputMode="decimal" className={inputCls} value={cost.daysWith ?? ''} onChange={e => setCost({ daysWith: num(e.target.value) })} /></Field>
-                  <Field label="Coût de mise en place du Plan B (€)"><input inputMode="decimal" className={inputCls} value={cost.planBCost ?? ''} onChange={e => setCost({ planBCost: num(e.target.value) })} /></Field>
+                  {costLine('daysWith', 'Durée d\'arrêt avec le Plan B (jours)')}
+                  {costLine('planBCost', 'Coût de mise en place du Plan B (€)')}
                 </div>
                 {gain && (
                   <p className="text-[11px] text-slate-700">

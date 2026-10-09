@@ -7,7 +7,7 @@ import { AlertTriangle, CheckCircle2, HelpCircle, Contact2, CreditCard, Download
 import type { Contact, ContactCategory, Org, State } from '../domain/types';
 import { functionsOf, syncPowerPeople, type FunctionOf } from '../domain/powers';
 import { StateBadge } from './team/PwBits';
-import { CATEGORIES, CONTRACTS, orgNames, orgOf, candidates, managersOf, orgKey, staffInfo, syncStaff, categoryLabel, chainIssues, chainOf, contactLabel, deputiesFromPowers, duplicates, isUnder, orgGroups, orgTree, pendingOf, telOf,  toCheck, vcardOf, vitalContacts, type OrgNode } from '../domain/contacts';
+import { CATEGORIES, CONTRACTS, personOf, orgNames, orgOf, candidates, managersOf, orgKey, staffInfo, syncStaff, categoryLabel, chainIssues, chainOf, contactLabel, deputiesFromPowers, duplicates, isUnder, orgGroups, orgTree, pendingOf, telOf,  toCheck, vcardOf, vitalContacts, type OrgNode } from '../domain/contacts';
 import { pocketCardPdf } from '../domain/directoryPdf';
 import { clientReceptions, clientSummary, ordersCiting, receptionsLabel, renameOrgOrders } from '../domain/clients';
 import { sectorRanking, sectorsOf } from '../domain/sectors';
@@ -15,10 +15,13 @@ import { CLASS_INFO, claimsOf, classOfSupplier, followOrg, lastRating, OPEN_STAT
 import { exampleContacts, exampleOrgs } from '../domain/riskTemplates';
 import { frDate, isoDate } from '../domain/periods';
 import { useStore } from '../store/StoreContext';
+import { PROCESS_IDS } from '../domain/base';
+import { PROCESS_SHORT, processesOf } from '../domain/team';
 import { Button, Card, Field, Modal, NewTab, StatusBadge, inputCls } from './common';
 import { PasteImport, type Column } from './PasteImport';
 import { downloadFile, fileSlug } from './download';
 import type { Nav } from './tools';
+import { FlowUses } from './map/FlowUses';
 
 type Filter = 'all' | 'vital' | 'always' | 'check' | 'dup';
 type View = 'org' | 'liste';
@@ -818,12 +821,17 @@ export function ContactSheet({ c, state, teamView, move, nav, onClose, set, veri
   const bosses = others.filter(x => x.category === c.category && !isUnder(state, x.id, c.id));
   const canDelete = !teamView || state.params.teamCanDelete;
   const info = staffInfo(state, c), fns = functionsOf(state, c.name);
+  const { update: save } = useStore();
+  const person = inside ? personOf(state, c) : undefined;   // the processes of a person are chosen here and read by the versatility matrices (4.2)
+  const procs = person ? processesOf(state, person) : [];
+  const toggleProc = (id: string) => person && save(d => { const q = d.people[person.id]; if (q) q.processIds = procs.includes(id) ? procs.filter(x => x !== id) : [...procs, id]; });
   const calls = chainOf(state, c).chain;
   const above = managersOf(state, c);
   return (
     <Modal title={c.vacant ? `Poste à pourvoir${c.role ? ` : ${c.role}` : ''}` : contactLabel(c)} subtitle={categoryLabel(c.category)} onClose={onClose}
       footer={<>{canDelete && <Button kind="danger" className="mr-auto" onClick={remove}><Trash2 size={14} />Supprimer</Button>}<Button kind="primary" onClick={onClose}>Fermer</Button></>}>
       <div className="grid gap-2.5 sm:grid-cols-2">
+        <div className="empty:hidden sm:col-span-2"><FlowUses quiet tool="1.3" id={c.id} /></div>
         {!c.vacant && (calls.length > 1 || above.length > 0) && (
           <div className="rounded-lg bg-slate-50 px-2.5 py-2 text-[11px] text-slate-800 sm:col-span-2">
             {calls.length > 1 && <p><strong>Chemin d'appel :</strong> {calls.map((x, i) => <span key={x.id}>{i ? ', sinon ' : ''}{short(x)}{x.phone && <> <a href={`tel:${telOf(x.phone)}`} className="font-mono font-semibold text-delacour-primary">{x.phone}</a></>}</span>)}.</p>}
@@ -858,6 +866,15 @@ export function ContactSheet({ c, state, teamView, move, nav, onClose, set, veri
         {inside && <Field label="Contrat">
           <select className={inputCls} value={c.contract || ''} onChange={e => set({ contract: e.target.value as Contact['contract'] })}>{CONTRACTS.map(x => <option key={x.key} value={x.key}>{x.label}</option>)}</select>
         </Field>}
+        {person && !c.vacant && (
+          <div className="sm:col-span-2">
+            <Field label="Processus où elle travaille" hint="Elle apparaît dans la matrice de polyvalence (4.2) de chaque processus coché.">
+              <div className="flex flex-wrap gap-1.5">
+                {PROCESS_IDS.map(id => <button key={id} type="button" aria-pressed={procs.includes(id)} onClick={() => toggleProc(id)} className={`min-h-[36px] rounded-full border px-3 py-1 text-xs font-semibold ${procs.includes(id) ? 'border-delacour-primary bg-delacour-primary text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'}`}>{PROCESS_SHORT[id] || id}</button>)}
+              </div>
+            </Field>
+          </div>
+        )}
         <Field label="Si absent ou sans réponse, appeler">
           <select className={inputCls} value={c.backupId || ''} onChange={e => set({ backupId: e.target.value || undefined })}>
             <option value="">Personne</option>
@@ -881,7 +898,7 @@ export function ContactSheet({ c, state, teamView, move, nav, onClose, set, veri
         </div>
         {inside && !c.vacant && (
           <div className="space-y-0.5 rounded-lg bg-slate-50 px-2.5 py-2 text-[11px] text-slate-700 sm:col-span-2">
-            <p>{info.absentUntil ? <strong className="text-amber-800">Absent jusqu'au {frDate(info.absentUntil)}.</strong> : 'Présent aujourd\'hui.'} Les congés se saisissent dans la polyvalence (4.2).</p>
+            {info.absentUntil && <p><strong className="text-amber-800">Absent jusqu'au {frDate(info.absentUntil)}.</strong></p>}
             {info.skills.length > 0 && <p><strong>Seul autonome sur :</strong> {info.skills.join(', ')}.</p>}
             {nav && <p className="flex flex-wrap gap-3"><button type="button" className={link} onClick={() => nav.open('4.2')}>Polyvalence (4.2)<NewTab /></button><button type="button" className={link} onClick={() => nav.open('4.1')}>Suppléances (4.1)<NewTab /></button></p>}
           </div>

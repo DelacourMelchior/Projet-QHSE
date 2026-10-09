@@ -13,7 +13,7 @@ export function PwPeople({ state, now, onAbsent, onOpen }: { state: State; now: 
   return (
     <div className="space-y-3">
       <Card className="space-y-2 p-3 sm:p-4">
-        <ToolHeader title="Si une personne est absente" text={`Pour chaque personne qui détient une fonction ou en est suppléante : ce qui s'arrête si elle manque du ${frDate(t)} au ${frDate(addDays(t, 13))}, compte tenu des congés des autres.`} />
+        <ToolHeader title="Si une personne est absente" text={`Pour chaque personne qui détient une fonction ou en est suppléante : ce qui s'arrête si elle manque du ${frDate(t)} au ${frDate(addDays(t, 13))}, compte tenu des absences des autres.`} />
         {list.length === 0 ? <p className="py-3 text-xs text-slate-600">Aucune personne n'est encore nommée sur une fonction.</p> : (
           <ul className="divide-y divide-slate-100">
             {list.map(x => (
@@ -28,7 +28,7 @@ export function PwPeople({ state, now, onAbsent, onOpen }: { state: State; now: 
         )}
       </Card>
       <Card className="space-y-2 p-3 sm:p-4">
-        <ToolHeader title="Absences à venir" text="Dans les 90 jours : le titulaire est absent et aucun de ses suppléants n'est là pendant toute son absence. Les congés se saisissent dans la polyvalence (4.2)." />
+        <ToolHeader title="Absences à venir" text="Dans les 90 jours : le titulaire est absent et aucun de ses suppléants n'est là pendant toute son absence." />
         {gaps.length === 0 ? <p className="py-3 text-xs text-slate-600">Aucune absence prévue ne laisse une fonction sans suppléant disponible.</p> : (
           <ul className="divide-y divide-slate-100">
             {gaps.map((g, i) => (

@@ -1,4 +1,5 @@
 // Link with the monthly dashboard (tool 1.1): the value a tool computes for a KPI, next to the value entered, one click to copy it.
+import { memo, useMemo } from 'react';
 import { ArrowRightLeft } from 'lucide-react';
 import type { Period } from '../domain/types';
 import { feeds } from '../domain/feeds';
@@ -8,12 +9,12 @@ import { periodLabel } from '../domain/periods';
 import { useStore } from '../store/StoreContext';
 import { Button, Card } from './common';
 
-export function FeedBox({ tool, period }: { tool: string | string[]; period: Period }) {
+// Only the figures of its own tool are computed, and only when the data or the month changed (not at every key typed in the screen that holds it)
+export const FeedBox = memo(function FeedBox({ tool, period }: { tool: string | string[]; period: Period }) {
   const { state, update, teamView } = useStore();
-  if (!state) return null;
-  const tools = Array.isArray(tool) ? tool : [tool];
-  const list = feeds(state, period).filter(f => tools.includes(f.tool));
-  if (!list.length) return null;
+  const tools = Array.isArray(tool) ? tool : [tool], key = tools.join(',');
+  const list = useMemo(() => (state ? feeds(state, period, new Date(), tools).filter(f => tools.includes(f.tool)) : []), [state, period, key]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (!state || !list.length) return null;
   const write = (kpiId: string, v: number) => update(d => {
     if (period > d.timeline.end) d.timeline.end = period;
     if (period < d.timeline.start) d.timeline.start = period;
@@ -38,4 +39,4 @@ export function FeedBox({ tool, period }: { tool: string | string[]; period: Per
       </ul>
     </Card>
   );
-}
+});

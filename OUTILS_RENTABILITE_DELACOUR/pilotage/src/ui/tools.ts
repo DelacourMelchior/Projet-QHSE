@@ -1,10 +1,10 @@
-// The 18 tools of the application, one per question of the process audit (1.3 Annuaire added), grouped by process.
+// The 19 tools of the application, one per question of the process audit (1.3 Annuaire added), grouped by process.
 // 2.4 keeps its number (the cabinet's paper tool) but sits in the quality process P5, after 5.4: it measures the satisfaction of the customers.
 // Address of a tool: pilotage.html#2.1 (the tool 1.1 has no hash; #continuite and #annuaire are kept for 1.2 and 1.3).
 import type { Action, Ref } from '../domain/types';
 
 export type ProcessKey = 'P1' | 'P2' | 'P3' | 'P4' | 'P5';
-export type ToolId = '1.1' | '1.2' | '1.3' | '2.1' | '2.3' | '2.4' | '3.1' | '3.2' | '3.3' | '3.4' | '4.1' | '4.2' | '4.3' | '4.4' | '5.1' | '5.2' | '5.3' | '5.4';
+export type ToolId = '1.1' | '1.2' | '1.3' | '1.4' | '2.1' | '2.3' | '2.4' | '3.1' | '3.2' | '3.3' | '3.4' | '4.1' | '4.2' | '4.3' | '4.4' | '5.1' | '5.2' | '5.3' | '5.4';
 
 export type SettingsTab = 'entreprise' | 'donnees';
 
@@ -22,6 +22,7 @@ export const TOOLS: ToolDef[] = [
   { id: '1.1', process: 'P1', label: 'Indicateurs', title: 'Tableau de pilotage mensuel', desc: 'Les indicateurs du mois, une synthèse pour décider et un plan d\'actions pour corriger.' },
   { id: '1.2', process: 'P1', label: 'Plans B', title: "Continuité d'activité : Plans B", desc: 'Les risques vitaux, un Plan B testé pour chacun et les fiches réflexes du jour de la panne.' },
   { id: '1.3', process: 'P1', label: 'Annuaire', title: 'Annuaire', desc: 'Les numéros à appeler quand ça casse, vérifiés au moins une fois par an.' },
+  { id: '1.4', process: 'P1', label: 'Processus', title: 'Cartographie des processus', desc: "Les processus de l'entreprise (les grandes suites de travail), qui en répond, leurs étapes dessinées en logigrammes et une relecture par an." },
   { id: '2.1', process: 'P2', label: 'Devis', title: 'Faisabilité et marge des devis', desc: '5 verrous à cocher et une marge vérifiée avant d\'envoyer une offre.' },
   { id: '2.3', process: 'P2', label: 'Réclamations', title: 'Réclamations clients sous 48 h', desc: 'Recontacter le client sous 48 h, enquêter sur l\'origine, résoudre ou contester, chiffrer le litige.' },
   { id: '3.1', process: 'P3', label: 'Fournisseurs', title: 'Évaluation et suivi des fournisseurs', desc: 'Chaque fournisseur est noté chaque année sur les critères de l\'entreprise, rangé par secteur avec un principal et un secours ; ses réclamations sont suivies de l\'envoi à la clôture et gardées dans son historique.' },
@@ -64,6 +65,8 @@ export const toolUrl = (id: ToolId, focus = '') => {
 // A QR code printed from it is dead after the move: said where it is printed.
 export const isLocalAddress = (loc: Pick<Location, 'hostname' | 'protocol'> = window.location): boolean =>
   loc.protocol === 'file:' || /^(|localhost|\[::1\]|(127|10)(\.\d+){3}|192\.168(\.\d+){2}|172\.(1[6-9]|2\d|3[01])(\.\d+){2}|169\.254(\.\d+){2}|.+\.(local|localhost|test|lan|home|internal))$/i.test(loc.hostname);
+// A button to another tool opens it in a new tab: what waits to be written goes first (one place for the shell and for the sheets that have no shell nav)
+export const openTab = (flush: () => unknown, id: ToolId, focus = '') => { void flush(); window.open(toolUrl(id, focus), '_blank', 'noopener'); };
 
 // The tool an action was created from (its register shows it in that tool's process)
 const REF_TOOL: Record<NonNullable<Action['ref']>['kind'], ToolId> = {

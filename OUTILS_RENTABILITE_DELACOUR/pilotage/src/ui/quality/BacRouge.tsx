@@ -4,31 +4,47 @@ import { useEffect, useState } from 'react';
 import { FileDown, Plus, Printer, SearchCheck, Trash2 } from 'lucide-react';
 import type { Nc, State } from '../../domain/types';
 import {
-  causeLabel, compensatingRevenue, cnqMonth, DECISION_HOURS, DECISIONS, NC_CAUSES, NC_STATE, ncCost, ncState, newAnalysis, newNc, qualityInsights,
+  causeLabel, compensatingRevenue, cnqMonth, DECISION_HOURS, DECISIONS, deleteNc, NC_CAUSES, NC_STATE, ncCost, ncDeleteBar, ncOrderFocus, ncState, newAnalysis, newNc, qualityInsights,
 } from '../../domain/quality';
 import { applyQualityExample } from '../../domain/qualityExamples';
 import { blankLabelsPdf, labelsPdf } from '../../domain/qualityPdf';
-import { nextRef } from '../../domain/base';
+import { defaultProcess, nextRef } from '../../domain/base';
 import { pareto } from '../../domain/quality';
 import { QuickButton } from '../QuickForm';
 import { PhotoBox } from '../PhotoBox';
 import { formatHours, frStamp, hoursBetween, nowLocal, PROCESS_IDS, processLabel } from '../../domain/base';
 import { formatValue } from '../../domain/numbers';
 import { periodOfDate } from '../../domain/periods';
-import { newDebit } from '../../domain/operations';
+import { newDebit } from '../../domain/suppliers';
+import { allReservesOf } from '../../domain/receptions';
+import { norm, sopPhase } from '../../domain/instructions';
 import { useStore } from '../../store/StoreContext';
-import { Button, DeleteButton, Card, Chips, Empty, Field, inputCls, Method, Modal, NumInput, Row, StatusBadge, SubTitle, Summary, Tile, ToolHeader } from '../common';
+import { Button, DeleteButton, Card, Chips, Empty, Field, inputCls, Method, Modal, NewTab, NumInput, Row, StatusBadge, SubTitle, Summary, Tile, ToolHeader } from '../common';
 import { downloadFile } from '../download';
 import type { ScreenProps } from '../screens';
 import type { Nav } from '../tools';
 
 type Filter = 'open' | 'decided' | 'all';
+// Names offered for "where": the places already typed and the workstations of the work instructions (3.2)
+const wheres = (s: State) => [...new Set([...Object.values(s.ncs).map(x => x.where), ...Object.values(s.sops).filter(x => sopPhase(x) !== 'archived').map(x => x.poste), ...Object.values(s.equipments).filter(x => !x.retiredAt).map(x => x.name)].filter(Boolean))];
 
 export function BacRouge({ nav, focus, clearFocus }: ScreenProps) {
   const { state, update, author } = useStore();
   const [open, setOpen] = useState<Nc | null>(null);
   const [filter, setFilter] = useState<Filter>('open');
-  useEffect(() => { if (focus && state?.ncs[focus]) { setOpen(state.ncs[focus]); clearFocus(); } }, [focus]); // eslint-disable-line react-hooks/exhaustive-deps
+  // a link opens a sheet, or a new one for a workstation and a step of its work instruction ("new:sop:" its id and the step), from the screen at the workstation
+  useEffect(() => {
+    if (!focus || !state) return;
+    if (Object.hasOwn(state.ncs, focus)) setOpen(state.ncs[focus]);   // an id from an address is read only if the data holds it ("__proto__", "constructor"…)
+    else if (focus.startsWith('new:sop:')) {
+      const [id, step] = focus.slice(8).split(':'), sop = Object.hasOwn(state.sops, id) ? state.sops[id] : undefined;
+      if (sop) setOpen({ ...newNc(state, author), where: sop.poste, sopId: id, ...(step ? { sopStep: Number(step) } : {}) });
+    } else if (focus.startsWith('new:equipment:')) {   // from the routine or the sheet of a piece of equipment (3.3)
+      const id = focus.slice(14), eq = Object.hasOwn(state.equipments, id) ? state.equipments[id] : undefined;
+      if (eq) setOpen({ ...newNc(state, author), where: eq.name, equipmentId: eq.id, ...(eq.sopId && state.sops[eq.sopId] ? { sopId: eq.sopId } : {}) });
+    } else return;
+    clearFocus();
+  }, [focus]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!state) return null;
   const now = new Date();
   const all = Object.values(state.ncs).sort((a, b) => (a.at < b.at ? 1 : -1));
@@ -94,7 +110,7 @@ export function BacRouge({ nav, focus, clearFocus }: ScreenProps) {
           </Card>
         ))}
       </div>
-      <datalist id="nc-where-q">{[...new Set(all.map(x => x.where).filter(Boolean))].map(w => <option key={w} value={w} />)}</datalist>
+      <datalist id="nc-where-q">{wheres(state).map(w => <option key={w} value={w} />)}</datalist>
       <Method rule="Une non-conformité qui n'est pas isolée dans les 5 minutes finit tôt ou tard chez le client."
         steps={[['Stop et étiquette sous 5 min', "Dès qu'un défaut est vu ou soupçonné, l'opérateur étiquette la pièce, sans hésiter."], ['Bac rouge fermé', "La pièce part dans le bac rouge sous clé. Jamais sur l'établi."], ['Décision chaque matin', "Le responsable inspecte le bac à heure fixe et décide : rebut, retouche, dérogation ou retour."]]}
         tips={["Remercier la personne qui déclare : elle vient d'éviter une réclamation.", 'Seul le responsable désigné peut sortir une pièce du bac rouge.']} />
@@ -123,9 +139,31 @@ function NcRow({ s, n, now, open }: { s: State; n: Nc; now: Date; open(): void }
   );
 }
 
+// The order of 3.4 a defect was declared from, with its milestone or its reservation, as a fact, and the way to it. The link (deliveryId, milestoneId, reserveId)
+// stays on the record whatever is edited: the sheet writes the whole record back.
+const orderOf = (n: Nc, s: State) => (n.deliveryId && Object.hasOwn(s.deliveries, n.deliveryId) ? s.deliveries[n.deliveryId] : undefined);
+// "Commande CMD-9 (3.4) : jalon 2 « Contrôle final »": the order a defect was declared from, with its milestone or its reservation; '' when it has none or it no longer exists
+export function orderText(n: Nc, s: State): string {
+  const d = orderOf(n, s);
+  if (!d) return '';
+  const i = n.milestoneId ? d.milestones.findIndex((m, j) => (m.id ?? `ms_legacy_${j}`) === n.milestoneId) : -1, r = n.reserveId ? allReservesOf(d).find(x => x.id === n.reserveId) : undefined;   // a reservation of a closed delivery is found too
+  const what = i >= 0 ? `jalon ${i + 1}${d.milestones[i].label.trim() ? ` « ${d.milestones[i].label.trim()} »` : ''}` : r ? `réserve « ${r.text.trim() || 'voir la photo'} »${d.lots?.length ? `, livraison ${r.lotNo}` : ''}` : '';
+  return `Commande ${d.ref.trim() || d.item.trim() || 'sans numéro'} (3.4)${what ? ` : ${what}` : ''}`;
+}
+export function OrderLink({ n, s, open }: { n: Nc; s: State; open(): void }) {
+  if (!orderOf(n, s)) return <p className="text-[11px] text-slate-600 sm:col-span-2">Déclaré depuis une commande de l'outil 3.4 qui n'existe plus.</p>;
+  return (
+    <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-800 sm:col-span-2">
+      <span>{orderText(n, s)}</span>
+      <Button className="!py-1" onClick={open}>Ouvrir la commande<NewTab /></Button>
+    </div>
+  );
+}
+
 export function NcSheet({ initial, onClose, nav }: { initial: Nc; onClose(): void; nav: Nav }) {
   const { state, update, author } = useStore();
   const [n, setN] = useState<Nc>(() => structuredClone(initial));
+  const [saved, setSaved] = useState(() => JSON.stringify(initial));   // what is written: the sheet stays open when a link opens another tool in a new tab
   const [error, setError] = useState('');
   if (!state) return null;
   const isNew = !state.ncs[n.id];
@@ -138,36 +176,44 @@ export function NcSheet({ initial, onClose, nav }: { initial: Nc; onClose(): voi
     if (!n.item.trim() && !n.where.trim()) { setError('Indiquez la pièce ou le poste.'); return false; }
     return true;
   };
-  const commit = (x: Nc) => update(d => { d.ncs[x.id] = x; });
-  const close = () => { if (JSON.stringify(n) === JSON.stringify(initial) || window.confirm('Fermer sans enregistrer ? Vos modifications seront perdues.')) onClose(); };
+  const commit = (x: Nc) => { update(d => { d.ncs[x.id] = x; }); setSaved(JSON.stringify(x)); };
+  const close = () => { if (JSON.stringify(n) === saved || window.confirm('Fermer sans enregistrer ? Vos modifications seront perdues.')) onClose(); };
   const save = () => { if (valid()) { commit(n); onClose(); } };
-  const remove = () => { if (window.confirm(`Supprimer la fiche ${n.ref} ?`)) { update(d => { delete d.ncs[n.id]; }); onClose(); } };
+  const barred = isNew ? '' : ncDeleteBar(state, n);   // an order released or signed keeps its defect: said as a fact, no button
+  const remove = () => {
+    const from = orderText(n, state);   // the link is said before it is cut
+    if (barred) return setError(barred);
+    if (window.confirm(from ? `Supprimer la fiche ${n.ref} ? Elle est liée à : ${from}. Une fois supprimée, cette commande n'a plus de défaut lié ; une ligne du journal de la commande le dit.` : `Supprimer la fiche ${n.ref} ?`)) { update(d => { deleteNc(d, n.id, author, nowLocal()); }); onClose(); }
+  };
   const decide = (key: Nc['decision']) => set(n.decision === key ? { decision: '', decidedAt: '', decidedBy: '' } : { decision: key, decidedAt: n.decidedAt || nowLocal(), decidedBy: n.decidedBy || author });
   const workshop = () => {
     if (!valid()) return;
-    if (n.analysisId && state.analyses[n.analysisId]) { commit(n); onClose(); nav.tool('5.3', n.analysisId); return; }
-    const a = newAnalysis(state, { kind: 'nc', id: n.id }, n.description, n.processId || 'P3');
+    if (n.analysisId && state.analyses[n.analysisId]) { commit(n); nav.open('5.3', n.analysisId); return; }
+    const a = newAnalysis(state, { kind: 'nc', id: n.id }, n.description, n.processId || defaultProcess('P3'));
     const x = { ...n, analysisId: a.id };
     update(d => { d.ncs[x.id] = x; d.analyses[a.id] = { ...a, participants: [n.by, n.decidedBy].filter(Boolean).join(', ') }; });
-    onClose();
-    nav.tool('5.3', a.id);
+    setN(x); setSaved(JSON.stringify(x));   // the sheet stays open and carries the link to the workshop, so that saving it later keeps it
+    nav.open('5.3', a.id);
   };
   const debit = () => {
     if (!valid()) return;
     const linked = Object.values(state.debits).find(x => x.ncId === n.id);
-    if (linked) { commit(n); onClose(); nav.tool('3.1', linked.id); return; }
-    const dbt = { ...newDebit(state, n.supplierId || ''), date: n.at.slice(0, 10), defect: `${n.description}${n.item ? ` (${n.item})` : ''}`, reworkHours: n.cost.reworkHours, otherCost: n.cost.scrap, ncId: n.id };
+    if (linked) { commit(n); nav.open('3.1', linked.id); return; }
+    const dbt = { ...newDebit(state, n.supplierId || ''), motif: 'produit', supplierName: n.supplierId ? state.suppliers[n.supplierId]?.name : undefined, date: n.at.slice(0, 10), defect: `${n.description}${n.item ? ` (${n.item})` : ''}`, reworkHours: n.cost.reworkHours, otherCost: n.cost.scrap, ncId: n.id };
     update(d => { d.ncs[n.id] = n; d.debits[dbt.id] = dbt; });
-    onClose();
-    nav.tool('3.1', dbt.id);
+    setSaved(JSON.stringify(n));
+    nav.open('3.1', dbt.id);
   };
+  const liveEqs = Object.values(state.equipments).filter(x => !x.retiredAt).sort((a, b) => a.name.localeCompare(b.name));
+  const liveSops = Object.values(state.sops).filter(x => sopPhase(x) !== 'archived').sort((a, b) => a.poste.localeCompare(b.poste)), linked = n.sopId ? state.sops[n.sopId] : undefined;
+  const openSop = () => { if (!valid()) return; commit(n); nav.open('3.2', n.sopId!); };
   const label = () => downloadFile(`Etiquette-${n.ref}.pdf`, labelsPdf([n], { company: state.settings.companyName, date: new Date() }), 'application/pdf');
 
   return (
     <Modal wide onClose={close} title={isNew ? 'Déclarer un défaut' : `Fiche ${n.ref}`}
       subtitle={<span className="flex flex-wrap items-center gap-1.5">{n.ref} · isolé le {frStamp(n.at)} <StatusBadge level={NC_STATE[st].tone} text={NC_STATE[st].label} /></span>}
       footer={<>
-        {!isNew && <DeleteButton onClick={remove} className="mr-auto"><Trash2 size={14} />Supprimer</DeleteButton>}
+        {!isNew && (barred ? <p role="note" className="mr-auto min-w-0 max-w-full text-xs text-slate-700">{barred}</p> : <DeleteButton onClick={remove} className="mr-auto"><Trash2 size={14} />Supprimer</DeleteButton>)}
         {error && <span role="alert" className="mr-2 text-[11px] font-semibold text-red-700">{error}</span>}
         <Button onClick={label}><FileDown size={14} />Étiquette</Button>
         <Button onClick={close}>Annuler</Button>
@@ -179,7 +225,29 @@ export function NcSheet({ initial, onClose, nav }: { initial: Nc; onClose(): voi
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label="Défaut constaté (factuel)"><input className={inputCls} value={n.description} placeholder="Ex. : perçage décalé de 2 mm" onChange={e => set({ description: e.target.value })} /></Field>
             <Field label="Pièce, lot ou affaire"><input className={inputCls} value={n.item} onChange={e => set({ item: e.target.value })} /></Field>
-            <Field label="Poste, machine ou chantier"><input className={inputCls} value={n.where} list="nc-where" onChange={e => set({ where: e.target.value })} /></Field>
+            <Field label="Poste, équipement ou chantier"><input className={inputCls} value={n.where} list="nc-where" onChange={e => { const m = liveSops.filter(x => norm(x.poste) === norm(e.target.value)), q = liveEqs.filter(x => norm(x.name) === norm(e.target.value)); set({ where: e.target.value, ...(m.length === 1 && !n.sopId ? { sopId: m[0].id } : {}), ...(q.length === 1 && !n.equipmentId ? { equipmentId: q[0].id } : {}) }); }} /></Field>
+            {n.deliveryId && <OrderLink n={n} s={state} open={() => { if (valid()) { commit(n); nav.open('3.4', ncOrderFocus(n)); } }} />}
+            {liveEqs.length > 0 && (
+              <Field label="Équipement (3.3)" hint={n.equipmentId ? <button type="button" className="inline-flex items-center gap-1 font-semibold text-delacour-primary hover:underline" onClick={() => { if (valid()) { commit(n); nav.open('3.3', n.equipmentId!); } }}>Ouvrir l'équipement (3.3)<NewTab /></button> : 'Relie le défaut à l\'équipement et à son historique.'}>
+                <select className={inputCls} value={n.equipmentId || ''} onChange={e => set({ equipmentId: e.target.value || undefined, ...(e.target.value && !n.where.trim() ? { where: state.equipments[e.target.value].name } : {}) })}>
+                  <option value="">Aucun</option>{n.equipmentId && !liveEqs.some(x => x.id === n.equipmentId) && state.equipments[n.equipmentId] && <option value={n.equipmentId}>{state.equipments[n.equipmentId].name} (retiré)</option>}{liveEqs.map(x => <option key={x.id} value={x.id}>{x.name}</option>)}
+                </select>
+              </Field>
+            )}
+            {liveSops.length > 0 && (
+              <div className="grid gap-2 sm:grid-cols-2">
+                <Field label="Instruction du poste (3.2)" hint={n.sopId ? undefined : 'Relie le défaut à la fiche affichée au poste.'}>
+                  <select className={inputCls} value={n.sopId || ''} onChange={e => set({ sopId: e.target.value || undefined, sopStep: undefined, ...(e.target.value && !n.where.trim() ? { where: state.sops[e.target.value].poste } : {}) })}>
+                    <option value="">Aucune</option>{liveSops.map(x => <option key={x.id} value={x.id}>{x.poste} · {x.operation}</option>)}
+                  </select>
+                </Field>
+                <Field label="Étape de la fiche" hint={n.sopId ? <button type="button" className="inline-flex items-center gap-1 font-semibold text-delacour-primary hover:underline" onClick={openSop}>Ouvrir l'instruction (3.2)<NewTab /></button> : undefined}>
+                  <select className={inputCls} disabled={!linked} value={n.sopStep ?? ''} onChange={e => set({ sopStep: e.target.value === '' ? undefined : Number(e.target.value) })}>
+                    <option value="">Non précisée</option>{linked?.steps.map((st, i) => <option key={i} value={i}>{i + 1}. {st.op || 'Étape sans titre'}</option>)}
+                  </select>
+                </Field>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-2">
               <Field label="Quantité isolée"><NumInput value={n.qty} onChange={v => set({ qty: v })} /></Field>
               <Field label="Quantité finalement rebutée"><NumInput value={n.qtyScrapped ?? null} onChange={v => set({ qtyScrapped: v })} /></Field>
@@ -251,7 +319,7 @@ export function NcSheet({ initial, onClose, nav }: { initial: Nc; onClose(): voi
               </select>
             </Field>
             <p className="rounded-lg bg-slate-50 px-3 py-2 text-[11px] text-slate-700">
-              Coût direct : <strong className="font-mono">{formatValue(cost, '€')}</strong> (heures à {formatValue(state.params.hourlyRate, '€')}/h).
+              Coût direct : <strong className="font-mono">{formatValue(cost, '€')}</strong> (heures à {formatValue(state.params.hourlyRate, '€')}/h, réglé dans 5.2).
               {cost > 0 && <> Pour le compenser, il faut vendre <strong className="font-mono">{formatValue(compensatingRevenue(cost, state.settings.netMarginPct), '€')}</strong> de plus, sur la base d'une marge nette de {state.settings.netMarginPct} %.</>}
             </p>
           </div>
@@ -260,14 +328,14 @@ export function NcSheet({ initial, onClose, nav }: { initial: Nc; onClose(): voi
         <section className="space-y-2">
           <SubTitle>4. Et ensuite</SubTitle>
           <div className="flex flex-wrap gap-2">
-            <Button onClick={workshop}><SearchCheck size={14} />{n.analysisId && state.analyses[n.analysisId] ? `Voir l'atelier ${state.analyses[n.analysisId].ref}` : 'Ouvrir un atelier 5 Pourquoi'}</Button>
-            {n.origin === 'fournisseur' && <Button onClick={debit}>{Object.values(state.debits).some(x => x.ncId === n.id) ? 'Voir la fiche de débit' : 'Réclamer au fournisseur (fiche de débit)'}</Button>}
-            {n.complaintId && state.complaints[n.complaintId] && <Button kind="ghost" onClick={() => { commit(n); onClose(); nav.tool('2.3', n.complaintId); }}>Réclamation {state.complaints[n.complaintId].ref}</Button>}
+            <Button onClick={workshop}><SearchCheck size={14} />{n.analysisId && state.analyses[n.analysisId] ? `Voir l'atelier ${state.analyses[n.analysisId].ref}` : 'Ouvrir un atelier 5 Pourquoi'}<NewTab /></Button>
+            {n.origin === 'fournisseur' && <Button onClick={debit}>{Object.values(state.debits).some(x => x.ncId === n.id) ? 'Voir la fiche de débit' : 'Réclamer au fournisseur (fiche de débit)'}<NewTab /></Button>}
+            {n.complaintId && state.complaints[n.complaintId] && <Button kind="ghost" onClick={() => { commit(n); nav.open('2.3', n.complaintId); }}>Réclamation {state.complaints[n.complaintId].ref}<NewTab /></Button>}
           </div>
           <p className="text-[11px] text-slate-500">Un défaut coûteux ou qui revient mérite un atelier 5 Pourquoi de 15 minutes devant la machine, dans les 2 heures.</p>
         </section>
       </div>
-      <datalist id="nc-where">{[...new Set(Object.values(state.ncs).map(x => x.where).filter(Boolean))].map(w => <option key={w} value={w} />)}</datalist>
+      <datalist id="nc-where">{wheres(state).map(w => <option key={w} value={w} />)}</datalist>
     </Modal>
   );
 }

@@ -6,7 +6,7 @@ Usage interne (consultant). Objectif : qu'un dirigeant de PME se voie piloter so
 
 1. Construire le livrable : `python3 execution/build_outils_app.py`.
 2. Ouvrir `livrable/pilotage.html` dans Edge ou Chrome.
-3. **Voir un exemple** au premier lancement (ou **Réglages → Charger l'exemple de démonstration**) : année 2026 complète, 13 actions.
+3. **Voir un exemple** au premier lancement (ou **Réglages → Données → Charger l'exemple de démonstration**) : année 2026 complète, 13 actions.
 4. Facultatif, pour montrer le partage : connecter un dossier OneDrive de test contenant `donnees/`, et avoir un second navigateur ou un collègue connecté au même dossier.
 
 ## Déroulé
@@ -14,7 +14,7 @@ Usage interne (consultant). Objectif : qu'un dirigeant de PME se voie piloter so
 **1. La synthèse (1 min) : « Où en est-on ? »**
 - Quatre chiffres : CA cumulé comparé à l'objectif à date, marge, trésorerie, KPI en alerte.
 - Question au dirigeant : « Combien de temps vous faut-il aujourd'hui pour avoir ces 4 chiffres ? »
-- Montrer que les hypothèses (objectif annuel, marge nette, montant moyen d'un devis) sont les siennes : **Réglages**.
+- Montrer que les hypothèses (objectif annuel : réglages de l'outil 1.1 ; marge nette et coût horaire : réglages de l'outil 5.2) sont les siennes.
 
 **2. Une alerte (1 min) : « Où agir ? »**
 - Badge rouge sur P2 : ligne « Montant devis émis » en alerte (−20 %), sans action pilotée.

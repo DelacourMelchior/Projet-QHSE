@@ -124,7 +124,7 @@ export function FlowEditor({ id, nav, onBack, onOpenFlow }: { id: string; nav: N
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2 print:hidden">
+      <div className="sticky top-[88px] z-30 -mt-1 border-b border-slate-200 bg-slate-100 py-2 flex flex-wrap items-center gap-2 print:hidden">
         <Button onClick={onBack}><ArrowLeft size={14} />La fiche {f.processId}</Button>
         <span className="text-xs text-slate-600">{proc ? plainName(proc.name) : ''} · version {f.version}{f.updatedAt ? ` du ${frDate(f.updatedAt)}` : ''}{f.updatedBy ? ` par ${f.updatedBy}` : ''}{can ? ' · modifications enregistrées aussitôt' : ''}</span>
         <span className="ml-auto flex flex-wrap gap-2">
@@ -161,8 +161,8 @@ export function FlowEditor({ id, nav, onBack, onOpenFlow }: { id: string; nav: N
         </div>
       </details>}
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-        <div className="min-w-0 xl:sticky xl:top-28 xl:self-start">
-          <Card className="min-w-0 overflow-auto p-3 xl:max-h-[calc(100vh-8rem)]">
+        <div className="min-w-0 xl:sticky xl:top-[9.5rem] xl:self-start">
+          <Card className="min-w-0 overflow-auto p-3 xl:max-h-[calc(100vh-10.5rem)]">
             <svg role="group" aria-label={`Logigramme ${f.name || 'sans nom'} : ${plural(f.steps.length, 'étape')}, lues aussi dans la liste`} viewBox={`0 0 ${laid.width} ${laid.height}`} width={laid.width} height={laid.height} className="max-w-none text-slate-800">
               <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#334155" /></marker></defs>
               {laid.lanes.map((l, i) => (

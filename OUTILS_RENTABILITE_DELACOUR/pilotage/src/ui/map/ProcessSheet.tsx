@@ -77,7 +77,7 @@ export function ProcessSheet({ id, tab, onTab, onBack, nav, onOpenFlow, onNewFlo
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2 print:hidden">
+      <div className="sticky top-[88px] z-30 -mt-1 border-b border-slate-200 bg-slate-100 py-2 flex flex-wrap items-center gap-2 print:hidden">
         <Button onClick={onBack}><ArrowLeft size={14} />La carte</Button>
         <span className="flex items-center gap-2"><CodeBadge p={p} /><h2 className="text-sm font-bold text-delacour-primary">{plainName(p.name) || '(sans nom)'}</h2></span>
         <span className="ml-auto"><Completeness s={state} p={p} now={now} /></span>

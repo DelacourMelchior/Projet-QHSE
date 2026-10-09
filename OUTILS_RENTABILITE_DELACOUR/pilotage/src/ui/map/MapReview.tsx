@@ -23,7 +23,7 @@ export function MapReview({ onBack, onOpen, nav }: { onBack(): void; onOpen(id: 
   const ps = sortedProcesses(state).sort((a, b) => (age(b.id) ?? 99999) - (age(a.id) ?? 99999)), old = ps.filter(p => reviewOld(state, p, now)), list = all === 'old' ? old : ps;
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2 print:hidden"><Button onClick={onBack}><ArrowLeft size={14} />La carte</Button><h2 className="text-sm font-bold text-delacour-primary">Revue des fiches</h2></div>
+      <div className="sticky top-[88px] z-30 -mt-1 border-b border-slate-200 bg-slate-100 py-2 flex flex-wrap items-center gap-2 print:hidden"><Button onClick={onBack}><ArrowLeft size={14} />La carte</Button><h2 className="text-sm font-bold text-delacour-primary">Revue des fiches</h2></div>
       <p className="max-w-3xl text-xs text-slate-600">Chaque pilote relit sa fiche et ses logigrammes. Une fiche est à relire si elle ne l'a pas été depuis {months} mois. S'il n'y a rien à changer, un clic suffit, à condition que la fiche n'ait aucun point en rouge.</p>
       {!named && <p role="status" className="flex flex-wrap items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-950">Renseignez votre nom dans les réglages : une revue est enregistrée à votre nom.{nav && <Button onClick={() => nav.settings()}>Ouvrir les réglages</Button>}</p>}
       <p role="status" aria-live="polite" className="sr-only">{said}</p>

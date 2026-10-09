@@ -106,8 +106,8 @@ export function SupportGap({ links, roleRef, work, onOpen, label }: { links: Flo
   if (!missing.length) return null;
   const said = `il manque : ${missing.join(', ')}`;
   return (
-    <button type="button" onClick={onOpen} title={`Étape sans ${missing.join(' ni ')}. Ouvrir l'étape pour en ajouter`} aria-label={`${label} : ${said}. Ouvrir l'étape`} className="inline-flex min-h-[24px] items-center gap-1 rounded-full border border-amber-400 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-950 hover:bg-amber-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-delacour-golddark">
-      <CircleAlert size={12} aria-hidden />Sans {missing.join(' ni ')}
+    <button type="button" onClick={onOpen} title={`Étape sans ${missing.join(' ni ')}. Ouvrir l'étape pour en ajouter`} aria-label={`${label} : ${said}. Ouvrir l'étape`} className="inline-flex min-h-[24px] max-w-full items-center gap-1 whitespace-nowrap rounded-full border border-amber-400 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-950 hover:bg-amber-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-delacour-golddark">
+      <CircleAlert size={12} aria-hidden className="shrink-0" /><span className="truncate">Sans {missing.join(' ni ')}</span>
     </button>
   );
 }

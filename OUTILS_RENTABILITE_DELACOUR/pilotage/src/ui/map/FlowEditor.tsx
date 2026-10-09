@@ -34,7 +34,7 @@ const wrap = (t: string, n = 22, max = 3): string[] => {
   if (line) out.push(line);
   return out.length > max ? [...out.slice(0, max - 1), out[max - 1].slice(0, n - 1) + '…'] : out;
 };
-const COLS = 'md:grid-cols-[1.5rem_7.5rem_minmax(0,1fr)_8rem_12rem]';
+const COLS = 'md:grid-cols-[1.5rem_7.5rem_minmax(0,1fr)_9rem_9.5rem_7.5rem]';
 const GRID = `grid grid-cols-[1.5rem_minmax(0,1fr)] ${COLS}`;
 
 const SHAPE: Record<StepKind, React.ReactNode> = {
@@ -233,7 +233,7 @@ export function FlowEditor({ id, nav, onBack, onOpenFlow }: { id: string; nav: N
           {issues.some(i => !i.stepId) && <ul className="hidden space-y-1 md:block" aria-label="Points à corriger pour tout le logigramme">{issues.filter(i => !i.stepId).map((i, k) => <li key={k} className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-950">{i.text}</li>)}</ul>}
           {issues.length > 0 && <ul className="space-y-1 md:hidden" aria-label="Points à corriger">{issues.map((i, k) => <li key={k} className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs text-amber-950">{i.text}</li>)}</ul>}
           <div className={`hidden gap-2 px-[11px] md:grid ${COLS} text-[11px] font-bold uppercase tracking-wide text-slate-600`} aria-hidden>
-            <span title="Numéro de l'étape, repris dans le schéma">N°</span><span>Type</span><span>Intitulé de l'étape</span><span>Qui la fait</span><span className="text-right">Ouvrir</span>
+            <span title="Numéro de l'étape, repris dans le schéma">N°</span><span>Type</span><span>Intitulé de l'étape</span><span>Qui la fait</span><span>À compléter</span><span className="text-right">Actions</span>
           </div>
           {can && <p className="text-xs text-slate-600 md:hidden">Pour modifier les étapes, utilisez une tablette ou un ordinateur : ici, le logigramme se lit.</p>}
           <ol className="space-y-2">
@@ -252,8 +252,8 @@ export function FlowEditor({ id, nav, onBack, onOpenFlow }: { id: string; nav: N
                     <input id={`lbl-${st.id}`} className={`${inputCls} hidden md:block`} disabled={!can} aria-label={`Intitulé de l'étape ${i + 1}`} value={st.label} placeholder={stepPlaceholder(st.kind) + (st.kind === 'end' ? '' : ' · Entrée : étape suivante')}
                       onChange={e => patch(st.id, { label: e.target.value })} onKeyDown={e => { if (e.key === 'Enter' && st.kind !== 'end') { e.preventDefault(); add(i, 'action', 'label'); } }} />
                     <span className="hidden min-w-0 md:block">{st.kind !== 'start' && st.kind !== 'end' && (can ? <RoleCell value={rf.steps[i].role} refKey={st.roleRef ? `${st.roleRef.kind === 'skill' ? '__sk:' : '__pp:'}${st.roleRef.id}` : ''} roles={roleList} skills={skillList} people={personList} label={`Qui fait l'étape ${i + 1}`} onPick={(role, ref) => patch(st.id, { role, roleRef: ref })} /> : <span className="text-xs text-slate-800">{rf.steps[i].role || '—'}</span>)}</span>
+                    <span className="hidden min-w-0 items-center md:flex">{st.kind !== 'start' && st.kind !== 'end' && <SupportGap links={st.links || []} roleRef={st.roleRef} work={isWork(st)} label={`Étape ${i + 1}`} onOpen={() => setOpen(st.id)} />}</span>
                     <span className="hidden items-center justify-end gap-0.5 md:flex">
-                      {st.kind !== 'start' && st.kind !== 'end' && <SupportGap links={st.links || []} roleRef={st.roleRef} work={isWork(st)} label={`Étape ${i + 1}`} onOpen={() => setOpen(st.id)} />}
                       {can && <span draggable onDragStart={e => { setDrag(i); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', st.id); const row = document.getElementById(`step-${st.id}`); if (row) e.dataTransfer.setDragImage(row, 16, 16); }} onDragEnd={() => { setDrag(null); setOver(null); }}
                         title="Glisser pour déplacer l'étape" aria-hidden className="cursor-grab rounded p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-800 active:cursor-grabbing"><GripVertical size={15} /></span>}
                       {can && <Button kind="ghost" id={`mv-${st.id}-up`} className="!px-1" aria-label={`Monter l'étape ${i + 1}`} disabled={i === 0} onClick={() => move(i, -1)}><ArrowUp size={14} /></Button>}

@@ -114,7 +114,7 @@ export function FlowEditor({ id, nav, onBack, onOpenFlow }: { id: string; nav: N
   const sheetN = [[(f.inputs?.length || 0) + (f.outputs?.length || 0), 'entrée ou sortie', 'entrées et sorties'], [f.requirements?.length || 0, 'exigence', 'exigences'], [linked('1.1'), 'indicateur', 'indicateurs'], [linked('1.2'), 'risque', 'risques']] as const;
   const summary = sheetN.some(x => x[0]) ? sheetN.filter(x => x[0]).map(x => plural(x[0], x[1], x[2])).join(', ') : 'à quoi il sert, ce qui entre et sort, les exigences, les indicateurs et les risques : rien de renseigné';
   // a sub-process opens the flowchart it calls in a new tab (the page and the sheet stay as they are, like every jump to another page of the application); the callers are reached on this page
-  const openFlow = (fid: string) => nav.open('1.4', `flow:${fid}`);
+  const openFlow = onOpenFlow;
   const openLinkHere = (l: FlowLink) => openLink(nav, l), linkTextHere = (l: FlowLink) => linkText(state, l);
   const setLinks = (sid: string, links: FlowLink[]) => patch(sid, { links: links.length ? links : undefined });
   const setBranches = (sid: string, b: FlowBranch[]) => patch(sid, { branches: b, yes: undefined, no: undefined });
@@ -133,7 +133,7 @@ export function FlowEditor({ id, nav, onBack, onOpenFlow }: { id: string; nav: N
         </span>
       </div>
       <p role="status" aria-live="polite" className="sr-only">{said}</p>
-      {callers.length > 0 && <p className="flex flex-wrap items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-xs text-violet-950">Ce logigramme est un sous-processus, appelé depuis : {callers.map(c => <button key={c.id} type="button" onClick={() => onOpenFlow(c.id)} className="rounded font-bold underline underline-offset-2 hover:text-violet-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-delacour-golddark">{c.name || 'Sans nom'}<span className="sr-only"> (s'ouvre dans un nouvel onglet)</span></button>)}</p>}
+      {callers.length > 0 && <p className="flex flex-wrap items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-xs text-violet-950">Ce logigramme est un sous-processus, appelé depuis : {callers.map(c => <button key={c.id} type="button" onClick={() => onOpenFlow(c.id)} className="rounded font-bold underline underline-offset-2 hover:text-violet-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-delacour-golddark">{c.name || 'Sans nom'}</button>)}</p>}
       {!can && <p role="status" className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700"><Lock size={14} />Lecture seule : seuls le pilote de {f.processId}, son suppléant et les administrateurs modifient ce logigramme.</p>}
 
       <Card className="p-4">
@@ -194,7 +194,7 @@ export function FlowEditor({ id, nav, onBack, onOpenFlow }: { id: string; nav: N
                       {st.control && <g><circle cx={n.x + n.w + 3} cy={n.y - 3} r={9} fill="#b91c1c" /><text x={n.x + n.w + 3} y={n.y + 1} textAnchor="middle" fontSize="11" fontWeight="700" fill="#fff">C</text></g>}
                     </g>
                     {/* the links are beside the step, not inside it: a link inside a button cannot be reached by a screen reader */}
-                    {sub && called && <g role="link" tabIndex={0} aria-label={`Ouvrir le logigramme ${called.name || 'sans nom'} dans un nouvel onglet`} className="cursor-pointer outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-delacour-golddark"
+                    {sub && called && <g role="link" tabIndex={0} aria-label={`Ouvrir le logigramme ${called.name || 'sans nom'}`} className="cursor-pointer outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-delacour-golddark"
                       onClick={() => openFlow(called.id)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openFlow(called.id); } }}
                       onMouseEnter={() => setHotLink(n.id)} onMouseLeave={() => setHotLink('')} onFocus={() => setHotLink(n.id)} onBlur={() => setHotLink('')}>
                       <rect x={n.x + 8} y={n.y + n.h - 19} width={n.w - 16} height={16} rx={4} fill={hotLink === n.id ? '#6d28d9' : '#ede9fe'} stroke="#6d28d9" strokeWidth={hotLink === n.id ? 2 : 1} />
@@ -266,7 +266,7 @@ export function FlowEditor({ id, nav, onBack, onOpenFlow }: { id: string; nav: N
                     {st.control && <Chip tone="ctl">Contrôle</Chip>}
                     {!!st.reqs?.length && <Chip>{st.reqs.length} exigence{st.reqs.length > 1 ? 's' : ''}</Chip>}
                     {st.doc && <Chip>{st.doc}</Chip>}
-                    {st.kind === 'subprocess' && (st.flowId && state.flows[st.flowId] ? <ChipButton title="Ouvrir ce logigramme dans un nouvel onglet" onClick={() => openFlow(st.flowId!)}>↳ {state.flows[st.flowId].name || 'Sans nom'} <ExternalLink size={10} aria-hidden /><span className="sr-only"> (s'ouvre dans un nouvel onglet)</span></ChipButton> : <Chip>Logigramme à choisir</Chip>)}
+                    {st.kind === 'subprocess' && (st.flowId && state.flows[st.flowId] ? <ChipButton title="Ouvrir ce logigramme" onClick={() => openFlow(st.flowId!)}>↳ {state.flows[st.flowId].name || 'Sans nom'}</ChipButton> : <Chip>Logigramme à choisir</Chip>)}
                     {stepCover(state, st).some(c => c.tone !== 'ok') && <button type="button" onClick={() => setOpen(st.id)} className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${stepCover(state, st).some(c => c.tone === 'alert') ? 'border-red-300 bg-red-50 text-red-900' : 'border-amber-300 bg-amber-50 text-amber-950'}`}>À risque si une personne manque</button>}
                   </div>}
                   {bad.length > 0 && <p className="hidden px-2.5 pb-2 pl-11 text-[11px] font-semibold text-amber-900 md:block">{bad.map(b => b.text.replace(/^[^:]+ : /, '')).join(' · ')}</p>}

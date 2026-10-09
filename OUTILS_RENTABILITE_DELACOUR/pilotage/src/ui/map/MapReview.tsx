@@ -5,7 +5,7 @@ import { canEditProcess, flowsOf, personGone, personName, processIssues, readOnl
 import { frDate } from '../../domain/periods';
 import { plural } from '../../domain/receptions';
 import { useStore } from '../../store/StoreContext';
-import { Button, Card, Chips, NewTab } from '../common';
+import { Button, Card, Chips } from '../common';
 import type { Nav } from '../tools';
 import { CodeBadge } from './MapBits';
 
@@ -41,7 +41,7 @@ export function MapReview({ onBack, onOpen, nav }: { onBack(): void; onOpen(id: 
               {issues.length > 0 && <span className="block text-xs">{issues.map((i, k) => <span key={i.key} className={i.tone === 'bad' ? 'font-semibold text-red-800' : 'text-amber-900'}>{k ? ' · ' : ''}{i.text}</span>)}</span>}
               {why && <span className="mt-0.5 block text-xs font-semibold text-slate-700">{why}</span>}
             </span>
-            <Button id={`rev-open-${p.id}`} onClick={() => onOpen(p.id)}>Ouvrir la fiche <NewTab /></Button>
+            <Button id={`rev-open-${p.id}`} onClick={() => onOpen(p.id)}>Ouvrir la fiche</Button>
             <Button id={`rev-ok-${p.id}`} kind="primary" disabled={!!why || !named} onClick={() => { update(d => { const x = d.processes.find(q => q.id === p.id); if (x) reviewProcess(x, author.trim(), 'Rien à changer', now); }); setSaid(`Relue : ${p.id}`); setNext((list[k + 1] ?? list[k - 1])?.id || ''); }}><Check size={14} />Marquer comme relue, rien à changer</Button>
           </Card></li>
         );

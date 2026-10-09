@@ -1,7 +1,7 @@
 // Tool 1.4 "Cartographie": the map of the processes in three bands (management, realisation, support), one sheet per process, one or several flowcharts per process, the yearly review.
 // Addresses (`#1.4~…`): `<processId>[:tab]` a sheet, `flow:<flowId>` a flowchart, `review`, `new`.
 import { useEffect, useState } from 'react';
-import { ClipboardCheck, ExternalLink, Lock, Plus, Eye } from 'lucide-react';
+import { ClipboardCheck, Lock, Plus, Eye } from 'lucide-react';
 import type { MapBand, Process, State } from '../../domain/types';
 import { BANDS, bandOf, exchanges, lostFlows, reqGaps, reviewBlockers, canAdmin, canDeleteProcess, deleteProcess, flowsOf, mapSummary, newFlow, newProcess, partnersOf, personGone, personName, plainName, processIssues, processUsage, reassignProcess, reviewMonths, rightOf, sortedProcesses } from '../../domain/cartography';
 import { plural } from '../../domain/receptions';
@@ -20,17 +20,23 @@ import { ProcessSheet, type SheetTab } from './ProcessSheet';
 type View = { v: 'map' } | { v: 'sheet'; id: string; tab: SheetTab } | { v: 'flow'; id: string } | { v: 'review' };
 const TABS: SheetTab[] = ['identity', 'io', 'resources', 'cover', 'flows', 'matrix', 'indicators', 'review'];
 
+// where a focus string leads inside this tool: 'review', 'flow:<id>', '<process>' or '<process>:<tab>'; undefined when the target no longer exists
+function viewOf(state: State, focus: string): View | undefined {
+  const [a, b = ''] = focus.split(':');
+  if (focus === 'review') return { v: 'review' };
+  if (a === 'flow') return state.flows[b] ? { v: 'flow', id: b } : undefined;
+  return state.processes.some(p => p.id === a) ? { v: 'sheet', id: a, tab: TABS.includes(b as SheetTab) ? b as SheetTab : 'identity' } : undefined;
+}
+
 export function Cartographie({ focus, clearFocus, nav }: ScreenProps) {
   const { state, update, author } = useStore();
-  const [view, setView] = useState<View>({ v: 'map' }), [adding, setAdding] = useState(false), [removing, setRemoving] = useState<string | null>(null), [naming, setNaming] = useState<string | null>(null), [gone, setGone] = useState(false);
+  const [view, setView] = useState<View>({ v: 'map' }), [adding, setAdding] = useState(false), [removing, setRemoving] = useState<string | null>(null), [naming, setNaming] = useState<string | null>(null), [gone, setGone] = useState(false), [hist, setHist] = useState<View[]>([]);
 
   useEffect(() => {
     if (!focus || !state) return;
-    const [a, b = ''] = focus.split(':');
-    if (focus === 'review') setView({ v: 'review' });
-    else if (focus === 'new') { setView({ v: 'map' }); setAdding(canAdmin(state, author)); }
-    else if (a === 'flow' ? state.flows[b] : state.processes.some(p => p.id === a)) { setGone(false); setView(a === 'flow' ? { v: 'flow', id: b } : { v: 'sheet', id: a, tab: TABS.includes(b as SheetTab) ? b as SheetTab : 'identity' }); }
-    else setGone(true);   // an address kept from before, to something deleted
+    if (focus === 'new') { setView({ v: 'map' }); setAdding(canAdmin(state, author)); }
+    else { const v = viewOf(state, focus); if (v) { setGone(false); setView(v); } else setGone(true); }   // else: an address kept from before, to something deleted
+    setHist([]);
     clearFocus();
   }, [focus, !!state]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!state) return null;
@@ -39,17 +45,19 @@ export function Cartographie({ focus, clearFocus, nav }: ScreenProps) {
   const flows2 = exchanges(state);
   const now = new Date(), me = author, right = rightOf(state, me), admin = canAdmin(state, me), sm = mapSummary(state, now);
   if (right === 'none') return <p className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white p-6 text-xs text-slate-600"><Lock size={16} />Vous n'avez pas accès à la cartographie des processus.</p>;
-  const back = () => setView({ v: 'map' }), open = (focus: string) => nav.open('1.4', focus);   // a button that goes to another page opens it in a new tab
+  // moving inside this tool changes the screen in place (back returns to where the person came from); only a jump to ANOTHER tool opens a new tab
+  const open = (focus: string) => { const v = viewOf(state, focus); if (v) { setHist(h => [...h, view]); setView(v); window.scrollTo(0, 0); } else setGone(true); };
+  const back = () => { const prev = hist[hist.length - 1]; setHist(h => h.slice(0, -1)); setView(prev || { v: 'map' }); window.scrollTo(0, 0); };
   // nothing is saved before the name is given: a flowchart with no name and no step typed would stay behind if the person changed their mind
-  const newFlowFor = (processId: string, name: string) => { const f = newFlow(processId, name.trim(), now); f.updatedBy = me; update(d => { d.flows[f.id] = f; }); setNaming(null); open(`flow:${f.id}`); };
+  const newFlowFor = (processId: string, name: string) => { const f = newFlow(processId, name.trim(), now); f.updatedBy = me; update(d => { d.flows[f.id] = f; }); setNaming(null); setHist(h => [...h, view]); setView({ v: 'flow', id: f.id }); window.scrollTo(0, 0); };
   const nameDialog = naming && <FlowNameDialog onClose={() => setNaming(null)} onCreate={name => newFlowFor(naming, name)} />;
 
-  if (view.v === 'flow') return <FlowEditor key={view.id} id={view.id} nav={nav} onBack={() => { const f = state.flows[view.id]; setView(f ? { v: 'sheet', id: f.processId, tab: 'flows' } : { v: 'map' }); }} onOpenFlow={id => open(`flow:${id}`)} />;
+  if (view.v === 'flow') return <FlowEditor key={view.id} id={view.id} nav={nav} onBack={() => { const f = state.flows[view.id]; if (hist.length) back(); else setView(f ? { v: 'sheet', id: f.processId, tab: 'flows' } : { v: 'map' }); }} onOpenFlow={id => open(`flow:${id}`)} />;
   if (view.v === 'review') return <MapReview onBack={back} onOpen={id => open(`${id}:review`)} nav={nav} />;
   if (view.v === 'sheet') return <>
     <ProcessSheet id={view.id} tab={view.tab} onTab={tab => setView({ v: 'sheet', id: view.id, tab })} onBack={back} nav={nav} onOpenFlow={id => open(`flow:${id}`)} onNewFlow={setNaming} onDelete={setRemoving} />
     {nameDialog}
-    {removing && <RemoveDialog id={removing} onClose={() => setRemoving(null)} onDone={() => { setRemoving(null); back(); }} />}
+    {removing && <RemoveDialog id={removing} onClose={() => setRemoving(null)} onDone={() => { setRemoving(null); setHist([]); setView({ v: 'map' }); }} />}
   </>;
 
   const ps = sortedProcesses(state), months = reviewMonths(state), firstWith = (key: string) => ps.find(p => processIssues(state, p, now).some(i => i.key === key));
@@ -69,11 +77,11 @@ export function Cartographie({ focus, clearFocus, nav }: ScreenProps) {
     <div className="space-y-4">
       <ToolHeader title="Cartographie des processus" text="Les processus de l'entreprise, qui en répond et avec quels autres ils échangent. On la remplit une fois, on la relit chaque année. Les onglets P1 à P5 de l'en-tête classent les outils ; les processus de cette carte sont ceux de l'entreprise (les codes P1 à P5, s'ils existent encore, sont les mêmes).">
         {admin && <Button kind="primary" onClick={() => setAdding(true)}><Plus size={14} />Ajouter un processus</Button>}
-        <Button onClick={() => open('review')}><ClipboardCheck size={14} />Revue des fiches{sm.old ? ` (${sm.old})` : ''}<ExternalLink size={12} aria-hidden /><span className="sr-only"> (s'ouvre dans un nouvel onglet)</span></Button>
+        <Button onClick={() => open('review')}><ClipboardCheck size={14} />Revue des fiches{sm.old ? ` (${sm.old})` : ''}</Button>
       </ToolHeader>
 
       {goneNote}
-      {lost.length > 0 && <p role="status" className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950">{plural(lost.length, 'logigramme')} {lost.length > 1 ? 'ne sont rattachés' : 'n’est rattaché'} à aucun processus de la carte :{lost.map(f => <button key={f.id} type="button" onClick={() => open(`flow:${f.id}`)} className="rounded font-bold underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-delacour-golddark">{f.name || 'Sans nom'}<span className="sr-only"> (s'ouvre dans un nouvel onglet)</span></button>)}</p>}
+      {lost.length > 0 && <p role="status" className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950">{plural(lost.length, 'logigramme')} {lost.length > 1 ? 'ne sont rattachés' : 'n’est rattaché'} à aucun processus de la carte :{lost.map(f => <button key={f.id} type="button" onClick={() => open(`flow:${f.id}`)} className="rounded font-bold underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-delacour-golddark">{f.name || 'Sans nom'}</button>)}</p>}
       {right === 'view' && <p role="status" className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700"><Eye size={14} aria-hidden />Vous consultez la carte : votre droit est « Consulter ». Pour la modifier, demandez le droit « Modifier ses processus » ou « Administrer » à un administrateur.</p>}
       {!Object.keys(state.flows).length && right !== 'view' && <details className="rounded-xl border border-delacour-golddark/60 bg-amber-50/50 text-xs text-slate-800" open>
         <summary className="cursor-pointer px-4 py-3 font-bold text-delacour-primary">Par où commencer ?</summary>
@@ -88,9 +96,9 @@ export function Cartographie({ focus, clearFocus, nav }: ScreenProps) {
       <Summary title="Où en est la carte"
         tiles={<>
           <Tile title="Processus" value={String(sm.count)} sub={sm.pct === null ? '' : `fiches remplies à ${sm.pct} % en moyenne`} />
-          <Tile title="Sans pilote" value={String(sm.noPilot)} sub={sm.noPilot ? 'un clic ouvre le premier concerné' : 'tous ont un pilote'} tone={sm.noPilot ? 'alert' : 'ok'} onClick={sm.noPilot ? () => goTo('pilot') : undefined} newTab />
-          <Tile title="Sans logigramme" value={String(sm.noFlow)} sub={sm.noFlow ? 'un clic ouvre le premier concerné' : 'tous décrits'} tone={sm.noFlow ? 'warn' : 'ok'} onClick={sm.noFlow ? () => goTo('flow') : undefined} newTab />
-          <Tile title="À relire" value={String(sm.old)} sub={sm.old ? `plus de ${months} mois ou jamais` : 'revues à jour'} tone={sm.old ? 'warn' : 'ok'} onClick={() => open('review')} newTab />
+          <Tile title="Sans pilote" value={String(sm.noPilot)} sub={sm.noPilot ? 'un clic ouvre le premier concerné' : 'tous ont un pilote'} tone={sm.noPilot ? 'alert' : 'ok'} onClick={sm.noPilot ? () => goTo('pilot') : undefined} />
+          <Tile title="Sans logigramme" value={String(sm.noFlow)} sub={sm.noFlow ? 'un clic ouvre le premier concerné' : 'tous décrits'} tone={sm.noFlow ? 'warn' : 'ok'} onClick={sm.noFlow ? () => goTo('flow') : undefined} />
+          <Tile title="À relire" value={String(sm.old)} sub={sm.old ? `plus de ${months} mois ou jamais` : 'revues à jour'} tone={sm.old ? 'warn' : 'ok'} onClick={() => open('review')} />
         </>}
         insights={[]} />
       <p className="-mt-2 text-xs text-slate-600">Chaque fiche est notée sur 9 points : pilote, à quoi il sert, ce qui le déclenche et ce qu'il livre, entrées et sorties, au moins un logigramme, logigrammes sans erreur, indicateur, cible de l'indicateur, relecture à jour. La barre est verte à partir de 80 %, orange à partir de 50 %.</p>
@@ -153,7 +161,7 @@ function ProcessCard({ s, p, now, links, onOpen }: { s: State; p: Process; now: 
   ].filter(Boolean) as string[], blocked = reviewBlockers(s, p, now).length > 0;
   return (
     <button type="button" onClick={onOpen} className="flex w-full flex-col gap-2.5 overflow-hidden rounded-lg border border-slate-300 bg-white p-3 text-left hover:border-delacour-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-delacour-golddark max-sm:min-h-[44px] lg:h-60">
-      <span className="flex items-start gap-2"><span className="mt-px"><CodeBadge p={p} /></span><span className="min-w-0 flex-1 truncate text-sm font-bold leading-snug text-slate-900" title={plainName(p.name)}>{plainName(p.name) || '(sans nom)'}<span className="sr-only"> (s'ouvre dans un nouvel onglet)</span></span></span>
+      <span className="flex items-start gap-2"><span className="mt-px"><CodeBadge p={p} /></span><span className="min-w-0 flex-1 truncate text-sm font-bold leading-snug text-slate-900" title={plainName(p.name)}>{plainName(p.name) || '(sans nom)'}</span></span>
       <span className="line-clamp-2 min-h-[2.5rem] text-xs leading-relaxed text-slate-600">{p.purpose || ''}</span>
       <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
         {pilot && personGone(s, p.pilotId) ? <span className={`${mark} border-red-200 bg-red-50 text-red-800`}>Pilote parti : {pilot}</span> : pilot ? <span className="font-semibold text-slate-800">Pilote : {pilot}</span> : <span className={`${mark} border-red-200 bg-red-50 text-red-800`}>Sans pilote</span>}
@@ -172,7 +180,7 @@ function ProcessCard({ s, p, now, links, onOpen }: { s: State; p: Process; now: 
 function FlowNameDialog({ onClose, onCreate }: { onClose(): void; onCreate(name: string): void }) {
   const [name, setName] = useState('');
   return (
-    <Modal onClose={onClose} title="Nouveau logigramme" subtitle="Le cas que vous allez décrire. Il s'ouvre dans un nouvel onglet."
+    <Modal onClose={onClose} title="Nouveau logigramme" subtitle="Le cas que vous allez décrire."
       footer={<><Button onClick={onClose}>Annuler</Button><Button kind="primary" disabled={!name.trim()} onClick={() => onCreate(name)}>Créer</Button></>}>
       <Field label="Nom du logigramme" hint="Par exemple : le devis, la réclamation."><input className={inputCls} autoFocus value={name} onChange={e => setName(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && name.trim()) onCreate(name); }} /></Field>
     </Modal>

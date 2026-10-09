@@ -146,8 +146,8 @@ describe('1.4 a flowchart', () => {
     expect(html).toMatch(/Étape 6 : il manque : instruction/);       // one amber mark on a step of work that lacks something; the detail is in the panel
     expect(panel('fl_demo_6', 'st_demo_6f')).toContain('Accueil et suivi des nouveaux arrivants');
     expect(html).toContain('role="link"');                                            // the bar of the sub-process block in the diagram is a link…
-    expect(html).toContain('Ouvrir le logigramme Parcours d&#x27;accueil de 15 jours dans un nouvel onglet');   // …said as such to a screen reader
-    expect(html).toContain('s&#x27;ouvre dans un nouvel onglet');
+    expect(html).toContain('Ouvrir le logigramme Parcours d&#x27;accueil de 15 jours"');   // opens in place: no new tab inside the tool
+    expect(html).not.toContain('Parcours d&#x27;accueil de 15 jours dans un nouvel onglet');
     expect(html).not.toContain('appelé depuis');
   });
   it('tells a sub-process flowchart which one calls it', () => {
@@ -638,12 +638,12 @@ describe('1.4 lot 4: desktop accessibility and UX', () => {
     expect(html).toContain('Ajouter une personne au niveau Consulter'); expect(html).toContain('Coché = visible par l&#x27;équipe.');
     expect(html).not.toContain('Droit de Jean-Marc');
   });
-  it('writes the review without opacity, names the settings once, and opens a sheet in a new tab with the words for it', () => {
+  it('writes the review without opacity, names the settings once, and opens a sheet in place', () => {
     fresh(); store.author = '';
     const html = draw(<MapReview onBack={noop} onOpen={noop} nav={nav} />);
     expect(html.match(/Renseignez votre nom dans les réglages/g)?.length).toBe(1);
     expect(html).toContain('Ouvrir les réglages');
-    expect(html).toContain('Ouvrir la fiche <svg'); expect(html).toContain('s&#x27;ouvre dans un nouvel onglet');
+    expect(html).toContain('Ouvrir la fiche'); expect(html).not.toContain('s&#x27;ouvre dans un nouvel onglet');
     expect(html).toMatch(/id="rev-ok-P\d"[^>]*disabled/);
     expect(html).toContain('disabled:bg-slate-200');
     expect(html).not.toMatch(/id="rev-ok-[^"]*"[^>]*disabled:opacity-50/);

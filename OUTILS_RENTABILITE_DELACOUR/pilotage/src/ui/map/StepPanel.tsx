@@ -1,6 +1,6 @@
 // The panel of one step (tool 1.4), opened over the flowchart page: what the step is and where it goes, what it takes to do it (instruction and skill in view, the rest under "Plus"),
 // notes and options. The list of steps stays light: all that was once stacked under each row is here.
-import { ChevronLeft, ChevronRight, ExternalLink, Plus, Trash2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Trash2 } from 'lucide-react';
 import type { Flow, FlowBranch, FlowLink, FlowStep, Skill, StepKind } from '../../domain/types';
 import { branchesOf, REQ_KINDS, STEP_KINDS } from '../../domain/cartography';
 import { isWork, linksOfTool, otherLinks, richLinks, SUPPORTS } from '../../domain/mapSupport';
@@ -55,7 +55,7 @@ export function StepPanel({ f, rf, i, can, nav, skills, people, roles, others, p
                 <Button onClick={() => setBranches(st.id, [...br, { label: '', to: '' }])}><Plus size={13} />Ajouter une réponse</Button>
               </div>;
             })() : st.kind !== 'end' && <div className="sm:col-span-2"><Field label="Puis aller à" hint="Laisser « L'étape suivante » (celle du dessous) dans le cas normal ; choisir une étape pour un retour ou un saut."><select className={inputCls} value={st.goto || ''} onChange={e => patch(st.id, { goto: e.target.value || undefined })}><option value="">L'étape suivante</option>{targets}</select></Field></div>}
-            {st.kind === 'subprocess' && <div className="sm:col-span-2"><Field label="Logigramme appelé"><span className="flex gap-1.5"><select className={inputCls} value={st.flowId || ''} onChange={e => patch(st.id, { flowId: e.target.value || undefined })}><option value="">Choisir</option>{others.map(o => <option key={o.id} value={o.id}>{o.processId} · {o.name || 'Sans nom'}</option>)}</select>{st.flowId && state.flows[st.flowId] && <Button onClick={() => openFlow(st.flowId!)}>Ouvrir <ExternalLink size={12} aria-hidden /><span className="sr-only"> (s'ouvre dans un nouvel onglet)</span></Button>}</span></Field></div>}
+            {st.kind === 'subprocess' && <div className="sm:col-span-2"><Field label="Logigramme appelé"><span className="flex gap-1.5"><select className={inputCls} value={st.flowId || ''} onChange={e => patch(st.id, { flowId: e.target.value || undefined })}><option value="">Choisir</option>{others.map(o => <option key={o.id} value={o.id}>{o.processId} · {o.name || 'Sans nom'}</option>)}</select>{st.flowId && state.flows[st.flowId] && <Button onClick={() => openFlow(st.flowId!)}>Ouvrir</Button>}</span></Field></div>}
           </fieldset>
         </section>
 
